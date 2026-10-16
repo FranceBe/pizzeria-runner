@@ -27,7 +27,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # A failing test stops the deployment, so a broken version never goes live.
+      # Same checks as ci.yml: a failure stops the deployment, so a broken version never goes live.
+      - run: npm run lint
       - run: npm test
       - run: npm run build
       - uses: actions/configure-pages@v5

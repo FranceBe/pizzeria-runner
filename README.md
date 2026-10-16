@@ -40,12 +40,19 @@ npm run build
 
 The `dist/` folder can be hosted anywhere (Netlify, GitHub Pages, Vercel…).
 
-## Tests
+## Tests and checks
 
 ```bash
-npm test            # run once
+npm test            # run the tests once
 npm run test:watch  # re-run on every change
+npm run lint        # ESLint (npm run lint:fix to auto-fix)
+npm run check       # lint + tests + build, like the CI
 ```
+
+- **Pre-commit hook** (husky, installed by `npm install`): lints the staged files with auto-fix, then runs the tests.
+  A failure blocks the commit; `git commit --no-verify` skips it in an emergency.
+- **CI** (`.github/workflows/ci.yml`): lint, tests and build on every push and pull request to `main`.
+- **Deployment** (`.github/workflows/deploy.yml`): every push to `main` that passes the same checks goes live on GitHub Pages.
 
 ## Where things live
 

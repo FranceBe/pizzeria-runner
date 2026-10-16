@@ -28,8 +28,9 @@ export function useGameLoop(state, dispatch) {
   }, []);
 
   // Outside service, save right away on meaningful changes like purchases.
+  // Only these fields trigger it, so it reads the latest state rather than depending on all of it.
   useEffect(() => {
-    if (state.phase !== "service") saveState(state);
+    if (latestState.current.phase !== "service") saveState(latestState.current);
   }, [state.money, state.phase, state.recipes, state.day]);
 
   useEffect(() => {

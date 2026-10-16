@@ -59,27 +59,26 @@ describe.each(LANGUAGES)("views in %s", (language) => {
   const screens = () => {
     const late = lateGameState();
     return [
-      <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} />,
-      <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2 } }} dispatch={noop} />,
-      <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} />,
-      <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} />,
-      <ServiceView state={serviceInProgress()} dispatch={noop} />,
-      <ServiceView state={stateInService([makeCustomer()], { ...late })} dispatch={noop} />,
-      <MarketView state={late} dispatch={noop} />,
-      <MarketView state={makeState()} dispatch={noop} />,
-      <MenuView state={late} dispatch={noop} />,
-      <MenuView state={makeState()} dispatch={noop} />,
-      <RecipeEditor state={late} dispatch={noop} onClose={noop} />,
-      <UpgradesView state={late} dispatch={noop} />,
-      <SettingsView state={late} dispatch={noop} />,
-      <DaySummary summary={SUMMARY} pizzeriaName="Forno Lento" onNextDay={noop} />,
+      { name: "Header with pops", element: <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} /> },
+      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2 } }} dispatch={noop} /> },
+      { name: "Prep with regulars", element: <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} /> },
+      { name: "Prep when broke", element: <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} /> },
+      { name: "Service in progress", element: <ServiceView state={serviceInProgress()} dispatch={noop} /> },
+      { name: "Service late game", element: <ServiceView state={stateInService([makeCustomer()], { ...late })} dispatch={noop} /> },
+      { name: "Market late game", element: <MarketView state={late} dispatch={noop} /> },
+      { name: "Market fresh game", element: <MarketView state={makeState()} dispatch={noop} /> },
+      { name: "Menu late game", element: <MenuView state={late} dispatch={noop} /> },
+      { name: "Menu fresh game", element: <MenuView state={makeState()} dispatch={noop} /> },
+      { name: "Recipe editor", element: <RecipeEditor state={late} dispatch={noop} onClose={noop} /> },
+      { name: "Upgrades", element: <UpgradesView state={late} dispatch={noop} /> },
+      { name: "Settings", element: <SettingsView state={late} dispatch={noop} /> },
+      { name: "Day summary", element: <DaySummary summary={SUMMARY} pizzeriaName="Forno Lento" onNextDay={noop} /> },
     ];
   };
 
   it("renders every screen without raw translation keys", () => {
-    for (const screen of screens()) {
-      const html = render(screen, language);
-      expect(html.match(RAW_KEY)?.[0], `${screen.type.name}`).toBeUndefined();
+    for (const { name, element } of screens()) {
+      expect(render(element, language).match(RAW_KEY)?.[0], name).toBeUndefined();
     }
   });
 });

@@ -1,0 +1,7 @@
+# Use the project's Node version (.nvmrc) when nvm is installed: the default one may be too old for the tools.
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm use --silent >/dev/null
+
+# Lint (and auto-fix) only the staged files, then run the whole test suite (it takes under a second).
+npx lint-staged
+npm test
