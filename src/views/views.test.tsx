@@ -1,0 +1,173 @@
+import { describe, it, expect } from "vitest";
+import type { ReactElement } from "react";
+import { renderToString } from "react-dom/server";
+import { INGREDIENTS } from "../data/ingredients";
+import type { DaySummary as Summary, GameState } from "../game/types";
+import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle } from "../test/helpers";
+import { App } from "../App";
+import { createTranslator, LANGUAGES, type Language } from "../i18n";
+import { I18nProvider } from "../i18n/I18nContext";
+import { Header } from "./Header";
+import { PrepView } from "./PrepView";
+import { ServiceView } from "./service/ServiceView";
+import { MarketView } from "./MarketView";
+import { MenuView } from "./menu/MenuView";
+import { RecipeEditor } from "./menu/RecipeEditor";
+import { UpgradesView } from "./UpgradesView";
+import { SettingsView } from "./SettingsView";
+import { DaySummary } from "./DaySummary";
+
+// Smoke tests: every screen renders in every language, without crashing or showing a raw translation key.
+const noop = () => {};
+const render = (element: ReactElement, language: Language = "fr"): string =>
+  renderToString(<I18nProvider value={createTranslator(language)}>{element}</I18nProvider>);
+
+// A translation key that slipped through looks like "service.orders" in the HTML.
+const RAW_KEY = /\b(tabs|common|header|prep|service|market|menu|editor|upgrades|settings|summary|toasts|tutorial|pops|kinds|stations|ingredients|recipes|customerLines)\.\w/;
+
+// A late-game state with every supplier, so every drawing shape gets rendered.
+function lateGameState(): GameState {
+  const signAll = INGREDIENTS.map(({ id }) => ({ type: "signSupplier", ingredientId: id }) as const);
+  return play(makeState({ money: 5000, xp: 5000 }), ...signAll);
+}
+
+function withRegulars(state: GameState): GameState {
+  state.customerBook = { Giulia: makeBookEntry({ visits: 5, orders: { margherita: 5 } }) };
+  return state;
+}
+
+const serviceScreen = (state: GameState): ReactElement => (
+  <ServiceView state={state} service={serviceOf(state)} dispatch={noop} />
+);
+
+function serviceInProgress(): GameState {
+  const customer = makeCustomer({ extraIngredient: "basilic", waitedSeconds: 100 });
+  let state = stateInService([customer, makeCustomer({ id: "cust-2" })]);
+  state.settings.tutorialDone = true;
+  state = play(state, ...toggle("pate"), { type: "bake" }, { type: "tick", seconds: 10 });
+  return play(state, ...toggle("pate", "tomate"));
+}
+
+const SUMMARY: Summary = {
+  day: 2, served: 4, revenue: 28, tips: 1.5, purchases: 3, charges: 6, waste: 1, xp: 40,
+  levelUps: [2], debt: 2, net: 20.5, bestSeller: { recipeId: "margherita", name: null, count: 4 },
+  orders: [
+    { customerName: "Luca", recipeId: "margherita", recipeName: null, ingredients: ["pate", "tomate", "mozza", "basilic"], price: 7, tip: 0.5 },
+    { customerName: "Sofia", recipeId: "c-x", recipeName: "La Fellows", ingredients: ["pate", "mozza"], price: 6, tip: 0 },
+  ],
+};
+
+describe.each(LANGUAGES)("views in %s", (language) => {
+  const screens = () => {
+    const late = lateGameState();
+    return [
+      { name: "Header with pops", element: <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} /> },
+      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2 } }} dispatch={noop} /> },
+      { name: "Prep with regulars", element: <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} /> },
+      { name: "Prep when broke", element: <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} /> },
+      { name: "Service in progress", element: serviceScreen(serviceInProgress()) },
+      { name: "Service late game", element: serviceScreen(stateInService([makeCustomer()], { ...late })) },
+      { name: "Market late game", element: <MarketView state={late} dispatch={noop} /> },
+      { name: "Market fresh game", element: <MarketView state={makeState()} dispatch={noop} /> },
+      { name: "Menu late game", element: <MenuView state={late} dispatch={noop} /> },
+      { name: "Menu fresh game", element: <MenuView state={makeState()} dispatch={noop} /> },
+      { name: "Recipe editor", element: <RecipeEditor state={late} dispatch={noop} onClose={noop} /> },
+      { name: "Upgrades", element: <UpgradesView state={late} dispatch={noop} /> },
+      { name: "Settings", element: <SettingsView state={late} dispatch={noop} /> },
+      { name: "Day summary", element: <DaySummary summary={SUMMARY} pizzeriaName="Forno Lento" onNextDay={noop} /> },
+    ];
+  };
+
+  it("renders every screen without raw translation keys", () => {
+    for (const { name, element } of screens()) {
+      expect(render(element, language).match(RAW_KEY)?.[0], name).toBeUndefined();
+    }
+  });
+});
+
+describe("views", () => {
+  it("renders the whole app from a fresh game in the browser's language", () => {
+    // Node reports an English locale.
+    expect(renderToString(<App />)).toContain("Open the pizzeria");
+  });
+
+  it("offers Nonna's help when broke", () => {
+    const html = render(<PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} />);
+    expect(html).toContain("Appeler Nonna");
+  });
+
+  it("shows the board check, an unclaimed pizza and the progress line during service", () => {
+    const html = render(serviceScreen(serviceInProgress()), "en");
+    expect(html).toContain("0 served · 2 still to serve");
+    expect(html).toContain("Nobody&#x27;s waiting for it");
+    expect(html).toContain("2 missing");
+    expect(html).toContain("+ Basil");
+  });
+
+  it("translates classic recipe names, even in old saves", () => {
+    const state = lateGameState();
+    expect(render(<MenuView state={state} dispatch={noop} />, "en")).toContain("Goat cheese &amp; honey");
+    expect(render(<MenuView state={state} dispatch={noop} />, "fr")).toContain("Chèvre-miel");
+  });
+
+  it("renders the day summary with the best seller and every order", () => {
+    const html = render(<DaySummary summary={SUMMARY} pizzeriaName="Chez Moi" onNextDay={noop} />, "en");
+    expect(html).toContain("Chez Moi");
+    expect(html).toContain("Luca · Margherita");
+    expect(html).toContain("Sofia · La Fellows");
+    expect(html).toContain("+€0.50");
+    expect(html).toContain("no tip");
+    expect(html).toContain("Prepare day");
+  });
+
+  it("shows money pops under the till", () => {
+    const state = makeState({ pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] });
+    const html = render(<Header state={state} dispatch={noop} />);
+    expect(html).toContain("+7,00 €");
+    expect(html).toContain("+0,50 € pourboire");
+  });
+
+  it("marks what the selected order still needs, on its ticket and on the prep line", () => {
+    const state = play(stateInService([makeCustomer()]), { type: "toggleIngredient", ingredientId: "pate" }, { type: "toggleIngredient", ingredientId: "tomate" });
+    const html = render(serviceScreen(state));
+    expect(html).toContain('class="chip ok"');
+    expect(html).toContain('class="chip miss"');
+    expect(html).toMatch(/class="pan need[^"]*"[^>]*title="Mozzarella/);
+  });
+
+  it("guides the first day and highlights what to touch", () => {
+    const prep = render(<PrepView state={makeState()} dispatch={noop} goToTab={noop} />);
+    expect(prep).toContain("Premier service");
+    expect(prep).toMatch(/class="btn primary big coach-target"/);
+    const service = render(serviceScreen(stateInService([makeCustomer()])));
+    expect(service).toContain("Touche la Pâte");
+    expect(service).toMatch(/class="pan[^"]*coach-target[^"]*"[^>]*title="Pâte/);
+  });
+
+  it("lists regulars and tags their tickets", () => {
+    expect(render(<PrepView state={withRegulars(makeState({ day: 3 }))} dispatch={noop} goToTab={noop} />)).toContain("Margherita · 5 visites");
+    const state = withRegulars(stateInService([makeCustomer({ name: "Giulia", visitNumber: 6 })]));
+    const html = render(serviceScreen(state));
+    expect(html).toContain('class="visit regular"');
+    expect(html).toContain("6ᵉ visite");
+  });
+
+  it("numbers the selected ticket's ingredients for the keyboard", () => {
+    const html = render(serviceScreen(stateInService([makeCustomer()])));
+    expect(html).toContain('<kbd class="kbd">3</kbd>');
+    expect(html).toContain("Espace enfourner");
+  });
+
+  it("decorates the storefront as upgrades are bought", () => {
+    expect(render(<Header state={makeState()} dispatch={noop} />)).not.toContain("storefront");
+    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0 } })} dispatch={noop} />);
+    expect(upgraded.match(/decor table/g)).toHaveLength(2);
+    expect(upgraded).toContain("oven-front");
+    expect(upgraded).toContain('class="lights"');
+  });
+
+  it("highlights the current language", () => {
+    const html = render(<SettingsView state={makeState()} dispatch={noop} />);
+    expect(html).toMatch(/class="btn sm primary" aria-pressed="true">Français/);
+  });
+});

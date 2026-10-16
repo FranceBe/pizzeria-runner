@@ -1,4 +1,4 @@
-# Checks every push and pull request on main: lint, tests, build.
+# Checks every push and pull request on main: types, lint, tests, build.
 name: CI
 
 on:
@@ -25,6 +25,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Type check
+        run: npm run typecheck
       - name: Lint
         run: npm run lint
       - name: Tests

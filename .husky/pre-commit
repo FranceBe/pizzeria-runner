@@ -2,6 +2,7 @@
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm use --silent >/dev/null
 
-# Lint (and auto-fix) only the staged files, then run the whole test suite (it takes under a second).
+# Lint (and auto-fix) only the staged files, then type-check and run the tests (a few seconds in all).
 npx lint-staged
+npm run typecheck
 npm test

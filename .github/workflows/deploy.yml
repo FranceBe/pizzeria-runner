@@ -28,6 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       # Same checks as ci.yml: a failure stops the deployment, so a broken version never goes live.
+      - run: npm run typecheck
       - run: npm run lint
       - run: npm test
       - run: npm run build
