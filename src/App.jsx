@@ -1,0 +1,76 @@
+import { useReducer, useState } from "react";
+import { gameReducer } from "./game/reducer.js";
+import { loadState } from "./game/state.js";
+import { useGameLoop } from "./hooks/useGameLoop.js";
+import { Header } from "./views/Header.jsx";
+import { PrepView } from "./views/PrepView.jsx";
+import { ServiceView } from "./views/service/ServiceView.jsx";
+import { MarketView } from "./views/MarketView.jsx";
+import { MenuView } from "./views/menu/MenuView.jsx";
+import { UpgradesView } from "./views/UpgradesView.jsx";
+import { SettingsView } from "./views/SettingsView.jsx";
+import { DaySummary } from "./views/DaySummary.jsx";
+
+const TABS = [
+  { id: "service", label: "Service" },
+  { id: "market", label: "Marché" },
+  { id: "menu", label: "Carte" },
+  { id: "upgrades", label: "Améliorations" },
+  { id: "settings", label: "Réglages" },
+];
+
+function TabContent({ tab, state, dispatch, goToTab }) {
+  switch (tab) {
+    case "service":
+      return state.phase === "service" && state.service
+        ? <ServiceView state={state} dispatch={dispatch} />
+        : <PrepView state={state} dispatch={dispatch} goToTab={goToTab} />;
+    case "market":
+      return <MarketView state={state} dispatch={dispatch} />;
+    case "menu":
+      return <MenuView state={state} dispatch={dispatch} />;
+    case "upgrades":
+      return <UpgradesView state={state} dispatch={dispatch} />;
+    case "settings":
+      return <SettingsView state={state} dispatch={dispatch} />;
+    default:
+      return null;
+  }
+}
+
+export function App() {
+  const [state, dispatch] = useReducer(gameReducer, null, loadState);
+  const [tab, setTab] = useState("service");
+  useGameLoop(state, dispatch);
+
+  const waitingCustomers = state.service ? state.service.customers.length : 0;
+  const startNextDay = () => {
+    dispatch({ type: "startNextDay" });
+    setTab("service");
+  };
+
+  return (
+    <>
+      <Header state={state} />
+      <div className="wrap">
+        <nav className="tabs" role="tablist">
+          {TABS.map(({ id, label }) => (
+            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
+              {label}
+              {id === "service" && tab !== "service" && waitingCustomers > 0 && <span className="pip">{waitingCustomers}</span>}
+            </button>
+          ))}
+        </nav>
+      </div>
+      <main className="wrap">
+        <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
+      </main>
+      {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} onNextDay={startNextDay} />}
+      <div className="toasts" aria-live="polite">
+        {state.toasts.map((toast) => (
+          <div key={toast.id} className={`toast ${toast.kind}`}>{toast.text}</div>
+        ))}
+      </div>
+    </>
+  );
+}
