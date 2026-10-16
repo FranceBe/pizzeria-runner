@@ -1,7 +1,10 @@
 import { COMMIS_ASSEMBLES_ORDER } from "../../data/progression.js";
+import { isRegularCustomer } from "../../game/customers.js";
 import { ovenSlots } from "../../game/service.js";
 import { haveSameIngredients } from "../../game/pizza.js";
+import { tutorialStep } from "../../game/tutorial.js";
 import { useTranslation } from "../../i18n/I18nContext.jsx";
+import { CoachTip } from "../../components/CoachTip.jsx";
 import { MessageTicker } from "../../components/MessageTicker.jsx";
 import { Pizza } from "../../components/Pizza.jsx";
 import { OrderTicket } from "./OrderTicket.jsx";
@@ -17,7 +20,7 @@ function BoardCheck({ customer, board }) {
   return <span className="match">{t("service.boardCheck", { name: customer.name, missing, extra })}</span>;
 }
 
-function WorkBoard({ state, dispatch, selectedCustomer }) {
+function WorkBoard({ state, dispatch, selectedCustomer, coachTarget }) {
   const t = useTranslation();
   const { board, oven } = state.service;
   const ovenIsFull = oven.length >= ovenSlots(state);
@@ -34,10 +37,15 @@ function WorkBoard({ state, dispatch, selectedCustomer }) {
           </button>
         )}
         <button className="btn sm" disabled={!board.length} onClick={() => dispatch({ type: "trashBoard" })}>{t("common.trash")}</button>
-        <button className="btn primary" disabled={!board.includes("pate") || ovenIsFull} onClick={() => dispatch({ type: "bake" })}>
+        <button
+          className={`btn primary${coachTarget === "bake" ? " coach-target" : ""}`}
+          disabled={!board.includes("pate") || ovenIsFull}
+          onClick={() => dispatch({ type: "bake" })}
+        >
           {ovenIsFull ? t("service.ovenFull") : t("service.bake")}
         </button>
       </div>
+      <p className="kbd-legend">{t("service.shortcuts")}</p>
     </section>
   );
 }
@@ -49,9 +57,17 @@ export function ServiceView({ state, dispatch }) {
   const { service } = state;
   const selectedCustomer = service.customers.find((customer) => customer.id === service.selectedCustomerId);
   const progress = t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length });
+  const tutorial = tutorialStep(state);
+  const coachTarget = tutorial?.target;
+  // Messages come first; the tutorial hint takes the message line otherwise.
+  const showCoach = tutorial && !state.toasts.length;
   return (
     <div className="svc">
-      <MessageTicker toasts={state.toasts} dispatch={dispatch} idleText={progress} />
+      {showCoach ? (
+        <CoachTip step={tutorial} dispatch={dispatch} className="ticker" />
+      ) : (
+        <MessageTicker toasts={state.toasts} dispatch={dispatch} idleText={progress} />
+      )}
       <section className="a-tickets" aria-label={t("service.orders")}>
         <h3 className="h dsk">{t("service.orders")}</h3>
         <div className="tickets">
@@ -63,18 +79,20 @@ export function ServiceView({ state, dispatch }) {
               isSelected={customer.id === service.selectedCustomerId}
               showIngredients={state.settings.showHelp}
               board={service.board}
+              isRegular={isRegularCustomer(state, customer)}
               onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
             />
           ))}
         </div>
       </section>
-      <WorkBoard state={state} dispatch={dispatch} selectedCustomer={selectedCustomer} />
-      <OvenAndPass state={state} dispatch={dispatch} />
+      <WorkBoard state={state} dispatch={dispatch} selectedCustomer={selectedCustomer} coachTarget={coachTarget} />
+      <OvenAndPass state={state} dispatch={dispatch} coachTarget={coachTarget} />
       <div className="a-rail">
         <PrepLine
           state={state}
           board={service.board}
           neededIngredients={state.settings.showHelp && selectedCustomer ? selectedCustomer.ingredients : []}
+          coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}
         />
       </div>

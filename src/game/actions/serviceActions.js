@@ -1,7 +1,8 @@
 import { INGREDIENTS } from "../../data/ingredients.js";
-import { BAKE_SECONDS, COMMIS_SPREADS_DOUGH, tipChanceForDecor } from "../../data/progression.js";
+import { BAKE_SECONDS, COMMIS_SPREADS_DOUGH } from "../../data/progression.js";
 import { randomBetween, makeId } from "../../utils/random.js";
-import { createCustomer, hasSpecialRequest } from "../customers.js";
+import { createCustomer, hasSpecialRequest, rollTip } from "../customers.js";
+import { recordVisit } from "../regulars.js";
 import { dailyCharges, forecastCustomers, payCharges, receivePayment } from "../economy.js";
 import { ingredientCost, isSauce, fillingsOf, sortByLayer } from "../pizza.js";
 import { levelForXp } from "../progression.js";
@@ -11,7 +12,6 @@ import { pushToast, pushPop } from "../toasts.js";
 const FIRST_ARRIVAL_DELAY = 0.6;
 const MIN_SECONDS_BETWEEN_ARRIVALS = 3.5;
 const MAX_SECONDS_BETWEEN_ARRIVALS = 6.5;
-const SPECIAL_REQUEST_TIP_BONUS = 0.15;
 const SPECIAL_REQUEST_XP_BONUS = 3;
 
 const DOUGH = "pate";
@@ -197,10 +197,11 @@ export const serviceActions = {
     service.ready = service.ready.filter((p) => p.id !== pizza.id);
     service.customers = service.customers.filter((c) => c.id !== customer.id);
 
-    const tipChance = tipChanceForDecor(state.upgrades.deco) + (customer.extraIngredient ? SPECIAL_REQUEST_TIP_BONUS : 0);
-    const tip =
-      Math.random() < tipChance ? Math.round(randomBetween(0.5, 1 + 0.8 * state.upgrades.deco) * 10) / 10 : 0;
+    const tip = rollTip(state, customer);
     receivePayment(state, customer.price + tip);
+    if (recordVisit(state, customer)) pushToast(state, "newRegular", { name: customer.name }, "gold");
+    // The first pizza served completes the tutorial.
+    state.settings.tutorialDone = true;
 
     const xpGained =
       6 + 2 * fillingsOf(customer.ingredients).length + (hasSpecialRequest(customer) ? SPECIAL_REQUEST_XP_BONUS : 0);

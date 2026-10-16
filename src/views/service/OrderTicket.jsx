@@ -15,7 +15,7 @@ function ingredientChips(customer, board, isSelected) {
   ];
 }
 
-export function OrderTicket({ customer, isSelected, showIngredients, board, onSelect }) {
+export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, onSelect }) {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   return (
@@ -24,7 +24,15 @@ export function OrderTicket({ customer, isSelected, showIngredients, board, onSe
       <div className="who">
         <CustomerFace customer={customer} mood={mood} />
         <div>
-          <div className="nm">{customer.name}</div>
+          <div className="nm">
+            {customer.name}
+            {customer.visitNumber > 1 && (
+              <span className={`visit${isRegular ? " regular" : ""}`} title={isRegular ? t("service.regular") : undefined}>
+                {isRegular && <span aria-hidden="true">★ </span>}
+                <span className="visit-t">{t("service.visit", { number: customer.visitNumber })}</span>
+              </span>
+            )}
+          </div>
           <div className="say">{t(`customerLines.${mood}.${customer.lineIndex}`)}</div>
         </div>
       </div>
@@ -37,10 +45,12 @@ export function OrderTicket({ customer, isSelected, showIngredients, board, onSe
       )}
       {showIngredients && (
         <div className="chips">
-          {ingredientChips(customer, board, isSelected).map(({ id, status }) => (
+          {ingredientChips(customer, board, isSelected).map(({ id, status }, index) => (
             <span key={id} className={`chip ${status}`} title={t.ingredient(id)}>
               <IngredientIcon id={id} />
               <span className="chip-t">{t.ingredient(id)}</span>
+              {/* Keyboard hint, matching game/shortcuts.js; only the ordered ingredients are numbered. */}
+              {isSelected && status !== "extra" && index < 9 && <kbd className="kbd">{index + 1}</kbd>}
             </span>
           ))}
         </div>

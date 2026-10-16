@@ -38,6 +38,8 @@ export const en = {
     open: "Open the pizzeria",
     tonightsMenu: "On the menu tonight",
     emptyMenu: "No pizzas. Head to the Menu tab.",
+    regulars: "Your regulars",
+    regularLine: ({ recipe, visits }) => `${recipe} · ${visits} visits`,
   },
 
   service: {
@@ -69,6 +71,9 @@ export const en = {
     panTitle: ({ id, quantity }, t) => `${t.ingredient(id)} · ${quantity} in stock`,
     extra: ({ id }, t) => `+ ${t.ingredient(id)}`,
     without: ({ id }, t) => `no ${lower(t.ingredient(id))}`,
+    visit: ({ number }) => `visit #${number}`,
+    regular: "Regular",
+    shortcuts: "Keys: 0 dough · 1-9 ticket ingredients · Space bake · Enter serve · ← → switch ticket",
   },
 
   market: {
@@ -208,6 +213,21 @@ export const en = {
     levelReachedDetails: "New suppliers are waiting at the market and your menu can now hold {capacity} pizzas.",
     debtHint: "The debt pays itself off with half of your upcoming sales.",
     nextDay: "Prepare day {day}",
+    thanks: "Thank you, see you tomorrow!",
+  },
+
+  tutorial: {
+    label: "First service",
+    skip: "Skip",
+    open: "Welcome! Your menu has the Margherita and the fridge is full. Open the pizzeria whenever you like.",
+    waiting: "The first customers are on their way…",
+    dough: "{name} placed an order! Tap the Dough, at the bottom, to roll it out.",
+    toppings: ({ name, ingredientIds }, t) => `Add what ${name} wants: ${lower(t.ingredientList(ingredientIds))}. The pans to use are outlined.`,
+    extra: ({ ingredientIds }, t) => `${t.ingredientList(ingredientIds)}: not in the order. Tap the pan to take it off.`,
+    bake: "Perfect, it's complete! Bake it.",
+    baking: "It's baking… No rush, nobody leaves angry.",
+    nextPizza: "While it bakes, you can roll out {name}'s pizza.",
+    serve: "It's ready: serve it to {name}! The quicker you are, the bigger the tip.",
   },
 
   toasts: {
@@ -233,6 +253,7 @@ export const en = {
       `New recipe: ${t(`recipes.${recipeId}`)}${onMenu ? " (added to the menu)" : ""}`,
     gameLoaded: "Game loaded.",
     gameReset: "A new pizzeria opens its doors.",
+    newRegular: "{name} is now one of your regulars!",
   },
 
   customerLines: [

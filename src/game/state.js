@@ -21,10 +21,11 @@ export function createInitialState(language = detectLanguage()) {
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
     upgrades: { oven: 0, salle: 0, deco: 0, commis: 0 },
-    settings: { showHelp: true, language },
+    settings: { showHelp: true, language, tutorialDone: false },
     phase: "prep", // prep | service | summary
     purchasesToday: 0,
     lastNonnaVisitDay: 0,
+    customerBook: {},
     service: null,
     summary: null,
     toasts: [],
@@ -128,6 +129,7 @@ export function hydrateState(saved) {
     settings: { ...defaults.settings, ...(migrated.settings || {}) },
     stock: migrated.stock || defaults.stock,
     unlocked: { ...defaults.unlocked, ...(migrated.unlocked || {}) },
+    customerBook: migrated.customerBook || {},
   };
 }
 

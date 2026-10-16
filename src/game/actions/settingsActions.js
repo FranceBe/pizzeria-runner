@@ -13,6 +13,10 @@ export const settingsActions = {
     state.settings.showHelp = !state.settings.showHelp;
   },
 
+  skipTutorial(state) {
+    state.settings.tutorialDone = true;
+  },
+
   setLanguage(state, { language }) {
     if (LANGUAGES.includes(language)) state.settings.language = language;
   },

@@ -3,7 +3,11 @@ import { dailyCharges, forecastCustomers } from "../game/economy.js";
 import { activeMenu, isNewRecipe } from "../game/menu.js";
 import { ingredientCost } from "../game/pizza.js";
 import { levelForXp, menuCapacity } from "../game/progression.js";
+import { regularsOf } from "../game/regulars.js";
+import { tutorialStep } from "../game/tutorial.js";
 import { useTranslation } from "../i18n/I18nContext.jsx";
+import { CoachTip } from "../components/CoachTip.jsx";
+import { CustomerFace } from "../components/CustomerFace.jsx";
 import { Pizza } from "../components/Pizza.jsx";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -15,6 +19,33 @@ function needsNonna(state, menu) {
   return !canMakeSomething && isBroke && state.lastNonnaVisitDay !== state.day;
 }
 
+const MAX_REGULARS_SHOWN = 5;
+
+function Regulars({ state }) {
+  const t = useTranslation();
+  const regulars = regularsOf(state).slice(0, MAX_REGULARS_SHOWN);
+  if (!regulars.length) return null;
+  return (
+    <div className="regulars">
+      <h3 className="h">{t("prep.regulars")}</h3>
+      {regulars.map((regular) => (
+        <div key={regular.name} className="regular-row">
+          <CustomerFace customer={regular} mood={0} />
+          <div className="grow">
+            <strong>{regular.name}</strong>
+            <div className="hint">
+              {t("prep.regularLine", {
+                recipe: t.recipe(state.recipes.find((r) => r.id === regular.favoriteRecipeId) ?? { id: regular.favoriteRecipeId, name: "" }),
+                visits: regular.visits,
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PrepView({ state, dispatch, goToTab }) {
   const t = useTranslation();
   const expectedCustomers = forecastCustomers(state);
@@ -22,10 +53,12 @@ export function PrepView({ state, dispatch, goToTab }) {
   const level = levelForXp(state.xp);
   const usedIngredients = [...new Set(menu.flatMap((recipe) => recipe.ingredients))];
   const lowStock = usedIngredients.filter((id) => (state.stock[id] || 0) < LOW_STOCK_THRESHOLD);
+  const tutorial = tutorialStep(state);
 
   return (
     <div className="prep">
       <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {tutorial && <CoachTip step={tutorial} dispatch={dispatch} />}
         <div>
           <h2 className="h">{t("prep.title", { day: state.day })}</h2>
           <p className="sub">{t("prep.intro")}</p>
@@ -66,7 +99,11 @@ export function PrepView({ state, dispatch, goToTab }) {
           </div>
         )}
         <div>
-          <button className="btn primary big" onClick={() => dispatch({ type: "openRestaurant" })} disabled={!expectedCustomers}>
+          <button
+            className={`btn primary big${tutorial?.target === "open" ? " coach-target" : ""}`}
+            onClick={() => dispatch({ type: "openRestaurant" })}
+            disabled={!expectedCustomers}
+          >
             {t("prep.open")}
           </button>
         </div>
@@ -87,6 +124,7 @@ export function PrepView({ state, dispatch, goToTab }) {
             </div>
           ))}
         </div>
+        <Regulars state={state} />
       </div>
     </div>
   );

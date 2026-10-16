@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useState } from "react";
 import { gameReducer } from "./game/reducer.js";
 import { loadState } from "./game/state.js";
 import { useGameLoop } from "./hooks/useGameLoop.js";
+import { useServiceShortcuts } from "./hooks/useServiceShortcuts.js";
 import { createTranslator } from "./i18n/index.js";
 import { I18nProvider } from "./i18n/I18nContext.jsx";
 import { Header } from "./views/Header.jsx";
@@ -52,6 +53,7 @@ export function App() {
   useEffect(() => {
     document.documentElement.classList.toggle("svc-mode", isServing);
   }, [isServing]);
+  useServiceShortcuts(state, dispatch, isServing && state.phase === "service");
 
   const waitingCustomers = state.service ? state.service.customers.length : 0;
   const startNextDay = () => {
@@ -78,7 +80,7 @@ export function App() {
         {!isServing && <MessageTicker toasts={state.toasts} dispatch={dispatch} />}
         <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
       </main>
-      {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} onNextDay={startNextDay} />}
+      {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} pizzeriaName={state.name} onNextDay={startNextDay} />}
     </I18nProvider>
   );
 }

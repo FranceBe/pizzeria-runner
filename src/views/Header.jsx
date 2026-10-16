@@ -1,15 +1,17 @@
 import { levelForXp, levelProgressPercent, xpForNextLevel } from "../game/progression.js";
 import { useTranslation } from "../i18n/I18nContext.jsx";
 import { MoneyPops } from "../components/MoneyPops.jsx";
+import { StorefrontDecor } from "../components/StorefrontDecor.jsx";
 
 export function Header({ state, dispatch }) {
   const t = useTranslation();
   const level = levelForXp(state.xp);
   return (
-    <header className="top">
+    <header className={`top${state.upgrades.deco >= 2 ? " has-lights" : ""}`}>
       <div className="awning" />
       <div className="wrap top-inner">
         <h1 className="sign">{state.name}</h1>
+        <StorefrontDecor upgrades={state.upgrades} />
         <div className="stats">
           <div className="stat">
             <span className="stat-l">{t("header.day")}</span>
@@ -29,6 +31,7 @@ export function Header({ state, dispatch }) {
           </div>
         </div>
       </div>
+      {state.upgrades.deco >= 2 && <div className="lights" aria-hidden="true" />}
     </header>
   );
 }

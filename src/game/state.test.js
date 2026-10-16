@@ -37,7 +37,8 @@ describe("createInitialState", () => {
     expect(state.recipes.map((r) => r.id)).toEqual(["margherita"]);
     expect(Object.keys(state.unlocked)).toEqual(["pate", "tomate", "mozza", "basilic"]);
     expect(state.version).toBe(SAVE_VERSION);
-    expect(state.settings.language).toBe("en");
+    expect(state.settings).toMatchObject({ language: "en", tutorialDone: false });
+    expect(state.customerBook).toEqual({});
   });
 });
 

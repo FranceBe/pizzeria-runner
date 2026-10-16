@@ -27,7 +27,7 @@ function Oven({ state }) {
 }
 
 // The pass: baked pizzas waiting to be served.
-function Pass({ state, dispatch }) {
+function Pass({ state, dispatch, coachTarget }) {
   const t = useTranslation();
   const { service } = state;
   return (
@@ -47,7 +47,11 @@ function Pass({ state, dispatch }) {
               </div>
             </div>
             <div className="ready-btns">
-              <button className="btn sm go" onClick={() => dispatch({ type: "servePizza", pizzaId: pizza.id })} disabled={!customer}>
+              <button
+                className={`btn sm go${coachTarget === "serve" && customer ? " coach-target" : ""}`}
+                onClick={() => dispatch({ type: "servePizza", pizzaId: pizza.id })}
+                disabled={!customer}
+              >
                 {t("service.serve")}
               </button>
               <button className="btn sm ghost" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
@@ -61,12 +65,12 @@ function Pass({ state, dispatch }) {
   );
 }
 
-export function OvenAndPass({ state, dispatch }) {
+export function OvenAndPass({ state, dispatch, coachTarget }) {
   const t = useTranslation();
   return (
     <section className="a-oven" aria-label={t("service.ovenAndPass")}>
       <Oven state={state} />
-      <Pass state={state} dispatch={dispatch} />
+      <Pass state={state} dispatch={dispatch} coachTarget={coachTarget} />
     </section>
   );
 }

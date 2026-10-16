@@ -38,6 +38,8 @@ export const fr = {
     open: "Ouvrir la pizzeria",
     tonightsMenu: "Ce soir à la carte",
     emptyMenu: "Aucune pizza. Passe par l'onglet Carte.",
+    regulars: "Tes habitués",
+    regularLine: ({ recipe, visits }) => `${recipe} · ${visits} visites`,
   },
 
   service: {
@@ -69,6 +71,9 @@ export const fr = {
     panTitle: ({ id, quantity }, t) => `${t.ingredient(id)} · ${quantity} en stock`,
     extra: ({ id }, t) => `+ ${t.ingredient(id)}`,
     without: ({ id }, t) => `sans ${lower(t.ingredient(id))}`,
+    visit: ({ number }) => `${number}ᵉ visite`,
+    regular: "Habitué",
+    shortcuts: "Clavier : 0 pâte · 1-9 ingrédients du ticket · Espace enfourner · Entrée servir · ← → changer de ticket",
   },
 
   market: {
@@ -209,6 +214,21 @@ export const fr = {
     levelReachedDetails: "De nouveaux fournisseurs t'attendent au marché et ta carte peut accueillir {capacity} pizzas.",
     debtHint: "L'ardoise se rembourse toute seule avec la moitié des prochaines ventes.",
     nextDay: "Préparer le jour {day}",
+    thanks: "Merci et à demain !",
+  },
+
+  tutorial: {
+    label: "Premier service",
+    skip: "Passer",
+    open: "Bienvenue ! Ta carte propose la Margherita et le frigo est plein. Ouvre la pizzeria quand tu veux.",
+    waiting: "Les premiers clients arrivent…",
+    dough: "{name} a commandé ! Touche la Pâte, en bas, pour l'étaler.",
+    toppings: ({ name, ingredientIds }, t) => `Ajoute ce que veut ${name} : ${lower(t.ingredientList(ingredientIds))}. Les bacs à prendre sont entourés.`,
+    extra: ({ ingredientIds }, t) => `${t.ingredientList(ingredientIds)} : pas dans la commande. Touche le bac pour le retirer.`,
+    bake: "Parfait, elle est complète ! Enfourne-la.",
+    baking: "Elle cuit… Pas de stress, personne ne part fâché.",
+    nextPizza: "Pendant la cuisson, tu peux étaler la pizza de {name}.",
+    serve: "C'est prêt : sers-la à {name} ! Plus tu es rapide, plus le pourboire est généreux.",
   },
 
   toasts: {
@@ -236,6 +256,7 @@ export const fr = {
       `Nouvelle recette : ${t(`recipes.${recipeId}`)}${onMenu ? " (ajoutée à la carte)" : ""}`,
     gameLoaded: "Partie chargée.",
     gameReset: "Nouvelle pizzeria ouverte.",
+    newRegular: "{name} fait maintenant partie de tes habitués !",
   },
 
   customerLines: [

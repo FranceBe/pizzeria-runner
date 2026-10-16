@@ -4,17 +4,25 @@ import { IngredientPan } from "../../components/IngredientPan.jsx";
 
 const LOW_PAN_THRESHOLD = 3;
 
-function panClassName({ isOnBoard, isNeeded, quantity }) {
+function panClassName({ isOnBoard, isNeeded, isCoachTarget, quantity }) {
   let className = "pan";
   if (isOnBoard) className += " on";
   else if (isNeeded) className += " need";
+  if (isCoachTarget) className += " coach-target";
   if (quantity < LOW_PAN_THRESHOLD) className += " low";
   return className;
 }
 
+// Which pans the tutorial points at for its current step.
+function isCoachPan(coachTarget, id, isOnBoard, isNeeded) {
+  if (coachTarget === "dough") return id === "pate";
+  if (coachTarget === "toppings") return isNeeded && !isOnBoard;
+  return false;
+}
+
 // The row of ingredient pans along the bottom of the service screen.
 // Pans the selected order still needs get a dashed outline.
-export function PrepLine({ state, board, neededIngredients, onPickIngredient }) {
+export function PrepLine({ state, board, neededIngredients, coachTarget, onPickIngredient }) {
   const t = useTranslation();
   const stations = PREP_STATIONS.map((station) => ({
     ...station,
@@ -34,7 +42,7 @@ export function PrepLine({ state, board, neededIngredients, onPickIngredient }) 
               return (
                 <button
                   key={id}
-                  className={panClassName({ isOnBoard, isNeeded, quantity })}
+                  className={panClassName({ isOnBoard, isNeeded, quantity, isCoachTarget: isCoachPan(coachTarget, id, isOnBoard, isNeeded) })}
                   disabled={!isOnBoard && quantity === 0}
                   aria-pressed={isOnBoard}
                   onClick={() => onPickIngredient(id)}

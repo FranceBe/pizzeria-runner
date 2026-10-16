@@ -2,6 +2,24 @@
 
 A laid-back pizzeria management game: no ads, no pressure.
 
+## How to play
+
+Each day: stock the fridge and set the menu, open, then build, bake and serve each order.
+Nobody ever leaves angry, but quick service earns bigger tips. Customers who come back become regulars:
+they keep their look, often reorder their favourite pizza and tip a little more. The first day is guided.
+
+Keyboard shortcuts during service (desktop):
+
+| Key | Action |
+|---|---|
+| `0` | Dough |
+| `1`–`9` | The selected order's ingredients, numbered on its ticket (with help on) |
+| `Space` | Bake |
+| `Enter` | Serve |
+| `←` `→` | Previous / next order |
+| `Backspace` | Bin the pizza on the board |
+| `A` | Kitchen assistant builds the order (once upgraded) |
+
 ## Running locally
 
 Requires Node 18 or later (`nvm use` picks up the version from `.nvmrc`).

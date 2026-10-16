@@ -20,7 +20,7 @@ const render = (element, language = "fr") =>
   renderToString(<I18nProvider value={createTranslator(language)}>{element}</I18nProvider>);
 
 // A translation key that slipped through looks like "service.orders" in the HTML.
-const RAW_KEY = /\b(tabs|common|header|prep|service|market|menu|editor|upgrades|settings|summary|toasts|kinds|stations|ingredients|recipes|customerLines)\.\w/;
+const RAW_KEY = /\b(tabs|common|header|prep|service|market|menu|editor|upgrades|settings|summary|toasts|tutorial|pops|kinds|stations|ingredients|recipes|customerLines)\.\w/;
 
 // A late-game state with every supplier, so every drawing shape gets rendered.
 function lateGameState() {
@@ -33,9 +33,15 @@ function lateGameState() {
   return state;
 }
 
+function withRegulars(state) {
+  state.customerBook = { Giulia: { skin: "#e0ac83", hair: "#5b3a22", hairStyle: 1, visits: 5, orders: { margherita: 5 } } };
+  return state;
+}
+
 function serviceInProgress() {
   const customer = makeCustomer({ extraIngredient: "basilic", waitedSeconds: 100 });
   let state = stateInService([customer, makeCustomer({ id: "cust-2" })]);
+  state.settings.tutorialDone = true;
   state = play(state, { type: "toggleIngredient", ingredientId: "pate" }, { type: "bake" }, { type: "tick", seconds: 10 });
   return play(state, { type: "toggleIngredient", ingredientId: "pate" }, { type: "toggleIngredient", ingredientId: "tomate" });
 }
@@ -54,6 +60,8 @@ describe.each(LANGUAGES)("views in %s", (language) => {
     const late = lateGameState();
     return [
       <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} />,
+      <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2 } }} dispatch={noop} />,
+      <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} />,
       <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} />,
       <ServiceView state={serviceInProgress()} dispatch={noop} />,
       <ServiceView state={stateInService([makeCustomer()], { ...late })} dispatch={noop} />,
@@ -64,7 +72,7 @@ describe.each(LANGUAGES)("views in %s", (language) => {
       <RecipeEditor state={late} dispatch={noop} onClose={noop} />,
       <UpgradesView state={late} dispatch={noop} />,
       <SettingsView state={late} dispatch={noop} />,
-      <DaySummary summary={SUMMARY} onNextDay={noop} />,
+      <DaySummary summary={SUMMARY} pizzeriaName="Forno Lento" onNextDay={noop} />,
     ];
   };
 
@@ -102,7 +110,8 @@ describe("views", () => {
   });
 
   it("renders the day summary with the best seller and every order", () => {
-    const html = render(<DaySummary summary={SUMMARY} onNextDay={noop} />, "en");
+    const html = render(<DaySummary summary={SUMMARY} pizzeriaName="Chez Moi" onNextDay={noop} />, "en");
+    expect(html).toContain("Chez Moi");
     expect(html).toContain("Luca · Margherita");
     expect(html).toContain("Sofia · La Fellows");
     expect(html).toContain("+€0.50");
@@ -123,6 +132,37 @@ describe("views", () => {
     expect(html).toContain('class="chip ok"');
     expect(html).toContain('class="chip miss"');
     expect(html).toMatch(/class="pan need[^"]*"[^>]*title="Mozzarella/);
+  });
+
+  it("guides the first day and highlights what to touch", () => {
+    const prep = render(<PrepView state={makeState()} dispatch={noop} goToTab={noop} />);
+    expect(prep).toContain("Premier service");
+    expect(prep).toMatch(/class="btn primary big coach-target"/);
+    const service = render(<ServiceView state={stateInService([makeCustomer()])} dispatch={noop} />);
+    expect(service).toContain("Touche la Pâte");
+    expect(service).toMatch(/class="pan[^"]*coach-target[^"]*"[^>]*title="Pâte/);
+  });
+
+  it("lists regulars and tags their tickets", () => {
+    expect(render(<PrepView state={withRegulars(makeState({ day: 3 }))} dispatch={noop} goToTab={noop} />)).toContain("Margherita · 5 visites");
+    const state = withRegulars(stateInService([makeCustomer({ name: "Giulia", visitNumber: 6 })]));
+    const html = render(<ServiceView state={state} dispatch={noop} />);
+    expect(html).toContain('class="visit regular"');
+    expect(html).toContain("6ᵉ visite");
+  });
+
+  it("numbers the selected ticket's ingredients for the keyboard", () => {
+    const html = render(<ServiceView state={stateInService([makeCustomer()])} dispatch={noop} />);
+    expect(html).toContain('<kbd class="kbd">3</kbd>');
+    expect(html).toContain("Espace enfourner");
+  });
+
+  it("decorates the storefront as upgrades are bought", () => {
+    expect(render(<Header state={makeState()} dispatch={noop} />)).not.toContain("storefront");
+    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0 } })} dispatch={noop} />);
+    expect(upgraded.match(/decor table/g)).toHaveLength(2);
+    expect(upgraded).toContain("oven-front");
+    expect(upgraded).toContain('class="lights"');
   });
 
   it("highlights the current language", () => {
