@@ -8,6 +8,19 @@ Each day: stock the fridge and set the menu, open, then build, bake and serve ea
 Nobody ever leaves angry, but quick service earns bigger tips. Customers who come back become regulars:
 they keep their look, often reorder their favourite pizza and tip a little more. The first day is guided.
 
+Along the way:
+
+- **Daily events**, announced in the morning from day 3: market day (20% off), rain (fewer, more generous customers),
+  street party (lots of people), sunshine (great with a terrace), and the food critic, who rewards quick service with reputation.
+- **"The usual"**: regulars sometimes just ask for their usual. The ticket hides the recipe; remember it for a bonus,
+  or tap "Remind me…" on the board.
+- **Pairings to discover**: good flavour pairings stay secret until you serve a pizza that has them.
+- **The journal** tab: profit chart, best sellers, the pairings book and 21 achievements.
+- **Chef's special**: one recipe on the menu gets ordered more often.
+- **Terrace and delivery** upgrades; deliveries pay an express bonus when they leave quickly.
+- **Time challenge**: two minutes, free ingredients, nothing at stake but your best score.
+- The game installs as an app and plays offline.
+
 Keyboard shortcuts during service (desktop):
 
 | Key | Action |
@@ -74,7 +87,10 @@ src/
 - `data/progression.ts`: `REPUTATION_THRESHOLDS` (XP per level), `UPGRADES`, `OVEN_SLOTS`, `BAKE_SECONDS`
 - `game/pizza.ts`: `fairPrice`, `appealOf`, `priceAttractiveness`
 - `game/economy.ts`: `forecastCustomers`, `dailyCharges`, debt handling
-- `game/customers.ts`: what customers order, special requests
+- `game/customers.ts`: what customers order, special requests, critics, deliveries, "the usual"
+- `data/events.ts` + `game/events.ts`: daily events and market prices
+- `data/achievements.ts` + `game/achievements.ts`: achievements and their progress
+- `game/pairings.ts`: pairing discovery
 
 Ids (`pate`, `margherita`, `salle`…) are stored in save files: don't rename them.
 
@@ -89,6 +105,12 @@ Entries are either strings with `{placeholders}` or functions, for plurals and a
 
 Game logic never produces text: it stores translation keys (for example, toasts are `{ key, params }`),
 so everything follows a language change immediately.
+
+## Offline and install
+
+`public/sw.js` is a service worker, registered in built versions only. The build (`vite.config.ts`) writes a build id
+and the list of built files into it, so each deployment caches its own files and drops the previous ones.
+The manifest and icons are in `public/`; `icon.svg` is the source of the PNG icons.
 
 ## Saves
 

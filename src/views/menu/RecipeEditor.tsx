@@ -9,6 +9,7 @@ import { AppealStars } from "../../components/AppealStars";
 import { IngredientIcon } from "../../components/IngredientIcon";
 import { Pizza } from "../../components/Pizza";
 import { PriceStepper } from "../../components/PriceStepper";
+import { visiblePairings } from "../../game/pairings";
 import type { GameState } from "../../game/types";
 import type { ScreenProps } from "../types";
 
@@ -62,6 +63,7 @@ export function RecipeEditor({ state, dispatch, onClose }: ScreenProps & { onClo
   const suggestedPrice = fairPrice(ingredients);
   const price = customPrice ?? suggestedPrice;
   const pairings = findPairings(ingredients);
+  const { known, hasSecret } = visiblePairings(state, ingredients);
 
   const toggleIngredient = (id: IngredientId) => {
     setError("");
@@ -107,9 +109,12 @@ export function RecipeEditor({ state, dispatch, onClose }: ScreenProps & { onClo
               <AppealStars appeal={appealOf(ingredients, false)} />
               <span className="hint">{t("editor.appeal")}</span>
             </div>
-            {pairings.good.map(([a, b]) => (
+            {known.map(([a, b]) => (
               <div key={a + b} className="pair">{t("editor.goodPairing", { a, b })}</div>
             ))}
+            {hasSecret && (
+              <div className="pair secret">✨ {t("editor.secretPairing")}</div>
+            )}
             {pairings.bad.map(([a, b]) => (
               <div key={a + b} className="clash">{t("editor.badPairing", { a, b })}</div>
             ))}

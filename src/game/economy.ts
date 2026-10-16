@@ -1,7 +1,10 @@
-import { INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
-import { UPGRADES, UPGRADE_KEYS, BASE_DAILY_CHARGES } from "../data/progression";
+import type { IngredientId } from "../data/ingredients";
+import {
+  UPGRADES, UPGRADE_KEYS, BASE_DAILY_CHARGES, DELIVERY_EXTRA_ORDERS, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS,
+} from "../data/progression";
 import { clamp } from "../utils/math";
 import { appealOf, fairPrice, priceAttractiveness } from "./pizza";
+import { marketPrice, todaysEvent } from "./events";
 import { activeMenu } from "./menu";
 import { levelForXp } from "./progression";
 import type { GameState } from "./types";
@@ -11,7 +14,8 @@ export function dailyCharges(state: GameState): number {
   return UPGRADE_KEYS.reduce((total, key) => total + UPGRADES[key].dailyCharge * state.upgrades[key], BASE_DAILY_CHARGES);
 }
 
-// Number of customers expected tonight, from room size, reputation, menu quality and variety.
+// Number of orders expected tonight, from room size, reputation, menu quality and variety,
+// then today's event, the terrace and deliveries.
 export function forecastCustomers(state: GameState): number {
   const menu = activeMenu(state);
   if (!menu.length) return 0;
@@ -25,7 +29,11 @@ export function forecastCustomers(state: GameState): number {
     ) / menu.length;
   const qualityFactor = clamp(averageQuality, 0.6, 1.25);
   const varietyBonus = Math.min(3, Math.floor((menu.length - 1) / 2));
-  return Math.max(3, Math.round(baseCount * qualityFactor) + varietyBonus);
+  const atTheCounter = Math.max(3, Math.round(baseCount * qualityFactor) + varietyBonus);
+  const { terrasse, livraison } = state.upgrades;
+  const terrace = terrasse * (TERRACE_CUSTOMERS + (state.event === "sunny" ? TERRACE_SUNNY_CUSTOMERS : 0));
+  const deliveries = livraison ? DELIVERY_EXTRA_ORDERS : 0;
+  return Math.max(3, Math.round(atTheCounter * todaysEvent(state).customerFactor)) + terrace + deliveries;
 }
 
 export interface RestockPlan {
@@ -39,7 +47,7 @@ export function restockPlan(state: GameState, targetQuantity: number): RestockPl
   const items = [...usedIds]
     .map((id) => ({ id, quantity: Math.max(0, targetQuantity - (state.stock[id] || 0)) }))
     .filter(({ quantity }) => quantity > 0);
-  const cost = items.reduce((total, { id, quantity }) => total + INGREDIENTS_BY_ID[id].cost * quantity, 0);
+  const cost = items.reduce((total, { id, quantity }) => total + marketPrice(state, id) * quantity, 0);
   return { items, cost };
 }
 

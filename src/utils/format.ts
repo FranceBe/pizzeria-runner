@@ -15,3 +15,9 @@ export const formatNumber = (value: number, language: Language): string =>
 
 export const plural = (count: number, singular: string, pluralForm = singular + "s"): string =>
   count > 1 ? pluralForm : singular;
+
+// 83.2 → "1:24": a countdown, rounded up so it reads 0:00 only once time is out.
+export function formatClock(seconds: number): string {
+  const whole = Math.ceil(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}

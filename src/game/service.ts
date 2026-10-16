@@ -3,8 +3,9 @@ import { OVEN_SLOTS } from "../data/progression";
 import { haveSameIngredients } from "./pizza";
 import type { Customer, GameState, Service } from "./types";
 
-// Customers waiting at the counter at once; a bigger room fits one more.
-export const maxQueueLength = (state: GameState): number => 4 + (state.upgrades.salle >= 2 ? 1 : 0);
+// Orders open at once; a bigger room and a terrace fit one more each.
+export const maxQueueLength = (state: GameState): number =>
+  4 + (state.upgrades.salle >= 2 ? 1 : 0) + (state.upgrades.terrasse >= 1 ? 1 : 0);
 
 export const ovenSlots = (state: GameState): number => OVEN_SLOTS[state.upgrades.oven];
 

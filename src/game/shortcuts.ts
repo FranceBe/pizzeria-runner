@@ -20,7 +20,8 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
 
   if (key === "0") return { type: "toggleIngredient", ingredientId: "pate" };
   if (/^[1-9]$/.test(key)) {
-    if (!state.settings.showHelp || !selected) return null;
+    // The usual order is for the player to remember.
+    if (!state.settings.showHelp || !selected || selected.asUsual) return null;
     const ingredientId = selected.ingredients.filter((id) => id !== "pate")[Number(key) - 1];
     return ingredientId ? { type: "toggleIngredient", ingredientId } : null;
   }

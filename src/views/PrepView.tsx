@@ -1,4 +1,5 @@
 import { MARGHERITA } from "../data/recipes";
+import { CHALLENGE_SECONDS } from "../game/actions/serviceActions";
 import { dailyCharges, forecastCustomers } from "../game/economy";
 import { activeMenu, isNewRecipe } from "../game/menu";
 import { ingredientCost } from "../game/pizza";
@@ -23,6 +24,36 @@ function needsNonna(state: GameState, menu: readonly Recipe[]): boolean {
 }
 
 const MAX_REGULARS_SHOWN = 5;
+
+function EventBanner({ state }: { state: GameState }) {
+  const t = useTranslation();
+  if (!state.event) return null;
+  return (
+    <div className={`event-banner ev-${state.event}`} role="note">
+      <span className="event-label">{t("prep.today")}</span>
+      <strong>{t(`events.${state.event}.name`)}</strong>
+      <span className="event-d">{t(`events.${state.event}.describe`)}</span>
+    </div>
+  );
+}
+
+// A two-minute round with free ingredients, for fun; offered once the tutorial is over.
+function ChallengeOffer({ state, dispatch }: ScreenProps) {
+  const t = useTranslation();
+  if (!state.settings.tutorialDone) return null;
+  return (
+    <div className="challenge-offer">
+      <div className="grow">
+        <strong>{t("prep.challengeTitle")}</strong>
+        <div className="hint">{t("prep.challengeIntro", { seconds: CHALLENGE_SECONDS })}</div>
+        {state.bestChallengeScore > 0 && <div className="hint"><strong>{t("prep.challengeBest", { score: state.bestChallengeScore })}</strong></div>}
+      </div>
+      <button className="btn" disabled={!activeMenu(state).length} onClick={() => dispatch({ type: "startChallenge" })}>
+        {t("prep.startChallenge")}
+      </button>
+    </div>
+  );
+}
 
 function Regulars({ state }: { state: GameState }) {
   const t = useTranslation();
@@ -64,6 +95,7 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
     <div className="prep">
       <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {tutorial && <CoachTip step={tutorial} dispatch={dispatch} />}
+        <EventBanner state={state} />
         <div>
           <h2 className="h">{t("prep.title", { day: state.day })}</h2>
           <p className="sub">{t("prep.intro")}</p>
@@ -112,6 +144,7 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
             {t("prep.open")}
           </button>
         </div>
+        <ChallengeOffer state={state} dispatch={dispatch} />
       </div>
 
       <div className="card pad">
@@ -123,6 +156,7 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
               <Pizza ingredients={recipe.ingredients} baked size={44} />
               <div className="grow">
                 <strong>{t.recipe(recipe)}</strong> {isNewRecipe(state, recipe) && <span className="tag">{t("common.new")}</span>}
+                {recipe.id === state.chefSpecial && <span className="tag special">{`★ ${t("prep.chefSpecial")}`}</span>}
                 <div className="hint">{t.toppings(recipe.ingredients)}</div>
               </div>
               <strong>{t.money(recipe.price)}</strong>

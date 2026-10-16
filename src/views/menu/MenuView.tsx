@@ -22,9 +22,11 @@ interface RecipeCardProps extends ScreenProps {
 function RecipeCard({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, onCancelDelete }: RecipeCardProps) {
   const t = useTranslation();
   const name = t.recipe(recipe);
+  const isSpecial = state.chefSpecial === recipe.id;
   const changePrice = (delta: number) => dispatch({ type: "changePrice", recipeId: recipe.id, delta });
   return (
-    <div className="card recipe">
+    <div className={`card recipe${isSpecial ? " special" : ""}${recipe.onMenu ? "" : " off-menu"}`}>
+      {isSpecial && <span className="special-ribbon">{t("menu.chefSpecial")}</span>}
       <Pizza ingredients={recipe.ingredients} baked className="pz" />
       <div className="grow" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div className="row" style={{ gap: 6 }}>
@@ -56,6 +58,16 @@ function RecipeCard({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
             />
             {t("menu.onMenu")}
           </label>
+          {recipe.onMenu && (
+            <button
+              className={`btn sm ${isSpecial ? "special-on" : "ghost"}`}
+              aria-pressed={isSpecial}
+              title={t("menu.specialHint")}
+              onClick={() => dispatch({ type: "setChefSpecial", recipeId: recipe.id })}
+            >
+              {isSpecial ? `★ ${t("menu.chefSpecial")}` : `☆ ${t("menu.makeSpecial")}`}
+            </button>
+          )}
           {recipe.custom &&
             (isConfirmingDelete ? (
               <>
@@ -112,11 +124,20 @@ export function MenuView({ state, dispatch }: ScreenProps) {
   const cookableRecipes = state.recipes.filter((recipe) => canCook(state, recipe));
   return (
     <>
-      <div className="row" style={{ marginBottom: 12 }}>
+      <div className="chalkboard">
         <div className="grow">
-          <h2 className="h" style={{ margin: 0 }}>{t("menu.title")}</h2>
-          <p className="sub">{t("menu.capacity", { count: activeMenu(state).length, capacity: menuCapacity(level) })}</p>
+          <h2 className="chalk-title">{t("menu.title")}</h2>
+          <p className="chalk-sub">{t("menu.capacity", { count: activeMenu(state).length, capacity: menuCapacity(level) })}</p>
         </div>
+        <ul className="chalk-list">
+          {activeMenu(state).map((recipe) => (
+            <li key={recipe.id}>
+              <span>{recipe.id === state.chefSpecial && "★ "}{t.recipe(recipe)}</span>
+              <span className="chalk-dots" />
+              <span>{t.money(recipe.price)}</span>
+            </li>
+          ))}
+        </ul>
         <button className="btn primary" onClick={() => setEditorOpen(true)}>{t("menu.createRecipe")}</button>
       </div>
       <div className="grid2">

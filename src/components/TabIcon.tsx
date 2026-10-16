@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type TabId = "service" | "market" | "menu" | "upgrades" | "settings";
+export type TabId = "service" | "market" | "menu" | "upgrades" | "journal" | "settings";
 
 // Line icons for the tabs, drawn with currentColor so they follow the tab's text colour.
 const ICON_PATHS: Record<TabId, ReactNode> = {
@@ -32,6 +32,13 @@ const ICON_PATHS: Record<TabId, ReactNode> = {
     <>
       <path d="M12 16V4M7 9l5-5 5 5" />
       <path d="M5 20h14" />
+    </>
+  ),
+  // A notebook with a bookmark
+  journal: (
+    <>
+      <path d="M6 3.5h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z" />
+      <path d="M8 3.5v17M14 3.5v6l1.5-1.2L17 9.5v-6" />
     </>
   ),
   // A gear

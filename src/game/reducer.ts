@@ -2,6 +2,7 @@ import { serviceActions } from "./actions/serviceActions";
 import { shopActions } from "./actions/shopActions";
 import { menuActions } from "./actions/menuActions";
 import { settingsActions } from "./actions/settingsActions";
+import { unlockAchievements } from "./achievements";
 import type { ActionHandlers, GameAction, GameState } from "./types";
 
 // Every action handler receives a deep copy of the state that it can mutate freely.
@@ -17,5 +18,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   // actionHandlers[action.type] always matches action, but TypeScript can't correlate the two unions.
   const handler = actionHandlers[action.type] as AnyHandler;
   const draft = structuredClone(state);
-  return handler(draft, action) ?? draft;
+  const next = handler(draft, action) ?? draft;
+  // Ticks only matter here when they end the day (the menu emptied mid-service).
+  if (action.type !== "tick" || next.phase !== state.phase) unlockAchievements(next);
+  return next;
 }

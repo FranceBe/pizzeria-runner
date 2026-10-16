@@ -13,11 +13,13 @@ import { MenuView } from "./views/menu/MenuView";
 import { UpgradesView } from "./views/UpgradesView";
 import { SettingsView } from "./views/SettingsView";
 import { DaySummary } from "./views/DaySummary";
+import { JournalView } from "./views/JournalView";
+import { ChallengeResult } from "./views/ChallengeResult";
 import { MessageTicker } from "./components/MessageTicker";
 import { TabIcon, type TabId } from "./components/TabIcon";
 import type { ScreenProps } from "./views/types";
 
-const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "settings"];
+const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "settings"];
 
 function TabContent({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabId; goToTab: (tab: TabId) => void }) {
   switch (tab) {
@@ -31,6 +33,8 @@ function TabContent({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabI
       return <MenuView state={state} dispatch={dispatch} />;
     case "upgrades":
       return <UpgradesView state={state} dispatch={dispatch} />;
+    case "journal":
+      return <JournalView state={state} />;
     case "settings":
       return <SettingsView state={state} dispatch={dispatch} />;
   }
@@ -80,6 +84,7 @@ export function App() {
         <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
       </main>
       {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} pizzeriaName={state.name} onNextDay={startNextDay} />}
+      {state.challengeResult && <ChallengeResult result={state.challengeResult} best={state.bestChallengeScore} dispatch={dispatch} />}
     </I18nProvider>
   );
 }

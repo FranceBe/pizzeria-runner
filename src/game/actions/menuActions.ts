@@ -42,5 +42,11 @@ export const menuActions = {
 
   deleteRecipe(state, { recipeId }) {
     state.recipes = state.recipes.filter((recipe) => recipe.id !== recipeId);
+    if (state.chefSpecial === recipeId) state.chefSpecial = null;
+  },
+
+  // One recipe at most; choosing the current one again clears it.
+  setChefSpecial(state, { recipeId }) {
+    state.chefSpecial = recipeId === state.chefSpecial ? null : recipeId;
   },
 } satisfies Partial<ActionHandlers>;

@@ -8,7 +8,7 @@ export const BAKE_SECONDS: readonly number[] = [6, 4.5, 3, 2.2];
 export const BASE_DAILY_CHARGES = 6;
 
 // The keys are stored in save files: never rename them. Names and descriptions live in src/i18n.
-export const UPGRADE_KEYS = ["oven", "salle", "deco", "commis"] as const;
+export const UPGRADE_KEYS = ["oven", "salle", "deco", "commis", "terrasse", "livraison"] as const;
 export type UpgradeKey = (typeof UPGRADE_KEYS)[number];
 
 export interface Upgrade {
@@ -25,7 +25,21 @@ export const UPGRADES: Record<UpgradeKey, Upgrade> = {
   salle: { costs: [50, 130, 280, 550], requiredLevel: [1, 3, 5, 7], dailyCharge: 3 },
   deco: { costs: [40, 120, 300], requiredLevel: [2, 4, 6], dailyCharge: 2 },
   commis: { costs: [150, 400], requiredLevel: [3, 6], dailyCharge: 5 },
+  terrasse: { costs: [120, 320], requiredLevel: [4, 7], dailyCharge: 3 },
+  livraison: { costs: [220], requiredLevel: [5], dailyCharge: 4 },
 };
+
+// Terrace: extra customers per level every day, and more on sunny days.
+export const TERRACE_CUSTOMERS = 1;
+export const TERRACE_SUNNY_CUSTOMERS = 2;
+
+// Delivery: extra orders on top of the customers at the counter.
+export const DELIVERY_EXTRA_ORDERS = 2;
+export const DELIVERY_CHANCE = 0.25;
+export const DELIVERY_FEE = 1;
+// Delivered within this many seconds, the order earns an express bonus instead of a tip.
+export const DELIVERY_EXPRESS_SECONDS = 45;
+export const DELIVERY_EXPRESS_BONUS = 1.5;
 
 // Commis levels that unlock each helper behaviour.
 export const COMMIS_SPREADS_DOUGH = 1;

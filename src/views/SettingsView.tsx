@@ -5,6 +5,7 @@ import { useTranslation } from "../i18n/I18nContext";
 import type { Dispatch } from "../game/types";
 import { encodeSaveCode, decodeSaveCode } from "../utils/saveCode";
 import type { ScreenProps } from "./types";
+import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 type StatusMessage = "settings.copied" | "settings.selected" | "settings.invalidCode";
 
@@ -28,6 +29,19 @@ function LanguagePicker({ language, dispatch }: { language: Language; dispatch: 
   );
 }
 
+// Offers to install the game as an app where the browser supports it; otherwise explains how.
+function InstallButton() {
+  const t = useTranslation();
+  const { canInstall, isInstalled, install } = useInstallPrompt();
+  if (isInstalled) return null;
+  return (
+    <div className="install">
+      {canInstall && <button className="btn sm" onClick={install}>{t("settings.install")}</button>}
+      <p className="hint" style={{ margin: 0 }}>{t("settings.installHint")}</p>
+    </div>
+  );
+}
+
 function PizzeriaSettings({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
   return (
@@ -46,6 +60,7 @@ function PizzeriaSettings({ state, dispatch }: ScreenProps) {
         {t("settings.showHelp")}
       </label>
       <p className="hint" style={{ margin: 0 }}>{t("settings.helpHint")}</p>
+      <InstallButton />
     </div>
   );
 }

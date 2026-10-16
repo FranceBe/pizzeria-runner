@@ -2,6 +2,7 @@
 //   decor  1: potted plants · 3: they flower (2 adds string lights, see .lights in Header)
 //   room   one bistro table per level
 //   oven   a wood-fired oven, its fire growing with each level
+//   terrace  a parasol table (striped, then with a second one) · delivery  a scooter
 import type { UpgradeKey } from "../data/progression";
 
 function PottedPlant({ isFlowering, isFlipped = false }: { isFlowering: boolean; isFlipped?: boolean }) {
@@ -49,14 +50,40 @@ function WoodOven({ level }: { level: number }) {
   );
 }
 
+function Parasol() {
+  return (
+    <svg className="decor parasol" viewBox="0 0 44 48">
+      <path d="M4 18 Q22 0 40 18Z" fill="var(--accent)" />
+      <path d="M13 18 Q22 3 31 18Z" fill="#fff" opacity=".9" />
+      <path d="M19 18 Q22 6 25 18Z" fill="var(--accent)" />
+      <path d="M22 4v42M14 46h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <ellipse cx="22" cy="32" rx="11" ry="3" fill="var(--wood)" />
+    </svg>
+  );
+}
+
+function Scooter() {
+  return (
+    <svg className="decor scooter-front" viewBox="0 0 48 40">
+      <path d="M10 30h20l6-14h5" stroke="var(--accent)" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 30v-8h12" stroke="var(--accent)" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+      <rect x="6" y="12" width="13" height="10" rx="2" fill="var(--gold)" />
+      <circle cx="12" cy="33" r="5" fill="currentColor" />
+      <circle cx="37" cy="33" r="5" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function StorefrontDecor({ upgrades }: { upgrades: Record<UpgradeKey, number> }) {
-  const { deco, salle, oven } = upgrades;
-  if (!deco && !salle && !oven) return null;
+  const { deco, salle, oven, terrasse, livraison } = upgrades;
+  if (!deco && !salle && !oven && !terrasse && !livraison) return null;
   return (
     <div className="storefront" aria-hidden="true">
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} />}
+      {Array.from({ length: terrasse }, (_, index) => <Parasol key={index} />)}
       {Array.from({ length: salle }, (_, index) => <BistroTable key={index} />)}
       {oven >= 1 && <WoodOven level={oven} />}
+      {livraison >= 1 && <Scooter />}
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} isFlipped />}
     </div>
   );

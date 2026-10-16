@@ -1,13 +1,28 @@
-import { INGREDIENTS, type IngredientId } from "../data/ingredients";
+import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { MARGHERITA } from "../data/recipes";
 import { detectLanguage, type Language } from "../i18n/languages";
 import type { JsonObject } from "../utils/saveCode";
+import { unlockAchievements } from "./achievements";
 import { createClassicRecipe } from "./menu";
-import type { GameState, SaveData } from "./types";
+import { goodPairingsIn, pairingKey } from "./pairings";
+import type { GameState, LifetimeStats, SaveData } from "./types";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
+
+export const emptyLifetimeStats = (): LifetimeStats => ({
+  served: 0,
+  revenue: 0,
+  tips: 0,
+  happyServed: 0,
+  asUsualServed: 0,
+  deliveries: 0,
+  criticsPleased: 0,
+  wasteFreeDays: 0,
+  bestDay: null,
+  byRecipe: {},
+});
 
 export function createInitialState(language: Language = detectLanguage()): GameState {
   const unlocked: Partial<Record<IngredientId, boolean>> = {};
@@ -22,12 +37,20 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     stock: { pate: 8, tomate: 8, mozza: 8, basilic: 8 },
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
-    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0 },
+    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, terrasse: 0, livraison: 0 },
     settings: { showHelp: true, language, tutorialDone: false },
     phase: "prep",
     purchasesToday: 0,
     lastNonnaVisitDay: 0,
     customerBook: {},
+    event: null,
+    chefSpecial: null,
+    discoveredPairings: [],
+    achievements: {},
+    history: [],
+    lifetime: emptyLifetimeStats(),
+    bestChallengeScore: 0,
+    challengeResult: null,
     service: null,
     summary: null,
     toasts: [],
@@ -120,8 +143,24 @@ function migrateFromVersion2(saved: JsonObject): JsonObject {
   return result;
 }
 
+const isIngredientId = (value: unknown): value is IngredientId => typeof value === "string" && value in INGREDIENTS_BY_ID;
+
+// Version 3: before the journal. Pairings already used in the player's recipes count as discovered,
+// so the recipe editor keeps showing them; the customer book gives a fair count of pizzas served.
+function migrateFromVersion3(saved: JsonObject): JsonObject {
+  const discovered = new Set<string>();
+  asObjectList(saved.recipes).forEach((recipe) => {
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients.filter(isIngredientId) : [];
+    goodPairingsIn(ingredients).forEach((pairing) => discovered.add(pairingKey(pairing)));
+  });
+  const served = Object.values(asObject(saved.customerBook) ?? {})
+    .map((entry) => asObject(entry)?.visits)
+    .reduce<number>((total, visits) => total + (typeof visits === "number" ? visits : 0), 0);
+  return { ...saved, discoveredPairings: [...discovered], lifetime: { ...emptyLifetimeStats(), served } };
+}
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
-const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [migrateFromVersion1, migrateFromVersion2];
+const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [migrateFromVersion1, migrateFromVersion2, migrateFromVersion3];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.
 const versionOf = (saved: JsonObject): number =>
@@ -140,7 +179,7 @@ export function hydrateState(saved: JsonObject): GameState {
   // Past this point the save is trusted to have the current shape: migrations took care of older ones.
   const migrated = migrateSave(saved) as Partial<GameState>;
   const defaults = createInitialState();
-  return {
+  const state: GameState = {
     ...defaults,
     ...migrated,
     toasts: [],
@@ -150,7 +189,11 @@ export function hydrateState(saved: JsonObject): GameState {
     stock: migrated.stock ?? defaults.stock,
     unlocked: { ...defaults.unlocked, ...migrated.unlocked },
     customerBook: migrated.customerBook ?? {},
+    lifetime: { ...defaults.lifetime, ...migrated.lifetime },
   };
+  // Records, without a toast, what an older save had already earned.
+  unlockAchievements(state, { silent: true });
+  return state;
 }
 
 // Toasts and pops are transient UI feedback, not worth saving.

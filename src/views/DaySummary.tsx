@@ -75,6 +75,11 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           />
           <ReceiptLine label={t("summary.reputation")} value={`+${summary.xp}`} />
           {summary.debt > 0 && <ReceiptLine className="neg" label={t("summary.debt")} value={t.money(summary.debt)} />}
+          {summary.event && (
+            <p className="receipt-note">
+              {t("summary.event")} <strong>{t(`events.${summary.event}.name`)}</strong>
+            </p>
+          )}
           {bestSeller && (
             <p className="receipt-note">
               {t("summary.bestSeller")} <strong>{t.recipe({ id: bestSeller.recipeId, name: bestSeller.name })}</strong> ({bestSeller.count}×)

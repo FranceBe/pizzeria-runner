@@ -5,7 +5,7 @@ import type { GameState, TutorialStep } from "./types";
 // Returns null when there is nothing to say. The step's key is under "tutorial." in src/i18n,
 // its target names the UI element to highlight.
 export function tutorialStep(state: GameState): TutorialStep | null {
-  if (state.settings.tutorialDone || state.day !== 1) return null;
+  if (state.settings.tutorialDone || state.day !== 1 || state.service?.challenge) return null;
   if (state.phase === "prep") return { key: "open", target: "open" };
   const { service } = state;
   if (state.phase !== "service" || !service) return null;

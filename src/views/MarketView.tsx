@@ -2,6 +2,7 @@ import { INGREDIENTS } from "../data/ingredients";
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { SUPPLIER_WELCOME_PORTIONS } from "../game/actions/shopActions";
 import { restockPlan, type RestockPlan } from "../game/economy";
+import { marketPrice } from "../game/events";
 import { knowsRecipe } from "../game/menu";
 import { levelForXp } from "../game/progression";
 import { useTranslation } from "../i18n/I18nContext";
@@ -21,9 +22,10 @@ function Fridge({ state, dispatch }: ScreenProps) {
   const canRestock = (plan: RestockPlan) => plan.items.length > 0 && plan.cost <= state.money;
   return (
     <div className="card pad">
-      <h2 className="h">{t("market.fridge")}</h2>
+      <h2 className="h">{t("market.stall")}</h2>
       <p className="sub" style={{ marginBottom: 10 }}>{t("market.fridgeIntro")}</p>
-      <div className="row" style={{ marginBottom: 6 }}>
+      {state.event === "market" && <p className="market-day">{t("market.marketDay")}</p>}
+      <div className="row" style={{ marginBottom: 12 }}>
         <button className="btn sm" disabled={!canRestock(smallRestock)} onClick={() => dispatch({ type: "restock", targetQuantity: smallTarget })}>
           {t("market.restockMenu", { target: smallTarget, cost: smallRestock.cost })}
         </button>
@@ -31,28 +33,34 @@ function Fridge({ state, dispatch }: ScreenProps) {
           {t("market.restockMore", { target: bigTarget, cost: bigRestock.cost })}
         </button>
       </div>
-      {ownedIngredients.map((ingredient) => (
-        <div key={ingredient.id} className="mrow">
-          <IngredientIcon id={ingredient.id} className="ic" />
-          <div className="grow">
-            <div className="mn">{t.ingredient(ingredient.id)}</div>
-            <div className="mm">{t("market.perPortion", { price: ingredient.cost })}</div>
-          </div>
-          <span className="qty">{state.stock[ingredient.id] || 0}</span>
-          <div className="row" style={{ gap: 4 }}>
-            {BUY_QUANTITIES.map((quantity) => (
-              <button
-                key={quantity}
-                className="btn sm"
-                disabled={!canAfford(state.money, ingredient.cost * quantity)}
-                onClick={() => dispatch({ type: "buyIngredient", ingredientId: ingredient.id, quantity })}
-              >
-                +{quantity}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+      <div className="crates">
+        {ownedIngredients.map((ingredient) => {
+          const price = marketPrice(state, ingredient.id);
+          const quantity = state.stock[ingredient.id] || 0;
+          return (
+            <div key={ingredient.id} className="crate">
+              <span className={`crate-qty${quantity < 5 ? " low" : ""}`}>{quantity}</span>
+              <IngredientIcon id={ingredient.id} className="crate-ic" />
+              <div className="crate-n">{t.ingredient(ingredient.id)}</div>
+              <div className="price-tag">
+                {price < ingredient.cost && <s>{t.money(ingredient.cost)}</s>} {t.money(price)}
+              </div>
+              <div className="crate-btns">
+                {BUY_QUANTITIES.map((amount) => (
+                  <button
+                    key={amount}
+                    className="btn sm"
+                    disabled={!canAfford(state.money, price * amount)}
+                    onClick={() => dispatch({ type: "buyIngredient", ingredientId: ingredient.id, quantity: amount })}
+                  >
+                    +{amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -103,7 +111,7 @@ function Suppliers({ state, dispatch }: ScreenProps) {
 
 export function MarketView({ state, dispatch }: ScreenProps) {
   return (
-    <div className="grid2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))" }}>
+    <div className="market">
       <Fridge state={state} dispatch={dispatch} />
       <Suppliers state={state} dispatch={dispatch} />
     </div>

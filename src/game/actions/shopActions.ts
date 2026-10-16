@@ -3,6 +3,7 @@ import { MARGHERITA } from "../../data/recipes";
 import { UPGRADES } from "../../data/progression";
 import { canAfford } from "../../utils/math";
 import { restockPlan, spend } from "../economy";
+import { marketPrice } from "../events";
 import { discoverClassics } from "../menu";
 import { levelForXp } from "../progression";
 import { pushToast } from "../toasts";
@@ -17,7 +18,7 @@ const NONNA_PORTIONS = 4;
 
 export const shopActions = {
   buyIngredient(state, { ingredientId, quantity }) {
-    const cost = INGREDIENTS_BY_ID[ingredientId].cost * quantity;
+    const cost = marketPrice(state, ingredientId) * quantity;
     if (!canAfford(state.money, cost)) {
       pushToast(state, { key: "notEnoughMoney" }, "warn");
       return;

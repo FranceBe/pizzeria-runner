@@ -1,6 +1,10 @@
+import type { AchievementId } from "../data/achievements";
+import type { DayEventId } from "../data/events";
 import type { IngredientId, IngredientKind, StationId } from "../data/ingredients";
-import { OVEN_SLOTS, BAKE_SECONDS, tipChanceForDecor, type UpgradeKey } from "../data/progression";
-import type { ClassicRecipeId } from "../data/recipes";
+import {
+  OVEN_SLOTS, BAKE_SECONDS, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
+} from "../data/progression";
+import type { ClassicRecipeId, Pairing } from "../data/recipes";
 import { plural } from "../utils/format";
 import type { TranslationHelpers as H } from "./types";
 
@@ -8,7 +12,7 @@ const lower = (text: string): string => text.toLowerCase();
 
 // The reference dictionary: its keys, literal strings and function signatures type every translation (see types.ts).
 export const fr = {
-  tabs: { service: "Service", market: "Marché", menu: "Carte", upgrades: "Améliorations", settings: "Réglages" },
+  tabs: { service: "Service", market: "Marché", menu: "Carte", upgrades: "Améliorations", journal: "Carnet", settings: "Réglages" },
 
   common: {
     new: "nouveau",
@@ -44,6 +48,23 @@ export const fr = {
     emptyMenu: "Aucune pizza. Passe par l'onglet Carte.",
     regulars: "Tes habitués",
     regularLine: ({ recipe, visits }: { recipe: string; visits: number }) => `${recipe} · ${visits} visites`,
+    today: "Aujourd'hui",
+    chefSpecial: "Suggestion du chef",
+    challengeTitle: "Défi chrono",
+    challengeIntro: ({ seconds }: { seconds: number }) =>
+      `${seconds / 60} minutes pour servir un maximum de pizzas. Ingrédients offerts, et ni argent ni réputation en jeu : juste pour le plaisir.`,
+    challengeBest: "Ton record : {score} points",
+    startChallenge: "Lancer le défi",
+  },
+
+  challenge: {
+    dialog: "Fin du défi",
+    title: "Temps écoulé !",
+    points: "points",
+    served: ({ count }: { count: number }) => `${count} ${plural(count, "pizza servie", "pizzas servies")}`,
+    newBest: "Nouveau record !",
+    best: "Record : {score} points",
+    close: "Retour en cuisine",
   },
 
   service: {
@@ -79,10 +100,18 @@ export const fr = {
     visit: ({ number }: { number: number }) => `${number}ᵉ visite`,
     regular: "Habitué",
     shortcuts: "Clavier : 0 pâte · 1-9 ingrédients du ticket · Espace enfourner · Entrée servir · ← → changer de ticket",
+    asUsual: "« Comme d'habitude ! »",
+    asUsualCheck: "Pour {name} : comme d'habitude, tu te souviens ?",
+    revealUsual: "Rappelle-moi…",
+    revealUsualTitle: "Afficher la recette (sans le bonus d'habitué)",
+    critic: "Critique",
+    criticTitle: "Critique gastronomique : sers-la vite !",
+    delivery: "Livraison",
+    express: ({ seconds }: { seconds: number }) => `Express : ${seconds} s`,
+    challenge: "Défi chrono · {clock} · {score} points",
   },
 
   market: {
-    fridge: "Le frigo",
     fridgeIntro: "Les ingrédients ne s'abîment pas. Achète au rythme de ta caisse.",
     restockMenu: ({ target, cost }: { target: number; cost: number }, t: H) => `Compléter la carte à ${target} · ${t.money(cost)}`,
     restockMore: ({ target, cost }: { target: number; cost: number }, t: H) => `à ${target} · ${t.money(cost)}`,
@@ -92,6 +121,8 @@ export const fr = {
     suppliersIntro: "Chaque nouveau fournisseur ajoute un ingrédient, peut débloquer une recette classique et t'offre {portions} portions.",
     allSuppliers: "Tu travailles avec tous les fournisseurs de la région.",
     sign: ({ fee }: { fee: number }, t: H) => `Signer · ${t.money(fee)}`,
+    marketDay: "Jour de marché : tout est à −20 % aujourd'hui.",
+    stall: "L'étal",
   },
 
   menu: {
@@ -109,6 +140,9 @@ export const fr = {
     toDiscover: "Classiques à découvrir",
     missing: ({ items }: { items: string }) => `Il manque : ${items}`,
     missingItem: ({ id, level }: { id: IngredientId; level: number }, t: H) => `${t.ingredient(id)} (niv. ${level})`,
+    chefSpecial: "Suggestion du chef",
+    makeSpecial: "Mettre en suggestion",
+    specialHint: "La suggestion du chef est commandée plus souvent.",
   },
 
   editor: {
@@ -127,6 +161,7 @@ export const fr = {
     lowerPrice: "Baisser le prix",
     raisePrice: "Monter le prix",
     sauceHint: " (une seule, ou aucune pour une pizza blanche)",
+    secretPairing: "Un accord secret se cache dans cette recette… Sers-la pour le découvrir.",
     tooManyFillings: "{max} garnitures maximum : la pâte ne tiendrait pas.",
     save: "Ajouter au carnet",
     priceNote: {
@@ -148,6 +183,7 @@ export const fr = {
   pops: {
     money: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)}`,
     tip: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} pourboire`,
+    express: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} express`,
   },
 
   upgrades: {
@@ -178,6 +214,18 @@ export const fr = {
       describe: ({ level }: { level: number }) =>
         ["Tu es seule en cuisine", "Étale la pâte tout seul après chaque enfournage", "Monte la pizza du ticket choisi en un clic"][level],
     },
+    terrasse: {
+      name: "Terrasse",
+      describe: ({ level }: { level: number }) =>
+        level === 0
+          ? "Pas de terrasse"
+          : `+${TERRACE_CUSTOMERS * level} ${plural(TERRACE_CUSTOMERS * level, "client")} par jour, +${(TERRACE_CUSTOMERS + TERRACE_SUNNY_CUSTOMERS) * level} les jours de soleil`,
+    },
+    livraison: {
+      name: "Livraison",
+      describe: ({ level }: { level: number }): string =>
+        level === 0 ? "Uniquement sur place" : "Des commandes en scooter, avec un bonus express si elles partent vite",
+    },
   },
 
   settings: {
@@ -185,6 +233,8 @@ export const fr = {
     signName: "Nom sur l'enseigne",
     language: "Langue",
     showHelp: "Afficher les ingrédients sur les tickets et vérifier la pizza en cours",
+    install: "Installer le jeu",
+    installHint: "Installé, le jeu s'ouvre en plein écran et marche sans connexion. Sur iPhone : Partager, puis « Sur l'écran d'accueil ».",
     helpHint: "Sans cette aide, il faut connaître ses recettes par cœur.",
     save: "Sauvegarde",
     saveIntro:
@@ -215,6 +265,7 @@ export const fr = {
     reputation: "Réputation gagnée",
     debt: "Ardoise chez le propriétaire",
     bestSeller: "La plus demandée :",
+    event: "Événement :",
     orders: "Commandes servies",
     order: ({ customer, recipe }: { customer: string; recipe: string }) => `${customer} · ${recipe}`,
     noTip: "pas de pourboire",
@@ -224,6 +275,60 @@ export const fr = {
     nextDay: "Préparer le jour {day}",
     thanks: "Merci et à demain !",
   },
+
+  journal: {
+    stats: "Comptes",
+    days: "Jours d'ouverture",
+    served: "Pizzas servies",
+    revenue: "Ventes",
+    tips: "Pourboires",
+    happy: "Servis tout sourire",
+    bestDay: ({ day, net }: { day: number; net: number }, t: H) => `Meilleur jour : le jour ${day} (${net >= 0 ? "+" : ""}${t.money(net)})`,
+    chart: "Bénéfice des derniers jours",
+    chartEmpty: "Le graphique apparaîtra après ta première journée.",
+    dayBar: ({ day, net }: { day: number; net: number }, t: H) => `Jour ${day} : ${net >= 0 ? "+" : ""}${t.money(net)}`,
+    topPizzas: "Les plus vendues",
+    noSales: "Aucune pizza vendue pour l'instant.",
+    pairings: "Accords",
+    pairingsIntro: ({ found, total }: { found: number; total: number }) =>
+      `${found} / ${total} accords trouvés. Sers une pizza qui marie deux ingrédients faits l'un pour l'autre pour l'ajouter.`,
+    pairingHint: ({ id }: { id: IngredientId }, t: H) => `${t.ingredient(id)} + ?`,
+    achievements: "Succès",
+    achievementsIntro: "{count} / {total} débloqués",
+    unlockedOn: "Jour {day}",
+  },
+
+  events: {
+    market: { name: "Jour de marché", describe: "Tous les ingrédients sont à −20 % aujourd'hui." },
+    rain: { name: "Jour de pluie", describe: "Moins de monde, mais les clients qui passent sont plus généreux." },
+    festival: { name: "Fête du quartier", describe: "Toute la rue a faim : beaucoup plus de clients ce soir." },
+    critic: { name: "Critique gastronomique", describe: "Une critique passera ce soir. Sers-la vite pour une belle note et beaucoup de réputation." },
+    sunny: { name: "Grand soleil", describe: "Un peu plus de clients, et bien plus avec une terrasse." },
+  } satisfies Record<DayEventId, { name: string; describe: string }>,
+
+  achievements: {
+    firstPizza: { name: "Première fournée", describe: "Servir sa première pizza" },
+    served50: { name: "Ça tourne", describe: "Servir 50 pizzas" },
+    served250: { name: "Pilier du quartier", describe: "Servir 250 pizzas" },
+    served1000: { name: "Légende du four", describe: "Servir 1000 pizzas" },
+    tips100: { name: "Bocal à pourboires", describe: "Gagner 100 € de pourboires" },
+    firstRecipe: { name: "Recette maison", describe: "Créer sa première recette" },
+    threeRecipes: { name: "Carnet de chef", describe: "Avoir 3 recettes maison" },
+    firstRegular: { name: "Un habitué", describe: "Gagner son premier habitué" },
+    fiveRegulars: { name: "La bande", describe: "Avoir 5 habitués" },
+    asUsual10: { name: "Mémoire d'éléphant", describe: "Servir 10 fois « comme d'habitude » sans aide" },
+    pairings5: { name: "Fin palais", describe: "Découvrir 5 accords" },
+    allPairings: { name: "Grand sommelier", describe: "Découvrir tous les accords" },
+    critic: { name: "Cinq étoiles", describe: "Ravir une critique gastronomique" },
+    wasteFree: { name: "Zéro gaspi", describe: "Une journée d'au moins 5 pizzas sans rien jeter" },
+    profit100: { name: "Belle soirée", describe: "Gagner 100 € de bénéfice en une journée" },
+    level5: { name: "On parle de toi", describe: "Atteindre le niveau 5" },
+    maxLevel: { name: "Institution", describe: "Atteindre le niveau maximum" },
+    allSuppliers: { name: "Tout le marché", describe: "Signer avec tous les fournisseurs" },
+    fullyUpgraded: { name: "La pizzeria idéale", describe: "Acheter toutes les améliorations" },
+    deliveries20: { name: "Vespa", describe: "Livrer 20 commandes" },
+    challenge300: { name: "Main de feu", describe: "Faire 300 points au défi chrono" },
+  } satisfies Record<AchievementId, { name: string; describe: string }>,
 
   tutorial: {
     label: "Premier service",
@@ -271,6 +376,10 @@ export const fr = {
     gameLoaded: "Partie chargée.",
     gameReset: "Nouvelle pizzeria ouverte.",
     newRegular: "{name} fait maintenant partie de tes habitués !",
+    achievement: ({ achievementId }: { achievementId: AchievementId }, t: H) => `Succès débloqué : ${t.achievementName(achievementId)} !`,
+    critic: ({ name, stars }: { name: string; stars: number }) => `${name} publie sa critique : ${"★".repeat(stars)}${"☆".repeat(5 - stars)}`,
+    newPairing: ({ pairings }: { pairings: readonly Pairing[] }, t: H) =>
+      `${plural(pairings.length, "Nouvel accord", "Nouveaux accords")} : ${pairings.map(t.pairing).join(", ")} !`,
   },
 
   customerLines: [

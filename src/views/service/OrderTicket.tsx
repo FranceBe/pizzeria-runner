@@ -2,6 +2,7 @@ import { moodForWait, hasSpecialRequest } from "../../game/customers";
 import { useTranslation } from "../../i18n/I18nContext";
 import { CustomerFace } from "../../components/CustomerFace";
 import { IngredientIcon } from "../../components/IngredientIcon";
+import { DELIVERY_EXPRESS_SECONDS } from "../../data/progression";
 import type { IngredientId } from "../../data/ingredients";
 import type { Customer } from "../../game/types";
 
@@ -32,14 +33,35 @@ function ingredientChips(
   ];
 }
 
+// Delivery orders have a scooter instead of a face.
+function Scooter() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" className="scooter">
+      <circle cx="20" cy="20" r="18" fill="var(--surface2)" />
+      <path d="M11 25h12l4-8h4" stroke="var(--accent)" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 25v-5h7" stroke="var(--accent)" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+      <rect x="9" y="15" width="8" height="6" rx="1.5" fill="var(--gold)" />
+      <circle cx="13" cy="27" r="3.2" fill="var(--ink)" />
+      <circle cx="28" cy="27" r="3.2" fill="var(--ink)" />
+    </svg>
+  );
+}
+
+function ticketClassName(customer: Customer): string {
+  if (customer.critic) return "ticket critic";
+  if (customer.delivery) return "ticket delivery";
+  return "ticket";
+}
+
 export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, onSelect }: OrderTicketProps) {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
+  const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
   return (
-    <button className="ticket" aria-pressed={isSelected} onClick={onSelect}>
+    <button className={ticketClassName(customer)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : undefined}>
       <span className="price">{t.money(customer.price)}</span>
       <div className="who">
-        <CustomerFace customer={customer} mood={mood} />
+        {customer.delivery ? <Scooter /> : <CustomerFace customer={customer} mood={mood} />}
         <div>
           <div className="nm">
             {customer.name}
@@ -50,17 +72,27 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
               </span>
             )}
           </div>
-          <div className="say">{t(`customerLines.${mood}.${customer.lineIndex}`)}</div>
+          <div className="say">
+            {customer.delivery ? t("service.delivery") : t(`customerLines.${mood}.${customer.lineIndex}`)}
+          </div>
         </div>
       </div>
-      <div className="pz">{t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
+      <div className="pz">{customer.asUsual ? t("service.asUsual") : t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
+      {(customer.critic || (customer.delivery && expressSecondsLeft > 0)) && (
+        <div className="mods">
+          {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
+          {customer.delivery && expressSecondsLeft > 0 && (
+            <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>
+          )}
+        </div>
+      )}
       {hasSpecialRequest(customer) && (
         <div className="mods">
           {customer.extraIngredient && <span className="mod add">{t("service.extra", { id: customer.extraIngredient })}</span>}
           {customer.removedIngredient && <span className="mod rem">{t("service.without", { id: customer.removedIngredient })}</span>}
         </div>
       )}
-      {showIngredients && (
+      {showIngredients && !customer.asUsual && (
         <div className="chips">
           {ingredientChips(customer, board, isSelected).map(({ id, status }, index) => (
             <span key={id} className={`chip ${status}`} title={t.ingredient(id)}>

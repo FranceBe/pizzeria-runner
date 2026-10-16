@@ -4,6 +4,7 @@ import { ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/
 import { haveSameIngredients } from "../../game/pizza";
 import { tutorialStep } from "../../game/tutorial";
 import { useTranslation } from "../../i18n/I18nContext";
+import { formatClock } from "../../utils/format";
 import { CoachTip } from "../../components/CoachTip";
 import { MessageTicker } from "../../components/MessageTicker";
 import { Pizza } from "../../components/Pizza";
@@ -17,6 +18,19 @@ import type { ServiceScreenProps } from "../types";
 interface WorkBoardProps extends ServiceScreenProps {
   selectedCustomer: Customer | undefined;
   coachTarget: CoachTarget | null;
+}
+
+// The usual is for the player to remember, with a way to give up and see the recipe.
+function UsualReminder({ customer, dispatch }: { customer: Customer; dispatch: ServiceScreenProps["dispatch"] }) {
+  const t = useTranslation();
+  return (
+    <span className="match usual">
+      <span className="usual-t">{t("service.asUsualCheck", { name: customer.name })} </span>
+      <button className="link-btn" title={t("service.revealUsualTitle")} onClick={() => dispatch({ type: "revealUsualOrder", customerId: customer.id })}>
+        {t("service.revealUsual")}
+      </button>
+    </span>
+  );
 }
 
 // With help on: tells how the pizza being built compares to the selected order.
@@ -36,7 +50,10 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: 
     <section className="a-peel peel" aria-label={t("service.workBoard")}>
       <div className="peel-pz">
         {board.length ? <Pizza ingredients={board} className="pizza" /> : <div className="empty">{t("service.emptyBoard")}</div>}
-        {selectedCustomer && board.length > 0 && state.settings.showHelp && <BoardCheck customer={selectedCustomer} board={board} />}
+        {selectedCustomer?.asUsual && <UsualReminder customer={selectedCustomer} dispatch={dispatch} />}
+        {selectedCustomer && !selectedCustomer.asUsual && board.length > 0 && state.settings.showHelp && (
+          <BoardCheck customer={selectedCustomer} board={board} />
+        )}
       </div>
       <div className="peel-btns">
         {state.upgrades.commis >= COMMIS_ASSEMBLES_ORDER && selectedCustomer && (
@@ -63,13 +80,16 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: 
 export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
   const t = useTranslation();
   const selectedCustomer = findSelectedCustomer(service);
-  const progress = t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length });
+  const { challenge } = service;
+  const progress = challenge
+    ? t("service.challenge", { clock: formatClock(challenge.secondsLeft), score: challenge.score })
+    : t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length });
   const tutorial = tutorialStep(state);
   const coachTarget = tutorial?.target ?? null;
   // Messages come first; the tutorial hint takes the message line otherwise.
   const showCoach = tutorial !== null && !state.toasts.length;
   return (
-    <div className="svc">
+    <div className={`svc${challenge ? " in-challenge" : ""}`}>
       {showCoach ? (
         <CoachTip step={tutorial} dispatch={dispatch} className="ticker" />
       ) : (
@@ -97,8 +117,9 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
       <div className="a-rail">
         <PrepLine
           state={state}
+          isBottomless={Boolean(challenge)}
           board={service.board}
-          neededIngredients={state.settings.showHelp && selectedCustomer ? selectedCustomer.ingredients : []}
+          neededIngredients={state.settings.showHelp && selectedCustomer && !selectedCustomer.asUsual ? selectedCustomer.ingredients : []}
           coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}
         />

@@ -12,6 +12,8 @@ interface PanState {
 
 interface PrepLineProps {
   state: GameState;
+  /** During a challenge, every pan is full and nothing runs out. */
+  isBottomless: boolean;
   board: readonly IngredientId[];
   neededIngredients: readonly IngredientId[];
   coachTarget: CoachTarget | null;
@@ -19,6 +21,7 @@ interface PrepLineProps {
 }
 
 const LOW_PAN_THRESHOLD = 3;
+const FULL_PAN = 12;
 
 function panClassName({ isOnBoard, isNeeded, isCoachTarget, quantity }: PanState): string {
   let className = "pan";
@@ -38,7 +41,7 @@ function isCoachPan(coachTarget: CoachTarget | null, id: IngredientId, isOnBoard
 
 // The row of ingredient pans along the bottom of the service screen.
 // Pans the selected order still needs get a dashed outline.
-export function PrepLine({ state, board, neededIngredients, coachTarget, onPickIngredient }: PrepLineProps) {
+export function PrepLine({ state, isBottomless, board, neededIngredients, coachTarget, onPickIngredient }: PrepLineProps) {
   const t = useTranslation();
   const stations = PREP_STATIONS.map((station) => ({
     ...station,
@@ -52,7 +55,7 @@ export function PrepLine({ state, board, neededIngredients, coachTarget, onPickI
           <div className="st-label">{t(`stations.${station.id}`)}</div>
           <div className="pans">
             {station.ingredientIds.map((id) => {
-              const quantity = state.stock[id] || 0;
+              const quantity = isBottomless ? FULL_PAN : state.stock[id] || 0;
               const isOnBoard = board.includes(id);
               const isNeeded = neededIngredients.includes(id);
               return (
@@ -62,11 +65,11 @@ export function PrepLine({ state, board, neededIngredients, coachTarget, onPickI
                   disabled={!isOnBoard && quantity === 0}
                   aria-pressed={isOnBoard}
                   onClick={() => onPickIngredient(id)}
-                  title={t("service.panTitle", { id, quantity })}
+                  title={isBottomless ? t.ingredient(id) : t("service.panTitle", { id, quantity })}
                 >
                   <IngredientPan id={id} quantity={quantity} />
                   <span className="pan-n">{t.ingredient(id)}</span>
-                  <span className="pan-q">{quantity}</span>
+                  <span className="pan-q">{isBottomless ? "∞" : quantity}</span>
                 </button>
               );
             })}

@@ -28,6 +28,11 @@ export default tseslint.config(
     },
   },
   {
+    // The service worker runs in its own global scope.
+    files: ["public/sw.js"],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
     // Tests read source files from Node.
     files: ["**/*.test.{ts,tsx}"],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },

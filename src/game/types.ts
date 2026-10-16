@@ -1,3 +1,5 @@
+import type { AchievementId } from "../data/achievements";
+import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
 import type { UpgradeKey } from "../data/progression";
 import type { ClassicRecipeId } from "../data/recipes";
@@ -46,6 +48,12 @@ export interface Customer extends Looks {
   waitedSeconds: number;
   /** Which of the mood's lines the customer says. */
   lineIndex: number;
+  /** A regular ordering "the usual": the ticket hides the recipe. Missing on older saves. */
+  asUsual?: boolean;
+  /** The food critic of a critic day: not in the customer book, rewards reputation. */
+  critic?: boolean;
+  /** A delivery order: nobody at the counter, an express bonus instead of a tip. */
+  delivery?: boolean;
 }
 
 export interface OvenPizza {
@@ -76,6 +84,8 @@ export interface OrderRecord {
 
 export interface ServiceStats {
   served: number;
+  /** Customers served while still happy (mood 0). */
+  happyServed: number;
   revenue: number;
   tips: number;
   waste: number;
@@ -98,6 +108,21 @@ export interface Service {
   ready: ReadyPizza[];
   selectedCustomerId: string | null;
   stats: ServiceStats;
+  /** Still to come on a critic day. */
+  criticPending?: boolean;
+  /** Set for a timed challenge, which uses free ingredients and leaves the game untouched. */
+  challenge?: Challenge | null;
+}
+
+export interface Challenge {
+  secondsLeft: number;
+  score: number;
+}
+
+export interface ChallengeResult {
+  score: number;
+  served: number;
+  isNewBest: boolean;
 }
 
 export interface BestSeller {
@@ -122,6 +147,33 @@ export interface DaySummary {
   bestSeller: BestSeller | null;
   /** Missing on summaries from saves made before the order recap existed. */
   orders?: OrderRecord[];
+  event?: DayEventId | null;
+}
+
+/** A finished day, kept for the journal (without the order list, to keep saves small). */
+export interface DayRecord {
+  day: number;
+  served: number;
+  revenue: number;
+  tips: number;
+  net: number;
+  xp: number;
+  event: DayEventId | null;
+}
+
+export interface LifetimeStats {
+  served: number;
+  revenue: number;
+  tips: number;
+  happyServed: number;
+  asUsualServed: number;
+  deliveries: number;
+  criticsPleased: number;
+  /** Days with at least a few pizzas served and nothing binned. */
+  wasteFreeDays: number;
+  bestDay: { day: number; net: number } | null;
+  /** Keyed like ServiceStats.byRecipe. */
+  byRecipe: Record<string, RecipeSales>;
 }
 
 export interface CustomerBookEntry extends Looks {
@@ -140,7 +192,7 @@ export type ToastKind = "" | "gold" | "warn";
 export type ToastInput = MessageInput<"toasts", ToastKey>;
 export type Toast = ToastInput & { id: string; kind: ToastKind };
 
-export type PopKind = "money" | "tip";
+export type PopKind = "money" | "tip" | "express";
 export interface Pop {
   id: string;
   amount: number;
@@ -170,6 +222,18 @@ export interface GameState {
   lastNonnaVisitDay: number;
   /** Everyone ever served, by name. */
   customerBook: Record<string, CustomerBookEntry>;
+  /** Today's event, picked when the day starts. */
+  event: DayEventId | null;
+  /** Ordered more often, highlighted on the menu. */
+  chefSpecial: RecipeId | null;
+  /** Flavour pairings found by serving them, as pairingKey() strings. */
+  discoveredPairings: string[];
+  /** Unlocked achievements, with the day they were unlocked. */
+  achievements: Partial<Record<AchievementId, number>>;
+  history: DayRecord[];
+  lifetime: LifetimeStats;
+  bestChallengeScore: number;
+  challengeResult: ChallengeResult | null;
   service: Service | null;
   summary: DaySummary | null;
   toasts: Toast[];
@@ -190,6 +254,9 @@ export type GameAction =
   | { type: "assembleOrder" }
   | { type: "servePizza"; pizzaId: string }
   | { type: "trashReadyPizza"; pizzaId: string }
+  | { type: "revealUsualOrder"; customerId: string }
+  | { type: "startChallenge" }
+  | { type: "dismissChallengeResult" }
   | { type: "startNextDay" }
   // Shop
   | { type: "buyIngredient"; ingredientId: IngredientId; quantity: number }
@@ -202,6 +269,7 @@ export type GameAction =
   | { type: "toggleOnMenu"; recipeId: RecipeId }
   | { type: "addRecipe"; name: string; ingredients: readonly IngredientId[]; price: number }
   | { type: "deleteRecipe"; recipeId: RecipeId }
+  | { type: "setChefSpecial"; recipeId: RecipeId | null }
   // Settings
   | { type: "renamePizzeria"; name: string }
   | { type: "toggleHelp" }

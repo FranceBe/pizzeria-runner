@@ -1,5 +1,7 @@
 import type { IngredientId } from "../data/ingredients";
+import type { AchievementId } from "../data/achievements";
 import type { UpgradeKey } from "../data/progression";
+import type { Pairing } from "../data/recipes";
 import type { fr } from "./fr";
 import type { Language } from "./languages";
 
@@ -18,6 +20,9 @@ export interface TranslationHelpers {
   recipe(recipe: { id: string; name?: string | null }): string;
   upgradeName(key: UpgradeKey): string;
   upgradeDescription(key: UpgradeKey, level: number): string;
+  /** "Chèvre & miel" */
+  pairing(pairing: Pairing): string;
+  achievementName(id: AchievementId): string;
 }
 
 type Reference = typeof fr;
