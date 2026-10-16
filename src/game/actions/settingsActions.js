@@ -17,8 +17,14 @@ export const settingsActions = {
     if (LANGUAGES.includes(language)) state.settings.language = language;
   },
 
+  // Only the newest toast is shown, so dismissing it also drops the older ones behind it.
   dismissToast(state, { toastId }) {
-    state.toasts = state.toasts.filter((toast) => toast.id !== toastId);
+    const index = state.toasts.findIndex((toast) => toast.id === toastId);
+    if (index >= 0) state.toasts = state.toasts.slice(index + 1);
+  },
+
+  dismissPop(state, { popId }) {
+    state.pops = state.pops.filter((pop) => pop.id !== popId);
   },
 
   // These two replace the whole state instead of mutating it.

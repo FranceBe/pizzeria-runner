@@ -28,6 +28,7 @@ export function createInitialState(language = detectLanguage()) {
     service: null,
     summary: null,
     toasts: [],
+    pops: [],
   };
 }
 
@@ -122,6 +123,7 @@ export function hydrateState(saved) {
     ...defaults,
     ...migrated,
     toasts: [],
+    pops: [],
     upgrades: { ...defaults.upgrades, ...(migrated.upgrades || {}) },
     settings: { ...defaults.settings, ...(migrated.settings || {}) },
     stock: migrated.stock || defaults.stock,
@@ -129,9 +131,9 @@ export function hydrateState(saved) {
   };
 }
 
-// Toasts are transient UI messages, not worth saving.
+// Toasts and pops are transient UI feedback, not worth saving.
 export function toSaveData(state) {
-  const { toasts, ...saveData } = state;
+  const { toasts, pops, ...saveData } = state;
   return saveData;
 }
 

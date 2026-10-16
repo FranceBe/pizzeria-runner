@@ -6,7 +6,7 @@ import { dailyCharges, forecastCustomers, payCharges, receivePayment } from "../
 import { ingredientCost, isSauce, fillingsOf, sortByLayer } from "../pizza.js";
 import { levelForXp } from "../progression.js";
 import { customerForPizza, maxQueueLength, ovenSlots } from "../service.js";
-import { pushToast } from "../toasts.js";
+import { pushToast, pushPop } from "../toasts.js";
 
 const FIRST_ARRIVAL_DELAY = 0.6;
 const MIN_SECONDS_BETWEEN_ARRIVALS = 3.5;
@@ -28,7 +28,7 @@ function createService(customerCount) {
     oven: [],
     ready: [],
     selectedCustomerId: null,
-    stats: { served: 0, revenue: 0, tips: 0, waste: 0, xp: 0, levelUps: [], byRecipe: {} },
+    stats: { served: 0, revenue: 0, tips: 0, waste: 0, xp: 0, levelUps: [], byRecipe: {}, orders: [] },
   };
 }
 
@@ -62,6 +62,7 @@ function endDay(state) {
     debt: state.debt,
     net: stats.revenue + stats.tips - charges - state.purchasesToday,
     bestSeller: bestSellerOf(stats.byRecipe),
+    orders: stats.orders ?? [],
   };
   state.service = null;
   state.phase = "summary";
@@ -215,7 +216,13 @@ export const serviceActions = {
     const sales = stats.byRecipe[customer.recipeId] ?? { name: customer.recipeName, count: 0 };
     stats.byRecipe[customer.recipeId] = { ...sales, count: sales.count + 1 };
 
-    pushToast(state, "paid", { customer: customer.name, price: customer.price, tip });
+    stats.orders = [
+      ...(stats.orders ?? []),
+      { customerName: customer.name, recipeId: customer.recipeId, recipeName: customer.recipeName, ingredients: customer.ingredients, price: customer.price, tip },
+    ];
+
+    pushPop(state, customer.price, "money");
+    if (tip) pushPop(state, tip, "tip");
     if (levelAfter > levelBefore) {
       stats.levelUps.push(levelAfter);
       const newSupplierIds = INGREDIENTS.filter((i) => i.requiredLevel === levelAfter).map((i) => i.id);

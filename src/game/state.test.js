@@ -86,7 +86,7 @@ describe("hydrateState", () => {
 });
 
 describe("toSaveData", () => {
-  it("drops toasts", () => {
-    expect(toSaveData({ money: 1, toasts: [{ id: "x" }] })).toEqual({ money: 1 });
+  it("drops toasts and money pops", () => {
+    expect(toSaveData({ money: 1, toasts: [{ id: "x" }], pops: [{ id: "y" }] })).toEqual({ money: 1 });
   });
 });

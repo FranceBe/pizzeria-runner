@@ -1,5 +1,28 @@
 import { menuCapacity } from "../game/progression.js";
 import { useTranslation } from "../i18n/I18nContext.jsx";
+import { Pizza } from "../components/Pizza.jsx";
+
+// One row per pizza served today, with its tip.
+function OrderRecap({ orders }) {
+  const t = useTranslation();
+  return (
+    <div>
+      <h3 className="h">{t("summary.orders")}</h3>
+      <div className="recap">
+        {orders.map((order, index) => (
+          <div key={index} className="recap-row">
+            <Pizza ingredients={order.ingredients} baked />
+            <span className="grow">
+              {t("summary.order", { customer: order.customerName, recipe: t.recipe({ id: order.recipeId, name: order.recipeName }) })}
+            </span>
+            <strong>{t.money(order.price)}</strong>
+            <span className={`recap-tip${order.tip ? "" : " none"}`}>{order.tip ? `+${t.money(order.tip)}` : t("summary.noTip")}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function DaySummary({ summary, onNextDay }) {
   const t = useTranslation();
@@ -48,6 +71,7 @@ export function DaySummary({ summary, onNextDay }) {
             {t("summary.bestSeller")} <strong>{t.recipe({ id: bestSeller.recipeId, name: bestSeller.name })}</strong> ({bestSeller.count}×).
           </p>
         )}
+        {summary.orders?.length > 0 && <OrderRecap orders={summary.orders} />}
         {reachedLevel && (
           <div className="card pad" style={{ background: "var(--gold-soft)", borderColor: "var(--gold)" }}>
             <strong>{t("summary.levelReached", { level: reachedLevel })}</strong>{" "}

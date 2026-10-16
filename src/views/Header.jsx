@@ -1,7 +1,8 @@
 import { levelForXp, levelProgressPercent, xpForNextLevel } from "../game/progression.js";
 import { useTranslation } from "../i18n/I18nContext.jsx";
+import { MoneyPops } from "../components/MoneyPops.jsx";
 
-export function Header({ state }) {
+export function Header({ state, dispatch }) {
   const t = useTranslation();
   const level = levelForXp(state.xp);
   return (
@@ -14,12 +15,13 @@ export function Header({ state }) {
             <span className="stat-l">{t("header.day")}</span>
             <span className="stat-v">{state.day}</span>
           </div>
-          <div className="stat">
+          <div className="stat stat-money">
             <span className="stat-l">{t("header.till")}</span>
             <span className="stat-v money">{t.money(state.money)}</span>
             {state.debt > 0 && <span className="debt">{t("header.debt", { amount: state.debt })}</span>}
+            <MoneyPops pops={state.pops} dispatch={dispatch} />
           </div>
-          <div className="stat">
+          <div className="stat stat-rep">
             <span className="stat-l">{t("header.reputation", { level })}</span>
             <div className="xpbar" title={t("header.xpTitle", { xp: state.xp, next: xpForNextLevel(state.xp) })}>
               <i style={{ width: levelProgressPercent(state.xp) + "%" }} />

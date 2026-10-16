@@ -64,8 +64,8 @@ describe("createTranslator", () => {
   });
 
   it("runs function entries with formatted values", () => {
-    expect(french("toasts.paid", { customer: "Luca", price: 7, tip: 0.5 })).toBe("Luca a payé 7,00 € + 0,50 € de pourboire.");
-    expect(english("toasts.paid", { customer: "Luca", price: 7, tip: 0 })).toBe("Luca paid €7.00.");
+    expect(french("pops.tip", { amount: 0.5 })).toBe("+0,50 € pourboire");
+    expect(english("toasts.restocked", { cost: 12 })).toBe("Stock topped up for €12.00.");
   });
 
   it("handles plurals", () => {

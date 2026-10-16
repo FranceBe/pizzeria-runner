@@ -3,7 +3,19 @@ import { useTranslation } from "../../i18n/I18nContext.jsx";
 import { CustomerFace } from "../../components/CustomerFace.jsx";
 import { IngredientIcon } from "../../components/IngredientIcon.jsx";
 
-export function OrderTicket({ customer, isSelected, showIngredients, onSelect }) {
+// On the selected ticket, chips show what is already on the board (ok), still missing (miss)
+// and on the board but not ordered (extra).
+function ingredientChips(customer, board, isSelected) {
+  const ordered = customer.ingredients.filter((id) => id !== "pate");
+  if (!isSelected || !board.length) return ordered.map((id) => ({ id, status: "" }));
+  const extras = board.filter((id) => id !== "pate" && !customer.ingredients.includes(id));
+  return [
+    ...ordered.map((id) => ({ id, status: board.includes(id) ? "ok" : "miss" })),
+    ...extras.map((id) => ({ id, status: "extra" })),
+  ];
+}
+
+export function OrderTicket({ customer, isSelected, showIngredients, board, onSelect }) {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   return (
@@ -25,14 +37,12 @@ export function OrderTicket({ customer, isSelected, showIngredients, onSelect })
       )}
       {showIngredients && (
         <div className="chips">
-          {customer.ingredients
-            .filter((id) => id !== "pate")
-            .map((id) => (
-              <span key={id} className="chip">
-                <IngredientIcon id={id} />
-                {t.ingredient(id)}
-              </span>
-            ))}
+          {ingredientChips(customer, board, isSelected).map(({ id, status }) => (
+            <span key={id} className={`chip ${status}`} title={t.ingredient(id)}>
+              <IngredientIcon id={id} />
+              <span className="chip-t">{t.ingredient(id)}</span>
+            </span>
+          ))}
         </div>
       )}
     </button>

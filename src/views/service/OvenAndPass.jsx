@@ -32,8 +32,8 @@ function Pass({ state, dispatch }) {
   const { service } = state;
   return (
     <div className="passe">
-      <h3 className="h" style={{ marginTop: 14 }}>{t("service.pass")}</h3>
-      {service.ready.length === 0 && <p className="hint" style={{ margin: 0 }}>{t("service.passEmpty")}</p>}
+      <h3 className="h">{t("service.pass")}</h3>
+      {service.ready.length === 0 && <p className="hint passe-empty">{t("service.passEmpty")}</p>}
       {service.ready.map((pizza) => {
         const customer = customerForPizza(service, pizza.ingredients);
         const recipe = findRecipeByIngredients(state, pizza.ingredients);
@@ -42,11 +42,11 @@ function Pass({ state, dispatch }) {
             <Pizza ingredients={pizza.ingredients} baked />
             <div className="grow">
               <div className="rn">{recipe ? t.recipe(recipe) : t("common.improvisedPizza")}</div>
-              <div className="hint" style={{ fontSize: 12 }}>
+              <div className="hint rt">
                 {customer ? t("service.forCustomer", { name: customer.name }) : t("service.nobodyWaiting")}
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div className="ready-btns">
               <button className="btn sm go" onClick={() => dispatch({ type: "servePizza", pizzaId: pizza.id })} disabled={!customer}>
                 {t("service.serve")}
               </button>
@@ -64,7 +64,7 @@ function Pass({ state, dispatch }) {
 export function OvenAndPass({ state, dispatch }) {
   const t = useTranslation();
   return (
-    <section aria-label={t("service.ovenAndPass")}>
+    <section className="a-oven" aria-label={t("service.ovenAndPass")}>
       <Oven state={state} />
       <Pass state={state} dispatch={dispatch} />
     </section>

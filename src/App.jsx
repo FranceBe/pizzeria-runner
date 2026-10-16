@@ -12,6 +12,8 @@ import { MenuView } from "./views/menu/MenuView.jsx";
 import { UpgradesView } from "./views/UpgradesView.jsx";
 import { SettingsView } from "./views/SettingsView.jsx";
 import { DaySummary } from "./views/DaySummary.jsx";
+import { MessageTicker } from "./components/MessageTicker.jsx";
+import { TabIcon } from "./components/TabIcon.jsx";
 
 const TABS = ["service", "market", "menu", "upgrades", "settings"];
 
@@ -45,6 +47,12 @@ export function App() {
     document.documentElement.lang = language;
   }, [language]);
 
+  // During service, the service screen fits the window instead of scrolling (see .svc-mode in styles.css).
+  const isServing = tab === "service" && state.phase === "service";
+  useEffect(() => {
+    document.documentElement.classList.toggle("svc-mode", isServing);
+  }, [isServing]);
+
   const waitingCustomers = state.service ? state.service.customers.length : 0;
   const startNextDay = () => {
     dispatch({ type: "startNextDay" });
@@ -53,26 +61,24 @@ export function App() {
 
   return (
     <I18nProvider value={t}>
-      <Header state={state} />
+      <Header state={state} dispatch={dispatch} />
       <div className="wrap">
         <nav className="tabs" role="tablist">
           {TABS.map((id) => (
-            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
-              {t(`tabs.${id}`)}
+            <button key={id} role="tab" aria-selected={tab === id} aria-label={t(`tabs.${id}`)} onClick={() => setTab(id)}>
+              <TabIcon tab={id} />
+              <span className="tab-l">{t(`tabs.${id}`)}</span>
               {id === "service" && tab !== "service" && waitingCustomers > 0 && <span className="pip">{waitingCustomers}</span>}
             </button>
           ))}
         </nav>
       </div>
       <main className="wrap">
+        {/* The service screen has its own ticker inside its grid. */}
+        {!isServing && <MessageTicker toasts={state.toasts} dispatch={dispatch} />}
         <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
       </main>
       {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} onNextDay={startNextDay} />}
-      <div className="toasts" aria-live="polite">
-        {state.toasts.map((toast) => (
-          <div key={toast.id} className={`toast ${toast.kind}`}>{t(`toasts.${toast.key}`, toast.params)}</div>
-        ))}
-      </div>
     </I18nProvider>
   );
 }

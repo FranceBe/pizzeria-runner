@@ -3,9 +3,9 @@ import { saveState } from "../game/state.js";
 
 const TICK_SECONDS = 0.25;
 const AUTOSAVE_INTERVAL_MS = 2000;
-const TOAST_DURATION_MS = 3200;
+const TOAST_DURATION_MS = 4000;
 
-// Drives the game clock, autosaves, and expires toasts one at a time.
+// Drives the game clock, autosaves, and expires the message shown in the ticker.
 export function useGameLoop(state, dispatch) {
   const latestState = useRef(state);
   latestState.current = state;
@@ -34,8 +34,8 @@ export function useGameLoop(state, dispatch) {
 
   useEffect(() => {
     if (!state.toasts.length) return;
-    const oldestToastId = state.toasts[0].id;
-    const timer = setTimeout(() => dispatch({ type: "dismissToast", toastId: oldestToastId }), TOAST_DURATION_MS);
+    const newestToastId = state.toasts[state.toasts.length - 1].id;
+    const timer = setTimeout(() => dispatch({ type: "dismissToast", toastId: newestToastId }), TOAST_DURATION_MS);
     return () => clearTimeout(timer);
   }, [state.toasts, dispatch]);
 }

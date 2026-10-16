@@ -4,8 +4,17 @@ import { IngredientPan } from "../../components/IngredientPan.jsx";
 
 const LOW_PAN_THRESHOLD = 3;
 
+function panClassName({ isOnBoard, isNeeded, quantity }) {
+  let className = "pan";
+  if (isOnBoard) className += " on";
+  else if (isNeeded) className += " need";
+  if (quantity < LOW_PAN_THRESHOLD) className += " low";
+  return className;
+}
+
 // The row of ingredient pans along the bottom of the service screen.
-export function PrepLine({ state, board, onPickIngredient }) {
+// Pans the selected order still needs get a dashed outline.
+export function PrepLine({ state, board, neededIngredients, onPickIngredient }) {
   const t = useTranslation();
   const stations = PREP_STATIONS.map((station) => ({
     ...station,
@@ -15,16 +24,17 @@ export function PrepLine({ state, board, onPickIngredient }) {
   return (
     <section className="rail" aria-label={t("service.prepLine")}>
       {stations.map((station) => (
-        <div key={station.id} className="station">
+        <div key={station.id} className={`station st-${station.id}`}>
           <div className="st-label">{t(`stations.${station.id}`)}</div>
           <div className="pans">
             {station.ingredientIds.map((id) => {
               const quantity = state.stock[id] || 0;
               const isOnBoard = board.includes(id);
+              const isNeeded = neededIngredients.includes(id);
               return (
                 <button
                   key={id}
-                  className={`pan${isOnBoard ? " on" : ""}${quantity < LOW_PAN_THRESHOLD ? " low" : ""}`}
+                  className={panClassName({ isOnBoard, isNeeded, quantity })}
                   disabled={!isOnBoard && quantity === 0}
                   aria-pressed={isOnBoard}
                   onClick={() => onPickIngredient(id)}

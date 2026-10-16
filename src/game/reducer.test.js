@@ -118,6 +118,10 @@ describe("baking and serving", () => {
     expect(state.xp).toBe(6 + 2 * 2);
     expect(state.phase).toBe("summary");
     expect(state.summary).toMatchObject({ served: 1, revenue: 7, tips: 0, charges: 6, bestSeller: { recipeId: "margherita", count: 1 } });
+    expect(state.summary.orders).toEqual([
+      { customerName: "Luca", recipeId: "margherita", recipeName: "Margherita", ingredients: MARGHERITA, price: 7, tip: 0 },
+    ]);
+    expect(state.pops).toMatchObject([{ amount: 7, kind: "money" }]);
   });
 
   it("won't serve a pizza nobody ordered", () => {
@@ -276,9 +280,16 @@ describe("settings", () => {
     expect(state.settings.language).toBe("en");
   });
 
-  it("dismisses a toast", () => {
-    let state = play(makeState(), { type: "buyIngredient", ingredientId: "pate", quantity: 1000 });
-    state = play(state, { type: "dismissToast", toastId: state.toasts[0].id });
+  it("dismisses the newest toast along with the older ones", () => {
+    const tooMuch = { type: "buyIngredient", ingredientId: "pate", quantity: 1000 };
+    let state = play(makeState(), tooMuch, tooMuch);
+    expect(state.toasts).toHaveLength(2);
+    state = play(state, { type: "dismissToast", toastId: state.toasts[1].id });
     expect(state.toasts).toEqual([]);
+  });
+
+  it("removes a money pop once shown", () => {
+    const state = play(makeState({ pops: [{ id: "p", amount: 7, kind: "money" }] }), { type: "dismissPop", popId: "p" });
+    expect(state.pops).toEqual([]);
   });
 });

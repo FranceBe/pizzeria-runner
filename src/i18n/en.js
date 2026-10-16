@@ -12,6 +12,7 @@ export const en = {
     cancel: "Cancel",
     level: "Level {level}",
     improvisedPizza: "Improvised pizza",
+    dismissMessage: "Dismiss message",
   },
 
   header: {
@@ -132,6 +133,11 @@ export const en = {
 
   stars: "{count} stars out of 5",
 
+  pops: {
+    money: ({ amount }, t) => `+${t.money(amount)}`,
+    tip: ({ amount }, t) => `+${t.money(amount)} tip`,
+  },
+
   upgrades: {
     title: "Upgrades",
     intro: ({ charges }, t) => `Each upgrade adds a little to the evening charges (currently ${t.money(charges)}).`,
@@ -195,6 +201,9 @@ export const en = {
     reputation: "Reputation earned",
     debt: "Owed to the landlord",
     bestSeller: "Best seller:",
+    orders: "Orders served",
+    order: ({ customer, recipe }) => `${customer} · ${recipe}`,
+    noTip: "no tip",
     levelReached: "Level {level} reached.",
     levelReachedDetails: "New suppliers are waiting at the market and your menu can now hold {capacity} pizzas.",
     debtHint: "The debt pays itself off with half of your upcoming sales.",
@@ -209,8 +218,6 @@ export const en = {
     ovenFull: "The oven is full.",
     missingIngredients: ({ ingredientIds }, t) => `Missing: ${t.ingredientList(ingredientIds)}.`,
     nobodyOrdered: "Nobody ordered this pizza. Keep it warm or bin it.",
-    paid: ({ customer, price, tip }, t) =>
-      `${customer} paid ${t.money(price)}${tip ? ` + ${t.money(tip)} tip` : ""}.`,
     levelUp: ({ level, ingredientIds }, t) =>
       `Level ${level}! ${ingredientIds.length ? `New suppliers: ${lower(t.ingredientList(ingredientIds))}.` : "Your menu grows."}`,
     notEnoughMoney: "Not enough money.",

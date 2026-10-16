@@ -12,6 +12,7 @@ export const fr = {
     cancel: "Annuler",
     level: "Niveau {level}",
     improvisedPizza: "Pizza improvisée",
+    dismissMessage: "Fermer le message",
   },
 
   header: {
@@ -132,6 +133,11 @@ export const fr = {
 
   stars: "{count} étoiles sur 5",
 
+  pops: {
+    money: ({ amount }, t) => `+${t.money(amount)}`,
+    tip: ({ amount }, t) => `+${t.money(amount)} pourboire`,
+  },
+
   upgrades: {
     title: "Améliorations",
     intro: ({ charges }, t) => `Chaque amélioration augmente un peu les charges du soir (actuellement ${t.money(charges)}).`,
@@ -196,6 +202,9 @@ export const fr = {
     reputation: "Réputation gagnée",
     debt: "Ardoise chez le propriétaire",
     bestSeller: "La plus demandée :",
+    orders: "Commandes servies",
+    order: ({ customer, recipe }) => `${customer} · ${recipe}`,
+    noTip: "pas de pourboire",
     levelReached: "Niveau {level} atteint.",
     levelReachedDetails: "De nouveaux fournisseurs t'attendent au marché et ta carte peut accueillir {capacity} pizzas.",
     debtHint: "L'ardoise se rembourse toute seule avec la moitié des prochaines ventes.",
@@ -210,8 +219,6 @@ export const fr = {
     ovenFull: "Le four est plein.",
     missingIngredients: ({ ingredientIds }, t) => `Il manque : ${t.ingredientList(ingredientIds)}.`,
     nobodyOrdered: "Personne n'a commandé cette pizza. Garde-la au chaud ou jette-la.",
-    paid: ({ customer, price, tip }, t) =>
-      `${customer} a payé ${t.money(price)}${tip ? ` + ${t.money(tip)} de pourboire` : ""}.`,
     levelUp: ({ level, ingredientIds }, t) =>
       `Niveau ${level} ! ${
         ingredientIds.length ? `Nouveaux fournisseurs : ${lower(t.ingredientList(ingredientIds))}.` : "La carte s'agrandit."
