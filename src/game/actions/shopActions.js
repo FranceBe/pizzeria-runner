@@ -1,7 +1,6 @@
 import { INGREDIENTS_BY_ID } from "../../data/ingredients.js";
 import { MARGHERITA } from "../../data/recipes.js";
 import { UPGRADES } from "../../data/progression.js";
-import { formatEuro } from "../../utils/format.js";
 import { canAfford } from "../../utils/math.js";
 import { restockPlan, spend } from "../economy.js";
 import { discoverClassics } from "../menu.js";
@@ -15,7 +14,7 @@ export const shopActions = {
   buyIngredient(state, { ingredientId, quantity }) {
     const cost = INGREDIENTS_BY_ID[ingredientId].cost * quantity;
     if (!canAfford(state.money, cost)) {
-      pushToast(state, "Pas assez d'argent.", "warn");
+      pushToast(state, "notEnoughMoney", {}, "warn");
       return;
     }
     spend(state, cost);
@@ -25,12 +24,12 @@ export const shopActions = {
   restock(state, { targetQuantity }) {
     const plan = restockPlan(state, targetQuantity);
     if (!canAfford(state.money, plan.cost)) {
-      pushToast(state, "Pas assez d'argent pour tout compléter.", "warn");
+      pushToast(state, "notEnoughMoneyToRestock", {}, "warn");
       return;
     }
     plan.items.forEach(([id, quantity]) => (state.stock[id] = (state.stock[id] || 0) + quantity));
     spend(state, plan.cost);
-    pushToast(state, `Stock complété pour ${formatEuro(plan.cost)}.`);
+    pushToast(state, "restocked", { cost: plan.cost });
   },
 
   signSupplier(state, { ingredientId }) {
@@ -40,7 +39,7 @@ export const shopActions = {
     spend(state, ingredient.supplierFee);
     state.unlocked[ingredientId] = true;
     state.stock[ingredientId] = (state.stock[ingredientId] || 0) + SUPPLIER_WELCOME_PORTIONS;
-    pushToast(state, `Nouveau fournisseur : ${ingredient.name}. ${SUPPLIER_WELCOME_PORTIONS} portions offertes.`, "gold");
+    pushToast(state, "supplierSigned", { ingredientId, portions: SUPPLIER_WELCOME_PORTIONS }, "gold");
     discoverClassics(state);
   },
 
@@ -48,7 +47,7 @@ export const shopActions = {
   callNonna(state) {
     state.lastNonnaVisitDay = state.day;
     MARGHERITA.ingredients.forEach((id) => (state.stock[id] = (state.stock[id] || 0) + NONNA_PORTIONS));
-    pushToast(state, "Nonna a déposé de quoi faire 4 margheritas. Elle ne veut rien en retour.", "gold");
+    pushToast(state, "nonna", {}, "gold");
   },
 
   buyUpgrade(state, { upgradeKey }) {
@@ -59,6 +58,6 @@ export const shopActions = {
     if (levelForXp(state.xp) < upgrade.requiredLevel[currentLevel] || state.money < cost) return;
     spend(state, cost);
     state.upgrades[upgradeKey] = currentLevel + 1;
-    pushToast(state, `${upgrade.name} amélioré : ${upgrade.describe(currentLevel + 1)}.`, "gold");
+    pushToast(state, "upgradeBought", { upgradeKey, level: currentLevel + 1 }, "gold");
   },
 };

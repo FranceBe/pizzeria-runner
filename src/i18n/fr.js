@@ -1,0 +1,300 @@
+import { OVEN_SLOTS, BAKE_SECONDS, tipChanceForDecor } from "../data/progression.js";
+import { plural } from "../utils/format.js";
+
+const lower = (text) => text.toLowerCase();
+
+export const fr = {
+  tabs: { service: "Service", market: "Marché", menu: "Carte", upgrades: "Améliorations", settings: "Réglages" },
+
+  common: {
+    new: "nouveau",
+    trash: "Jeter",
+    cancel: "Annuler",
+    level: "Niveau {level}",
+    improvisedPizza: "Pizza improvisée",
+  },
+
+  header: {
+    day: "Jour",
+    till: "Caisse",
+    debt: ({ amount }, t) => `Ardoise : ${t.money(amount)}`,
+    reputation: "Réputation · niv. {level}",
+    xpTitle: "{xp} / {next} points",
+  },
+
+  prep: {
+    title: "Jour {day} · mise en place",
+    intro: "Remplis le frigo, ajuste la carte, puis ouvre quand tu es prête. Personne ne part fâché : prends ton temps.",
+    expectedCustomers: "clients attendus",
+    pizzasOnMenu: "Pizzas à la carte",
+    eveningCharges: "Charges du soir",
+    currentDebt: "Ardoise en cours",
+    lowStock: "Stock bas",
+    stockLine: ({ id, quantity }, t) => `${t.ingredient(id)} : ${quantity}`,
+    goToMarket: "Aller au marché",
+    nonnaOffer: "Le frigo est vide et la caisse aussi. Nonna peut te dépanner une fois aujourd'hui.",
+    callNonna: "Appeler Nonna",
+    open: "Ouvrir la pizzeria",
+    tonightsMenu: "Ce soir à la carte",
+    emptyMenu: "Aucune pizza. Passe par l'onglet Carte.",
+  },
+
+  service: {
+    title: "Service du jour {day}",
+    progress: ({ served, remaining }) => `${served} ${plural(served, "servi")} · ${remaining} encore à servir`,
+    orders: "Commandes",
+    doorOpening: "La porte va s'ouvrir…",
+    workBoard: "Plan de travail",
+    emptyBoard: "Touche « Pâte » pour étaler une nouvelle pizza",
+    readyFor: "Prête pour {name}",
+    boardCheck: ({ name, missing, extra }) => {
+      const parts = [];
+      if (missing) parts.push(`${missing} ${plural(missing, "manquant")}`);
+      if (extra) parts.push(`${extra} en trop`);
+      return `Pour ${name} : ${parts.join(" · ")}`;
+    },
+    commisAssemble: "Commis : monter la {recipe}",
+    bake: "Enfourner",
+    ovenFull: "Four plein",
+    ovenAndPass: "Four et passe",
+    oven: "Four",
+    freeSlot: "Libre",
+    pass: "Passe",
+    passEmpty: "Les pizzas cuites arrivent ici.",
+    forCustomer: "Pour {name}",
+    nobodyWaiting: "Personne ne l'attend",
+    serve: "Servir",
+    prepLine: "Ligne de préparation",
+    panTitle: ({ id, quantity }, t) => `${t.ingredient(id)} · ${quantity} en stock`,
+    extra: ({ id }, t) => `+ ${t.ingredient(id)}`,
+    without: ({ id }, t) => `sans ${lower(t.ingredient(id))}`,
+  },
+
+  market: {
+    fridge: "Le frigo",
+    fridgeIntro: "Les ingrédients ne s'abîment pas. Achète au rythme de ta caisse.",
+    restockMenu: ({ target, cost }, t) => `Compléter la carte à ${target} · ${t.money(cost)}`,
+    restockMore: ({ target, cost }, t) => `à ${target} · ${t.money(cost)}`,
+    perPortion: ({ price }, t) => `${t.money(price)} la portion`,
+    usefulFor: ({ recipes }) => ` · utile pour ${recipes}`,
+    suppliers: "Fournisseurs",
+    suppliersIntro: "Chaque nouveau fournisseur ajoute un ingrédient, peut débloquer une recette classique et t'offre {portions} portions.",
+    allSuppliers: "Tu travailles avec tous les fournisseurs de la région.",
+    sign: ({ fee }, t) => `Signer · ${t.money(fee)}`,
+  },
+
+  menu: {
+    title: "La carte",
+    capacity: "{count} / {capacity} pizzas proposées. La carte s'agrandit à chaque niveau.",
+    createRecipe: "Créer une recette",
+    homemade: "maison",
+    costAndAdvice: ({ cost, fair }, t) => `coût ${t.money(cost)} · conseillé ${t.money(fair)}`,
+    lowerPriceOf: "Baisser le prix de {name}",
+    raisePriceOf: "Monter le prix de {name}",
+    onMenu: "À la carte",
+    delete: "Supprimer",
+    confirmDelete: "Supprimer…",
+    keep: "Garder",
+    toDiscover: "Classiques à découvrir",
+    missing: ({ items }) => `Il manque : ${items}`,
+    missingItem: ({ id, level }, t) => `${t.ingredient(id)} (niv. ${level})`,
+  },
+
+  editor: {
+    title: "Nouvelle recette",
+    close: "Fermer",
+    name: "Nom",
+    namePlaceholder: "La Fellows, la Belsize…",
+    appeal: "attrait",
+    goodPairing: ({ a, b }, t) => `Bon accord : ${lower(t.ingredient(a))} et ${lower(t.ingredient(b))}`,
+    badPairing: ({ a, b }, t) => `Drôle de mariage : ${lower(t.ingredient(a))} et ${lower(t.ingredient(b))}`,
+    ingredientCost: "Coût des ingrédients",
+    suggestedPrice: "Prix conseillé",
+    price: "Prix",
+    lowerPrice: "Baisser le prix",
+    raisePrice: "Monter le prix",
+    sauceHint: " (une seule, ou aucune pour une pizza blanche)",
+    tooManyFillings: "{max} garnitures maximum : la pâte ne tiendrait pas.",
+    save: "Ajouter au carnet",
+    priceNote: {
+      gentle: "Prix doux : plus de commandes, moins de marge.",
+      fair: "Prix juste.",
+      high: "Un peu cher : moins de clients la choisiront.",
+      tooHigh: "Trop cher : elle se vendra mal.",
+    },
+    errors: {
+      missingName: "Donne-lui un nom.",
+      noTopping: "Ajoute au moins un ingrédient sur la pâte.",
+      duplicateIngredients: "Cette combinaison existe déjà dans ton carnet.",
+      duplicateName: "Une pizza porte déjà ce nom.",
+    },
+  },
+
+  stars: "{count} étoiles sur 5",
+
+  upgrades: {
+    title: "Améliorations",
+    intro: ({ charges }, t) => `Chaque amélioration augmente un peu les charges du soir (actuellement ${t.money(charges)}).`,
+    current: "Actuel :",
+    next: "Ensuite :",
+    extraCharges: ({ amount }, t) => `(+${t.money(amount)} de charges)`,
+    maxed: "Au maximum",
+    levelRequired: "Niveau {level} requis",
+    buy: ({ cost }, t) => `Améliorer · ${t.money(cost)}`,
+    oven: {
+      name: "Four à bois",
+      describe: ({ level }, t) =>
+        `${OVEN_SLOTS[level]} ${plural(OVEN_SLOTS[level], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[level])} s`,
+    },
+    salle: {
+      name: "Salle",
+      describe: ({ level }) => (level === 0 ? "Quelques tables" : `+${2 * level} clients par jour`),
+    },
+    deco: {
+      name: "Décoration",
+      describe: ({ level }) => `Pourboire chez ${Math.round(tipChanceForDecor(level) * 100)} % des clients`,
+    },
+    commis: {
+      name: "Commis",
+      describe: ({ level }) =>
+        ["Tu es seule en cuisine", "Étale la pâte tout seul après chaque enfournage", "Monte la pizza du ticket choisi en un clic"][level],
+    },
+  },
+
+  settings: {
+    pizzeria: "Ta pizzeria",
+    signName: "Nom sur l'enseigne",
+    language: "Langue",
+    showHelp: "Afficher les ingrédients sur les tickets et vérifier la pizza en cours",
+    helpHint: "Sans cette aide, il faut connaître ses recettes par cœur.",
+    save: "Sauvegarde",
+    saveIntro:
+      "La partie se sauvegarde toute seule dans ce navigateur. Pour passer du PC au téléphone, exporte le code ici et colle-le de l'autre côté.",
+    generateCode: "Générer le code",
+    copy: "Copier",
+    copied: "Copié.",
+    selected: "Sélectionné : copie-le avec Ctrl+C ou Cmd+C.",
+    loadCode: "Charger un code",
+    loadPlaceholder: "Colle ici le code exporté depuis l'autre appareil",
+    loadGame: "Charger cette partie",
+    invalidCode: "Ce code ne ressemble pas à une sauvegarde Forno Lento. Recopie-le en entier.",
+    confirmReset: "Tout effacer et recommencer au jour 1 ?",
+    yesReset: "Oui, recommencer",
+    reset: "Recommencer une partie…",
+  },
+
+  summary: {
+    dialog: "Fin de journée",
+    title: "Fin du jour {day}",
+    profit: "bénéfice de la journée",
+    served: "Pizzas servies",
+    revenue: "Ventes",
+    tips: "Pourboires",
+    purchases: "Achats (marché, fournisseurs, travaux)",
+    charges: "Charges (loyer, four, personnel)",
+    waste: "Ingrédients jetés",
+    reputation: "Réputation gagnée",
+    debt: "Ardoise chez le propriétaire",
+    bestSeller: "La plus demandée :",
+    levelReached: "Niveau {level} atteint.",
+    levelReachedDetails: "De nouveaux fournisseurs t'attendent au marché et ta carte peut accueillir {capacity} pizzas.",
+    debtHint: "L'ardoise se rembourse toute seule avec la moitié des prochaines ventes.",
+    nextDay: "Préparer le jour {day}",
+  },
+
+  toasts: {
+    emptyMenu: "Ta carte est vide : ajoute au moins une pizza dans l'onglet Carte.",
+    removeToppingsFirst: "Retire d'abord la garniture, ou jette la pizza.",
+    spreadDoughFirst: "Étale d'abord la pâte.",
+    outOfStock: ({ ingredientId }, t) => `Plus de ${lower(t.ingredient(ingredientId))} en stock : passe au marché.`,
+    ovenFull: "Le four est plein.",
+    missingIngredients: ({ ingredientIds }, t) => `Il manque : ${t.ingredientList(ingredientIds)}.`,
+    nobodyOrdered: "Personne n'a commandé cette pizza. Garde-la au chaud ou jette-la.",
+    paid: ({ customer, price, tip }, t) =>
+      `${customer} a payé ${t.money(price)}${tip ? ` + ${t.money(tip)} de pourboire` : ""}.`,
+    levelUp: ({ level, ingredientIds }, t) =>
+      `Niveau ${level} ! ${
+        ingredientIds.length ? `Nouveaux fournisseurs : ${lower(t.ingredientList(ingredientIds))}.` : "La carte s'agrandit."
+      }`,
+    notEnoughMoney: "Pas assez d'argent.",
+    notEnoughMoneyToRestock: "Pas assez d'argent pour tout compléter.",
+    restocked: ({ cost }, t) => `Stock complété pour ${t.money(cost)}.`,
+    supplierSigned: ({ ingredientId, portions }, t) => `Nouveau fournisseur : ${t.ingredient(ingredientId)}. ${portions} portions offertes.`,
+    nonna: "Nonna a déposé de quoi faire 4 margheritas. Elle ne veut rien en retour.",
+    upgradeBought: ({ upgradeKey, level }, t) =>
+      `${t(`upgrades.${upgradeKey}.name`)} amélioré : ${t(`upgrades.${upgradeKey}.describe`, { level })}.`,
+    menuFull: "Ta carte est pleine ({capacity} pizzas au niveau {level}).",
+    recipeAdded: ({ name, onMenu }) => `« ${name} » rejoint ${onMenu ? "la carte" : "ton carnet (carte pleine)"}.`,
+    classicDiscovered: ({ recipeId, onMenu }, t) =>
+      `Nouvelle recette : ${t(`recipes.${recipeId}`)}${onMenu ? " (ajoutée à la carte)" : ""}`,
+    gameLoaded: "Partie chargée.",
+    gameReset: "Nouvelle pizzeria ouverte.",
+  },
+
+  customerLines: [
+    ["J'ai hâte !", "Ça sent bon ici.", "Prenez votre temps."],
+    ["Je patiente…", "Ça mijote ?", "Joli four."],
+    ["Ça arrive bientôt ?", "Mon ventre gargouille.", "Hmm…"],
+    ["J'ai une faim de loup !", "Je pourrais manger le four.", "Toujours là, hein."],
+  ],
+
+  kinds: { base: "base", sauce: "sauce", cheese: "fromage", topping: "garniture" },
+
+  stations: {
+    base: "Pâte",
+    sauce: "Sauces",
+    cheese: "Fromages",
+    meat: "Charcuterie & poisson",
+    veg: "Légumes",
+    herb: "Herbes & épices",
+    finish: "Finitions",
+  },
+
+  ingredients: {
+    pate: "Pâte",
+    tomate: "Sauce tomate",
+    mozza: "Mozzarella",
+    basilic: "Basilic",
+    origan: "Origan",
+    jambon: "Jambon",
+    champi: "Champignons",
+    olive: "Olives noires",
+    creme: "Crème fraîche",
+    oignon: "Oignons rouges",
+    poivron: "Poivrons",
+    salami: "Salami piquant",
+    piment: "Piment",
+    chevre: "Chèvre",
+    gorgo: "Gorgonzola",
+    parmesan: "Parmesan",
+    miel: "Miel",
+    anchois: "Anchois",
+    capres: "Câpres",
+    artichaut: "Artichauts",
+    oeuf: "Œuf",
+    lardons: "Lardons",
+    patate: "Pommes de terre",
+    reblochon: "Reblochon",
+    roquette: "Roquette",
+    jcru: "Jambon cru",
+    burrata: "Burrata",
+    truffe: "Truffe noire",
+  },
+
+  recipes: {
+    margherita: "Margherita",
+    marinara: "Marinara",
+    regina: "Regina",
+    diavola: "Diavola",
+    ortolana: "Ortolana",
+    quattro: "Quattro formaggi",
+    chevremiel: "Chèvre-miel",
+    napoli: "Napoletana",
+    bismarck: "Bismarck",
+    capri: "Capricciosa",
+    savoyarde: "Savoyarde",
+    parma: "Parma",
+    burrata: "Burrata",
+    tartufo: "Tartufo",
+  },
+};

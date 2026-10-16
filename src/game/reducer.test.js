@@ -41,7 +41,7 @@ describe("opening the restaurant", () => {
     empty.recipes[0].onMenu = false;
     const state = play(empty, { type: "openRestaurant" });
     expect(state.phase).toBe("prep");
-    expect(state.toasts[0].kind).toBe("warn");
+    expect(state.toasts[0]).toMatchObject({ key: "emptyMenu", kind: "warn" });
   });
 
   it("lets customers in over time", () => {
@@ -117,7 +117,7 @@ describe("baking and serving", () => {
     expect(state.money).toBe(7 - 6); // paid 7, then evening charges of 6
     expect(state.xp).toBe(6 + 2 * 2);
     expect(state.phase).toBe("summary");
-    expect(state.summary).toMatchObject({ served: 1, revenue: 7, tips: 0, charges: 6, bestSeller: ["Margherita", 1] });
+    expect(state.summary).toMatchObject({ served: 1, revenue: 7, tips: 0, charges: 6, bestSeller: { recipeId: "margherita", count: 1 } });
   });
 
   it("won't serve a pizza nobody ordered", () => {
@@ -253,16 +253,27 @@ describe("settings", () => {
     expect(state.settings.showHelp).toBe(false);
   });
 
-  it("imports a save, migrating it if needed", () => {
-    const state = play(makeState(), { type: "importSave", saveData: { money: 99, recipes: [], settings: { help: false } } });
-    expect(state.money).toBe(99);
-    expect(state.settings.showHelp).toBe(false);
-    expect(state.toasts[0].text).toBe("Partie chargée.");
+  it("switches language, ignoring unknown ones", () => {
+    let state = play(makeState(), { type: "setLanguage", language: "en" });
+    expect(state.settings.language).toBe("en");
+    state = play(state, { type: "setLanguage", language: "de" });
+    expect(state.settings.language).toBe("en");
   });
 
-  it("resets the game", () => {
-    const state = play(makeState({ day: 30, money: 999 }), { type: "resetGame" });
+  it("imports a save, migrating it if needed and keeping this device's language", () => {
+    const saveData = { money: 99, recipes: [], settings: { help: false, language: "en" } };
+    const state = play(makeState(), { type: "importSave", saveData });
+    expect(state.money).toBe(99);
+    expect(state.settings).toMatchObject({ showHelp: false, language: "fr" });
+    expect(state.toasts[0].key).toBe("gameLoaded");
+  });
+
+  it("resets the game, keeping the language", () => {
+    const english = makeState({ day: 30, money: 999 });
+    english.settings.language = "en";
+    const state = play(english, { type: "resetGame" });
     expect(state).toMatchObject({ day: 1, money: 20 });
+    expect(state.settings.language).toBe("en");
   });
 
   it("dismisses a toast", () => {

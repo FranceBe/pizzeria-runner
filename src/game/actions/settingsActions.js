@@ -1,3 +1,4 @@
+import { LANGUAGES } from "../../i18n/index.js";
 import { createInitialState, hydrateState } from "../state.js";
 import { pushToast } from "../toasts.js";
 
@@ -12,20 +13,26 @@ export const settingsActions = {
     state.settings.showHelp = !state.settings.showHelp;
   },
 
+  setLanguage(state, { language }) {
+    if (LANGUAGES.includes(language)) state.settings.language = language;
+  },
+
   dismissToast(state, { toastId }) {
     state.toasts = state.toasts.filter((toast) => toast.id !== toastId);
   },
 
   // These two replace the whole state instead of mutating it.
+  // Both keep the language chosen on this device.
   importSave(state, { saveData }) {
     const imported = hydrateState(saveData);
-    pushToast(imported, "Partie chargée.");
+    imported.settings.language = state.settings.language;
+    pushToast(imported, "gameLoaded");
     return imported;
   },
 
-  resetGame() {
-    const fresh = createInitialState();
-    pushToast(fresh, "Nouvelle pizzeria ouverte.");
+  resetGame(state) {
+    const fresh = createInitialState(state.settings.language);
+    pushToast(fresh, "gameReset");
     return fresh;
   },
 };

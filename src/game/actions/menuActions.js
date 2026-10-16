@@ -16,7 +16,7 @@ export const menuActions = {
     const recipe = findRecipe(state, recipeId);
     if (!recipe.onMenu && menuIsFull(state)) {
       const level = levelForXp(state.xp);
-      pushToast(state, `Ta carte est pleine (${menuCapacity(level)} pizzas au niveau ${level}).`, "warn");
+      pushToast(state, "menuFull", { capacity: menuCapacity(level), level }, "warn");
       return;
     }
     recipe.onMenu = !recipe.onMenu;
@@ -34,7 +34,7 @@ export const menuActions = {
       onMenu,
       newUntil: state.day + NEW_RECIPE_DAYS,
     });
-    pushToast(state, `« ${name} » rejoint ${onMenu ? "la carte" : "ton carnet (carte pleine)"}.`, "gold");
+    pushToast(state, "recipeAdded", { name, onMenu }, "gold");
   },
 
   deleteRecipe(state, { recipeId }) {

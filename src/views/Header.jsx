@@ -1,7 +1,8 @@
 import { levelForXp, levelProgressPercent, xpForNextLevel } from "../game/progression.js";
-import { formatEuro } from "../utils/format.js";
+import { useTranslation } from "../i18n/I18nContext.jsx";
 
 export function Header({ state }) {
+  const t = useTranslation();
   const level = levelForXp(state.xp);
   return (
     <header className="top">
@@ -10,17 +11,17 @@ export function Header({ state }) {
         <h1 className="sign">{state.name}</h1>
         <div className="stats">
           <div className="stat">
-            <span className="stat-l">Jour</span>
+            <span className="stat-l">{t("header.day")}</span>
             <span className="stat-v">{state.day}</span>
           </div>
           <div className="stat">
-            <span className="stat-l">Caisse</span>
-            <span className="stat-v money">{formatEuro(state.money)}</span>
-            {state.debt > 0 && <span className="debt">Ardoise : {formatEuro(state.debt)}</span>}
+            <span className="stat-l">{t("header.till")}</span>
+            <span className="stat-v money">{t.money(state.money)}</span>
+            {state.debt > 0 && <span className="debt">{t("header.debt", { amount: state.debt })}</span>}
           </div>
           <div className="stat">
-            <span className="stat-l">Réputation · niv. {level}</span>
-            <div className="xpbar" title={`${state.xp} / ${xpForNextLevel(state.xp)} points`}>
+            <span className="stat-l">{t("header.reputation", { level })}</span>
+            <div className="xpbar" title={t("header.xpTitle", { xp: state.xp, next: xpForNextLevel(state.xp) })}>
               <i style={{ width: levelProgressPercent(state.xp) + "%" }} />
             </div>
           </div>

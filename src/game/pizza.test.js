@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   sortByLayer, haveSameIngredients, ingredientCost, fairPrice, adjustPrice, findPairings,
-  appealOf, appealToStars, priceAttractiveness, describePrice, toppingsList, MIN_PRICE, MAX_PRICE,
+  appealOf, appealToStars, priceAttractiveness, priceLevel, MIN_PRICE, MAX_PRICE,
 } from "./pizza.js";
 
 describe("sortByLayer", () => {
@@ -50,11 +50,11 @@ describe("prices", () => {
     expect(priceAttractiveness(100, 10)).toBe(0.1);
   });
 
-  it("describes the price level", () => {
-    expect(describePrice(8, 10)).toMatch(/doux/);
-    expect(describePrice(10, 10)).toBe("Prix juste.");
-    expect(describePrice(12, 10)).toMatch(/Un peu cher/);
-    expect(describePrice(20, 10)).toMatch(/Trop cher/);
+  it("rates the price level", () => {
+    expect(priceLevel(8, 10)).toBe("gentle");
+    expect(priceLevel(10, 10)).toBe("fair");
+    expect(priceLevel(12, 10)).toBe("high");
+    expect(priceLevel(20, 10)).toBe("tooHigh");
   });
 });
 
@@ -87,11 +87,5 @@ describe("appealToStars", () => {
   it("maps the appeal range to 1–5 stars", () => {
     expect(appealToStars(0.3)).toBe(1);
     expect(appealToStars(1.6)).toBe(5);
-  });
-});
-
-describe("toppingsList", () => {
-  it("lists everything but the dough", () => {
-    expect(toppingsList(["pate", "tomate", "mozza"])).toBe("Sauce tomate, Mozzarella");
   });
 });

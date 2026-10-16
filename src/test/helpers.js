@@ -1,8 +1,9 @@
 import { createInitialState } from "../game/state.js";
 import { gameReducer } from "../game/reducer.js";
 
+// Tests use French by default; pass `settings` in overrides to change it.
 export function makeState(overrides = {}) {
-  return { ...createInitialState(), ...overrides };
+  return { ...createInitialState("fr"), ...overrides };
 }
 
 // Applies actions in order, like a sequence of player clicks.

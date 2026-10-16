@@ -1,6 +1,5 @@
-import { INGREDIENTS, ingredientName } from "../../data/ingredients.js";
+import { INGREDIENTS } from "../../data/ingredients.js";
 import { BAKE_SECONDS, COMMIS_SPREADS_DOUGH, tipChanceForDecor } from "../../data/progression.js";
-import { formatEuro } from "../../utils/format.js";
 import { randomBetween, makeId } from "../../utils/random.js";
 import { createCustomer, hasSpecialRequest } from "../customers.js";
 import { dailyCharges, forecastCustomers, payCharges, receivePayment } from "../economy.js";
@@ -33,6 +32,12 @@ function createService(customerCount) {
   };
 }
 
+// byRecipe: { [recipeId]: { name, count } }. Returns the most ordered one, or null.
+function bestSellerOf(byRecipe) {
+  const [recipeId, sales] = Object.entries(byRecipe).sort((a, b) => b[1].count - a[1].count)[0] ?? [];
+  return recipeId ? { recipeId, name: sales.name, count: sales.count } : null;
+}
+
 function endDay(state) {
   const { service } = state;
   const unservedPizzas = [...service.ready, ...service.oven];
@@ -56,7 +61,7 @@ function endDay(state) {
     levelUps: stats.levelUps,
     debt: state.debt,
     net: stats.revenue + stats.tips - charges - state.purchasesToday,
-    bestSeller: Object.entries(stats.byRecipe).sort((a, b) => b[1] - a[1])[0] || null,
+    bestSeller: bestSellerOf(stats.byRecipe),
   };
   state.service = null;
   state.phase = "summary";
@@ -68,7 +73,7 @@ export const serviceActions = {
   openRestaurant(state) {
     const customerCount = forecastCustomers(state);
     if (!customerCount) {
-      pushToast(state, "Ta carte est vide : ajoute au moins une pizza dans l'onglet Carte.", "warn");
+      pushToast(state, "emptyMenu", {}, "warn");
       return;
     }
     state.service = createService(customerCount);
@@ -110,7 +115,7 @@ export const serviceActions = {
     const { service } = state;
     if (service.board.includes(id)) {
       if (id === DOUGH && service.board.length > 1) {
-        pushToast(state, "Retire d'abord la garniture, ou jette la pizza.");
+        pushToast(state, "removeToppingsFirst");
         return;
       }
       service.board = service.board.filter((x) => x !== id);
@@ -118,11 +123,11 @@ export const serviceActions = {
       return;
     }
     if (id !== DOUGH && !service.board.includes(DOUGH)) {
-      pushToast(state, "Étale d'abord la pâte.");
+      pushToast(state, "spreadDoughFirst");
       return;
     }
     if (inStock(state, id) < 1) {
-      pushToast(state, `Plus de ${ingredientName(id).toLowerCase()} en stock : passe au marché.`, "warn");
+      pushToast(state, "outOfStock", { ingredientId: id }, "warn");
       return;
     }
     // Only one sauce per pizza: the new one replaces the old.
@@ -147,7 +152,7 @@ export const serviceActions = {
     const { service } = state;
     if (!service.board.includes(DOUGH)) return;
     if (service.oven.length >= ovenSlots(state)) {
-      pushToast(state, "Le four est plein.");
+      pushToast(state, "ovenFull");
       return;
     }
     service.oven.push({
@@ -171,7 +176,7 @@ export const serviceActions = {
     const toAdd = customer.ingredients.filter((id) => !service.board.includes(id));
     const missing = toAdd.filter((id) => inStock(state, id) < 1);
     if (missing.length) {
-      pushToast(state, `Il manque : ${missing.map(ingredientName).join(", ")}.`, "warn");
+      pushToast(state, "missingIngredients", { ingredientIds: missing }, "warn");
       return;
     }
     service.board.filter((id) => !customer.ingredients.includes(id)).forEach((id) => addToStock(state, id));
@@ -185,7 +190,7 @@ export const serviceActions = {
     if (!pizza) return;
     const customer = customerForPizza(service, pizza.ingredients);
     if (!customer) {
-      pushToast(state, "Personne n'a commandé cette pizza. Garde-la au chaud ou jette-la.");
+      pushToast(state, "nobodyOrdered");
       return;
     }
     service.ready = service.ready.filter((p) => p.id !== pizza.id);
@@ -207,14 +212,14 @@ export const serviceActions = {
     stats.revenue += customer.price;
     stats.tips += tip;
     stats.xp += xpGained;
-    stats.byRecipe[customer.recipeName] = (stats.byRecipe[customer.recipeName] || 0) + 1;
+    const sales = stats.byRecipe[customer.recipeId] ?? { name: customer.recipeName, count: 0 };
+    stats.byRecipe[customer.recipeId] = { ...sales, count: sales.count + 1 };
 
-    pushToast(state, `${customer.name} a payé ${formatEuro(customer.price)}${tip ? ` + ${formatEuro(tip)} de pourboire` : ""}.`);
+    pushToast(state, "paid", { customer: customer.name, price: customer.price, tip });
     if (levelAfter > levelBefore) {
       stats.levelUps.push(levelAfter);
-      const newSuppliers = INGREDIENTS.filter((i) => i.requiredLevel === levelAfter).map((i) => i.name.toLowerCase());
-      const news = newSuppliers.length ? `Nouveaux fournisseurs : ${newSuppliers.join(", ")}.` : "La carte s'agrandit.";
-      pushToast(state, `Niveau ${levelAfter} ! ${news}`, "gold");
+      const newSupplierIds = INGREDIENTS.filter((i) => i.requiredLevel === levelAfter).map((i) => i.id);
+      pushToast(state, "levelUp", { level: levelAfter, ingredientIds: newSupplierIds }, "gold");
     }
 
     if (service.selectedCustomerId === customer.id) service.selectedCustomerId = service.customers[0]?.id ?? null;

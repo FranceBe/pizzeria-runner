@@ -1,12 +1,13 @@
 import { INGREDIENTS } from "../data/ingredients.js";
 import { MARGHERITA } from "../data/recipes.js";
 import { createClassicRecipe } from "./menu.js";
+import { detectLanguage } from "../i18n/index.js";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
-export function createInitialState() {
+export function createInitialState(language = detectLanguage()) {
   const unlocked = {};
   INGREDIENTS.filter((ingredient) => ingredient.supplierFee === 0).forEach((ingredient) => (unlocked[ingredient.id] = true));
   return {
@@ -20,7 +21,7 @@ export function createInitialState() {
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
     upgrades: { oven: 0, salle: 0, deco: 0, commis: 0 },
-    settings: { showHelp: true },
+    settings: { showHelp: true, language },
     phase: "prep", // prep | service | summary
     purchasesToday: 0,
     lastNonnaVisitDay: 0,
@@ -31,7 +32,7 @@ export function createInitialState() {
 }
 
 /* ---------------------------------------------------------------
-   Migration of saves written before the code cleanup (version 1, short field names)
+   Save migrations. Each step upgrades a save by one version; they run in order.
 ---------------------------------------------------------------- */
 function renameKeys(object, renames) {
   if (!object) return object;
@@ -70,16 +71,47 @@ function migrateService(service) {
   };
 }
 
-export function migrateSave(saved) {
-  if ((saved.version ?? 0) >= SAVE_VERSION) return saved;
+// Version 1: saves written before the code cleanup, with short field names.
+function migrateFromVersion1(saved) {
   const { v, ...rest } = renameKeys(saved, { nonnaDay: "lastNonnaVisitDay" });
   return {
     ...rest,
-    version: SAVE_VERSION,
     recipes: (rest.recipes || []).map((recipe) => renameKeys(recipe, { ings: "ingredients" })),
     settings: renameKeys(rest.settings, { help: "showHelp" }),
     service: migrateService(rest.service),
+    summary: renameKeys(rest.summary, { best: "bestSeller" }),
   };
+}
+
+// Version 2: sales were counted by recipe name, which can't be translated.
+// Old entries keep their name and simply show it as is.
+function migrateFromVersion2(saved) {
+  const result = { ...saved };
+  if (result.service?.stats) {
+    const byRecipe = Object.fromEntries(
+      Object.entries(result.service.stats.byRecipe || {}).map(([name, count]) => [name, { name, count }]),
+    );
+    result.service = { ...result.service, stats: { ...result.service.stats, byRecipe } };
+  }
+  if (Array.isArray(result.summary?.bestSeller)) {
+    const [name, count] = result.summary.bestSeller;
+    result.summary = { ...result.summary, bestSeller: { recipeId: name, name, count } };
+  }
+  return result;
+}
+
+// MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
+const MIGRATIONS = [migrateFromVersion1, migrateFromVersion2];
+
+// Saves from before versioning have neither `version` nor `v`: they are version 1.
+const versionOf = (saved) => saved.version ?? saved.v ?? 1;
+
+export function migrateSave(saved) {
+  let migrated = saved;
+  for (let version = versionOf(saved); version < SAVE_VERSION; version++) {
+    migrated = MIGRATIONS[version - 1](migrated);
+  }
+  return migrated === saved ? saved : { ...migrated, version: SAVE_VERSION };
 }
 
 // Fills in anything a save from an older version is missing.

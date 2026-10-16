@@ -1,10 +1,9 @@
-import { ingredientName } from "../data/ingredients.js";
 import { MARGHERITA } from "../data/recipes.js";
 import { dailyCharges, forecastCustomers } from "../game/economy.js";
 import { activeMenu, isNewRecipe } from "../game/menu.js";
-import { ingredientCost, toppingsList } from "../game/pizza.js";
+import { ingredientCost } from "../game/pizza.js";
 import { levelForXp, menuCapacity } from "../game/progression.js";
-import { formatEuro } from "../utils/format.js";
+import { useTranslation } from "../i18n/I18nContext.jsx";
 import { Pizza } from "../components/Pizza.jsx";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -17,6 +16,7 @@ function needsNonna(state, menu) {
 }
 
 export function PrepView({ state, dispatch, goToTab }) {
+  const t = useTranslation();
   const expectedCustomers = forecastCustomers(state);
   const menu = activeMenu(state);
   const level = levelForXp(state.xp);
@@ -27,63 +27,63 @@ export function PrepView({ state, dispatch, goToTab }) {
     <div className="prep">
       <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
-          <h2 className="h">Jour {state.day} · mise en place</h2>
-          <p className="sub">Remplis le frigo, ajuste la carte, puis ouvre quand tu es prête. Personne ne part fâché : prends ton temps.</p>
+          <h2 className="h">{t("prep.title", { day: state.day })}</h2>
+          <p className="sub">{t("prep.intro")}</p>
         </div>
         <div className="row" style={{ alignItems: "flex-end", gap: 24 }}>
           <div>
             <div className="forecast">{expectedCustomers}</div>
-            <div className="hint">clients attendus</div>
+            <div className="hint">{t("prep.expectedCustomers")}</div>
           </div>
           <dl className="kv">
-            <dt>Pizzas à la carte</dt>
+            <dt>{t("prep.pizzasOnMenu")}</dt>
             <dd>{menu.length} / {menuCapacity(level)}</dd>
-            <dt>Charges du soir</dt>
-            <dd>{formatEuro(dailyCharges(state))}</dd>
+            <dt>{t("prep.eveningCharges")}</dt>
+            <dd>{t.money(dailyCharges(state))}</dd>
             {state.debt > 0 && (
               <>
-                <dt>Ardoise en cours</dt>
-                <dd className="neg">{formatEuro(state.debt)}</dd>
+                <dt>{t("prep.currentDebt")}</dt>
+                <dd className="neg">{t.money(state.debt)}</dd>
               </>
             )}
           </dl>
         </div>
         {lowStock.length > 0 && (
           <div>
-            <strong>Stock bas</strong>
+            <strong>{t("prep.lowStock")}</strong>
             <ul className="warnlist">
               {lowStock.map((id) => (
-                <li key={id}>{ingredientName(id)} : {state.stock[id] || 0}</li>
+                <li key={id}>{t("prep.stockLine", { id, quantity: state.stock[id] || 0 })}</li>
               ))}
             </ul>
-            <button className="btn sm" style={{ marginTop: 8 }} onClick={() => goToTab("market")}>Aller au marché</button>
+            <button className="btn sm" style={{ marginTop: 8 }} onClick={() => goToTab("market")}>{t("prep.goToMarket")}</button>
           </div>
         )}
         {needsNonna(state, menu) && (
           <div className="card pad" style={{ background: "var(--gold-soft)", borderColor: "var(--gold)" }}>
-            <p style={{ margin: "0 0 8px" }}>Le frigo est vide et la caisse aussi. Nonna peut te dépanner une fois aujourd'hui.</p>
-            <button className="btn" onClick={() => dispatch({ type: "callNonna" })}>Appeler Nonna</button>
+            <p style={{ margin: "0 0 8px" }}>{t("prep.nonnaOffer")}</p>
+            <button className="btn" onClick={() => dispatch({ type: "callNonna" })}>{t("prep.callNonna")}</button>
           </div>
         )}
         <div>
           <button className="btn primary big" onClick={() => dispatch({ type: "openRestaurant" })} disabled={!expectedCustomers}>
-            Ouvrir la pizzeria
+            {t("prep.open")}
           </button>
         </div>
       </div>
 
       <div className="card pad">
-        <h3 className="h">Ce soir à la carte</h3>
-        {menu.length === 0 && <p className="sub">Aucune pizza. Passe par l'onglet Carte.</p>}
+        <h3 className="h">{t("prep.tonightsMenu")}</h3>
+        {menu.length === 0 && <p className="sub">{t("prep.emptyMenu")}</p>}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {menu.map((recipe) => (
             <div key={recipe.id} className="row" style={{ flexWrap: "nowrap" }}>
               <Pizza ingredients={recipe.ingredients} baked size={44} />
               <div className="grow">
-                <strong>{recipe.name}</strong> {isNewRecipe(state, recipe) && <span className="tag">nouveau</span>}
-                <div className="hint">{toppingsList(recipe.ingredients)}</div>
+                <strong>{t.recipe(recipe)}</strong> {isNewRecipe(state, recipe) && <span className="tag">{t("common.new")}</span>}
+                <div className="hint">{t.toppings(recipe.ingredients)}</div>
               </div>
-              <strong>{formatEuro(recipe.price)}</strong>
+              <strong>{t.money(recipe.price)}</strong>
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { INGREDIENTS_BY_ID, KIND_LAYER_ORDER, ingredientName } from "../data/ingredients.js";
+import { INGREDIENTS_BY_ID, KIND_LAYER_ORDER } from "../data/ingredients.js";
 import { GOOD_PAIRINGS, BAD_PAIRINGS } from "../data/recipes.js";
 import { clamp, roundToHalf } from "../utils/math.js";
 
@@ -21,10 +21,7 @@ export function sortByLayer(ingredients) {
 const setKey = (ingredients) => [...ingredients].sort().join("|");
 export const haveSameIngredients = (a, b) => a.length === b.length && setKey(a) === setKey(b);
 
-// "Sauce tomate, Mozzarella, Basilic": everything but the dough, for recipe cards.
-export const toppingsList = (ingredients) => ingredients.filter((id) => id !== "pate").map(ingredientName).join(", ");
-
-export const ingredientCost =(ingredients) => ingredients.reduce((total, id) => total + INGREDIENTS_BY_ID[id].cost, 0);
+export const ingredientCost = (ingredients) => ingredients.reduce((total, id) => total + INGREDIENTS_BY_ID[id].cost, 0);
 
 // Suggested price: a flat base plus a markup on ingredients, rounded to 50 cents.
 export const fairPrice = (ingredients) => roundToHalf(3.5 + 1.6 * ingredientCost(ingredients));
@@ -69,10 +66,11 @@ export function priceAttractiveness(price, fair) {
   return ratio <= 1 ? 1 + (1 - ratio) * 0.6 : Math.max(0.1, 1 - (ratio - 1) * 2);
 }
 
-export function describePrice(price, fair) {
+// Translation key under "editor.priceNote" in src/i18n.
+export function priceLevel(price, fair) {
   const ratio = price / fair;
-  if (ratio <= 0.9) return "Prix doux : plus de commandes, moins de marge.";
-  if (ratio <= 1.05) return "Prix juste.";
-  if (ratio <= 1.25) return "Un peu cher : moins de clients la choisiront.";
-  return "Trop cher : elle se vendra mal.";
+  if (ratio <= 0.9) return "gentle";
+  if (ratio <= 1.05) return "fair";
+  if (ratio <= 1.25) return "high";
+  return "tooHigh";
 }

@@ -1,7 +1,9 @@
-import { useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { gameReducer } from "./game/reducer.js";
 import { loadState } from "./game/state.js";
 import { useGameLoop } from "./hooks/useGameLoop.js";
+import { createTranslator } from "./i18n/index.js";
+import { I18nProvider } from "./i18n/I18nContext.jsx";
 import { Header } from "./views/Header.jsx";
 import { PrepView } from "./views/PrepView.jsx";
 import { ServiceView } from "./views/service/ServiceView.jsx";
@@ -11,13 +13,7 @@ import { UpgradesView } from "./views/UpgradesView.jsx";
 import { SettingsView } from "./views/SettingsView.jsx";
 import { DaySummary } from "./views/DaySummary.jsx";
 
-const TABS = [
-  { id: "service", label: "Service" },
-  { id: "market", label: "Marché" },
-  { id: "menu", label: "Carte" },
-  { id: "upgrades", label: "Améliorations" },
-  { id: "settings", label: "Réglages" },
-];
+const TABS = ["service", "market", "menu", "upgrades", "settings"];
 
 function TabContent({ tab, state, dispatch, goToTab }) {
   switch (tab) {
@@ -43,6 +39,12 @@ export function App() {
   const [tab, setTab] = useState("service");
   useGameLoop(state, dispatch);
 
+  const { language } = state.settings;
+  const t = useMemo(() => createTranslator(language), [language]);
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const waitingCustomers = state.service ? state.service.customers.length : 0;
   const startNextDay = () => {
     dispatch({ type: "startNextDay" });
@@ -50,13 +52,13 @@ export function App() {
   };
 
   return (
-    <>
+    <I18nProvider value={t}>
       <Header state={state} />
       <div className="wrap">
         <nav className="tabs" role="tablist">
-          {TABS.map(({ id, label }) => (
+          {TABS.map((id) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
-              {label}
+              {t(`tabs.${id}`)}
               {id === "service" && tab !== "service" && waitingCustomers > 0 && <span className="pip">{waitingCustomers}</span>}
             </button>
           ))}
@@ -68,9 +70,9 @@ export function App() {
       {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} onNextDay={startNextDay} />}
       <div className="toasts" aria-live="polite">
         {state.toasts.map((toast) => (
-          <div key={toast.id} className={`toast ${toast.kind}`}>{toast.text}</div>
+          <div key={toast.id} className={`toast ${toast.kind}`}>{t(`toasts.${toast.key}`, toast.params)}</div>
         ))}
       </div>
-    </>
+    </I18nProvider>
   );
 }

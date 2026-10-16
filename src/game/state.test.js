@@ -28,15 +28,16 @@ const VERSION_1_SAVE = {
     selected: "a",
     stats: { served: 1, revenue: 7, tips: 0, waste: 0, xp: 10, levelUps: [], byRecipe: {} },
   },
-  summary: null,
+  summary: { day: 3, best: ["Margherita", 4] },
 };
 
 describe("createInitialState", () => {
   it("starts with the margherita and the free suppliers", () => {
-    const state = createInitialState();
+    const state = createInitialState("en");
     expect(state.recipes.map((r) => r.id)).toEqual(["margherita"]);
     expect(Object.keys(state.unlocked)).toEqual(["pate", "tomate", "mozza", "basilic"]);
     expect(state.version).toBe(SAVE_VERSION);
+    expect(state.settings.language).toBe("en");
   });
 });
 
@@ -63,8 +64,14 @@ describe("migrateSave", () => {
     expect(service.ready[0]).toEqual({ id: "p2", ingredients: ["pate"] });
   });
 
+  it("converts sales counted by name (versions 1 and 2) into the current format", () => {
+    expect(migrated.summary.bestSeller).toEqual({ recipeId: "Margherita", name: "Margherita", count: 4 });
+    const version2 = { version: 2, money: 1, recipes: [], service: { stats: { byRecipe: { Regina: 2 } } } };
+    expect(migrateSave(version2).service.stats.byRecipe).toEqual({ Regina: { name: "Regina", count: 2 } });
+  });
+
   it("leaves current saves untouched", () => {
-    const current = createInitialState();
+    const current = createInitialState("fr");
     expect(migrateSave(current)).toBe(current);
   });
 });

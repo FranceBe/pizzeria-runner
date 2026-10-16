@@ -17,10 +17,11 @@ export const isNewRecipe = (state, recipe) => recipe.newUntil >= state.day;
 
 export const knowsRecipe = (state, recipeId) => state.recipes.some((recipe) => recipe.id === recipeId);
 
+// Classic recipes have no stored name: it is translated from their id when shown.
 export function createClassicRecipe(classic, { onMenu, newUntil }) {
   return {
     id: classic.id,
-    name: classic.name,
+    name: null,
     ingredients: classic.ingredients,
     price: fairPrice(classic.ingredients),
     classic: true,
@@ -37,22 +38,21 @@ export function discoverClassics(state) {
     if (!canCook(state, classic)) return;
     const onMenu = !menuIsFull(state);
     state.recipes.push(createClassicRecipe(classic, { onMenu, newUntil: state.day + NEW_RECIPE_DAYS }));
-    pushToast(state, `Nouvelle recette : ${classic.name}${onMenu ? " (ajoutée à la carte)" : ""}`, "gold");
+    pushToast(state, "classicDiscovered", { recipeId: classic.id, onMenu }, "gold");
   });
 }
 
 export const MAX_FILLINGS = 8;
 
-// Returns an error message for the recipe editor, or null if the recipe can be saved.
-export function validateRecipe(recipes, name, ingredients) {
-  if (!name) return "Donne-lui un nom.";
-  if (ingredients.length < 2) return "Ajoute au moins un ingrédient sur la pâte.";
-  if (recipes.some((recipe) => haveSameIngredients(recipe.ingredients, ingredients))) return "Cette combinaison existe déjà dans ton carnet.";
-  if (recipes.some((recipe) => recipe.name.toLowerCase() === name.toLowerCase())) return "Une pizza porte déjà ce nom.";
+// Returns a translation key under "editor.errors" in src/i18n, or null if the recipe can be saved.
+// displayName turns a recipe into the name the player sees (classic names are translated).
+export function validateRecipe(recipes, name, ingredients, displayName) {
+  if (!name) return "missingName";
+  if (ingredients.length < 2) return "noTopping";
+  if (recipes.some((recipe) => haveSameIngredients(recipe.ingredients, ingredients))) return "duplicateIngredients";
+  if (recipes.some((recipe) => displayName(recipe).toLowerCase() === name.toLowerCase())) return "duplicateName";
   return null;
 }
 
-export function recipeNameFor(state, ingredients) {
-  const recipe = state.recipes.find((r) => haveSameIngredients(r.ingredients, ingredients));
-  return recipe ? recipe.name : "Pizza improvisée";
-}
+export const findRecipeByIngredients = (state, ingredients) =>
+  state.recipes.find((recipe) => haveSameIngredients(recipe.ingredients, ingredients));

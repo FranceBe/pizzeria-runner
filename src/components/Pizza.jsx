@@ -1,6 +1,7 @@
 import { INGREDIENTS_BY_ID } from "../data/ingredients.js";
 import { sortByLayer, isSauce, isFilling } from "../game/pizza.js";
 import { hashString, seededRandom } from "../utils/random.js";
+import { useTranslation } from "../i18n/I18nContext.jsx";
 import { ToppingPiece } from "./ToppingPiece.jsx";
 
 const CENTER = 100;
@@ -34,10 +35,11 @@ function ScatteredToppings({ ingredient }) {
 }
 
 export function Pizza({ ingredients, baked, className, size }) {
+  const t = useTranslation();
   const layers = sortByLayer(ingredients);
   const sauce = layers.find(isSauce);
   const fillings = layers.filter(isFilling);
-  const label = layers.map((id) => INGREDIENTS_BY_ID[id].name).join(", ");
+  const label = t.ingredientList(layers);
   return (
     <svg className={className} viewBox="0 0 200 200" width={size} height={size} role="img" aria-label={label}>
       {layers.includes("pate") && (
