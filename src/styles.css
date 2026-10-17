@@ -257,8 +257,13 @@ button.ticker { width: 100%; text-align: left; gap: 8px; cursor: pointer; font: 
 .summary-num { font-size: 34px; font-weight: 800; }
 .pos { color: var(--basil); } .neg { color: var(--accent); }
 
-/* Outside service, the message line sits above the tab content */
-main > .ticker { margin-bottom: 12px; animation: slide-in .2s ease-out; }
+/* Outside service, the message line floats at the bottom of the screen; the page keeps room for it at the end */
+html:not(.svc-mode) main { padding-bottom: 76px; }
+.toast-float { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px)); z-index: 60; pointer-events: none; }
+.toast-float .ticker { pointer-events: auto; min-height: 44px; box-shadow: 0 10px 28px -8px rgba(20,40,30,.45); animation: rise .25s ease-out; }
+.toast-float .ticker.msg { background: var(--surface); }
+@keyframes rise { from { transform: translateY(10px); opacity: 0; } }
 .ticker { animation: slide-in .2s ease-out; }
 @keyframes slide-in { from { transform: translateY(-4px); opacity: 0; } }
 

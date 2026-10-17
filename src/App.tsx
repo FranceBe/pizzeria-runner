@@ -79,8 +79,12 @@ export function App() {
         </nav>
       </div>
       <main className="wrap">
-        {/* The service screen has its own ticker inside its grid. */}
-        {!isServing && <MessageTicker toasts={state.toasts} dispatch={dispatch} />}
+        {/* The service screen has its own ticker inside its grid; elsewhere it floats over the page, so nothing jumps. */}
+        {!isServing && (
+          <div className="toast-float">
+            <MessageTicker toasts={state.toasts} dispatch={dispatch} />
+          </div>
+        )}
         <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
       </main>
       {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} pizzeriaName={state.name} onNextDay={startNextDay} />}
