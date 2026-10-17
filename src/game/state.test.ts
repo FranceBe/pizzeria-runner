@@ -80,7 +80,7 @@ describe("migrateSave", () => {
 describe("hydrateState", () => {
   it("fills in fields missing from old saves", () => {
     const state = hydrateState({ money: 5, recipes: [] });
-    expect(state.upgrades).toEqual({ oven: 0, salle: 0, deco: 0, commis: 0, terrasse: 0, livraison: 0 });
+    expect(state.upgrades).toEqual({ oven: 0, salle: 0, deco: 0, commis: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 });
     expect(state.toasts).toEqual([]);
     expect(state.money).toBe(5);
   });

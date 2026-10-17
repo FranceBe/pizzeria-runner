@@ -1,4 +1,4 @@
-import { OVEN_SLOTS, BAKE_SECONDS, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor } from "../data/progression";
+import { OVEN_SLOTS, BAKE_SECONDS, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor } from "../data/progression";
 import { plural } from "../utils/format";
 import type { Dictionary } from "./types";
 
@@ -6,6 +6,14 @@ const lower = (text: string): string => text.toLowerCase();
 
 // Same shape as the French reference (src/i18n/fr.ts); entry functions get their param types from it.
 export const en: Dictionary = {
+  crash: {
+    title: "Oops, the kitchen caught fire",
+    text: "Something went wrong while drawing the game, perhaps because of a damaged save.",
+    reload: "Try again",
+    reset: "Start a new game",
+    resetHint: "The old save is set aside, not deleted.",
+  },
+
   tabs: { service: "Service", market: "Market", menu: "Menu", upgrades: "Upgrades", journal: "Journal", settings: "Settings" },
 
   common: {
@@ -44,11 +52,18 @@ export const en: Dictionary = {
     regularLine: ({ recipe, visits }) => `${recipe} · ${visits} visits`,
     today: "Today",
     chefSpecial: "Chef's special",
-    challengeTitle: "Time challenge",
+    challengeTitle: "Daily challenge",
     challengeIntro: ({ seconds }) =>
-      `${seconds / 60} minutes to serve as many pizzas as you can. Free ingredients, no money or reputation at stake: just for fun.`,
-    challengeBest: "Your best: {score} points",
+      `${seconds / 60} minutes, the same customers for everyone today: compare your score with friends. Free ingredients, nothing else at stake.`,
+    challengeBest: "Your best today: {score} points",
     startChallenge: "Start the challenge",
+    birthdayToday: ({ names }) => `It's ${names}'s birthday today! Keep their favourite pizza on the menu.`,
+    season: ({ season, days }) => `${season} · ${days} ${plural(days, "day")} left`,
+    seasonal: "In season",
+    quest: "Neighbourhood quest",
+    questReward: ({ reward, xp }, t) => `Reward: ${t.money(reward)} and ${xp} points`,
+    questDeadline: ({ days }) => (days <= 1 ? "Last day!" : `${days} days left`),
+    dailyMenu: ({ recipes }) => `On today's menu: ${recipes}.`,
   },
 
   challenge: {
@@ -59,6 +74,9 @@ export const en: Dictionary = {
     newBest: "New record!",
     best: "Best: {score} points",
     close: "Back to the kitchen",
+    share: "Share my score",
+    copied: "Copied! Paste it to your friends.",
+    shareText: ({ date, score, served, happy }) => `Forno Lento · challenge of ${date}\n🍕 ${score} points · ${served} ${plural(served, "pizza")} · ${happy} 😊`,
   },
 
   service: {
@@ -101,7 +119,16 @@ export const en: Dictionary = {
     criticTitle: "Food critic: serve them quickly!",
     delivery: "Delivery",
     express: ({ seconds }) => `Express: ${seconds}s`,
-    challenge: "Time challenge · {clock} · {score} points",
+    challenge: "Daily challenge · {clock} · {score} points",
+    table: "Table of {size}",
+    birthday: "Birthday!",
+    bar: "Bar",
+    drinkTitle: ({ drink }) => `Serve: ${drink}`,
+    ovenNumber: "Oven {number}",
+    offerDrink: ({ drink, name }) => `🎁 Offer ${name} the ${drink}`,
+    offered: "on the house",
+    secret: "Nonna's secret",
+    secretTitle: "A pinch of Nonna's secret. It changes nothing in the recipe…",
   },
 
   market: {
@@ -116,6 +143,12 @@ export const en: Dictionary = {
     sign: ({ fee }, t) => `Sign · ${t.money(fee)}`,
     marketDay: "Market day: everything is 20% off today.",
     stall: "The stall",
+    inSeason: "in season",
+    secretTitle: "Nonna's secret",
+    secretIntro: "It can't be bought: it is made, one jar at a time. One pinch per pizza.",
+    secretBonus: "Added to a pizza, it changes nothing in the recipe and the customer can't tell. But about one time in three, they tip as much as the pizza costs.",
+    secretStock: "{count} in stock",
+    craft: ({ cost }, t) => `Make one · ${t.money(cost)}`,
   },
 
   menu: {
@@ -136,6 +169,9 @@ export const en: Dictionary = {
     chefSpecial: "Chef's special",
     makeSpecial: "Make it the special",
     specialHint: "The chef's special gets ordered more often.",
+    seasonal: "Recipe of the season",
+    nonna: "Nonna's recipe",
+    nonnaLocked: ({ level }) => `Nonna will share it at level ${level}.`,
   },
 
   editor: {
@@ -175,6 +211,10 @@ export const en: Dictionary = {
     money: ({ amount }, t) => `+${t.money(amount)}`,
     tip: ({ amount }, t) => `+${t.money(amount)} tip`,
     express: ({ amount }, t) => `+${t.money(amount)} express`,
+    table: ({ amount }, t) => `+${t.money(amount)} happy table`,
+    gift: ({ amount }, t) => `+${t.money(amount)} gift`,
+    drink: ({ amount }, t) => `+${t.money(amount)} drink`,
+    secret: ({ amount }, t) => `+${t.money(amount)} ✨`,
   },
 
   upgrades: {
@@ -215,6 +255,37 @@ export const en: Dictionary = {
       name: "Delivery",
       describe: ({ level }) => (level === 0 ? "Eat-in only" : "Orders by scooter, with an express bonus when they leave quickly"),
     },
+    bar: {
+      name: "Bar",
+      describe: ({ level }) => ["No drinks", "Lemonade and sparkling water", "Lemonade, sparkling water, chinotto and red wine"][level],
+    },
+    oven2: {
+      name: "Second oven",
+      describe: ({ level }, t) =>
+        level === 0
+          ? "Not built yet"
+          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} at a time · ${t.number(BAKE_SECONDS[level - 1])}s bake`,
+    },
+    oven3: {
+      name: "Third oven",
+      describe: ({ level }, t) =>
+        level === 0
+          ? "Not built yet"
+          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} at a time · ${t.number(BAKE_SECONDS[level - 1])}s bake`,
+    },
+    annexe: {
+      name: "Second address",
+      describe: ({ level }, t) => (level === 0 ? "A single pizzeria" : `Brings in ${t.money(ANNEXE_INCOME[level])} every evening`),
+    },
+    looks: "Make it yours",
+    looksIntro: "Just for the eyes: it changes nothing in the game.",
+    choose: "Choose",
+    inUse: "In place",
+    buyLook: ({ cost }, t) => `Buy · ${t.money(cost)}`,
+    slots: { awning: "Awning", sign: "Sign", wall: "Walls" },
+    awnings: { red: "Tomato red", green: "Basil green", blue: "Riviera blue", sun: "Sunny yellow", rose: "Candy pink" },
+    signs: { classic: "Painted", neon: "Neon", gold: "Gold leaf" },
+    walls: { mint: "Mint tiles", terracotta: "Terracotta", azulejo: "Azulejos", checker: "Checkerboard" },
   },
 
   settings: {
@@ -222,6 +293,9 @@ export const en: Dictionary = {
     signName: "Name on the sign",
     language: "Language",
     showHelp: "Show ingredients on tickets and check the pizza in progress",
+    theme: "Theme",
+    themes: { auto: "Automatic", light: "Light", dark: "Dark" },
+    largeText: "Larger text",
     install: "Install the game",
     installHint: "Once installed, the game opens full screen and works offline. On iPhone: Share, then “Add to Home Screen”.",
     helpHint: "Without this help, you have to know your recipes by heart.",
@@ -254,6 +328,9 @@ export const en: Dictionary = {
     debt: "Owed to the landlord",
     bestSeller: "Best seller:",
     event: "Event:",
+    drinks: "of which drinks",
+    annexe: "Second address",
+    share: "Share the receipt",
     orders: "Orders served",
     order: ({ customer, recipe }) => `${customer} · ${recipe}`,
     noTip: "no tip",
@@ -281,9 +358,41 @@ export const en: Dictionary = {
     pairingsIntro: ({ found, total }) =>
       `${found} / ${total} pairings found. Serve a pizza that brings together two ingredients made for each other to add it.`,
     pairingHint: ({ id }, t) => `${t.ingredient(id)} + ?`,
+    page: "Page {page} / {count}",
+    previousPage: "Previous page",
+    nextPage: "Next page",
+    secretAchievement: "Secret achievement",
+    secretHint: "Some secrets aren't earned. They're typed.",
     achievements: "Achievements",
     achievementsIntro: "{count} / {total} unlocked",
     unlockedOn: "Day {day}",
+    regulars: "Regulars",
+    noRegulars: "Your regulars show up here on their third visit.",
+    visits: "{count} visits",
+    likes: ({ recipe }) => `Favourite: ${recipe}`,
+    dislikes: ({ id }, t) => `Doesn't like: ${lower(t.ingredient(id))}`,
+    birthdayIn: ({ days }) => (days === 0 ? "🎂 Birthday today!" : `🎂 Birthday in ${days} ${plural(days, "day")}`),
+  },
+
+  seasons: { spring: "Spring", summer: "Summer", autumn: "Autumn", winter: "Winter" },
+
+  diets: { veggie: "Vegetarian", noPork: "No pork", glutenFree: "Gluten-free" },
+
+  drinks: { limonade: "Lemonade", eau: "Sparkling water", chinotto: "Chinotto", vin: "Red wine" },
+
+  quests: {
+    givers: {
+      football: "The football club",
+      bakery: "The bakery next door",
+      school: "The local school",
+      townHall: "The town hall",
+      neighbour: "The chef across the street",
+    },
+    serveRecipe: ({ target, recipe }) => `wants ${target} ${recipe} for their evening.`,
+    serveTotal: ({ target }) => `is throwing a party: serve ${target} pizzas.`,
+    happy: ({ target }) => `is running a survey: serve ${target} customers still smiling.`,
+    pairing: ({ target }) => `dares you: discover ${target} new pairing.`,
+    sweet: ({ target }) => `is celebrating a birthday: serve ${target} dessert pizzas.`,
   },
 
   events: {
@@ -315,7 +424,16 @@ export const en: Dictionary = {
     allSuppliers: { name: "The whole market", describe: "Sign every supplier" },
     fullyUpgraded: { name: "The dream pizzeria", describe: "Buy every upgrade" },
     deliveries20: { name: "Vespa", describe: "Deliver 20 orders" },
-    challenge300: { name: "Hands of fire", describe: "Score 300 points in the time challenge" },
+    challenge300: { name: "Hands of fire", describe: "Score 300 points in the daily challenge" },
+    dailyChallenge: { name: "Challenge accepted", describe: "Play the daily challenge" },
+    sweetTooth: { name: "Sweet tooth", describe: "Serve 10 dessert pizzas" },
+    drinks50: { name: "Barista", describe: "Serve 50 drinks" },
+    happyTable: { name: "Happy table", describe: "Serve a whole table while they're still smiling" },
+    birthday: { name: "Happy birthday", describe: "Celebrate a regular's birthday" },
+    quests5: { name: "Good neighbour", describe: "Complete 5 neighbourhood quests" },
+    secondOven: { name: "Double fire", describe: "Build a second oven" },
+    secondAddress: { name: "Small chain", describe: "Open a second address" },
+    secretCode: { name: "↑↑↓↓←→←→BA", describe: "You know the code." },
   },
 
   tutorial: {
@@ -358,6 +476,18 @@ export const en: Dictionary = {
     newRegular: "{name} is now one of your regulars!",
     achievement: ({ achievementId }, t) => `Achievement unlocked: ${t.achievementName(achievementId)}!`,
     critic: ({ name, stars }) => `${name} publishes their review: ${"★".repeat(stars)}${"☆".repeat(5 - stars)}`,
+    nonnaRecipe: ({ recipeId, onMenu }, t) =>
+      `Nonna shares her secret recipe: ${t.recipe({ id: recipeId, name: null })}!${onMenu ? " (added to the menu)" : ""}`,
+    birthday: "Happy birthday {name}! A lovely gift for you.",
+    happyTable: "Table of {size} delighted: a bonus from the whole table!",
+    nobodyWantsDrink: ({ drinkId }, t) => `Nobody is waiting for a ${lower(t.drink(drinkId))}.`,
+    questDone: ({ giver, reward }, t) => `Quest complete! ${t.questGiver(giver)} thanks you: ${t.money(reward)}.`,
+    questExpired: ({ giver }, t) => `${t.questGiver(giver)} found another way. Maybe next time!`,
+    drinkOffered: "{name} is touched by the gesture.",
+    secretTip: "{name} loved it, without knowing why. A royal tip!",
+    secretFromNonna: "Nonna tasted her recipes at your place. Moved, she shares her secret ingredient: you can make it at the market.",
+    secretFromCode: "Nonna winks at you: her secret ingredient is yours. You can make it at the market.",
+    secretCodeAgain: "Nonna smiles. You already know the secret.",
     newPairing: ({ pairings }, t) => `${plural(pairings.length, "New pairing")}: ${pairings.map(t.pairing).join(", ")}!`,
   },
 
@@ -378,10 +508,12 @@ export const en: Dictionary = {
     veg: "Vegetables",
     herb: "Herbs & spices",
     finish: "Finishing touches",
+    sweet: "Desserts",
   },
 
   ingredients: {
     pate: "Dough",
+    pateSG: "Gluten-free dough",
     tomate: "Tomato sauce",
     mozza: "Mozzarella",
     basilic: "Basil",
@@ -409,6 +541,11 @@ export const en: Dictionary = {
     jcru: "Prosciutto",
     burrata: "Burrata",
     truffe: "Black truffle",
+    chocolat: "Chocolate spread",
+    mascarpone: "Mascarpone",
+    banane: "Banana",
+    fraise: "Strawberries",
+    noisette: "Hazelnuts",
   },
 
   recipes: {
@@ -426,5 +563,11 @@ export const en: Dictionary = {
     parma: "Parma",
     burrata: "Burrata",
     tartufo: "Tartufo",
+    chocobanane: "Choco-banana",
+    fraisemasca: "Strawberry mascarpone",
+    nonna: "La Nonna",
+    nonnarosa: "Nonna Rosa",
+    segreto: "Il Segreto",
+    capolavoro: "Il Capolavoro",
   },
 };

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { INGREDIENTS_BY_ID } from "../../data/ingredients";
 import { CLASSIC_RECIPES } from "../../data/recipes";
-import { activeMenu, canCook, isNewRecipe, knowsRecipe } from "../../game/menu";
-import { appealOf, fairPrice, ingredientCost, PRICE_STEP } from "../../game/pizza";
+import { activeMenu, canCook, isNewRecipe, knowsRecipe, recipeAppeal, signatureLevel } from "../../game/menu";
+import { seasonalRecipe } from "../../game/seasons";
+import { fairPrice, ingredientCost, PRICE_STEP } from "../../game/pizza";
 import { levelForXp, menuCapacity } from "../../game/progression";
 import { useTranslation } from "../../i18n/I18nContext";
 import { AppealStars } from "../../components/AppealStars";
@@ -33,10 +34,12 @@ function RecipeCard({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
           <span className="rname">{name}</span>
           {recipe.custom && <span className="tag">{t("menu.homemade")}</span>}
           {isNewRecipe(state, recipe) && <span className="tag">{t("common.new")}</span>}
+          {signatureLevel(recipe.id) && <span className="tag nonna-tag">{t("menu.nonna")}</span>}
+          {seasonalRecipe(state)?.id === recipe.id && <span className="tag seasonal">{t("menu.seasonal")}</span>}
         </div>
         <div className="hint">{t.toppings(recipe.ingredients)}</div>
         <div className="row">
-          <AppealStars appeal={appealOf(recipe.ingredients, recipe.classic)} />
+          <AppealStars appeal={recipeAppeal(recipe)} />
           <span className="hint">
             {t("menu.costAndAdvice", { cost: ingredientCost(recipe.ingredients), fair: fairPrice(recipe.ingredients) })}
           </span>
@@ -106,7 +109,9 @@ function ClassicsToDiscover({ state }: Pick<ScreenProps, "state">) {
             <div key={classic.id} className="card pad locked row" style={{ flexWrap: "nowrap" }}>
               <div className="grow">
                 <strong>{t.recipe(classic)}</strong>
-                <div className="hint">{t("menu.missing", { items })}</div>
+                {classic.signatureLevel && <span className="tag nonna-tag" style={{ marginLeft: 6 }}>{t("menu.nonna")}</span>}
+                {classic.signatureLevel && <div className="hint">{t("menu.nonnaLocked", { level: classic.signatureLevel })}</div>}
+                {missing.length > 0 && <div className="hint">{t("menu.missing", { items })}</div>}
               </div>
             </div>
           );

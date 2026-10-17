@@ -39,6 +39,16 @@ const PROGRESS: Record<AchievementId, (state: GameState) => Progress> = {
   fullyUpgraded: (state) => ({ current: upgradeLevels(state), target: MAX_UPGRADE_LEVELS }),
   deliveries20: (state) => ({ current: state.lifetime.deliveries, target: 20 }),
   challenge300: (state) => ({ current: state.bestChallengeScore, target: 300 }),
+  dailyChallenge: (state) => ({ current: state.lifetime.dailyChallenges, target: 1 }),
+  sweetTooth: (state) => ({ current: state.lifetime.sweetServed, target: 10 }),
+  drinks50: (state) => ({ current: state.lifetime.drinksSold, target: 50 }),
+  happyTable: (state) => ({ current: state.lifetime.happyTables, target: 1 }),
+  birthday: (state) => ({ current: state.lifetime.birthdays, target: 1 }),
+  quests5: (state) => ({ current: state.lifetime.questsDone, target: 5 }),
+  secondOven: (state) => ({ current: state.upgrades.oven2 > 0 ? 1 : 0, target: 1 }),
+  secondAddress: (state) => ({ current: state.upgrades.annexe > 0 ? 1 : 0, target: 1 }),
+  // Only the code unlocks this one: finishing everything else leaves the journal one short.
+  secretCode: (state) => ({ current: state.secretCodeFound ? 1 : 0, target: 1 }),
 };
 
 export function achievementProgress(state: GameState, id: AchievementId): Progress {

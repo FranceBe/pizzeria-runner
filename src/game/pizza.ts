@@ -7,6 +7,13 @@ const kindOf = (id: IngredientId): IngredientKind => INGREDIENTS_BY_ID[id].kind;
 // Cheeses and toppings: what goes on top of the dough and sauce.
 export const isFilling = (id: IngredientId): boolean => kindOf(id) === "cheese" || kindOf(id) === "topping";
 export const isSauce = (id: IngredientId): boolean => kindOf(id) === "sauce";
+// Doughs: the regular one and the gluten-free one. A pizza has exactly one.
+export const isBase = (id: IngredientId): boolean => kindOf(id) === "base";
+export const hasBase = (ingredients: readonly IngredientId[]): boolean => ingredients.some(isBase);
+const isSweet = (id: IngredientId): boolean => Boolean(INGREDIENTS_BY_ID[id].sweet);
+const isSavouryProtein = (id: IngredientId): boolean => Boolean(INGREDIENTS_BY_ID[id].meat || INGREDIENTS_BY_ID[id].fish);
+// A dessert pizza: chocolate, mascarpone or fruit (honey alone goes on savoury pizzas too).
+export const isDessert = (ingredients: readonly IngredientId[]): boolean => ingredients.some((id) => isSweet(id) && id !== "miel");
 export const fillingsOf = (ingredients: readonly IngredientId[]): IngredientId[] => ingredients.filter(isFilling);
 
 // Dough first, then sauce, cheeses, toppings; ties keep the ingredient list order.
@@ -42,8 +49,11 @@ export function findPairings(ingredients: readonly IngredientId[]): { good: Pair
 export const MIN_APPEAL = 0.3;
 export const MAX_APPEAL = 1.6;
 
+const SIGNATURE_APPEAL_BONUS = 0.15;
+
 // How much customers want a recipe, from MIN_APPEAL to MAX_APPEAL (about 1 for a decent pizza).
-export function appealOf(ingredients: readonly IngredientId[], isClassic: boolean): number {
+// Dessert pizzas need neither cheese nor sauce, but sweet and meat or fish don't mix.
+export function appealOf(ingredients: readonly IngredientId[], isClassic: boolean, isSignature = false): number {
   const fillings = fillingsOf(ingredients);
   const fillingCount = fillings.length;
   const cheeseCount = fillings.filter((id) => kindOf(id) === "cheese").length;
@@ -51,11 +61,14 @@ export function appealOf(ingredients: readonly IngredientId[], isClassic: boolea
   const { good, bad } = findPairings(ingredients);
 
   let appeal = 0.75 + 0.07 * Math.min(fillingCount, 6) + 0.12 * good.length - 0.25 * bad.length;
-  if (!hasSauce) appeal -= 0.1;
-  if (cheeseCount === 0) appeal -= 0.15;
+  const dessert = isDessert(ingredients);
+  if (!hasSauce && !dessert) appeal -= 0.1;
+  if (cheeseCount === 0 && !dessert) appeal -= 0.15;
+  if (dessert && ingredients.some(isSavouryProtein)) appeal -= 0.3;
   if (cheeseCount >= 3) appeal += 0.1;
   if (fillingCount > 7) appeal -= 0.08 * (fillingCount - 7);
   if (isClassic) appeal += 0.1;
+  if (isSignature) appeal += SIGNATURE_APPEAL_BONUS;
   return clamp(appeal, MIN_APPEAL, MAX_APPEAL);
 }
 

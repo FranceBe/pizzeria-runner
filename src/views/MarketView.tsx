@@ -1,8 +1,10 @@
 import { INGREDIENTS } from "../data/ingredients";
 import { CLASSIC_RECIPES } from "../data/recipes";
+import { SECRET_CRAFT_COST } from "../data/progression";
 import { SUPPLIER_WELCOME_PORTIONS } from "../game/actions/shopActions";
 import { restockPlan, type RestockPlan } from "../game/economy";
 import { marketPrice } from "../game/events";
+import { isInSeason } from "../game/seasons";
 import { knowsRecipe } from "../game/menu";
 import { levelForXp } from "../game/progression";
 import { useTranslation } from "../i18n/I18nContext";
@@ -41,6 +43,7 @@ function Fridge({ state, dispatch }: ScreenProps) {
             <div key={ingredient.id} className="crate">
               <span className={`crate-qty${quantity < 5 ? " low" : ""}`}>{quantity}</span>
               <IngredientIcon id={ingredient.id} className="crate-ic" />
+              {isInSeason(state, ingredient.id) && <span className="crate-season">{t("market.inSeason")}</span>}
               <div className="crate-n">{t.ingredient(ingredient.id)}</div>
               <div className="price-tag">
                 {price < ingredient.cost && <s>{t.money(ingredient.cost)}</s>} {t.money(price)}
@@ -65,6 +68,32 @@ function Fridge({ state, dispatch }: ScreenProps) {
   );
 }
 
+// Nonna's secret, once shared: made by hand, one jar at a time, never part of the restock buttons.
+function NonnasSecret({ state, dispatch }: ScreenProps) {
+  const t = useTranslation();
+  if (!state.secretIngredient) return null;
+  return (
+    <div className="card pad secret-card">
+      <div className="row">
+        <h2 className="h grow">{t("market.secretTitle")}</h2>
+        <span className="secret-info" title={t("market.secretBonus")} aria-label={t("market.secretBonus")} tabIndex={0}>ⓘ</span>
+      </div>
+      <p className="sub">{t("market.secretIntro")}</p>
+      <div className="row">
+        <span className="secret-stock">✨ {t("market.secretStock", { count: state.secretStock })}</span>
+        <button
+          className="btn primary"
+          title={t("market.secretBonus")}
+          disabled={!canAfford(state.money, SECRET_CRAFT_COST)}
+          onClick={() => dispatch({ type: "craftSecret" })}
+        >
+          {t("market.craft", { cost: SECRET_CRAFT_COST })}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Suppliers({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
   const level = levelForXp(state.xp);
@@ -74,6 +103,7 @@ function Suppliers({ state, dispatch }: ScreenProps) {
       <h2 className="h">{t("market.suppliers")}</h2>
       <p className="sub" style={{ marginBottom: 10 }}>{t("market.suppliersIntro", { portions: SUPPLIER_WELCOME_PORTIONS })}</p>
       {lockedIngredients.length === 0 && <p className="sub">{t("market.allSuppliers")}</p>}
+      <div className="supplier-list">
       {lockedIngredients.map((ingredient) => {
         const isAvailable = level >= ingredient.requiredLevel;
         const helpsWith = CLASSIC_RECIPES.filter(
@@ -105,6 +135,7 @@ function Suppliers({ state, dispatch }: ScreenProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -112,7 +143,10 @@ function Suppliers({ state, dispatch }: ScreenProps) {
 export function MarketView({ state, dispatch }: ScreenProps) {
   return (
     <div className="market">
-      <Fridge state={state} dispatch={dispatch} />
+      <div className="market-main">
+        <Fridge state={state} dispatch={dispatch} />
+        <NonnasSecret state={state} dispatch={dispatch} />
+      </div>
       <Suppliers state={state} dispatch={dispatch} />
     </div>
   );

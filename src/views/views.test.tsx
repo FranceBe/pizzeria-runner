@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { INGREDIENTS } from "../data/ingredients";
 import type { DaySummary as Summary, GameState } from "../game/types";
-import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle } from "../test/helpers";
+import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, MARGHERITA_INGREDIENTS } from "../test/helpers";
 import { App } from "../App";
 import { createTranslator, LANGUAGES, type Language } from "../i18n";
 import { I18nProvider } from "../i18n/I18nContext";
@@ -45,7 +45,7 @@ const serviceScreen = (state: GameState): ReactElement => (
 
 // A journal with a few days, a discovered pairing and an achievement.
 function playedState(): GameState {
-  const state = makeState({ day: 4, event: "critic" });
+  const state = makeState({ day: 4, event: "critic", settings: { ...makeState().settings, tutorialDone: true } });
   state.history = [
     { day: 1, served: 5, revenue: 35, tips: 2, net: 12, xp: 50, event: null },
     { day: 2, served: 3, revenue: 21, tips: 0, net: -4, xp: 30, event: "rain" },
@@ -54,6 +54,24 @@ function playedState(): GameState {
   state.discoveredPairings = ["tomate+basilic"];
   state.achievements = { firstPizza: 1 };
   state.chefSpecial = "margherita";
+  state.quest = { kind: "serveRecipe", giver: "football", target: 5, progress: 2, recipeId: "margherita", recipeName: null, deadlineDay: 5, reward: 35, xp: 40 };
+  state.customerBook = { Giulia: makeBookEntry({ visits: 5, orders: { margherita: 5 }, dislikes: "basilic", birthday: 4 }) };
+  return state;
+}
+
+// Every late-game upgrade, with a busy kitchen: two ovens, the bar, tables and birthdays.
+function lateKitchen(): GameState {
+  const state = stateInService(
+    [
+      makeCustomer({ id: "t1", name: "Rosa", tableId: "tab", drink: "vin" }),
+      makeCustomer({ id: "t2", name: "Enzo", tableId: "tab", diet: "veggie", drink: "limonade", drinkServed: true }),
+      makeCustomer({ id: "b1", name: "Giulia", birthday: true }),
+    ],
+    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, terrasse: 2, livraison: 1, bar: 2, oven2: 2, oven3: 1, annexe: 2 } },
+  );
+  serviceOf(state).tables = { tab: { size: 2, served: 0, allHappy: true, color: 1 } };
+  serviceOf(state).oven = [{ id: "o", ovenIndex: 1, ingredients: MARGHERITA_INGREDIENTS, bakedSeconds: 1, bakeDuration: 3 }];
+  state.settings.tutorialDone = true;
   return state;
 }
 
@@ -86,7 +104,7 @@ describe.each(LANGUAGES)("views in %s", (language) => {
     const late = lateGameState();
     return [
       { name: "Header with pops", element: <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} /> },
-      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, terrasse: 0, livraison: 0 } }} dispatch={noop} /> },
+      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } }} dispatch={noop} /> },
       { name: "Prep with regulars", element: <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} /> },
       { name: "Prep when broke", element: <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} /> },
       { name: "Service in progress", element: serviceScreen(serviceInProgress()) },
@@ -106,8 +124,11 @@ describe.each(LANGUAGES)("views in %s", (language) => {
       { name: "Market day", element: <MarketView state={makeState({ event: "market" })} dispatch={noop} /> },
       { name: "Menu with special", element: <MenuView state={playedState()} dispatch={noop} /> },
       { name: "Special tickets", element: serviceScreen(withRegulars(stateInService(SPECIAL_CUSTOMERS.map((c) => ({ ...c })), { ...late }))) },
-      { name: "Challenge", element: serviceScreen(play(playedState(), { type: "startChallenge" })) },
-      { name: "Challenge result", element: <ChallengeResult result={{ score: 120, served: 6, isNewBest: false }} best={180} dispatch={noop} /> },
+      { name: "Challenge", element: serviceScreen(play(playedState(), { type: "startChallenge", date: "2026-10-17" })) },
+      { name: "Late kitchen", element: serviceScreen(lateKitchen()) },
+      { name: "Upgrades with looks", element: <UpgradesView state={lateKitchen()} dispatch={noop} /> },
+      { name: "Summary with drinks and second address", element: <DaySummary summary={{ ...SUMMARY, drinks: 9, annexeIncome: 70 }} pizzeriaName="Forno Lento" onNextDay={noop} /> },
+      { name: "Challenge result", element: <ChallengeResult result={{ date: "2026-10-17", score: 120, served: 6, happy: 4, isNewBest: false }} best={180} dispatch={noop} /> },
     ];
   };
 
@@ -193,7 +214,7 @@ describe("views", () => {
 
   it("decorates the storefront as upgrades are bought", () => {
     expect(render(<Header state={makeState()} dispatch={noop} />)).not.toContain("storefront");
-    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, terrasse: 0, livraison: 0 } })} dispatch={noop} />);
+    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } })} dispatch={noop} />);
     expect(upgraded.match(/decor table/g)).toHaveLength(2);
     expect(upgraded).toContain("oven-front");
     expect(upgraded).toContain('class="lights"');
@@ -217,8 +238,10 @@ describe("views", () => {
   });
 
   it("shows the challenge clock and bottomless pans", () => {
-    const html = render(serviceScreen(play(makeState(), { type: "startChallenge" })), "en");
-    expect(html).toContain("Time challenge · 2:00 · 0 points");
+    // Messages take the ticker's place: clear the achievements that playedState unlocks on the way.
+    const state = { ...play(playedState(), { type: "startChallenge", date: "2026-10-17" }), toasts: [] };
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain("Daily challenge · 2:00 · 0 points");
     expect(html).toContain(">∞<");
   });
 
@@ -238,6 +261,61 @@ describe("views", () => {
     expect(html).toContain("Tomato sauce &amp; basil");
     expect(html).toContain("Day 1");
     expect(html.match(/class="bar-neg"/g)).toHaveLength(1);
+  });
+
+  it("shows the quest, the season and today's birthdays on the prep screen", () => {
+    const html = render(<PrepView state={playedState()} dispatch={noop} goToTab={noop} />, "en");
+    expect(html).toContain("The football club wants 5 Margherita for their evening.");
+    expect(html).toContain("2 / 5");
+    expect(html).toContain("Spring · 4 days left");
+    expect(html).toContain("It&#x27;s Giulia&#x27;s birthday today!");
+    expect(html).toContain("On today&#x27;s menu:");
+  });
+
+  it("shows every oven, the bar, tables, diets and birthdays during service", () => {
+    const html = render(serviceScreen(lateKitchen()), "en");
+    expect(html).toContain("Oven 3");
+    expect(html).toContain("Table of 2");
+    expect(html).toContain("Vegetarian");
+    expect(html).toContain("Birthday!");
+    expect(html).toMatch(/class="drink-btn wanted"[^>]*title="Serve: Red wine"/);
+    expect(html).toContain('class="drink-order served"');
+  });
+
+  it("lists the regulars' profiles in the journal", () => {
+    const html = render(<JournalView state={playedState()} />, "en");
+    expect(html).toContain("Doesn&#x27;t like: basil");
+    expect(html).toContain("🎂 Birthday today!");
+  });
+
+  it("keeps the secret achievement secret until it is unlocked", () => {
+    expect(render(<JournalView state={makeState()} />, "en")).toContain("Some secrets aren&#x27;t earned. They&#x27;re typed.");
+    const found = render(<JournalView state={makeState({ achievements: { secretCode: 3 } })} />, "en");
+    expect(found).toContain("You know the code.");
+  });
+
+  it("shows Nonna's secret on the prep line once shared, and offers regulars their drink", () => {
+    const state = stateInService([makeCustomer({ drink: "vin" })], { secretIngredient: true, secretStock: 3, upgrades: { ...makeState().upgrades, bar: 2 } });
+    state.customerBook = { Luca: makeBookEntry({ visits: 4 }) };
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain("Nonna&#x27;s secret");
+    expect(html).toContain("🎁 Offer Luca the red wine");
+    expect(render(serviceScreen(stateInService([makeCustomer()])), "en")).not.toContain("Nonna&#x27;s secret");
+  });
+
+  it("lets the player make Nonna's secret at the market once it is shared, and explains it", () => {
+    expect(render(<MarketView state={makeState()} dispatch={noop} />, "en")).not.toContain("Nonna&#x27;s secret");
+    const html = render(<MarketView state={makeState({ secretIngredient: true, secretStock: 2 })} dispatch={noop} />, "en");
+    expect(html).toContain("2 in stock");
+    expect(html).toContain("Make one · €10.00");
+    expect(html).toContain("tip as much as the pizza costs");
+  });
+
+  it("sells looks for the pizzeria", () => {
+    const html = render(<UpgradesView state={makeState({ money: 130 })} dispatch={noop} />, "en");
+    expect(html).toContain("Make it yours");
+    expect(html).toMatch(/Tomato red<\/span><span class="look-a">In place/);
+    expect(html).toContain("Buy · €120.00");
   });
 
   it("highlights the current language", () => {

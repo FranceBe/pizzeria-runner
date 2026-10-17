@@ -1,3 +1,4 @@
+import { hasBase } from "./pizza";
 import { customerForPizza, selectedCustomer } from "./service";
 import type { GameState, TutorialStep } from "./types";
 
@@ -16,7 +17,7 @@ export function tutorialStep(state: GameState): TutorialStep | null {
   const selected = selectedCustomer(service);
   if (!selected) return { key: service.oven.length ? "baking" : "waiting", target: null };
 
-  if (!service.board.includes("pate")) {
+  if (!hasBase(service.board)) {
     return service.oven.length
       ? { key: "nextPizza", params: { name: selected.name }, target: "dough" }
       : { key: "dough", params: { name: selected.name }, target: "dough" };

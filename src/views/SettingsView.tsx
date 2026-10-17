@@ -2,10 +2,12 @@ import { useState } from "react";
 import { toSaveData } from "../game/state";
 import { LANGUAGES, LANGUAGE_NAMES, type Language } from "../i18n";
 import { useTranslation } from "../i18n/I18nContext";
-import type { Dispatch } from "../game/types";
+import type { Dispatch, Theme } from "../game/types";
 import { encodeSaveCode, decodeSaveCode } from "../utils/saveCode";
 import type { ScreenProps } from "./types";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
+
+const THEMES: readonly Theme[] = ["auto", "light", "dark"];
 
 type StatusMessage = "settings.copied" | "settings.selected" | "settings.invalidCode";
 
@@ -60,6 +62,23 @@ function PizzeriaSettings({ state, dispatch }: ScreenProps) {
         {t("settings.showHelp")}
       </label>
       <p className="hint" style={{ margin: 0 }}>{t("settings.helpHint")}</p>
+      <div className="row">
+        <span className="binlabel" style={{ margin: 0 }}>{t("settings.theme")}</span>
+        {THEMES.map((theme) => (
+          <button
+            key={theme}
+            className={`btn sm${theme === state.settings.theme ? " primary" : ""}`}
+            aria-pressed={theme === state.settings.theme}
+            onClick={() => dispatch({ type: "setTheme", theme })}
+          >
+            {t(`settings.themes.${theme}`)}
+          </button>
+        ))}
+      </div>
+      <label className="switch">
+        <input id="large-text" type="checkbox" checked={state.settings.largeText} onChange={() => dispatch({ type: "toggleLargeText" })} />
+        {t("settings.largeText")}
+      </label>
       <InstallButton />
     </div>
   );

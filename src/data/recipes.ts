@@ -17,13 +17,23 @@ const CLASSIC_LIST = [
   { id: "parma", ingredients: ["pate", "tomate", "mozza", "jcru", "roquette", "parmesan"] },
   { id: "burrata", ingredients: ["pate", "tomate", "burrata", "roquette", "basilic"] },
   { id: "tartufo", ingredients: ["pate", "creme", "mozza", "champi", "truffe", "parmesan"] },
-] as const satisfies readonly { id: string; ingredients: readonly IngredientId[] }[];
+  // Desserts
+  { id: "chocobanane", ingredients: ["pate", "chocolat", "banane", "noisette"] },
+  { id: "fraisemasca", ingredients: ["pate", "mascarpone", "fraise", "miel"] },
+  // Nonna's secret recipes: she hands them over when the pizzeria reaches their level.
+  { id: "nonna", ingredients: ["pate", "tomate", "mozza", "parmesan", "origan", "basilic"], signatureLevel: 4 },
+  { id: "nonnarosa", ingredients: ["pate", "creme", "mozza", "jambon", "champi", "roquette"], signatureLevel: 7 },
+  { id: "segreto", ingredients: ["pate", "creme", "burrata", "truffe", "roquette", "miel"], signatureLevel: 10 },
+  { id: "capolavoro", ingredients: ["pate", "tomate", "burrata", "jcru", "artichaut", "basilic", "parmesan"], signatureLevel: 15 },
+] as const satisfies readonly { id: string; ingredients: readonly IngredientId[]; signatureLevel?: number }[];
 
 export type ClassicRecipeId = (typeof CLASSIC_LIST)[number]["id"];
 
 export interface ClassicRecipe {
   id: ClassicRecipeId;
   ingredients: readonly IngredientId[];
+  /** Nonna's recipes: the level at which she shares them. They are a little more appealing. */
+  signatureLevel?: number;
 }
 
 export const CLASSIC_RECIPES: readonly ClassicRecipe[] = CLASSIC_LIST;
@@ -39,9 +49,11 @@ export const GOOD_PAIRINGS: readonly Pairing[] = [
   ["patate", "reblochon"], ["oignon", "lardons"], ["salami", "piment"], ["burrata", "tomate"], ["truffe", "champi"],
   ["truffe", "creme"], ["poivron", "oignon"], ["artichaut", "olive"], ["jambon", "oeuf"], ["tomate", "origan"],
   ["salami", "miel"], ["chevre", "roquette"], ["gorgo", "champi"],
+  ["chocolat", "banane"], ["chocolat", "noisette"], ["banane", "noisette"], ["fraise", "mascarpone"], ["chocolat", "fraise"],
 ];
 
 export const BAD_PAIRINGS: readonly Pairing[] = [
   ["miel", "anchois"], ["truffe", "piment"], ["burrata", "reblochon"],
   ["capres", "miel"], ["truffe", "salami"], ["oeuf", "anchois"],
+  ["chocolat", "tomate"], ["fraise", "anchois"],
 ];

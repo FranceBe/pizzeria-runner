@@ -2,6 +2,7 @@ import { menuCapacity } from "../game/progression";
 import type { DaySummary as Summary, OrderRecord } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { Pizza } from "../components/Pizza";
+import { drawReceipt, shareOrDownload, type ReceiptRow } from "../utils/receiptImage";
 
 // A line of the receipt: label, dotted leader, amount.
 function ReceiptLine({ label, value, className = "" }: { label: string; value: string | number; className?: string }) {
@@ -45,6 +46,25 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
   const isProfit = summary.net >= 0;
   const reachedLevel = summary.levelUps.at(-1);
   const { bestSeller } = summary;
+
+  const shareReceipt = async () => {
+    const rows: ReceiptRow[] = [
+      { label: t("summary.served"), value: String(summary.served) },
+      { label: t("summary.revenue"), value: t.money(summary.revenue) },
+      { label: t("summary.tips"), value: t.money(summary.tips) },
+      { label: t("summary.purchases"), value: `− ${t.money(summary.purchases)}` },
+      { label: t("summary.charges"), value: `− ${t.money(summary.charges)}` },
+      ...(summary.annexeIncome ? [{ label: t("summary.annexe"), value: `+ ${t.money(summary.annexeIncome)}` }] : []),
+      { label: t("summary.profit"), value: `${isProfit ? "+" : ""}${t.money(summary.net)}`, isTotal: true },
+      { label: t("summary.reputation"), value: `+${summary.xp}` },
+    ];
+    const blob = await drawReceipt(pizzeriaName, t("summary.title", { day: summary.day }), rows, t("summary.thanks"));
+    try {
+      if (blob) await shareOrDownload(blob, `forno-lento-day-${summary.day}.png`);
+    } catch {
+      // Sharing cancelled: nothing to do.
+    }
+  };
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label={t("summary.dialog")}>
       <div className="summary-modal">
@@ -67,6 +87,8 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           <ReceiptLine label={t("summary.purchases")} value={`− ${t.money(summary.purchases)}`} />
           <ReceiptLine label={t("summary.charges")} value={`− ${t.money(summary.charges)}`} />
           {summary.waste > 0 && <ReceiptLine label={t("summary.waste")} value={t.money(summary.waste)} />}
+          {Boolean(summary.drinks) && <ReceiptLine label={t("summary.drinks")} value={t.money(summary.drinks ?? 0)} />}
+          {Boolean(summary.annexeIncome) && <ReceiptLine label={t("summary.annexe")} value={`+ ${t.money(summary.annexeIncome ?? 0)}`} />}
           <div className="receipt-rule" />
           <ReceiptLine
             className={`receipt-total ${isProfit ? "pos" : "neg"}`}
@@ -94,7 +116,10 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           </div>
         )}
         {summary.debt > 0 && <p className="hint summary-hint">{t("summary.debtHint")}</p>}
-        <button className="btn primary big" onClick={onNextDay}>{t("summary.nextDay", { day: summary.day + 1 })}</button>
+        <div className="summary-actions">
+          <button className="btn" onClick={() => void shareReceipt()}>{t("summary.share")}</button>
+          <button className="btn primary big" onClick={onNextDay}>{t("summary.nextDay", { day: summary.day + 1 })}</button>
+        </div>
       </div>
     </div>
   );

@@ -74,17 +74,46 @@ function Scooter() {
   );
 }
 
+function BarGlass() {
+  return (
+    <svg className="decor bar-front" viewBox="0 0 30 40">
+      <path d="M6 6h18l-2 22a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2L6 6Z" fill="#fff" opacity=".75" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 14h14l-1.4 14H9.4L8 14Z" fill="#f4e27a" />
+      <circle cx="21" cy="8" r="4" fill="#f2d33b" stroke="#c9a91f" />
+      <path d="M11 38h8M15 30v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// The second address: a little shopfront with its own awning.
+function Annexe({ level }: { level: number }) {
+  return (
+    <svg className="decor annexe-front" viewBox="0 0 44 40">
+      <rect x="4" y="12" width="36" height="28" fill="#f3e6cf" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M2 12h40l-3 7H5z" fill="var(--awning)" />
+      <rect x="9" y="23" width="11" height="17" fill="#6b4a2f" />
+      <rect x="24" y="23" width="12" height="9" fill="#bfe3f2" stroke="currentColor" strokeWidth="1" />
+      {level >= 2 && <circle cx="38" cy="6" r="3" fill="#ffd36b" />}
+      {level >= 3 && <circle cx="32" cy="4" r="2.4" fill="#ffd36b" />}
+    </svg>
+  );
+}
+
 export function StorefrontDecor({ upgrades }: { upgrades: Record<UpgradeKey, number> }) {
-  const { deco, salle, oven, terrasse, livraison } = upgrades;
-  if (!deco && !salle && !oven && !terrasse && !livraison) return null;
+  const { deco, salle, oven, terrasse, livraison, bar, oven2, oven3, annexe } = upgrades;
+  if (!deco && !salle && !oven && !terrasse && !livraison && !bar && !annexe) return null;
+  const extraOvens = (oven2 ? 1 : 0) + (oven3 ? 1 : 0);
   return (
     <div className="storefront" aria-hidden="true">
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} />}
       {Array.from({ length: terrasse }, (_, index) => <Parasol key={index} />)}
       {Array.from({ length: salle }, (_, index) => <BistroTable key={index} />)}
       {oven >= 1 && <WoodOven level={oven} />}
+      {Array.from({ length: extraOvens }, (_, index) => <WoodOven key={index} level={index === 0 ? oven2 : oven3} />)}
+      {bar >= 1 && <BarGlass />}
       {livraison >= 1 && <Scooter />}
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} isFlipped />}
+      {annexe >= 1 && <Annexe level={annexe} />}
     </div>
   );
 }

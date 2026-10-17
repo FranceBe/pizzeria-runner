@@ -1,4 +1,8 @@
 import type { AchievementId } from "../data/achievements";
+import type { AccessoryId } from "../data/customers";
+import type { AwningId, CosmeticId, CosmeticSlot, SignId, WallId } from "../data/cosmetics";
+import type { DrinkId } from "../data/drinks";
+import type { QuestGiver, QuestKind } from "../data/quests";
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
 import type { UpgradeKey } from "../data/progression";
@@ -31,6 +35,8 @@ export interface Looks {
   skin: string;
   hair: string;
   hairStyle: number;
+  /** Missing on customers met before accessories existed. */
+  accessory?: AccessoryId | null;
 }
 
 export interface Customer extends Looks {
@@ -54,10 +60,35 @@ export interface Customer extends Looks {
   critic?: boolean;
   /** A delivery order: nobody at the counter, an express bonus instead of a tip. */
   delivery?: boolean;
+  /** Only orders recipes that fit; gluten-free swaps the dough for the gluten-free one. */
+  diet?: Diet | null;
+  /** Customers who came in together share a table id; serving the whole table happy earns a bonus. */
+  tableId?: string | null;
+  drink?: DrinkId | null;
+  drinkServed?: boolean;
+  /** A regular's drink, on the house: a better tip and a little reputation. */
+  drinkOffered?: boolean;
+  /** A regular on their birthday: their favourite earns a gift. */
+  birthday?: boolean;
+}
+
+export type Diet = "veggie" | "noPork" | "glutenFree";
+
+export interface TableProgress {
+  size: number;
+  served: number;
+  /** Everyone served so far was still happy or patient. */
+  allHappy: boolean;
+  /** Colour index of the table badge. */
+  color: number;
 }
 
 export interface OvenPizza {
   id: string;
+  /** With a pinch of Nonna's secret: it looks and matches like any other pizza. */
+  secret?: boolean;
+  /** Which oven it bakes in (see ovensOf); missing on older saves, meaning the first. */
+  ovenIndex?: number;
   ingredients: readonly IngredientId[];
   bakedSeconds: number;
   bakeDuration: number;
@@ -65,6 +96,7 @@ export interface OvenPizza {
 
 export interface ReadyPizza {
   id: string;
+  secret?: boolean;
   ingredients: readonly IngredientId[];
 }
 
@@ -91,6 +123,8 @@ export interface ServiceStats {
   waste: number;
   xp: number;
   levelUps: number[];
+  /** Revenue from drinks (also counted in revenue). */
+  drinks?: number;
   /** Keyed by recipe id, or by recipe name for sales migrated from old saves. */
   byRecipe: Record<string, RecipeSales>;
   orders: OrderRecord[];
@@ -103,6 +137,8 @@ export interface Service {
   customers: Customer[];
   /** The pizza being built. */
   board: IngredientId[];
+  /** Nonna's secret is on the pizza being built. */
+  secretOnBoard?: boolean;
   oven: OvenPizza[];
   /** The pass: baked pizzas waiting to be served. */
   ready: ReadyPizza[];
@@ -110,18 +146,30 @@ export interface Service {
   stats: ServiceStats;
   /** Still to come on a critic day. */
   criticPending?: boolean;
+  /** Regulars whose birthday it is, still to come. */
+  birthdayGuests?: string[];
+  tables?: Record<string, TableProgress>;
   /** Set for a timed challenge, which uses free ingredients and leaves the game untouched. */
   challenge?: Challenge | null;
 }
 
+/** The daily challenge: the same customers, in the same order, for everyone on a given date. */
 export interface Challenge {
   secondsLeft: number;
   score: number;
+  /** "2026-10-17" */
+  date: string;
+  /** State of the seeded random generator, so the sequence survives a reload. */
+  seed: number;
+  menu: ClassicRecipeId[];
+  happy: number;
 }
 
 export interface ChallengeResult {
+  date: string;
   score: number;
   served: number;
+  happy: number;
   isNewBest: boolean;
 }
 
@@ -148,6 +196,10 @@ export interface DaySummary {
   /** Missing on summaries from saves made before the order recap existed. */
   orders?: OrderRecord[];
   event?: DayEventId | null;
+  /** Of the revenue, what the bar brought in. */
+  drinks?: number;
+  /** What the second address brought in tonight. */
+  annexeIncome?: number;
 }
 
 /** A finished day, kept for the journal (without the order list, to keep saves small). */
@@ -174,17 +226,52 @@ export interface LifetimeStats {
   bestDay: { day: number; net: number } | null;
   /** Keyed like ServiceStats.byRecipe. */
   byRecipe: Record<string, RecipeSales>;
+  sweetServed: number;
+  drinksSold: number;
+  happyTables: number;
+  birthdays: number;
+  questsDone: number;
+  dailyChallenges: number;
 }
+
+export interface Quest {
+  kind: QuestKind;
+  giver: QuestGiver;
+  target: number;
+  progress: number;
+  /** For serveRecipe. */
+  recipeId?: RecipeId;
+  recipeName?: string | null;
+  /** Last day to complete it. */
+  deadlineDay: number;
+  reward: number;
+  xp: number;
+}
+
+export interface Cosmetics {
+  owned: CosmeticId[];
+  awning: AwningId;
+  sign: SignId;
+  wall: WallId;
+}
+
+export type Theme = "auto" | "light" | "dark";
 
 export interface CustomerBookEntry extends Looks {
   visits: number;
   /** How many times they ordered each recipe, by recipe id. */
   orders: Record<string, number>;
+  /** Given when they become a regular: they never order a pizza with it. */
+  dislikes?: IngredientId;
+  /** Day of the 28-day month (1–28), given when they become a regular. */
+  birthday?: number;
 }
 
 export interface Settings {
   showHelp: boolean;
   language: Language;
+  theme: Theme;
+  largeText: boolean;
   tutorialDone: boolean;
 }
 
@@ -192,7 +279,7 @@ export type ToastKind = "" | "gold" | "warn";
 export type ToastInput = MessageInput<"toasts", ToastKey>;
 export type Toast = ToastInput & { id: string; kind: ToastKind };
 
-export type PopKind = "money" | "tip" | "express";
+export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret";
 export interface Pop {
   id: string;
   amount: number;
@@ -234,6 +321,16 @@ export interface GameState {
   lifetime: LifetimeStats;
   bestChallengeScore: number;
   challengeResult: ChallengeResult | null;
+  /** Best score of the latest daily challenge played. */
+  dailyChallenge: { date: string; best: number } | null;
+  quest: Quest | null;
+  cosmetics: Cosmetics;
+  /** Nonna's secret ingredient, once she has shared it. */
+  secretIngredient: boolean;
+  /** Jars of it made at the market and not used yet. */
+  secretStock: number;
+  /** Someone typed the code. */
+  secretCodeFound: boolean;
   service: Service | null;
   summary: DaySummary | null;
   toasts: Toast[];
@@ -255,7 +352,12 @@ export type GameAction =
   | { type: "servePizza"; pizzaId: string }
   | { type: "trashReadyPizza"; pizzaId: string }
   | { type: "revealUsualOrder"; customerId: string }
-  | { type: "startChallenge" }
+  | { type: "startChallenge"; date: string }
+  | { type: "serveDrink"; drinkId: DrinkId }
+  | { type: "offerDrink" }
+  | { type: "toggleSecret" }
+  | { type: "craftSecret" }
+  | { type: "enterSecretCode" }
   | { type: "dismissChallengeResult" }
   | { type: "startNextDay" }
   // Shop
@@ -264,6 +366,7 @@ export type GameAction =
   | { type: "signSupplier"; ingredientId: IngredientId }
   | { type: "callNonna" }
   | { type: "buyUpgrade"; upgradeKey: UpgradeKey }
+  | { type: "chooseCosmetic"; slot: CosmeticSlot; id: string }
   // Menu
   | { type: "changePrice"; recipeId: RecipeId; delta: number }
   | { type: "toggleOnMenu"; recipeId: RecipeId }
@@ -273,6 +376,8 @@ export type GameAction =
   // Settings
   | { type: "renamePizzeria"; name: string }
   | { type: "toggleHelp" }
+  | { type: "setTheme"; theme: Theme }
+  | { type: "toggleLargeText" }
   | { type: "skipTutorial" }
   | { type: "setLanguage"; language: Language }
   | { type: "dismissToast"; toastId: string }

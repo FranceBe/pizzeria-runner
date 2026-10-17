@@ -2,7 +2,9 @@ import { UPGRADES, UPGRADE_KEYS, type Upgrade, type UpgradeKey } from "../data/p
 import { dailyCharges } from "../game/economy";
 import { levelForXp } from "../game/progression";
 import { useTranslation } from "../i18n/I18nContext";
-import type { Dispatch } from "../game/types";
+import { COSMETIC_PRICES, COSMETIC_SLOTS, type CosmeticSlot, type LookIds } from "../data/cosmetics";
+import type { Dispatch, GameState } from "../game/types";
+import { canAfford } from "../utils/math";
 import type { ScreenProps } from "./types";
 
 interface UpgradeCardProps {
@@ -51,6 +53,65 @@ function UpgradeCard({ upgradeKey, upgrade, currentLevel, playerLevel, money, di
   );
 }
 
+// A little preview of each look: a stripe of awning, a lettering style, a patch of wall.
+function LookSwatch({ slot, id }: { slot: CosmeticSlot; id: string }) {
+  return <span className={`swatch swatch-${slot} ${slot}-${id}`} aria-hidden="true">{slot === "sign" ? "Aa" : ""}</span>;
+}
+
+interface LookGroupProps<Slot extends CosmeticSlot> {
+  slot: Slot;
+  label: string;
+  nameOf: (id: LookIds[Slot]) => string;
+  state: GameState;
+  dispatch: Dispatch;
+}
+
+function LookGroup<Slot extends CosmeticSlot>({ slot, label, nameOf, state, dispatch }: LookGroupProps<Slot>) {
+  const t = useTranslation();
+  const ids: readonly LookIds[Slot][] = COSMETIC_SLOTS[slot];
+  return (
+    <div className="look-slot">
+      <div className="binlabel">{label}</div>
+      <div className="look-options">
+        {ids.map((id) => {
+          const price: number = COSMETIC_PRICES[slot][id];
+          const isOwned = price === 0 || state.cosmetics.owned.includes(`${slot}:${id}`);
+          const isInUse = state.cosmetics[slot] === id;
+          return (
+            <button
+              key={id}
+              className={`look${isInUse ? " in-use" : ""}`}
+              aria-pressed={isInUse}
+              disabled={isInUse || (!isOwned && !canAfford(state.money, price))}
+              onClick={() => dispatch({ type: "chooseCosmetic", slot, id })}
+            >
+              <LookSwatch slot={slot} id={id} />
+              <span className="look-n">{nameOf(id)}</span>
+              <span className="look-a">
+                {isInUse ? t("upgrades.inUse") : isOwned ? t("upgrades.choose") : t("upgrades.buyLook", { cost: price })}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Purely visual: the awning, the sign and the walls.
+function LooksShop({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
+  const t = useTranslation();
+  return (
+    <div className="card pad looks">
+      <h2 className="h">{t("upgrades.looks")}</h2>
+      <p className="sub">{t("upgrades.looksIntro")}</p>
+      <LookGroup slot="awning" label={t("upgrades.slots.awning")} nameOf={(id) => t(`upgrades.awnings.${id}`)} state={state} dispatch={dispatch} />
+      <LookGroup slot="sign" label={t("upgrades.slots.sign")} nameOf={(id) => t(`upgrades.signs.${id}`)} state={state} dispatch={dispatch} />
+      <LookGroup slot="wall" label={t("upgrades.slots.wall")} nameOf={(id) => t(`upgrades.walls.${id}`)} state={state} dispatch={dispatch} />
+    </div>
+  );
+}
+
 export function UpgradesView({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
   const playerLevel = levelForXp(state.xp);
@@ -71,6 +132,7 @@ export function UpgradesView({ state, dispatch }: ScreenProps) {
           />
         ))}
       </div>
+      <LooksShop state={state} dispatch={dispatch} />
     </>
   );
 }

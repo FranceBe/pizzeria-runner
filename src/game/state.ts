@@ -9,9 +9,9 @@ import type { GameState, LifetimeStats, SaveData } from "./types";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 6;
 
-export const emptyLifetimeStats = (): LifetimeStats => ({
+const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
   revenue: 0,
   tips: 0,
@@ -22,6 +22,12 @@ export const emptyLifetimeStats = (): LifetimeStats => ({
   wasteFreeDays: 0,
   bestDay: null,
   byRecipe: {},
+  sweetServed: 0,
+  drinksSold: 0,
+  happyTables: 0,
+  birthdays: 0,
+  questsDone: 0,
+  dailyChallenges: 0,
 });
 
 export function createInitialState(language: Language = detectLanguage()): GameState {
@@ -37,8 +43,8 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     stock: { pate: 8, tomate: 8, mozza: 8, basilic: 8 },
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
-    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, terrasse: 0, livraison: 0 },
-    settings: { showHelp: true, language, tutorialDone: false },
+    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 },
+    settings: { showHelp: true, language, theme: "auto", largeText: false, tutorialDone: false },
     phase: "prep",
     purchasesToday: 0,
     lastNonnaVisitDay: 0,
@@ -51,6 +57,12 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     lifetime: emptyLifetimeStats(),
     bestChallengeScore: 0,
     challengeResult: null,
+    dailyChallenge: null,
+    quest: null,
+    cosmetics: { owned: ["awning:red", "sign:classic", "wall:mint"], awning: "red", sign: "classic", wall: "mint" },
+    secretIngredient: false,
+    secretStock: 0,
+    secretCodeFound: false,
     service: null,
     summary: null,
     toasts: [],
@@ -159,8 +171,21 @@ function migrateFromVersion3(saved: JsonObject): JsonObject {
   return { ...saved, discoveredPairings: [...discovered], lifetime: { ...emptyLifetimeStats(), served } };
 }
 
+// Version 4: before seasons, tables, drinks, quests and the daily challenge. Everything new starts empty,
+// which hydrateState fills in; challenge results from version 4 have no date, so they are dropped.
+const migrateFromVersion4 = ({ challengeResult, ...saved }: JsonObject): JsonObject => saved;
+
+// Version 5: before accessories and Nonna's secret. Everything new is optional or has a default.
+const migrateFromVersion5 = (saved: JsonObject): JsonObject => saved;
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
-const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [migrateFromVersion1, migrateFromVersion2, migrateFromVersion3];
+const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
+  migrateFromVersion1,
+  migrateFromVersion2,
+  migrateFromVersion3,
+  migrateFromVersion4,
+  migrateFromVersion5,
+];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.
 const versionOf = (saved: JsonObject): number =>
@@ -190,6 +215,7 @@ export function hydrateState(saved: JsonObject): GameState {
     unlocked: { ...defaults.unlocked, ...migrated.unlocked },
     customerBook: migrated.customerBook ?? {},
     lifetime: { ...defaults.lifetime, ...migrated.lifetime },
+    cosmetics: { ...defaults.cosmetics, ...migrated.cosmetics },
   };
   // Records, without a toast, what an older save had already earned.
   unlockAchievements(state, { silent: true });
@@ -209,6 +235,18 @@ export function loadState(): GameState {
     return saved ? hydrateState(saved) : createInitialState();
   } catch {
     return createInitialState();
+  }
+}
+
+// Starts over after a crash, keeping the broken save aside (under BROKEN_SAVE_KEY) rather than deleting it.
+const BROKEN_SAVE_KEY = "forno-lento-broken-save";
+export function setBrokenSaveAside(): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) localStorage.setItem(BROKEN_SAVE_KEY, raw);
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage blocked: nothing was saved in the first place.
   }
 }
 

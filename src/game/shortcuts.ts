@@ -1,35 +1,45 @@
 import { COMMIS_ASSEMBLES_ORDER } from "../data/progression";
+import { isRegularCustomer } from "./customers";
+import { hasBase, isBase } from "./pizza";
 import { customerForPizza, selectedCustomer } from "./service";
 import type { GameAction, GameState, Service } from "./types";
 
 const ARROW_STEPS: Partial<Record<string, -1 | 1>> = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
 
 // Keyboard shortcuts during service. Returns the action a key press should dispatch, or null.
-//   0          dough
+//   0          dough (the selected order's: gluten-free when they asked for it)
 //   1–9        the selected order's ingredients, in ticket order (only with help on, since it reveals the recipe)
 //   Space      bake
 //   Enter      serve (the selected customer's pizza first)
 //   ← → ↑ ↓    previous / next order
 //   Backspace  bin the pizza on the board
 //   A          kitchen assistant builds the selected order
+//   D          the selected customer's drink
+//   O          offer it, for a regular
 export function shortcutAction(state: GameState, key: string): GameAction | null {
   const { service } = state;
   if (state.phase !== "service" || !service) return null;
   const selected = selectedCustomer(service);
   const selectedIndex = selected ? service.customers.indexOf(selected) : -1;
 
-  if (key === "0") return { type: "toggleIngredient", ingredientId: "pate" };
+  if (key === "0") return { type: "toggleIngredient", ingredientId: selected?.ingredients.find(isBase) ?? "pate" };
   if (/^[1-9]$/.test(key)) {
     // The usual order is for the player to remember.
     if (!state.settings.showHelp || !selected || selected.asUsual) return null;
     const ingredientId = selected.ingredients.filter((id) => id !== "pate")[Number(key) - 1];
     return ingredientId ? { type: "toggleIngredient", ingredientId } : null;
   }
-  if (key === " ") return service.board.includes("pate") ? { type: "bake" } : null;
+  if (key === " ") return hasBase(service.board) ? { type: "bake" } : null;
   if (key === "Enter") return serveAction(service);
   if (key === "Backspace" || key === "Delete") return service.board.length ? { type: "trashBoard" } : null;
   if (key === "a" || key === "A") {
     return state.upgrades.commis >= COMMIS_ASSEMBLES_ORDER && selected ? { type: "assembleOrder" } : null;
+  }
+  if (key === "d" || key === "D") {
+    return selected?.drink && !selected.drinkServed ? { type: "serveDrink", drinkId: selected.drink } : null;
+  }
+  if (key === "o" || key === "O") {
+    return selected?.drink && !selected.drinkServed && isRegularCustomer(state, selected) ? { type: "offerDrink" } : null;
   }
   const step = ARROW_STEPS[key];
   if (step && service.customers.length) {

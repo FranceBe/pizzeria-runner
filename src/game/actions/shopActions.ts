@@ -1,17 +1,33 @@
 import { INGREDIENTS_BY_ID, type IngredientId } from "../../data/ingredients";
 import { MARGHERITA } from "../../data/recipes";
-import { UPGRADES } from "../../data/progression";
+import { SECRET_CRAFT_COST, UPGRADES } from "../../data/progression";
 import { canAfford } from "../../utils/math";
 import { restockPlan, spend } from "../economy";
 import { marketPrice } from "../events";
 import { discoverClassics } from "../menu";
 import { levelForXp } from "../progression";
 import { pushToast } from "../toasts";
+import { COSMETIC_PRICES, isLookOf, type CosmeticId, type CosmeticSlot, type LookIds } from "../../data/cosmetics";
 import type { ActionHandlers, GameState } from "../types";
 
 const addToStock = (state: GameState, id: IngredientId, quantity: number): void => {
   state.stock[id] = (state.stock[id] || 0) + quantity;
 };
+
+function chooseLook<Slot extends CosmeticSlot>(state: GameState, slot: Slot, id: LookIds[Slot]): void {
+  const price: number = COSMETIC_PRICES[slot][id];
+  const cosmeticId: CosmeticId = `${slot}:${id}`;
+  if (price > 0 && !state.cosmetics.owned.includes(cosmeticId)) {
+    if (!canAfford(state.money, price)) {
+      pushToast(state, { key: "notEnoughMoney" }, "warn");
+      return;
+    }
+    spend(state, price);
+    state.cosmetics.owned.push(cosmeticId);
+  }
+  const looks: LookIds = state.cosmetics;
+  looks[slot] = id;
+}
 
 export const SUPPLIER_WELCOME_PORTIONS = 4;
 const NONNA_PORTIONS = 4;
@@ -65,5 +81,21 @@ export const shopActions = {
     spend(state, cost);
     state.upgrades[upgradeKey] = currentLevel + 1;
     pushToast(state, { key: "upgradeBought", params: { upgradeKey, level: currentLevel + 1 } }, "gold");
+  },
+
+  // One jar of Nonna's secret, made by hand: it never comes with the restock buttons.
+  craftSecret(state) {
+    if (!state.secretIngredient) return;
+    if (!canAfford(state.money, SECRET_CRAFT_COST)) {
+      pushToast(state, { key: "notEnoughMoney" }, "warn");
+      return;
+    }
+    spend(state, SECRET_CRAFT_COST);
+    state.secretStock += 1;
+  },
+
+  // Picks a look for the pizzeria, buying it first if needed. Free looks are always owned.
+  chooseCosmetic(state, { slot, id }) {
+    if (isLookOf(slot, id)) chooseLook(state, slot, id);
   },
 } satisfies Partial<ActionHandlers>;

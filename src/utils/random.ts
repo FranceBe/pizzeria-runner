@@ -27,3 +27,14 @@ export function seededRandom(seed: number): () => number {
     return ((state >>> 0) % 10000) / 10000;
   };
 }
+
+// One step of the same xorshift generator, for sequences that must survive a save and reload:
+// the caller stores `next` and passes it back for the following number.
+export function seededStep(seed: number): { value: number; next: number } {
+  let next = seed || 1;
+  next ^= next << 13;
+  next ^= next >>> 17;
+  next ^= next << 5;
+  next >>>= 0;
+  return { value: (next % 10000) / 10000, next };
+}

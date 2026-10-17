@@ -1,10 +1,11 @@
 import { MARGHERITA } from "../data/recipes";
-import { CHALLENGE_SECONDS } from "../game/actions/serviceActions";
+import { CHALLENGE_SECONDS, createChallenge, localDate } from "../game/challenge";
 import { dailyCharges, forecastCustomers } from "../game/economy";
 import { activeMenu, isNewRecipe } from "../game/menu";
 import { ingredientCost } from "../game/pizza";
 import { levelForXp, menuCapacity } from "../game/progression";
-import { regularsOf } from "../game/regulars";
+import { birthdaysToday, regularsOf } from "../game/regulars";
+import { daysLeftInSeason, seasonalRecipe, seasonOf } from "../game/seasons";
 import { tutorialStep } from "../game/tutorial";
 import { useTranslation } from "../i18n/I18nContext";
 import { CoachTip } from "../components/CoachTip";
@@ -13,6 +14,7 @@ import { Pizza } from "../components/Pizza";
 import type { GameState, Recipe } from "../game/types";
 import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
+import { QuestCard } from "./QuestCard";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -37,22 +39,32 @@ function EventBanner({ state }: { state: GameState }) {
   );
 }
 
-// A two-minute round with free ingredients, for fun; offered once the tutorial is over.
+// The daily challenge: same customers for everyone today; offered once the tutorial is over.
 function ChallengeOffer({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
   if (!state.settings.tutorialDone) return null;
+  const today = localDate();
+  const bestToday = state.dailyChallenge?.date === today ? state.dailyChallenge.best : 0;
+  const menu = createChallenge(today).menu.map((id) => t.recipe({ id })).join(", ");
   return (
     <div className="challenge-offer">
       <div className="grow">
         <strong>{t("prep.challengeTitle")}</strong>
         <div className="hint">{t("prep.challengeIntro", { seconds: CHALLENGE_SECONDS })}</div>
-        {state.bestChallengeScore > 0 && <div className="hint"><strong>{t("prep.challengeBest", { score: state.bestChallengeScore })}</strong></div>}
+        <div className="hint">{t("prep.dailyMenu", { recipes: menu })}</div>
+        {bestToday > 0 && <div className="hint"><strong>{t("prep.challengeBest", { score: bestToday })}</strong></div>}
       </div>
-      <button className="btn" disabled={!activeMenu(state).length} onClick={() => dispatch({ type: "startChallenge" })}>
+      <button className="btn" onClick={() => dispatch({ type: "startChallenge", date: today })}>
         {t("prep.startChallenge")}
       </button>
     </div>
   );
+}
+
+function SeasonBadge({ day }: { day: number }) {
+  const t = useTranslation();
+  const season = seasonOf(day);
+  return <span className={`season-badge s-${season}`}>{t("prep.season", { season: t(`seasons.${season}`), days: daysLeftInSeason(day) })}</span>;
 }
 
 function Regulars({ state }: { state: GameState }) {
@@ -90,14 +102,21 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
   const usedIngredients = [...new Set(menu.flatMap((recipe) => recipe.ingredients))];
   const lowStock = usedIngredients.filter((id) => (state.stock[id] || 0) < LOW_STOCK_THRESHOLD);
   const tutorial = tutorialStep(state);
+  const seasonal = seasonalRecipe(state);
+  const birthdays = birthdaysToday(state);
 
   return (
     <div className="prep">
       <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {tutorial && <CoachTip step={tutorial} dispatch={dispatch} />}
         <EventBanner state={state} />
+        {birthdays.length > 0 && <div className="birthday-note" role="note">{t("prep.birthdayToday", { names: birthdays.join(", ") })}</div>}
+        {state.quest && <QuestCard quest={state.quest} day={state.day} />}
         <div>
-          <h2 className="h">{t("prep.title", { day: state.day })}</h2>
+          <div className="row prep-head">
+            <h2 className="h grow">{t("prep.title", { day: state.day })}</h2>
+            <SeasonBadge day={state.day} />
+          </div>
           <p className="sub">{t("prep.intro")}</p>
         </div>
         <div className="row" style={{ alignItems: "flex-end", gap: 24 }}>
@@ -157,6 +176,7 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
               <div className="grow">
                 <strong>{t.recipe(recipe)}</strong> {isNewRecipe(state, recipe) && <span className="tag">{t("common.new")}</span>}
                 {recipe.id === state.chefSpecial && <span className="tag special">{`★ ${t("prep.chefSpecial")}`}</span>}
+                {recipe.id === seasonal?.id && <span className="tag seasonal">{t("prep.seasonal")}</span>}
                 <div className="hint">{t.toppings(recipe.ingredients)}</div>
               </div>
               <strong>{t.money(recipe.price)}</strong>

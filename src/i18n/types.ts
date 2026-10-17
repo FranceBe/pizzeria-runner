@@ -1,5 +1,7 @@
 import type { IngredientId } from "../data/ingredients";
 import type { AchievementId } from "../data/achievements";
+import type { DrinkId } from "../data/drinks";
+import type { QuestGiver } from "../data/quests";
 import type { UpgradeKey } from "../data/progression";
 import type { Pairing } from "../data/recipes";
 import type { fr } from "./fr";
@@ -23,6 +25,8 @@ export interface TranslationHelpers {
   /** "Chèvre & miel" */
   pairing(pairing: Pairing): string;
   achievementName(id: AchievementId): string;
+  drink(id: DrinkId): string;
+  questGiver(giver: QuestGiver): string;
 }
 
 type Reference = typeof fr;

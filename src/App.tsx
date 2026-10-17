@@ -3,6 +3,7 @@ import { gameReducer } from "./game/reducer";
 import { loadState } from "./game/state";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { useServiceShortcuts } from "./hooks/useServiceShortcuts";
+import { useSecretCode } from "./hooks/useSecretCode";
 import { createTranslator } from "./i18n";
 import { I18nProvider } from "./i18n/I18nContext";
 import { Header } from "./views/Header";
@@ -17,6 +18,7 @@ import { JournalView } from "./views/JournalView";
 import { ChallengeResult } from "./views/ChallengeResult";
 import { MessageTicker } from "./components/MessageTicker";
 import { TabIcon, type TabId } from "./components/TabIcon";
+import { SecretPad } from "./components/SecretPad";
 import type { ScreenProps } from "./views/types";
 
 const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "settings"];
@@ -44,12 +46,24 @@ export function App() {
   const [state, dispatch] = useReducer(gameReducer, null, loadState);
   const [tab, setTab] = useState<TabId>("service");
   useGameLoop(state, dispatch);
+  const secretPad = useSecretCode(dispatch);
 
   const { language } = state.settings;
   const t = useMemo(() => createTranslator(language), [language]);
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  // Theme, text size and the pizzeria's looks are styled from attributes on <html> (see styles.css).
+  const { theme, largeText } = state.settings;
+  const { awning, sign, wall } = state.cosmetics;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "auto") delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    root.classList.toggle("large-text", largeText);
+    Object.assign(root.dataset, { awning, sign, wall });
+  }, [theme, largeText, awning, sign, wall]);
 
   // During service, the service screen fits the window instead of scrolling (see .svc-mode in styles.css).
   const isServing = tab === "service" && state.phase === "service";
@@ -88,7 +102,8 @@ export function App() {
         <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
       </main>
       {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} pizzeriaName={state.name} onNextDay={startNextDay} />}
-      {state.challengeResult && <ChallengeResult result={state.challengeResult} best={state.bestChallengeScore} dispatch={dispatch} />}
+      <SecretPad pad={secretPad} />
+      {state.challengeResult && <ChallengeResult result={state.challengeResult} best={state.dailyChallenge?.best ?? 0} dispatch={dispatch} />}
     </I18nProvider>
   );
 }

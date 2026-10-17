@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import type { IngredientId } from "../data/ingredients";
 import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { achievementProgress, unlockAchievements } from "./achievements";
-import { CHALLENGE_SECONDS } from "./actions/serviceActions";
+import { CHALLENGE_SECONDS } from "./challenge";
 import { createCustomer, orderWeight } from "./customers";
 import { forecastCustomers, restockPlan } from "./economy";
 import { marketPrice, rollDayEvent } from "./events";
@@ -193,7 +193,7 @@ describe("achievements", () => {
 
 describe("time challenge", () => {
   const inChallenge = (): GameState => {
-    const state = play(makeState({ settings: { ...makeState().settings, tutorialDone: true } }), { type: "startChallenge" });
+    const state = play(makeState({ settings: { ...makeState().settings, tutorialDone: true } }), { type: "startChallenge", date: "2026-10-17" });
     serviceOf(state).customers = [makeCustomer()];
     serviceOf(state).selectedCustomerId = "cust-1";
     return state;
@@ -214,8 +214,9 @@ describe("time challenge", () => {
     state = play(state, { type: "tick", seconds: CHALLENGE_SECONDS });
     expect(state.phase).toBe("prep");
     expect(state.service).toBeNull();
-    expect(state.challengeResult).toEqual({ score: 26, served: 1, isNewBest: true });
+    expect(state.challengeResult).toEqual({ date: "2026-10-17", score: 26, served: 1, happy: 1, isNewBest: true });
     expect(state.bestChallengeScore).toBe(26);
+    expect(state.dailyChallenge).toEqual({ date: "2026-10-17", best: 26 });
     expect(play(state, { type: "dismissChallengeResult" }).challengeResult).toBeNull();
   });
 });

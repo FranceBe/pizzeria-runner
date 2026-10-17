@@ -1,5 +1,6 @@
 import { DAY_EVENTS, DAY_EVENT_IDS, EVENT_CHANCE, FIRST_EVENT_DAY, type DayEvent, type DayEventId } from "../data/events";
 import { INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
+import { seasonalPriceFactor } from "./seasons";
 import type { GameState } from "./types";
 
 // What an ordinary day looks like, so callers never have to check for "no event".
@@ -19,6 +20,6 @@ export function rollDayEvent(day: number, yesterday: DayEventId | null): DayEven
   return candidates[0];
 }
 
-// What a portion costs at the market today, rounded to the cent.
+// What a portion costs at the market today (market day, in-season discount), rounded to the cent.
 export const marketPrice = (state: GameState, id: IngredientId): number =>
-  Math.round(INGREDIENTS_BY_ID[id].cost * todaysEvent(state).marketPriceFactor * 100) / 100;
+  Math.round(INGREDIENTS_BY_ID[id].cost * todaysEvent(state).marketPriceFactor * seasonalPriceFactor(state, id) * 100) / 100;

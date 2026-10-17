@@ -1,10 +1,11 @@
 import { COMMIS_ASSEMBLES_ORDER } from "../../data/progression";
 import { isRegularCustomer } from "../../game/customers";
 import { ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
-import { haveSameIngredients } from "../../game/pizza";
+import { hasBase, haveSameIngredients } from "../../game/pizza";
 import { tutorialStep } from "../../game/tutorial";
 import { useTranslation } from "../../i18n/I18nContext";
 import { formatClock } from "../../utils/format";
+import { challengeRecipe } from "../../game/challenge";
 import { CoachTip } from "../../components/CoachTip";
 import { MessageTicker } from "../../components/MessageTicker";
 import { Pizza } from "../../components/Pizza";
@@ -50,6 +51,7 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: 
     <section className="a-peel peel" aria-label={t("service.workBoard")}>
       <div className="peel-pz">
         {board.length ? <Pizza ingredients={board} className="pizza" /> : <div className="empty">{t("service.emptyBoard")}</div>}
+        {service.secretOnBoard && <span className="secret-sparkle" aria-hidden="true">✨</span>}
         {selectedCustomer?.asUsual && <UsualReminder customer={selectedCustomer} dispatch={dispatch} />}
         {selectedCustomer && !selectedCustomer.asUsual && board.length > 0 && state.settings.showHelp && (
           <BoardCheck customer={selectedCustomer} board={board} />
@@ -64,7 +66,7 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: 
         <button className="btn sm" disabled={!board.length} onClick={() => dispatch({ type: "trashBoard" })}>{t("common.trash")}</button>
         <button
           className={`btn primary${coachTarget === "bake" ? " coach-target" : ""}`}
-          disabled={!board.includes("pate") || ovenIsFull}
+          disabled={!hasBase(board) || ovenIsFull}
           onClick={() => dispatch({ type: "bake" })}
         >
           {ovenIsFull ? t("service.ovenFull") : t("service.bake")}
@@ -107,6 +109,7 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
               showIngredients={state.settings.showHelp}
               board={service.board}
               isRegular={isRegularCustomer(state, customer)}
+              table={customer.tableId ? service.tables?.[customer.tableId] : undefined}
               onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
             />
           ))}
@@ -118,10 +121,21 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
         <PrepLine
           state={state}
           isBottomless={Boolean(challenge)}
+          extraIngredients={challenge ? challenge.menu.flatMap((id) => challengeRecipe(id).ingredients) : []}
           board={service.board}
           neededIngredients={state.settings.showHelp && selectedCustomer && !selectedCustomer.asUsual ? selectedCustomer.ingredients : []}
           coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}
+          secret={
+            state.secretIngredient && !challenge
+              ? {
+                  isOnBoard: Boolean(service.secretOnBoard),
+                  canAdd: hasBase(service.board) && state.secretStock > 0,
+                  stock: state.secretStock,
+                  onToggle: () => dispatch({ type: "toggleSecret" }),
+                }
+              : undefined
+          }
         />
       </div>
     </div>

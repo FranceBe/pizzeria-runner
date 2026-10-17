@@ -1,8 +1,11 @@
 import type { AchievementId } from "../data/achievements";
+import type { DrinkId } from "../data/drinks";
 import type { DayEventId } from "../data/events";
+import type { QuestGiver } from "../data/quests";
+import type { SeasonId } from "../data/seasons";
 import type { IngredientId, IngredientKind, StationId } from "../data/ingredients";
 import {
-  OVEN_SLOTS, BAKE_SECONDS, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
+  OVEN_SLOTS, BAKE_SECONDS, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
 } from "../data/progression";
 import type { ClassicRecipeId, Pairing } from "../data/recipes";
 import { plural } from "../utils/format";
@@ -12,6 +15,14 @@ const lower = (text: string): string => text.toLowerCase();
 
 // The reference dictionary: its keys, literal strings and function signatures type every translation (see types.ts).
 export const fr = {
+  crash: {
+    title: "Oups, la cuisine a pris feu",
+    text: "Quelque chose s'est mal passé à l'affichage, peut-être à cause d'une sauvegarde abîmée.",
+    reload: "Réessayer",
+    reset: "Recommencer une partie",
+    resetHint: "L'ancienne sauvegarde est mise de côté, pas effacée.",
+  },
+
   tabs: { service: "Service", market: "Marché", menu: "Carte", upgrades: "Améliorations", journal: "Carnet", settings: "Réglages" },
 
   common: {
@@ -50,11 +61,18 @@ export const fr = {
     regularLine: ({ recipe, visits }: { recipe: string; visits: number }) => `${recipe} · ${visits} visites`,
     today: "Aujourd'hui",
     chefSpecial: "Suggestion du chef",
-    challengeTitle: "Défi chrono",
+    challengeTitle: "Défi du jour",
     challengeIntro: ({ seconds }: { seconds: number }) =>
-      `${seconds / 60} minutes pour servir un maximum de pizzas. Ingrédients offerts, et ni argent ni réputation en jeu : juste pour le plaisir.`,
-    challengeBest: "Ton record : {score} points",
+      `${seconds / 60} minutes, les mêmes clients pour tout le monde aujourd'hui : compare ton score avec tes amis. Ingrédients offerts, rien d'autre en jeu.`,
+    challengeBest: "Ton meilleur score aujourd'hui : {score} points",
     startChallenge: "Lancer le défi",
+    birthdayToday: ({ names }: { names: string }) => `C'est l'anniversaire de ${names} aujourd'hui ! Garde sa pizza préférée à la carte.`,
+    season: ({ season, days }: { season: string; days: number }) => `${season} · encore ${days} ${plural(days, "jour")}`,
+    seasonal: "De saison",
+    quest: "Quête du quartier",
+    questReward: ({ reward, xp }: { reward: number; xp: number }, t: H) => `Récompense : ${t.money(reward)} et ${xp} points`,
+    questDeadline: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour !" : `Encore ${days} jours`),
+    dailyMenu: ({ recipes }: { recipes: string }) => `Au menu aujourd'hui : ${recipes}.`,
   },
 
   challenge: {
@@ -65,6 +83,10 @@ export const fr = {
     newBest: "Nouveau record !",
     best: "Record : {score} points",
     close: "Retour en cuisine",
+    share: "Partager mon score",
+    copied: "Copié ! Colle-le à tes amis.",
+    shareText: ({ date, score, served, happy }: { date: string; score: number; served: number; happy: number }) =>
+      `Forno Lento · défi du ${date}\n🍕 ${score} points · ${served} ${plural(served, "pizza")} · ${happy} 😊`,
   },
 
   service: {
@@ -108,7 +130,16 @@ export const fr = {
     criticTitle: "Critique gastronomique : sers-la vite !",
     delivery: "Livraison",
     express: ({ seconds }: { seconds: number }) => `Express : ${seconds} s`,
-    challenge: "Défi chrono · {clock} · {score} points",
+    challenge: "Défi du jour · {clock} · {score} points",
+    table: "Table de {size}",
+    birthday: "Anniversaire !",
+    bar: "Bar",
+    drinkTitle: ({ drink }: { drink: string }) => `Servir : ${drink}`,
+    ovenNumber: "Four {number}",
+    offerDrink: ({ drink, name }: { drink: string; name: string }) => `🎁 Offrir ${drink} à ${name}`,
+    offered: "offerte",
+    secret: "Secret de Nonna",
+    secretTitle: "Une pincée du secret de Nonna. Ça ne change rien à la recette…",
   },
 
   market: {
@@ -123,6 +154,12 @@ export const fr = {
     sign: ({ fee }: { fee: number }, t: H) => `Signer · ${t.money(fee)}`,
     marketDay: "Jour de marché : tout est à −20 % aujourd'hui.",
     stall: "L'étal",
+    inSeason: "de saison",
+    secretTitle: "Le secret de Nonna",
+    secretIntro: "Il ne s'achète pas : il se fabrique, un pot à la fois. Une pincée par pizza.",
+    secretBonus: "Ajouté sur une pizza, il ne change rien à la recette et le client ne voit pas la différence. Mais environ une fois sur trois, il laisse un pourboire égal au prix de la pizza.",
+    secretStock: "{count} en réserve",
+    craft: ({ cost }: { cost: number }, t: H) => `Fabriquer · ${t.money(cost)}`,
   },
 
   menu: {
@@ -143,6 +180,9 @@ export const fr = {
     chefSpecial: "Suggestion du chef",
     makeSpecial: "Mettre en suggestion",
     specialHint: "La suggestion du chef est commandée plus souvent.",
+    seasonal: "Recette de saison",
+    nonna: "Recette de Nonna",
+    nonnaLocked: ({ level }: { level: number }) => `Nonna te la confiera au niveau ${level}.`,
   },
 
   editor: {
@@ -184,6 +224,10 @@ export const fr = {
     money: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)}`,
     tip: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} pourboire`,
     express: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} express`,
+    table: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} table ravie`,
+    gift: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} cadeau`,
+    drink: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} boisson`,
+    secret: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} ✨`,
   },
 
   upgrades: {
@@ -226,6 +270,39 @@ export const fr = {
       describe: ({ level }: { level: number }): string =>
         level === 0 ? "Uniquement sur place" : "Des commandes en scooter, avec un bonus express si elles partent vite",
     },
+    bar: {
+      name: "Bar",
+      describe: ({ level }: { level: number }): string =>
+        ["Pas de boissons", "Limonade et eau pétillante", "Limonade, eau pétillante, chinotto et vin rouge"][level],
+    },
+    oven2: {
+      name: "Deuxième four",
+      describe: ({ level }: { level: number }, t: H): string =>
+        level === 0
+          ? "Pas encore construit"
+          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[level - 1])} s`,
+    },
+    oven3: {
+      name: "Troisième four",
+      describe: ({ level }: { level: number }, t: H): string =>
+        level === 0
+          ? "Pas encore construit"
+          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[level - 1])} s`,
+    },
+    annexe: {
+      name: "Deuxième adresse",
+      describe: ({ level }: { level: number }, t: H): string =>
+        level === 0 ? "Une seule pizzeria" : `Rapporte ${t.money(ANNEXE_INCOME[level])} chaque soir`,
+    },
+    looks: "La pizzeria à ton goût",
+    looksIntro: "Pour le plaisir des yeux : ça ne change rien au jeu.",
+    choose: "Choisir",
+    inUse: "En place",
+    buyLook: ({ cost }: { cost: number }, t: H) => `Acheter · ${t.money(cost)}`,
+    slots: { awning: "Auvent", sign: "Enseigne", wall: "Murs" },
+    awnings: { red: "Rouge tomate", green: "Vert basilic", blue: "Bleu Riviera", sun: "Jaune soleil", rose: "Rose bonbon" },
+    signs: { classic: "Peinte", neon: "Néon", gold: "Dorée à la feuille" },
+    walls: { mint: "Carreaux menthe", terracotta: "Terre cuite", azulejo: "Azulejos", checker: "Damier" },
   },
 
   settings: {
@@ -233,6 +310,9 @@ export const fr = {
     signName: "Nom sur l'enseigne",
     language: "Langue",
     showHelp: "Afficher les ingrédients sur les tickets et vérifier la pizza en cours",
+    theme: "Thème",
+    themes: { auto: "Automatique", light: "Clair", dark: "Sombre" },
+    largeText: "Texte plus grand",
     install: "Installer le jeu",
     installHint: "Installé, le jeu s'ouvre en plein écran et marche sans connexion. Sur iPhone : Partager, puis « Sur l'écran d'accueil ».",
     helpHint: "Sans cette aide, il faut connaître ses recettes par cœur.",
@@ -266,6 +346,9 @@ export const fr = {
     debt: "Ardoise chez le propriétaire",
     bestSeller: "La plus demandée :",
     event: "Événement :",
+    drinks: "dont boissons",
+    annexe: "Deuxième adresse",
+    share: "Partager le ticket",
     orders: "Commandes servies",
     order: ({ customer, recipe }: { customer: string; recipe: string }) => `${customer} · ${recipe}`,
     noTip: "pas de pourboire",
@@ -293,9 +376,41 @@ export const fr = {
     pairingsIntro: ({ found, total }: { found: number; total: number }) =>
       `${found} / ${total} accords trouvés. Sers une pizza qui marie deux ingrédients faits l'un pour l'autre pour l'ajouter.`,
     pairingHint: ({ id }: { id: IngredientId }, t: H) => `${t.ingredient(id)} + ?`,
+    page: "Page {page} / {count}",
+    previousPage: "Page précédente",
+    nextPage: "Page suivante",
+    secretAchievement: "Succès secret",
+    secretHint: "Certains secrets ne se méritent pas, ils se tapent.",
     achievements: "Succès",
     achievementsIntro: "{count} / {total} débloqués",
     unlockedOn: "Jour {day}",
+    regulars: "Habitués",
+    noRegulars: "Tes habitués apparaîtront ici à leur troisième visite.",
+    visits: "{count} visites",
+    likes: ({ recipe }: { recipe: string }) => `Préfère : ${recipe}`,
+    dislikes: ({ id }: { id: IngredientId }, t: H) => `N'aime pas : ${lower(t.ingredient(id))}`,
+    birthdayIn: ({ days }: { days: number }) => (days === 0 ? "🎂 Anniversaire aujourd'hui !" : `🎂 Anniversaire dans ${days} ${plural(days, "jour")}`),
+  },
+
+  seasons: { spring: "Printemps", summer: "Été", autumn: "Automne", winter: "Hiver" } satisfies Record<SeasonId, string>,
+
+  diets: { veggie: "Végétarien", noPork: "Sans porc", glutenFree: "Sans gluten" },
+
+  drinks: { limonade: "Limonade", eau: "Eau pétillante", chinotto: "Chinotto", vin: "Vin rouge" } satisfies Record<DrinkId, string>,
+
+  quests: {
+    givers: {
+      football: "Le club de foot",
+      bakery: "La boulangerie d'à côté",
+      school: "L'école du quartier",
+      townHall: "La mairie",
+      neighbour: "Le chef du restaurant d'en face",
+    } satisfies Record<QuestGiver, string>,
+    serveRecipe: ({ target, recipe }: { target: number; recipe: string }) => `veut ${target} ${recipe} pour sa soirée.`,
+    serveTotal: ({ target }: { target: number }) => `organise une fête : sers ${target} pizzas.`,
+    happy: ({ target }: { target: number }) => `fait une enquête : sers ${target} clients encore tout sourire.`,
+    pairing: ({ target }: { target: number }) => `te met au défi : découvre ${target} nouvel accord.`,
+    sweet: ({ target }: { target: number }) => `fête un anniversaire : sers ${target} pizzas sucrées.`,
   },
 
   events: {
@@ -327,7 +442,16 @@ export const fr = {
     allSuppliers: { name: "Tout le marché", describe: "Signer avec tous les fournisseurs" },
     fullyUpgraded: { name: "La pizzeria idéale", describe: "Acheter toutes les améliorations" },
     deliveries20: { name: "Vespa", describe: "Livrer 20 commandes" },
-    challenge300: { name: "Main de feu", describe: "Faire 300 points au défi chrono" },
+    challenge300: { name: "Main de feu", describe: "Faire 300 points au défi du jour" },
+    dailyChallenge: { name: "Relevé !", describe: "Jouer le défi du jour" },
+    sweetTooth: { name: "Bec sucré", describe: "Servir 10 pizzas sucrées" },
+    drinks50: { name: "Barista", describe: "Servir 50 boissons" },
+    happyTable: { name: "Tablée ravie", describe: "Servir toute une table encore tout sourire" },
+    birthday: { name: "Joyeux anniversaire", describe: "Fêter l'anniversaire d'un habitué" },
+    quests5: { name: "Bon voisin", describe: "Réussir 5 quêtes du quartier" },
+    secondOven: { name: "Double feu", describe: "Construire un deuxième four" },
+    secondAddress: { name: "Petite chaîne", describe: "Ouvrir une deuxième adresse" },
+    secretCode: { name: "↑↑↓↓←→←→BA", describe: "Tu connais le code." },
   } satisfies Record<AchievementId, { name: string; describe: string }>,
 
   tutorial: {
@@ -378,6 +502,19 @@ export const fr = {
     newRegular: "{name} fait maintenant partie de tes habitués !",
     achievement: ({ achievementId }: { achievementId: AchievementId }, t: H) => `Succès débloqué : ${t.achievementName(achievementId)} !`,
     critic: ({ name, stars }: { name: string; stars: number }) => `${name} publie sa critique : ${"★".repeat(stars)}${"☆".repeat(5 - stars)}`,
+    nonnaRecipe: ({ recipeId, onMenu }: { recipeId: ClassicRecipeId; onMenu: boolean }, t: H) =>
+      `Nonna te confie sa recette secrète : ${t.recipe({ id: recipeId, name: null })} !${onMenu ? " (ajoutée à la carte)" : ""}`,
+    birthday: "Joyeux anniversaire {name} ! Un beau cadeau pour toi.",
+    happyTable: "Table de {size} ravie : bonus pour toute la tablée !",
+    nobodyWantsDrink: ({ drinkId }: { drinkId: DrinkId }, t: H) => `Personne n'attend de ${lower(t.drink(drinkId))}.`,
+    questDone: ({ giver, reward }: { giver: QuestGiver; reward: number }, t: H) =>
+      `Quête réussie ! ${t.questGiver(giver)} te remercie : ${t.money(reward)}.`,
+    questExpired: ({ giver }: { giver: QuestGiver }, t: H) => `${t.questGiver(giver)} a trouvé une autre solution. Ce sera pour une prochaine fois !`,
+    drinkOffered: "{name} est touché·e par l'attention.",
+    secretTip: "{name} a adoré, sans savoir pourquoi. Pourboire royal !",
+    secretFromNonna: "Nonna a goûté ses recettes chez toi. Émue, elle te confie son ingrédient secret : tu peux le fabriquer au marché.",
+    secretFromCode: "Nonna te fait un clin d'œil : son ingrédient secret est à toi. Tu peux le fabriquer au marché.",
+    secretCodeAgain: "Nonna sourit. Tu connais déjà le secret.",
     newPairing: ({ pairings }: { pairings: readonly Pairing[] }, t: H) =>
       `${plural(pairings.length, "Nouvel accord", "Nouveaux accords")} : ${pairings.map(t.pairing).join(", ")} !`,
   },
@@ -399,10 +536,12 @@ export const fr = {
     veg: "Légumes",
     herb: "Herbes & épices",
     finish: "Finitions",
+    sweet: "Desserts",
   } satisfies Record<StationId, string>,
 
   ingredients: {
     pate: "Pâte",
+    pateSG: "Pâte sans gluten",
     tomate: "Sauce tomate",
     mozza: "Mozzarella",
     basilic: "Basilic",
@@ -430,6 +569,11 @@ export const fr = {
     jcru: "Jambon cru",
     burrata: "Burrata",
     truffe: "Truffe noire",
+    chocolat: "Pâte à tartiner",
+    mascarpone: "Mascarpone",
+    banane: "Banane",
+    fraise: "Fraises",
+    noisette: "Noisettes",
   } satisfies Record<IngredientId, string>,
 
   recipes: {
@@ -447,5 +591,11 @@ export const fr = {
     parma: "Parma",
     burrata: "Burrata",
     tartufo: "Tartufo",
+    chocobanane: "Choco-banane",
+    fraisemasca: "Fraise-mascarpone",
+    nonna: "La Nonna",
+    nonnarosa: "Nonna Rosa",
+    segreto: "Il Segreto",
+    capolavoro: "Il Capolavoro",
   } satisfies Record<ClassicRecipeId, string>,
 } as const;

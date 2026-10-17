@@ -3,9 +3,9 @@ import {
   UPGRADES, UPGRADE_KEYS, BASE_DAILY_CHARGES, DELIVERY_EXTRA_ORDERS, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS,
 } from "../data/progression";
 import { clamp } from "../utils/math";
-import { appealOf, fairPrice, priceAttractiveness } from "./pizza";
+import { fairPrice, priceAttractiveness } from "./pizza";
 import { marketPrice, todaysEvent } from "./events";
-import { activeMenu } from "./menu";
+import { activeMenu, recipeAppeal } from "./menu";
 import { levelForXp } from "./progression";
 import type { GameState } from "./types";
 
@@ -24,7 +24,7 @@ export function forecastCustomers(state: GameState): number {
   const averageQuality =
     menu.reduce(
       (total, recipe) =>
-        total + priceAttractiveness(recipe.price, fairPrice(recipe.ingredients)) * (appealOf(recipe.ingredients, recipe.classic) / 1.1),
+        total + priceAttractiveness(recipe.price, fairPrice(recipe.ingredients)) * (recipeAppeal(recipe) / 1.1),
       0,
     ) / menu.length;
   const qualityFactor = clamp(averageQuality, 0.6, 1.25);

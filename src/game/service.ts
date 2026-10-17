@@ -1,5 +1,5 @@
 import type { IngredientId } from "../data/ingredients";
-import { OVEN_SLOTS } from "../data/progression";
+import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS } from "../data/progression";
 import { haveSameIngredients } from "./pizza";
 import type { Customer, GameState, Service } from "./types";
 
@@ -7,7 +7,32 @@ import type { Customer, GameState, Service } from "./types";
 export const maxQueueLength = (state: GameState): number =>
   4 + (state.upgrades.salle >= 2 ? 1 : 0) + (state.upgrades.terrasse >= 1 ? 1 : 0);
 
-export const ovenSlots = (state: GameState): number => OVEN_SLOTS[state.upgrades.oven];
+export interface Oven {
+  index: number;
+  slots: number;
+  bakeSeconds: number;
+}
+
+// The first oven, then each extra oven built: a new oven starts like the first one did, and improves the same way.
+export function ovensOf(state: GameState): Oven[] {
+  const first = { index: 0, slots: OVEN_SLOTS[state.upgrades.oven], bakeSeconds: BAKE_SECONDS[state.upgrades.oven] };
+  const extras = EXTRA_OVEN_KEYS.map((key) => state.upgrades[key])
+    .filter((level) => level > 0)
+    .map((level, position) => ({ index: position + 1, slots: OVEN_SLOTS[level - 1], bakeSeconds: BAKE_SECONDS[level - 1] }));
+  return [first, ...extras];
+}
+
+export const ovenSlots = (state: GameState): number => ovensOf(state).reduce((total, oven) => total + oven.slots, 0);
+
+const pizzasIn = (service: Service, ovenIndex: number): number =>
+  service.oven.filter((pizza) => (pizza.ovenIndex ?? 0) === ovenIndex).length;
+
+// Where the next pizza goes: the fastest oven with room, or undefined when they are all full.
+export function ovenWithRoom(state: GameState, service: Service): Oven | undefined {
+  return ovensOf(state)
+    .filter((oven) => pizzasIn(service, oven.index) < oven.slots)
+    .sort((a, b) => a.bakeSeconds - b.bakeSeconds)[0];
+}
 
 export const selectedCustomer = (service: Service): Customer | undefined =>
   service.customers.find((customer) => customer.id === service.selectedCustomerId);

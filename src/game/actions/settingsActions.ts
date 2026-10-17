@@ -13,6 +13,22 @@ export const settingsActions = {
     state.settings.showHelp = !state.settings.showHelp;
   },
 
+  setTheme(state, { theme }) {
+    state.settings.theme = theme;
+  },
+
+  toggleLargeText(state) {
+    state.settings.largeText = !state.settings.largeText;
+  },
+
+  // The code: Nonna's secret ingredient, and an achievement nothing else unlocks.
+  enterSecretCode(state) {
+    const isNew = !state.secretIngredient;
+    state.secretCodeFound = true;
+    state.secretIngredient = true;
+    pushToast(state, { key: isNew ? "secretFromCode" : "secretCodeAgain" }, "gold");
+  },
+
   skipTutorial(state) {
     state.settings.tutorialDone = true;
   },

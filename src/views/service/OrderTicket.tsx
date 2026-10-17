@@ -4,7 +4,8 @@ import { CustomerFace } from "../../components/CustomerFace";
 import { IngredientIcon } from "../../components/IngredientIcon";
 import { DELIVERY_EXPRESS_SECONDS } from "../../data/progression";
 import type { IngredientId } from "../../data/ingredients";
-import type { Customer } from "../../game/types";
+import type { Customer, TableProgress } from "../../game/types";
+import { DrinkGlass } from "../../components/DrinkGlass";
 
 type ChipStatus = "" | "ok" | "miss" | "extra";
 
@@ -14,6 +15,8 @@ interface OrderTicketProps {
   isRegular: boolean;
   showIngredients: boolean;
   board: readonly IngredientId[];
+  /** The table this customer sits at, if they came in with others. */
+  table?: TableProgress;
   onSelect: () => void;
 }
 
@@ -47,18 +50,20 @@ function Scooter() {
   );
 }
 
-function ticketClassName(customer: Customer): string {
+function ticketClassName(customer: Customer, table: TableProgress | undefined): string {
   if (customer.critic) return "ticket critic";
   if (customer.delivery) return "ticket delivery";
+  if (customer.birthday) return "ticket birthday";
+  if (table) return `ticket at-table tb-${table.color}`;
   return "ticket";
 }
 
-export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, onSelect }: OrderTicketProps) {
+export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, table, onSelect }: OrderTicketProps) {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
   return (
-    <button className={ticketClassName(customer)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : undefined}>
+    <button className={ticketClassName(customer, table)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : undefined}>
       <span className="price">{t.money(customer.price)}</span>
       <div className="who">
         {customer.delivery ? <Scooter /> : <CustomerFace customer={customer} mood={mood} />}
@@ -78,9 +83,11 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
         </div>
       </div>
       <div className="pz">{customer.asUsual ? t("service.asUsual") : t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
-      {(customer.critic || (customer.delivery && expressSecondsLeft > 0)) && (
+      {(customer.critic || customer.birthday || table || (customer.delivery && expressSecondsLeft > 0)) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
+          {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
+          {table && <span className="mod table-tag">{t("service.table", { size: table.size })}</span>}
           {customer.delivery && expressSecondsLeft > 0 && (
             <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>
           )}
@@ -90,6 +97,14 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
         <div className="mods">
           {customer.extraIngredient && <span className="mod add">{t("service.extra", { id: customer.extraIngredient })}</span>}
           {customer.removedIngredient && <span className="mod rem">{t("service.without", { id: customer.removedIngredient })}</span>}
+          {customer.diet && <span className="mod diet">{t(`diets.${customer.diet}`)}</span>}
+        </div>
+      )}
+      {customer.drink && (
+        <div className={`drink-order${customer.drinkServed ? " served" : ""}`}>
+          <DrinkGlass id={customer.drink} />
+          <span>{t.drink(customer.drink)}{customer.drinkOffered && ` · ${t("service.offered")}`}</span>
+          {customer.drinkServed ? <span aria-hidden="true">✓</span> : isSelected && <kbd className="kbd">D</kbd>}
         </div>
       )}
       {showIngredients && !customer.asUsual && (

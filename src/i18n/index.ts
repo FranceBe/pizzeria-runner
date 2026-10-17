@@ -42,6 +42,8 @@ export function createTranslator(language: Language): Translator {
     upgradeDescription: (key, level) => translate(`upgrades.${key}.describe`, { level }),
     pairing: ([a, b]) => `${helpers.ingredient(a)} & ${helpers.ingredient(b).toLowerCase()}`,
     achievementName: (id) => translate(`achievements.${id}.name`),
+    drink: (id) => translate(`drinks.${id}`),
+    questGiver: (giver) => translate(`quests.givers.${giver}`),
   };
 
   // The typed signature lives on Translate; the implementation is the untyped lookup above.
