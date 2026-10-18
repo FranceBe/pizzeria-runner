@@ -1,9 +1,9 @@
-import type { Quest } from "../game/types";
+import type { Quest, QuestRecord } from "../game/types";
 import type { Translator } from "../i18n";
 import { useTranslation } from "../i18n/I18nContext";
 
 // "The football club wants 5 Regina for their evening."
-function questText(t: Translator, quest: Quest): string {
+export function questText(t: Translator, quest: Quest | QuestRecord): string {
   const { target } = quest;
   const what = (() => {
     switch (quest.kind) {

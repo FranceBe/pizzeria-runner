@@ -125,6 +125,8 @@ export interface ServiceStats {
   levelUps: number[];
   /** Revenue from drinks (also counted in revenue). */
   drinks?: number;
+  /** Neighbourhood quest rewards paid today (not counted in revenue). */
+  questRewards?: number;
   /** Keyed by recipe id, or by recipe name for sales migrated from old saves. */
   byRecipe: Record<string, RecipeSales>;
   orders: OrderRecord[];
@@ -202,6 +204,8 @@ export interface DaySummary {
   drinks?: number;
   /** What the second address brought in tonight. */
   annexeIncome?: number;
+  /** Neighbourhood quest rewards paid that day. */
+  questRewards?: number;
 }
 
 /** A finished day, kept for the journal (without the order list, to keep saves small). */
@@ -234,7 +238,12 @@ export interface LifetimeStats {
   birthdays: number;
   questsDone: number;
   dailyChallenges: number;
+  /** Money earned from neighbourhood quests. */
+  questRewards: number;
 }
+
+/** A completed neighbourhood quest, for the journal. */
+export type QuestRecord = Pick<Quest, "kind" | "giver" | "target" | "recipeId" | "recipeName" | "reward"> & { day: number };
 
 export interface Quest {
   kind: QuestKind;
@@ -330,6 +339,8 @@ export interface GameState {
   /** Best score of the latest daily challenge played. */
   dailyChallenge: { date: string; best: number } | null;
   quest: Quest | null;
+  /** Completed quests, most recent last (the latest few only). */
+  questLog: QuestRecord[];
   cosmetics: Cosmetics;
   /** Nonna's secret ingredient, once she has shared it. */
   secretIngredient: boolean;

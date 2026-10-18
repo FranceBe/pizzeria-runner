@@ -86,7 +86,8 @@ function endDay(state: GameState, service: Service): void {
   payCharges(state, charges);
 
   const { stats } = service;
-  const net = stats.revenue + stats.tips + annexeIncome - charges - state.purchasesToday;
+  const questRewards = stats.questRewards ?? 0;
+  const net = stats.revenue + stats.tips + annexeIncome + questRewards - charges - state.purchasesToday;
   state.summary = {
     day: state.day,
     served: stats.served,
@@ -104,6 +105,7 @@ function endDay(state: GameState, service: Service): void {
     event: state.event,
     drinks: stats.drinks ?? 0,
     annexeIncome,
+    questRewards,
   };
 
   state.history = [

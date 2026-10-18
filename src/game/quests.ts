@@ -8,6 +8,9 @@ import { isDessert } from "./pizza";
 import { pushToast } from "./toasts";
 import type { Customer, GameState, Quest } from "./types";
 
+// How many completed quests the journal remembers.
+const QUEST_LOG_SIZE = 30;
+
 type QuestDraft = Omit<Quest, "giver" | "progress" | "deadlineDay">;
 
 // The quests that make sense right now, given the menu and what is left to discover.
@@ -68,6 +71,10 @@ export function advanceQuest(state: GameState, customer: Customer, isHappy: bool
   receivePayment(state, quest.reward);
   state.xp += quest.xp;
   state.lifetime.questsDone += 1;
+  state.lifetime.questRewards += quest.reward;
+  if (state.service) state.service.stats.questRewards = (state.service.stats.questRewards ?? 0) + quest.reward;
+  const { kind, giver, target, recipeId, recipeName, reward } = quest;
+  state.questLog = [...state.questLog, { day: state.day, kind, giver, target, recipeId, recipeName, reward }].slice(-QUEST_LOG_SIZE);
   pushToast(state, { key: "questDone", params: { giver: quest.giver, reward: quest.reward } }, "gold");
   state.quest = null;
 }

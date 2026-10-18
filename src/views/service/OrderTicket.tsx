@@ -83,11 +83,10 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
         </div>
       </div>
       <div className="pz">{customer.asUsual ? t("service.asUsual") : t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
-      {(customer.critic || customer.birthday || table || (customer.delivery && expressSecondsLeft > 0)) && (
+      {(customer.critic || customer.birthday || (customer.delivery && expressSecondsLeft > 0)) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
-          {table && <span className="mod table-tag">{t("service.table", { size: table.size })}</span>}
           {customer.delivery && expressSecondsLeft > 0 && (
             <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>
           )}

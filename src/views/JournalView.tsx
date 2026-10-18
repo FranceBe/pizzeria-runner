@@ -5,7 +5,8 @@ import { achievementProgress, isUnlocked } from "../game/achievements";
 import { isDiscovered } from "../game/pairings";
 import { daysUntilBirthday, regularsOf } from "../game/regulars";
 import { CustomerFace } from "../components/CustomerFace";
-import type { DayRecord, GameState } from "../game/types";
+import { questText } from "./QuestCard";
+import type { DayRecord, GameState, RecipeSales } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { IngredientIcon } from "../components/IngredientIcon";
 
@@ -13,6 +14,7 @@ const CHART_DAYS = 14;
 // Pairings per page of the book.
 const PAIRINGS_PER_PAGE = 10;
 const TOP_PIZZAS = 5;
+const QUESTS_SHOWN = 5;
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
@@ -84,6 +86,16 @@ function Accounts({ state }: { state: GameState }) {
       <ProfitChart days={state.history.slice(-CHART_DAYS)} />
       <h3 className="h">{t("journal.topPizzas")}</h3>
       {topPizzas.length === 0 && <p className="hint">{t("journal.noSales")}</p>}
+      <TopPizzaList state={state} topPizzas={topPizzas} mostSold={mostSold} />
+      <QuestLog state={state} />
+    </div>
+  );
+}
+
+function TopPizzaList({ state, topPizzas, mostSold }: { state: GameState; topPizzas: [string, RecipeSales][]; mostSold: number }) {
+  const t = useTranslation();
+  return (
+    <>
       {topPizzas.map(([recipeId, sales]) => (
         <div key={recipeId} className="top-pizza">
           <span className="grow">{t.recipe(state.recipes.find((recipe) => recipe.id === recipeId) ?? { id: recipeId, name: sales.name })}</span>
@@ -91,7 +103,30 @@ function Accounts({ state }: { state: GameState }) {
           <strong>{sales.count}</strong>
         </div>
       ))}
-    </div>
+    </>
+  );
+}
+
+// The neighbourhood quests completed lately, and what they brought in altogether.
+function QuestLog({ state }: { state: GameState }) {
+  const t = useTranslation();
+  const recent = state.questLog.slice(-QUESTS_SHOWN).reverse();
+  return (
+    <>
+      <h3 className="h">{t("journal.quests")}</h3>
+      {state.lifetime.questsDone === 0 ? (
+        <p className="hint">{t("journal.noQuests")}</p>
+      ) : (
+        <p className="hint">{t("journal.questsTotal", { count: state.lifetime.questsDone, amount: state.lifetime.questRewards })}</p>
+      )}
+      {recent.map((quest, index) => (
+        <div key={`${quest.day}-${index}`} className="quest-log-row">
+          <span className="quest-log-day">{t("journal.questDay", { day: quest.day })}</span>
+          <span className="grow">{questText(t, quest)}</span>
+          <strong className="pos">+{t.money(quest.reward)}</strong>
+        </div>
+      ))}
+    </>
   );
 }
 

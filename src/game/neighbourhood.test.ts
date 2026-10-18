@@ -115,6 +115,16 @@ describe("neighbourhood quests", () => {
     expect(state.lifetime.questsDone).toBe(1);
   });
 
+  it("show their reward apart on the day's receipt, and stay in the journal", () => {
+    vi.spyOn(Math, "random").mockReturnValue(NO_TIP);
+    const state = stateInService([makeCustomer()], { money: 0 });
+    state.quest = { kind: "serveTotal", giver: "townHall", target: 1, progress: 0, deadlineDay: 3, reward: 45, xp: 50 };
+    const after = serveFirst(state);
+    expect(after.summary).toMatchObject({ revenue: 7, questRewards: 45, net: 7 + 45 - 6 });
+    expect(after.questLog).toEqual([{ day: 1, kind: "serveTotal", giver: "townHall", target: 1, recipeId: undefined, recipeName: undefined, reward: 45 }]);
+    expect(after.lifetime.questRewards).toBe(45);
+  });
+
   it("are simply dropped after their deadline", () => {
     const state = makeState({ day: 7 });
     state.quest = { kind: "happy", giver: "school", target: 8, progress: 2, deadlineDay: 6, reward: 30, xp: 40 };

@@ -86,7 +86,8 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   party (many more customers), sunshine (more customers, many more with a terrace) and the food critic, who comes in
   once that evening: serve them quickly for a glowing review and lots of reputation.
 - **Neighbourhood quests**, from day 4: a small goal over three days (the football club wants 5 Regina, the town hall
-  throws a party…), paid in money and reputation. No penalty when they run out.
+  throws a party…), paid in money and reputation. No penalty when they run out. The reward has its own line on the day's
+  receipt, and completed quests are listed in the journal with what they brought in.
 
 ### Upgrades
 

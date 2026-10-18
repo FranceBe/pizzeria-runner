@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { COMMIS_ASSEMBLES_ORDER } from "../../data/progression";
+import { revealInList } from "../../utils/scroll";
 import { isRegularCustomer } from "../../game/customers";
 import { isStuck, ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
 import { PauseMenu, ServiceWayOut } from "./PauseMenu";
@@ -78,6 +80,17 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: 
   );
 }
 
+// Customers in order, with the people of a table kept together (they arrive together, but this keeps them so).
+function groupByTable(customers: readonly Customer[]): { tableId: string | null; customers: Customer[] }[] {
+  const groups: { tableId: string | null; customers: Customer[] }[] = [];
+  customers.forEach((customer) => {
+    const group = customer.tableId ? groups.find((candidate) => candidate.tableId === customer.tableId) : undefined;
+    if (group) group.customers.push(customer);
+    else groups.push({ tableId: customer.tableId ?? null, customers: [customer] });
+  });
+  return groups;
+}
+
 // Layout (see .svc in styles.css): orders on the left, message line and work board in the middle,
 // oven and pass on the right, prep line along the bottom. Re-flows on tablets and phones.
 export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
@@ -89,6 +102,18 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
     : t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length });
   const tutorial = tutorialStep(state);
   const coachTarget = tutorial?.target ?? null;
+
+  // Keeps the selected ticket on screen as tickets come and go (a phone shows only two or three at a time).
+  const ticketList = useRef<HTMLDivElement>(null);
+  const customerCount = service.customers.length;
+  useEffect(() => {
+    // Next frame: the page has switched to its fixed service layout by then, so the list knows its size.
+    const frame = requestAnimationFrame(() => {
+      const selectedTicket = ticketList.current?.querySelector<HTMLElement>(".ticket[aria-pressed='true']");
+      if (ticketList.current && selectedTicket) revealInList(ticketList.current, selectedTicket);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [service.selectedCustomerId, customerCount]);
   // Messages come first; the tutorial hint takes the message line otherwise.
   const showCoach = tutorial !== null && !state.toasts.length;
   return (
@@ -111,20 +136,31 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
       {service.paused && <PauseMenu state={state} service={service} dispatch={dispatch} />}
       <section className="a-tickets" aria-label={t("service.orders")}>
         <h3 className="h dsk">{t("service.orders")}</h3>
-        <div className="tickets">
+        <div className="tickets" ref={ticketList}>
           {service.customers.length === 0 && <div className="card pad hint ticket-empty">{t("service.doorOpening")}</div>}
-          {service.customers.map((customer) => (
-            <OrderTicket
-              key={customer.id}
-              customer={customer}
-              isSelected={customer.id === service.selectedCustomerId}
-              showIngredients={state.settings.showHelp}
-              board={service.board}
-              isRegular={isRegularCustomer(state, customer)}
-              table={customer.tableId ? service.tables?.[customer.tableId] : undefined}
-              onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
-            />
-          ))}
+          {groupByTable(service.customers).map((group) => {
+            const tickets = group.customers.map((customer) => (
+              <OrderTicket
+                key={customer.id}
+                customer={customer}
+                isSelected={customer.id === service.selectedCustomerId}
+                showIngredients={state.settings.showHelp}
+                board={service.board}
+                isRegular={isRegularCustomer(state, customer)}
+                table={group.tableId ? service.tables?.[group.tableId] : undefined}
+                onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
+              />
+            ));
+            const table = group.tableId ? service.tables?.[group.tableId] : undefined;
+            if (!table) return tickets;
+            // A table's tickets sit together in one frame: each person has their own order.
+            return (
+              <div key={group.tableId} className={`table-group tb-${table.color}`} role="group" aria-label={t("service.table", { size: table.size })}>
+                <div className="table-head">{t("service.tableHead", { size: table.size })}</div>
+                <div className="table-tickets">{tickets}</div>
+              </div>
+            );
+          })}
         </div>
       </section>
       <WorkBoard state={state} service={service} dispatch={dispatch} selectedCustomer={selectedCustomer} coachTarget={coachTarget} />

@@ -28,6 +28,7 @@ const emptyLifetimeStats = (): LifetimeStats => ({
   birthdays: 0,
   questsDone: 0,
   dailyChallenges: 0,
+  questRewards: 0,
 });
 
 export function createInitialState(language: Language = detectLanguage()): GameState {
@@ -61,6 +62,7 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     challengeResult: null,
     dailyChallenge: null,
     quest: null,
+    questLog: [],
     cosmetics: { owned: ["awning:red", "sign:classic", "wall:mint"], awning: "red", sign: "classic", wall: "mint" },
     secretIngredient: false,
     secretStock: 0,

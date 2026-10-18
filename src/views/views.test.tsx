@@ -282,6 +282,18 @@ describe("views", () => {
     expect(html).toContain('class="drink-order served"');
   });
 
+  it("lists completed quests in the journal and their reward on the receipt", () => {
+    const state = playedState();
+    state.lifetime = { ...state.lifetime, questsDone: 1, questRewards: 35 };
+    state.questLog = [{ day: 3, kind: "serveRecipe", giver: "football", target: 5, recipeId: "margherita", recipeName: null, reward: 35 }];
+    const journal = render(<JournalView state={state} />, "en");
+    expect(journal).toContain("1 quest completed · €35.00 earned");
+    expect(journal).toContain("The football club wants 5 Margherita for their evening.");
+    const receipt = render(<DaySummary summary={{ ...SUMMARY, questRewards: 35 }} pizzeriaName="Forno Lento" onNextDay={noop} />, "en");
+    expect(receipt).toContain("Neighbourhood quests");
+    expect(receipt).toContain("+ €35.00");
+  });
+
   it("lists the regulars' profiles in the journal", () => {
     const html = render(<JournalView state={playedState()} />, "en");
     expect(html).toContain("Doesn&#x27;t like: basil");
@@ -309,6 +321,20 @@ describe("views", () => {
     expect(html).toContain("2 in stock");
     expect(html).toContain("Make one · €10.00");
     expect(html).toContain("tip as much as the pizza costs");
+  });
+
+  it("frames a table's tickets together, each with its own order", () => {
+    const state = stateInService([
+      makeCustomer({ id: "a", name: "Rosa", tableId: "t" }),
+      makeCustomer({ id: "z", name: "Zoé" }),
+      makeCustomer({ id: "b", name: "Enzo", tableId: "t", recipeId: "marinara", ingredients: ["pate", "tomate", "origan"] }),
+    ]);
+    serviceOf(state).tables = { t: { size: 2, served: 0, allHappy: true, color: 2 } };
+    const html = render(serviceScreen(state), "en");
+    const frame = html.slice(html.indexOf('class="table-group'), html.indexOf("Zoé"));
+    expect(frame).toContain("Table of 2 · one order each");
+    expect(frame).toContain("Rosa");
+    expect(frame).toContain("Enzo");
   });
 
   it("offers a way out when stuck, and a pause menu", () => {

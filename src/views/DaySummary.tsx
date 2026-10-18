@@ -55,6 +55,7 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
       { label: t("summary.purchases"), value: `− ${t.money(summary.purchases)}` },
       { label: t("summary.charges"), value: `− ${t.money(summary.charges)}` },
       ...(summary.annexeIncome ? [{ label: t("summary.annexe"), value: `+ ${t.money(summary.annexeIncome)}` }] : []),
+      ...(summary.questRewards ? [{ label: t("summary.quests"), value: `+ ${t.money(summary.questRewards)}` }] : []),
       { label: t("summary.profit"), value: `${isProfit ? "+" : ""}${t.money(summary.net)}`, isTotal: true },
       { label: t("summary.reputation"), value: `+${summary.xp}` },
     ];
@@ -89,6 +90,7 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           {summary.waste > 0 && <ReceiptLine label={t("summary.waste")} value={t.money(summary.waste)} />}
           {Boolean(summary.drinks) && <ReceiptLine label={t("summary.drinks")} value={t.money(summary.drinks ?? 0)} />}
           {Boolean(summary.annexeIncome) && <ReceiptLine label={t("summary.annexe")} value={`+ ${t.money(summary.annexeIncome ?? 0)}`} />}
+          {Boolean(summary.questRewards) && <ReceiptLine label={t("summary.quests")} value={`+ ${t.money(summary.questRewards ?? 0)}`} />}
           <div className="receipt-rule" />
           <ReceiptLine
             className={`receipt-total ${isProfit ? "pos" : "neg"}`}
