@@ -2,6 +2,26 @@
 
 A laid-back pizzeria management game: no ads, no pressure.
 
+### 🍕 [Play it now in your browser →](https://francebe.github.io/pizzeria-runner/)
+
+Free, in English and French, on a computer or a phone (where it can also be installed as an app and played offline).
+
+<p align="center">
+  <img src="docs/screenshots/service-desktop.png" alt="The service: orders on the left, the pizza being built in the middle, the ovens and the pass on the right, the prep line below" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="25%" rowspan="2" valign="top"><img src="docs/screenshots/service-phone.png" alt="The service on a phone"></td>
+    <td width="37%"><img src="docs/screenshots/prep-desktop.png" alt="The morning prep, with the day's event, a neighbourhood quest and a regular's birthday"></td>
+    <td width="38%"><img src="docs/screenshots/menu-desktop.png" alt="The menu, written on a chalkboard"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/market-desktop.png" alt="The market stall on market day"></td>
+    <td><img src="docs/screenshots/journal-desktop.png" alt="The journal: accounts, completed quests, regulars and the pairings book"></td>
+  </tr>
+</table>
+
 ## How to play
 
 A day has three moments:
