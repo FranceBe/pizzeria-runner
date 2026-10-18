@@ -51,6 +51,14 @@ export function restockPlan(state: GameState, targetQuantity: number): RestockPl
   return { items, cost };
 }
 
+// When the till runs dry, Nonna lends a little: it goes on the tab, repaid with half of the next sales.
+export const NONNA_LOAN = 30;
+// She won't lend past this much debt.
+const MAX_DEBT_FOR_LOAN = 90;
+
+export const canBorrowFromNonna = (state: GameState): boolean =>
+  state.lastNonnaLoanDay !== state.day && state.debt + NONNA_LOAN <= MAX_DEBT_FOR_LOAN;
+
 // Income goes to the till; while in debt, half of it pays the debt down first. Mutates state.
 export function receivePayment(state: GameState, amount: number): void {
   if (state.debt > 0) {

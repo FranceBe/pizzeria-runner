@@ -2,7 +2,7 @@ import { INGREDIENTS } from "../data/ingredients";
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { SECRET_CRAFT_COST } from "../data/progression";
 import { SUPPLIER_WELCOME_PORTIONS } from "../game/actions/shopActions";
-import { restockPlan, type RestockPlan } from "../game/economy";
+import { canBorrowFromNonna, NONNA_LOAN, restockPlan, type RestockPlan } from "../game/economy";
 import { marketPrice } from "../game/events";
 import { isInSeason } from "../game/seasons";
 import { knowsRecipe } from "../game/menu";
@@ -27,6 +27,12 @@ function Fridge({ state, dispatch }: ScreenProps) {
       <h2 className="h">{t("market.stall")}</h2>
       <p className="sub" style={{ marginBottom: 10 }}>{t("market.fridgeIntro")}</p>
       {state.event === "market" && <p className="market-day">{t("market.marketDay")}</p>}
+      {state.money < NONNA_LOAN && canBorrowFromNonna(state) && (
+        <div className="loan-offer">
+          <button className="btn sm" onClick={() => dispatch({ type: "borrowFromNonna" })}>{t("service.borrow", { amount: NONNA_LOAN })}</button>
+          <span className="hint">{t("service.borrowHint")}</span>
+        </div>
+      )}
       <div className="row" style={{ marginBottom: 12 }}>
         <button className="btn sm" disabled={!canRestock(smallRestock)} onClick={() => dispatch({ type: "restock", targetQuantity: smallTarget })}>
           {t("market.restockMenu", { target: smallTarget, cost: smallRestock.cost })}

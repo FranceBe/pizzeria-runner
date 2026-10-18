@@ -1,6 +1,7 @@
 import { COMMIS_ASSEMBLES_ORDER } from "../../data/progression";
 import { isRegularCustomer } from "../../game/customers";
-import { ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
+import { isStuck, ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
+import { PauseMenu, ServiceWayOut } from "./PauseMenu";
 import { hasBase, haveSameIngredients } from "../../game/pizza";
 import { tutorialStep } from "../../game/tutorial";
 import { useTranslation } from "../../i18n/I18nContext";
@@ -92,11 +93,22 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
   const showCoach = tutorial !== null && !state.toasts.length;
   return (
     <div className={`svc${challenge ? " in-challenge" : ""}`}>
-      {showCoach ? (
-        <CoachTip step={tutorial} dispatch={dispatch} className="ticker" />
-      ) : (
-        <MessageTicker toasts={state.toasts} dispatch={dispatch} idleText={progress} />
-      )}
+      <div className="a-ticker">
+        <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} onClick={() => dispatch({ type: "togglePause" })}>
+          ⏸
+        </button>
+        {isStuck(state, service) ? (
+          <div className="stuck" role="alert">
+            <strong>{t("service.stuck")}</strong>
+            <ServiceWayOut state={state} service={service} dispatch={dispatch} />
+          </div>
+        ) : showCoach ? (
+          <CoachTip step={tutorial} dispatch={dispatch} className="ticker" />
+        ) : (
+          <MessageTicker toasts={state.toasts} dispatch={dispatch} idleText={progress} />
+        )}
+      </div>
+      {service.paused && <PauseMenu state={state} service={service} dispatch={dispatch} />}
       <section className="a-tickets" aria-label={t("service.orders")}>
         <h3 className="h dsk">{t("service.orders")}</h3>
         <div className="tickets">

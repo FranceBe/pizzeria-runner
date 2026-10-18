@@ -9,7 +9,7 @@ import type { GameState, LifetimeStats, SaveData } from "./types";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
@@ -48,6 +48,8 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     phase: "prep",
     purchasesToday: 0,
     lastNonnaVisitDay: 0,
+    lastNonnaLoanDay: 0,
+    dayStart: null,
     customerBook: {},
     event: null,
     chefSpecial: null,
@@ -178,6 +180,9 @@ const migrateFromVersion4 = ({ challengeResult, ...saved }: JsonObject): JsonObj
 // Version 5: before accessories and Nonna's secret. Everything new is optional or has a default.
 const migrateFromVersion5 = (saved: JsonObject): JsonObject => saved;
 
+// Version 6: before pauses, closing early, restarting the day and Nonna's loans. The new fields have defaults.
+const migrateFromVersion6 = (saved: JsonObject): JsonObject => saved;
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
 const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion1,
@@ -185,6 +190,7 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion3,
   migrateFromVersion4,
   migrateFromVersion5,
+  migrateFromVersion6,
 ];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.

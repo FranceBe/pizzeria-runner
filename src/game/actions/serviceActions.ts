@@ -214,6 +214,9 @@ export const serviceActions = {
       pushToast(state, { key: "emptyMenu" }, "warn");
       return;
     }
+    // Kept to start the day over. Copied, so later changes to the game never reach it.
+    const { toasts, pops, dayStart, ...beforeOpening } = state;
+    state.dayStart = structuredClone(beforeOpening);
     state.service = createService(customerCount);
     state.service.criticPending = state.event === "critic";
     state.service.birthdayGuests = birthdaysToday(state);
@@ -226,6 +229,36 @@ export const serviceActions = {
     state.service = { ...createService(CHALLENGE_CUSTOMERS), challenge: createChallenge(date) };
     state.phase = "service";
     state.challengeResult = null;
+  },
+
+  togglePause(state) {
+    if (state.service) state.service.paused = !state.service.paused;
+  },
+
+  // Closes for today: whoever is still waiting goes home (no hard feelings), and the day ends as usual.
+  closeEarly(state) {
+    const { service } = state;
+    if (!service || service.challenge) return;
+    service.customers = [];
+    service.customersToCome = 0;
+    endDay(state, service);
+  },
+
+  // Back to this morning's prep, as if the restaurant had not opened yet. Settings stay as they are now.
+  restartDay(state) {
+    if (!state.dayStart || state.service?.challenge) return;
+    const restarted: GameState = { ...structuredClone(state.dayStart), settings: state.settings, dayStart: null, toasts: [], pops: [] };
+    pushToast(restarted, { key: "dayRestarted" });
+    return restarted;
+  },
+
+  // Bins every baked pizza nobody is waiting for, in one go.
+  trashUnwantedPizzas(state) {
+    const { service } = state;
+    if (!service) return;
+    const unwanted = service.ready.filter((pizza) => !customerForPizza(service, pizza.ingredients));
+    unwanted.forEach((pizza) => addWaste(service, pizza.ingredients));
+    service.ready = service.ready.filter((pizza) => !unwanted.includes(pizza));
   },
 
   dismissChallengeResult(state) {
@@ -467,6 +500,7 @@ export const serviceActions = {
     state.summary = null;
     state.purchasesToday = 0;
     state.event = rollDayEvent(state.day, state.event);
+    state.dayStart = null;
     expireQuest(state);
     maybeOfferQuest(state);
   },

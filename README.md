@@ -27,6 +27,7 @@ Nobody ever leaves angry: customers just get hungrier (happy, then patient, then
 | `A` | Kitchen assistant builds the order (once upgraded) |
 | `D` | Serve the selected customer's drink (with the bar) |
 | `O` | Offer that drink, for a regular |
+| `P` or `Esc` | Pause |
 
 ## Rules
 
@@ -37,7 +38,12 @@ Nobody ever leaves angry: customers just get hungrier (happy, then patient, then
   often and up to 30% more), on regulars, special requests, diets, offered drinks and rain. Never above 95%.
 - **Evening charges**: €6, plus a little for each upgrade.
 - **Debt**: if the till can't pay the charges, the rest goes on a tab, repaid automatically with half of the next sales.
-  When the fridge and the till are both empty, Nonna drops off enough for four margheritas, once a day.
+- **Never stuck**: when nothing on the menu can be made and the till can't buy more, the game says so and offers a way
+  out: borrow €30 from Nonna (once a day, on the tab), or close for today. In the morning, when the fridge and the till
+  are both empty, Nonna also drops off enough for four margheritas, once a day.
+- **Pause** (the ⏸ button, `P` or `Esc`) stops the clock. From the pause menu you can also close for today, or start the
+  day over from this morning's prep.
+- Baked pizzas nobody ordered can be binned one by one, or all at once.
 - Ingredients never go bad. Pizzas still in the oven or on the pass at closing time are counted as waste.
 
 ### Reputation and levels
@@ -125,8 +131,11 @@ npm install
 npm run dev
 ```
 
-Then open the address shown in the terminal (http://localhost:5173). Thanks to `--host`, Vite also prints a network
-address (http://192.168.x.x:5173) you can open on your phone if it is on the same Wi-Fi.
+Then open the address shown in the terminal (http://localhost:5173).
+
+To try it on your phone, run `npm run dev:phone` instead: Vite also prints a network address (http://192.168.x.x:5173)
+to open on the phone, on the same Wi-Fi. The development server is then reachable by everyone on that network,
+so stop it once you're done (the deployed game doesn't have this concern).
 
 ## Building a static version
 

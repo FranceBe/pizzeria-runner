@@ -311,6 +311,26 @@ describe("views", () => {
     expect(html).toContain("tip as much as the pizza costs");
   });
 
+  it("offers a way out when stuck, and a pause menu", () => {
+    const stuck = stateInService([makeCustomer()], { money: 0.5, stock: { pate: 0, tomate: 5, mozza: 5, basilic: 5 } });
+    const html = render(serviceScreen(stuck), "en");
+    expect(html).toContain("Nothing left to make the orders with");
+    expect(html).toContain("Borrow €30.00 from Nonna");
+    expect(html).toContain("Close for today");
+    const paused = play(makeState(), { type: "openRestaurant" }, { type: "togglePause" });
+    const menu = render(serviceScreen(paused), "en");
+    expect(menu).toContain("Resume");
+    expect(menu).toContain("Start the day over");
+  });
+
+  it("lets pizzas nobody ordered be binned, one by one or all at once", () => {
+    const state = stateInService([makeCustomer()]);
+    serviceOf(state).ready = [{ id: "r1", ingredients: ["pate"] }, { id: "r2", ingredients: ["pate", "tomate"] }];
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain("Bin the 2 pizzas nobody is waiting for");
+    expect(html.match(/class="btn sm bin"/g)).toHaveLength(2);
+  });
+
   it("sells looks for the pizzeria", () => {
     const html = render(<UpgradesView state={makeState({ money: 130 })} dispatch={noop} />, "en");
     expect(html).toContain("Make it yours");

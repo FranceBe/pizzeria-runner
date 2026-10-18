@@ -14,7 +14,7 @@ type AnyHandler = (state: GameState, action: GameAction) => GameState | void;
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   // Ticks fire four times a second all game long; skip the copy when no service is running.
-  if (action.type === "tick" && state.phase !== "service") return state;
+  if (action.type === "tick" && (state.phase !== "service" || state.service?.paused)) return state;
   // actionHandlers[action.type] always matches action, but TypeScript can't correlate the two unions.
   const handler = actionHandlers[action.type] as AnyHandler;
   const draft = structuredClone(state);

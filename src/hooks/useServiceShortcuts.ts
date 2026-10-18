@@ -11,9 +11,12 @@ export function useServiceShortcuts(state: GameState, dispatch: Dispatch, isEnab
     if (!isEnabled) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
-      if (event.target instanceof Element && event.target.closest("input, textarea, select, [role='dialog']")) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select")) return;
       const action = shortcutAction(latestState.current, event.key);
       if (!action) return;
+      // Inside a dialog (the pause menu, the recipe editor…), only the pause key works.
+      const isInDialog = event.target instanceof Element && event.target.closest("[role='dialog']");
+      if (isInDialog && action.type !== "togglePause") return;
       // Otherwise Space or Enter would also press whichever button was clicked last.
       event.preventDefault();
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();

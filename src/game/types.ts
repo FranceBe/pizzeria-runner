@@ -139,6 +139,8 @@ export interface Service {
   board: IngredientId[];
   /** Nonna's secret is on the pizza being built. */
   secretOnBoard?: boolean;
+  /** The clock is stopped: nobody waits, nothing bakes, nobody comes in. */
+  paused?: boolean;
   oven: OvenPizza[];
   /** The pass: baked pizzas waiting to be served. */
   ready: ReadyPizza[];
@@ -307,6 +309,10 @@ export interface GameState {
   phase: Phase;
   purchasesToday: number;
   lastNonnaVisitDay: number;
+  /** Last day Nonna lent money (once a day at most). */
+  lastNonnaLoanDay: number;
+  /** The game as it was when the restaurant opened, to start the day over. */
+  dayStart: DayStart | null;
   /** Everyone ever served, by name. */
   customerBook: Record<string, CustomerBookEntry>;
   /** Today's event, picked when the day starts. */
@@ -337,6 +343,9 @@ export interface GameState {
   pops: Pop[];
 }
 
+/** A copy of the game taken when the restaurant opens. */
+export type DayStart = Omit<GameState, "toasts" | "pops" | "dayStart">;
+
 /** What gets saved: toasts and pops are transient. */
 export type SaveData = Omit<GameState, "toasts" | "pops">;
 
@@ -360,11 +369,16 @@ export type GameAction =
   | { type: "enterSecretCode" }
   | { type: "dismissChallengeResult" }
   | { type: "startNextDay" }
+  | { type: "togglePause" }
+  | { type: "closeEarly" }
+  | { type: "restartDay" }
+  | { type: "trashUnwantedPizzas" }
   // Shop
   | { type: "buyIngredient"; ingredientId: IngredientId; quantity: number }
   | { type: "restock"; targetQuantity: number }
   | { type: "signSupplier"; ingredientId: IngredientId }
   | { type: "callNonna" }
+  | { type: "borrowFromNonna" }
   | { type: "buyUpgrade"; upgradeKey: UpgradeKey }
   | { type: "chooseCosmetic"; slot: CosmeticSlot; id: string }
   // Menu

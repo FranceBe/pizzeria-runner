@@ -2,7 +2,7 @@ import { INGREDIENTS_BY_ID, type IngredientId } from "../../data/ingredients";
 import { MARGHERITA } from "../../data/recipes";
 import { SECRET_CRAFT_COST, UPGRADES } from "../../data/progression";
 import { canAfford } from "../../utils/math";
-import { restockPlan, spend } from "../economy";
+import { canBorrowFromNonna, NONNA_LOAN, restockPlan, spend } from "../economy";
 import { marketPrice } from "../events";
 import { discoverClassics } from "../menu";
 import { levelForXp } from "../progression";
@@ -63,6 +63,15 @@ export const shopActions = {
     addToStock(state, ingredientId, SUPPLIER_WELCOME_PORTIONS);
     pushToast(state, { key: "supplierSigned", params: { ingredientId, portions: SUPPLIER_WELCOME_PORTIONS } }, "gold");
     discoverClassics(state);
+  },
+
+  // A loan from Nonna, at most once a day: it goes on the tab, repaid with half of the next sales.
+  borrowFromNonna(state) {
+    if (!canBorrowFromNonna(state)) return;
+    state.lastNonnaLoanDay = state.day;
+    state.money += NONNA_LOAN;
+    state.debt += NONNA_LOAN;
+    pushToast(state, { key: "nonnaLoan", params: { amount: NONNA_LOAN } }, "gold");
   },
 
   // Safety net when the player is out of both stock and money; once a day.

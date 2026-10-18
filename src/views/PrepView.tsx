@@ -1,6 +1,6 @@
 import { MARGHERITA } from "../data/recipes";
 import { CHALLENGE_SECONDS, createChallenge, localDate } from "../game/challenge";
-import { dailyCharges, forecastCustomers } from "../game/economy";
+import { canBorrowFromNonna, dailyCharges, forecastCustomers, NONNA_LOAN } from "../game/economy";
 import { activeMenu, isNewRecipe } from "../game/menu";
 import { ingredientCost } from "../game/pizza";
 import { levelForXp, menuCapacity } from "../game/progression";
@@ -151,7 +151,12 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
         {needsNonna(state, menu) && (
           <div className="card pad" style={{ background: "var(--gold-soft)", borderColor: "var(--gold)" }}>
             <p style={{ margin: "0 0 8px" }}>{t("prep.nonnaOffer")}</p>
-            <button className="btn" onClick={() => dispatch({ type: "callNonna" })}>{t("prep.callNonna")}</button>
+            <div className="row">
+              <button className="btn" onClick={() => dispatch({ type: "callNonna" })}>{t("prep.callNonna")}</button>
+              {canBorrowFromNonna(state) && (
+                <button className="btn ghost" onClick={() => dispatch({ type: "borrowFromNonna" })}>{t("service.borrow", { amount: NONNA_LOAN })}</button>
+              )}
+            </div>
           </div>
         )}
         <div>

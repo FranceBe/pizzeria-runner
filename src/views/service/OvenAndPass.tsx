@@ -93,15 +93,21 @@ function Bar({ state, service, dispatch }: ServiceScreenProps) {
 // The pass: baked pizzas waiting to be served.
 function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
   const t = useTranslation();
+  const unwantedCount = service.ready.filter((pizza) => !customerForPizza(service, pizza.ingredients)).length;
   return (
     <div className="passe">
       <h3 className="h">{t("service.pass")}</h3>
       {service.ready.length === 0 && <p className="hint passe-empty">{t("service.passEmpty")}</p>}
+      {unwantedCount > 1 && (
+        <button className="btn sm ghost bin-all" onClick={() => dispatch({ type: "trashUnwantedPizzas" })}>
+          {t("service.trashUnwanted", { count: unwantedCount })}
+        </button>
+      )}
       {service.ready.map((pizza) => {
         const customer = customerForPizza(service, pizza.ingredients);
         const recipe = findRecipeByIngredients(state, pizza.ingredients);
         return (
-          <div key={pizza.id} className="ready">
+          <div key={pizza.id} className={`ready${customer ? "" : " unwanted"}`}>
             <Pizza ingredients={pizza.ingredients} baked />
             <div className="grow">
               <div className="rn">
@@ -112,17 +118,25 @@ function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
                 {customer ? t("service.forCustomer", { name: customer.name }) : t("service.nobodyWaiting")}
               </div>
             </div>
+            {/* Nobody waiting for it: binning it is the only thing to do, so that is the button. */}
             <div className="ready-btns">
-              <button
-                className={`btn sm go${coachTarget === "serve" && customer ? " coach-target" : ""}`}
-                onClick={() => dispatch({ type: "servePizza", pizzaId: pizza.id })}
-                disabled={!customer}
-              >
-                {t("service.serve")}
-              </button>
-              <button className="btn sm ghost" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
-                {t("common.trash")}
-              </button>
+              {customer ? (
+                <>
+                  <button
+                    className={`btn sm go${coachTarget === "serve" ? " coach-target" : ""}`}
+                    onClick={() => dispatch({ type: "servePizza", pizzaId: pizza.id })}
+                  >
+                    {t("service.serve")}
+                  </button>
+                  <button className="btn sm ghost" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
+                    {t("common.trash")}
+                  </button>
+                </>
+              ) : (
+                <button className="btn sm bin" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
+                  {t("common.trash")}
+                </button>
+              )}
             </div>
           </div>
         );

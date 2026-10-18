@@ -1,5 +1,6 @@
 import type { IngredientId } from "../data/ingredients";
 import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS } from "../data/progression";
+import { marketPrice } from "./events";
 import { haveSameIngredients } from "./pizza";
 import type { Customer, GameState, Service } from "./types";
 
@@ -26,6 +27,16 @@ export const ovenSlots = (state: GameState): number => ovensOf(state).reduce((to
 
 const pizzasIn = (service: Service, ovenIndex: number): number =>
   service.oven.filter((pizza) => (pizza.ovenIndex ?? 0) === ovenIndex).length;
+
+// Nothing more can come out of the kitchen: no pizza in the oven or on the pass, and every waiting order
+// misses something the fridge doesn't have and the till can't pay for. The service screen then offers a way out.
+export function isStuck(state: GameState, service: Service): boolean {
+  if (service.challenge || service.oven.length || service.ready.length || !service.customers.length) return false;
+  return service.customers.every((customer) => {
+    const missing = customer.ingredients.filter((id) => !service.board.includes(id) && (state.stock[id] || 0) < 1);
+    return missing.length > 0 && missing.reduce((total, id) => total + marketPrice(state, id), 0) > state.money;
+  });
+}
 
 // Where the next pizza goes: the fastest oven with room, or undefined when they are all full.
 export function ovenWithRoom(state: GameState, service: Service): Oven | undefined {

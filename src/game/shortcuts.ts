@@ -16,9 +16,12 @@ const ARROW_STEPS: Partial<Record<string, -1 | 1>> = { ArrowLeft: -1, ArrowUp: -
 //   A          kitchen assistant builds the selected order
 //   D          the selected customer's drink
 //   O          offer it, for a regular
+//   P, Escape  pause (the only key that works while paused)
 export function shortcutAction(state: GameState, key: string): GameAction | null {
   const { service } = state;
   if (state.phase !== "service" || !service) return null;
+  if (key === "p" || key === "P" || key === "Escape") return { type: "togglePause" };
+  if (service.paused) return null;
   const selected = selectedCustomer(service);
   const selectedIndex = selected ? service.customers.indexOf(selected) : -1;
 
