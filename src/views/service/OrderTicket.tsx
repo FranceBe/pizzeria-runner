@@ -62,6 +62,7 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
+  const hasExpress = Boolean(customer.delivery) && expressSecondsLeft > 0;
   return (
     <button className={ticketClassName(customer, table)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : undefined}>
       <span className="price">{t.money(customer.price)}</span>
@@ -83,27 +84,22 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
         </div>
       </div>
       <div className="pz">{customer.asUsual ? t("service.asUsual") : t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
-      {(customer.critic || customer.birthday || (customer.delivery && expressSecondsLeft > 0)) && (
+      {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
+      {(customer.critic || customer.birthday || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
-          {customer.delivery && expressSecondsLeft > 0 && (
-            <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>
-          )}
-        </div>
-      )}
-      {hasSpecialRequest(customer) && (
-        <div className="mods">
+          {hasExpress && <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>}
           {customer.extraIngredient && <span className="mod add">{t("service.extra", { id: customer.extraIngredient })}</span>}
           {customer.removedIngredient && <span className="mod rem">{t("service.without", { id: customer.removedIngredient })}</span>}
           {customer.diet && <span className="mod diet">{t(`diets.${customer.diet}`)}</span>}
-        </div>
-      )}
-      {customer.drink && (
-        <div className={`drink-order${customer.drinkServed ? " served" : ""}`}>
-          <DrinkGlass id={customer.drink} />
-          <span>{t.drink(customer.drink)}{customer.drinkOffered && ` · ${t("service.offered")}`}</span>
-          {customer.drinkServed ? <span aria-hidden="true">✓</span> : isSelected && <kbd className="kbd">D</kbd>}
+          {customer.drink && (
+            <span className={`drink-order${customer.drinkServed ? " served" : ""}`}>
+              <DrinkGlass id={customer.drink} />
+              <span className="drink-name">{t.drink(customer.drink)}{customer.drinkOffered && ` · ${t("service.offered")}`}</span>
+              {customer.drinkServed ? <span aria-hidden="true">✓</span> : isSelected && <kbd className="kbd">D</kbd>}
+            </span>
+          )}
         </div>
       )}
       {showIngredients && !customer.asUsual && (

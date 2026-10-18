@@ -169,6 +169,7 @@ export const fr = {
     stall: "L'étal",
     inSeason: "de saison",
     secretTitle: "Le secret de Nonna",
+    secretWhat: "À quoi ça sert ?",
     secretIntro: "Il ne s'achète pas : il se fabrique, un pot à la fois. Une pincée par pizza.",
     secretBonus: "Ajouté sur une pizza, il ne change rien à la recette et le client ne voit pas la différence. Mais environ une fois sur trois, il laisse un pourboire égal au prix de la pizza.",
     secretStock: "{count} en réserve",

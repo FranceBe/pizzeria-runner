@@ -65,7 +65,7 @@ export function PrepLine({ state, isBottomless, extraIngredients = [], board, ne
   })).filter((station) => station.ingredientIds.length);
 
   return (
-    <section className="rail" aria-label={t("service.prepLine")}>
+    <section className={`rail${neededIngredients.length ? " has-order" : ""}`} aria-label={t("service.prepLine")}>
       {stations.map((station) => (
         <div key={station.id} className={`station st-${station.id}`}>
           <div className="st-label">{t(`stations.${station.id}`)}</div>

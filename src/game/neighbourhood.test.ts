@@ -45,6 +45,17 @@ describe("diets", () => {
     expect(forDiet("veggie", MARGHERITA)).toEqual(MARGHERITA);
   });
 
+  it("never depend on the customer's name", () => {
+    // The diet is drawn on its own: same random draws, same diet, whoever walks in.
+    const dietFor = (name: string) => {
+      vi.spyOn(Math, "random").mockReturnValue(0.01);
+      const customer = createCustomer(makeState({ xp: 450 }), "regular", { name }) as Customer;
+      vi.restoreAllMocks();
+      return customer.diet;
+    };
+    expect(new Set(["Karim", "Giulia", "Kenji", "Louis", "Fatou"].map(dietFor)).size).toBe(1);
+  });
+
   it("show up from level 4, with a menu that fits", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.01);
     expect((createCustomer(makeState({ xp: 0 })) as Customer).diet).toBeNull();
@@ -89,7 +100,7 @@ describe("regulars' profiles", () => {
     const state = play(makeState({ money: 500, xp: 500 }), { type: "signSupplier", ingredientId: "origan" });
     state.customerBook = { Luca: makeBookEntry({ visits: 5, dislikes: "basilic" }) };
     vi.spyOn(Math, "random").mockReturnValue(0);
-    expect((createCustomer(state) as Customer).ingredients).not.toContain("basilic");
+    expect((createCustomer(state, "regular", { name: "Luca" }) as Customer).ingredients).not.toContain("basilic");
   });
 
   it("come for their birthday and get a gift with their favourite", () => {

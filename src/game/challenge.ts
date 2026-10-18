@@ -48,12 +48,12 @@ export function nextChallengeArrival(challenge: Challenge): number {
 // The next customer of the day's sequence. Mutates the challenge's generator.
 export function createChallengeCustomer(challenge: Challenge, waitingNames: ReadonlySet<string>): Customer {
   const recipe = challengeRecipe(drawFrom(challenge, challenge.menu));
-  const names = CUSTOMER_NAMES.filter((name) => !waitingNames.has(name));
+  const name = drawFrom(challenge, CUSTOMER_NAMES.filter((candidate) => !waitingNames.has(candidate)));
   return {
     // Ids only need to be unique, not shared between players.
     id: makeId(),
-    name: drawFrom(challenge, names),
-    ...rollLooks(() => draw(challenge)),
+    name,
+    ...rollLooks(name, () => draw(challenge)),
     recipeId: recipe.id,
     recipeName: null,
     ingredients: recipe.ingredients,

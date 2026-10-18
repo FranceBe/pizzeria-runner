@@ -2,14 +2,16 @@ import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingre
 import { MARGHERITA } from "../data/recipes";
 import { detectLanguage, type Language } from "../i18n/languages";
 import type { JsonObject } from "../utils/saveCode";
+import type { AccessoryId } from "../data/customers";
 import { unlockAchievements } from "./achievements";
+import { fitAccessory } from "./looks";
 import { createClassicRecipe } from "./menu";
 import { goodPairingsIn, pairingKey } from "./pairings";
 import type { GameState, LifetimeStats, SaveData } from "./types";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
@@ -185,6 +187,21 @@ const migrateFromVersion5 = (saved: JsonObject): JsonObject => saved;
 // Version 6: before pauses, closing early, restarting the day and Nonna's loans. The new fields have defaults.
 const migrateFromVersion6 = (saved: JsonObject): JsonObject => saved;
 
+// Version 7: faces were drawn without looking at names. Feminine names lose any moustache or beard they were given.
+function migrateFromVersion7(saved: JsonObject): JsonObject {
+  const book = asObject(saved.customerBook);
+  if (!book) return saved;
+  const customerBook = Object.fromEntries(
+    Object.entries(book).map(([name, value]) => {
+      const entry = asObject(value);
+      if (!entry || typeof entry.accessory !== "string") return [name, value];
+      // Unknown accessories pass through untouched; only facial hair is checked.
+      return [name, { ...entry, accessory: fitAccessory(name, entry.accessory as AccessoryId) }];
+    }),
+  );
+  return { ...saved, customerBook };
+}
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
 const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion1,
@@ -193,6 +210,7 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion4,
   migrateFromVersion5,
   migrateFromVersion6,
+  migrateFromVersion7,
 ];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.

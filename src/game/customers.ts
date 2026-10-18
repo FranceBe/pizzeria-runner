@@ -9,7 +9,7 @@ import { todaysEvent } from "./events";
 import { dietAllows, forDiet } from "./diets";
 import { fairPrice, priceAttractiveness, isDessert, isFilling, fillingsOf, sortByLayer } from "./pizza";
 import { activeMenu, isNewRecipe, recipeAppeal } from "./menu";
-import { rollLooks } from "./looks";
+import { fitAccessory, rollLooks } from "./looks";
 import { seasonalRecipe } from "./seasons";
 import { levelForXp } from "./progression";
 import { bookEntry, favoriteRecipeId, FAVORITE_REORDER_CHANCE, isRegular } from "./regulars";
@@ -134,7 +134,7 @@ export function createCustomer(state: GameState, kind: CustomerKind = "regular",
     id: makeId(),
     name,
     // Someone already in the book keeps the look they had on their first visit.
-    ...(entry ? { skin: entry.skin, hair: entry.hair, hairStyle: entry.hairStyle, accessory: entry.accessory ?? null } : rollLooks()),
+    ...(entry ? { skin: entry.skin, hair: entry.hair, hairStyle: entry.hairStyle, accessory: fitAccessory(name, entry.accessory) } : rollLooks(name)),
     // Only people at the counter are counted; the ticket badge appears from the second visit.
     visitNumber: kind === "regular" ? (entry?.visits ?? 0) + 1 : undefined,
     recipeId: recipe.id,

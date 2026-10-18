@@ -82,12 +82,12 @@ function Accounts({ state }: { state: GameState }) {
         <Stat label={t("journal.happy")} value={lifetime.happyServed} />
       </div>
       {lifetime.bestDay && <p className="hint">{t("journal.bestDay", lifetime.bestDay)}</p>}
+      <QuestLog state={state} />
       <h3 className="h">{t("journal.chart")}</h3>
       <ProfitChart days={state.history.slice(-CHART_DAYS)} />
       <h3 className="h">{t("journal.topPizzas")}</h3>
       {topPizzas.length === 0 && <p className="hint">{t("journal.noSales")}</p>}
       <TopPizzaList state={state} topPizzas={topPizzas} mostSold={mostSold} />
-      <QuestLog state={state} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { INGREDIENTS } from "../data/ingredients";
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { SECRET_CRAFT_COST } from "../data/progression";
@@ -77,14 +78,25 @@ function Fridge({ state, dispatch }: ScreenProps) {
 // Nonna's secret, once shared: made by hand, one jar at a time, never part of the restock buttons.
 function NonnasSecret({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
+  // A button, not a hover tooltip: phones have no hover.
+  const [isExplained, setExplained] = useState(false);
   if (!state.secretIngredient) return null;
   return (
     <div className="card pad secret-card">
       <div className="row">
         <h2 className="h grow">{t("market.secretTitle")}</h2>
-        <span className="secret-info" title={t("market.secretBonus")} aria-label={t("market.secretBonus")} tabIndex={0}>ⓘ</span>
+        <button
+          className="secret-info"
+          aria-expanded={isExplained}
+          aria-label={t("market.secretWhat")}
+          title={t("market.secretWhat")}
+          onClick={() => setExplained(!isExplained)}
+        >
+          ⓘ
+        </button>
       </div>
       <p className="sub">{t("market.secretIntro")}</p>
+      {isExplained && <p className="secret-bonus">{t("market.secretBonus")}</p>}
       <div className="row">
         <span className="secret-stock">✨ {t("market.secretStock", { count: state.secretStock })}</span>
         <button

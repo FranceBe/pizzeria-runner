@@ -801,9 +801,6 @@ header.top .top-inner { position: relative; }
   /* Phone service: the prep line always keeps room, and if the screen still overflows (many pizzas on the pass,
      several ovens, a long message), the service area scrolls rather than leaving everything stuck. */
   html.svc-mode main { overflow-y: auto; overscroll-behavior: contain; }
-  .svc { grid-template-rows: auto auto auto minmax(150px, 1fr); }
-  .tickets > *, .table-tickets > .ticket { max-height: 32vh; overflow: hidden; }
-  .a-oven { max-height: 36vh; overflow-y: auto; }
 }
 .a-ticker { align-items: flex-start; }
 .pause-btn { align-self: stretch; max-height: 44px; }
@@ -816,3 +813,62 @@ header.top .top-inner { position: relative; }
 }
 .quest-log-row { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
 .quest-log-day { flex: none; font-size: 11px; font-weight: 700; color: var(--muted); min-width: 48px; }
+
+/* ---------------------------------------------------------------
+   Phone service: rows of fixed height, so nothing jumps when tickets come and go or pizzas leave the oven.
+   Tickets on top, then the message line, the board and oven, and the prep line takes the rest.
+---------------------------------------------------------------- */
+@media (max-width: 700px) {
+  /* The real visible height on phones, which changes as the address bar shows and hides */
+  html.svc-mode, html.svc-mode body { height: 100dvh; }
+  .svc { --ticket-row: 128px; --work-row: clamp(150px, 27dvh, 220px);
+    grid-template-rows: var(--ticket-row) auto var(--work-row) minmax(120px, 1fr); }
+
+  /* Tickets: all the same height, clipped rather than growing the row */
+  .a-tickets { height: var(--ticket-row); min-height: 0; overflow: hidden; }
+  .tickets { height: 100%; align-items: stretch; overflow-y: hidden; padding-bottom: 0; }
+  .tickets > .ticket, .table-tickets > .ticket { height: 100%; overflow: hidden; padding-top: 18px; }
+  .ticket .who { gap: 6px; }
+  .ticket .mods { margin-top: 2px; gap: 3px; }
+  .ticket .mod { padding: 0 5px; }
+  .drink-order { margin-top: 3px; padding: 0 6px 0 2px; font-size: 11px; }
+  .drink-order svg { width: 16px; height: 16px; }
+  .table-group { height: 100%; padding: 14px 4px 4px; position: relative; gap: 0; }
+  .table-head { position: absolute; top: 1px; left: 8px; right: 8px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .table-tickets { height: 100%; gap: 6px; }
+
+  /* Board and oven share a fixed row; the pass and the bar scroll inside the oven column */
+  .a-peel, .a-oven { height: var(--work-row); min-height: 0; }
+  .a-oven { overflow-y: auto; overscroll-behavior: contain; }
+  .passe { flex: none; overflow: visible; }
+
+  /* What the selected order needs is easier to spot, without giving it away: a clear gold outline,
+     and the other pans just a little quieter */
+  .rail.has-order .pan:not(.need):not(.on):not(.secret-pan) { opacity: .75; }
+  .a-rail .pan.need svg { outline: 3px solid var(--gold); outline-offset: -3px; }
+
+  /* Bar: names under the glasses, since there is no hover on a phone */
+  .drink-btn { flex-direction: column; gap: 1px; padding: 4px 2px; }
+  .drink-btn span { display: block; font-size: 9.5px; line-height: 1.1; max-width: 100%; }
+}
+button.secret-info { border: 1px solid var(--gold); background: var(--surface); font-size: 14px; padding: 0; width: 28px; height: 28px; }
+button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff; }
+.secret-bonus { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--gold); font-size: 14px; }
+@media (max-width: 700px) {
+  .svc { --ticket-row: 136px; }
+  /* The ingredients matter most on a ticket: the drink shrinks to its glass */
+  .drink-order .drink-name { display: none; }
+  .drink-order { padding: 0 5px 0 3px; }
+  .passe .bin-all { font-size: 11.5px; padding: 3px 6px; }
+}
+.mods .drink-order { margin-top: 0; }
+@media (max-width: 700px) {
+  .secret-sparkle { top: 2px; right: 6px; font-size: 20px; }
+}
+/* Tickets in a row keep their width: a long recipe name or a name with its visit badge wraps instead of widening one */
+@media (max-width: 1020px) {
+  .tickets > *, .table-tickets > .ticket { min-width: 0; }
+  .ticket .pz { overflow-wrap: anywhere; }
+  .ticket .who > div { min-width: 0; }
+  .ticket .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

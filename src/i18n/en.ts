@@ -158,6 +158,7 @@ export const en: Dictionary = {
     stall: "The stall",
     inSeason: "in season",
     secretTitle: "Nonna's secret",
+    secretWhat: "What is it for?",
     secretIntro: "It can't be bought: it is made, one jar at a time. One pinch per pizza.",
     secretBonus: "Added to a pizza, it changes nothing in the recipe and the customer can't tell. But about one time in three, they tip as much as the pizza costs.",
     secretStock: "{count} in stock",

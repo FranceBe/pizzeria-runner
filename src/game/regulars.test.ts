@@ -22,16 +22,16 @@ describe("customer book", () => {
   });
 
   it("brings returning customers back with their look and favourite pizza", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0); // first name in the list ("Luca"), and reorders the favourite
+    vi.spyOn(Math, "random").mockReturnValue(0); // first name in the list ("Giulia"), and reorders the favourite
     const state = makeState();
-    state.customerBook.Luca = { skin: "#123456", hair: "#654321", hairStyle: 2, visits: 4, orders: { margherita: 4 } };
-    expect(createCustomer(state)).toMatchObject({ name: "Luca", skin: "#123456", hairStyle: 2, visitNumber: 5, recipeId: "margherita" });
+    state.customerBook.Giulia = { skin: "#123456", hair: "#654321", hairStyle: 2, visits: 4, orders: { margherita: 4 } };
+    expect(createCustomer(state)).toMatchObject({ name: "Giulia", skin: "#123456", hairStyle: 2, visitNumber: 5, recipeId: "margherita" });
   });
 
   it("never seats two customers with the same name at once", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
-    const state = stateInService([makeCustomer({ name: "Luca" })]);
-    expect(createCustomer(state)?.name).not.toBe("Luca");
+    const state = stateInService([makeCustomer({ name: "Giulia" })]);
+    expect(createCustomer(state)?.name).not.toBe("Giulia");
   });
 
   it("is updated when serving, and pops a toast for a new regular", () => {

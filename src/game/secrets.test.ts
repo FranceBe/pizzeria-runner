@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { ACHIEVEMENT_IDS } from "../data/achievements";
-import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
+import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { tipChance } from "./customers";
 import { rollLooks } from "./looks";
+import { hydrateState } from "./state";
 import { MAX_LEVEL } from "./progression";
 import { awaitsButtons, swipeKey, typeSecretKey } from "./secretCode";
 import { shortcutAction } from "./shortcuts";
@@ -126,10 +127,27 @@ describe("customers' looks", () => {
   it("are varied, sometimes bold, sometimes with an accessory", () => {
     let seed = 0;
     const random = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
-    const crowd = Array.from({ length: 300 }, () => rollLooks(random));
+    const crowd = Array.from({ length: 300 }, () => rollLooks("Sam", random));
     expect(new Set(crowd.map((looks) => looks.hairStyle)).size).toBe(8);
     expect(crowd.some((looks) => ["#3d6fd9", "#2fa36b", "#e26aa6", "#8a55d6", "#1fb3b3"].includes(looks.hair))).toBe(true);
     expect(new Set(crowd.map((looks) => looks.accessory)).size).toBe(9);
+  });
+
+  it("follow the name: no facial hair for feminine names, mostly longer or shorter hair", () => {
+    let seed = 7;
+    const random = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const giulias = Array.from({ length: 400 }, () => rollLooks("Giulia", random));
+    expect(giulias.some((looks) => looks.accessory === "moustache" || looks.accessory === "beard")).toBe(false);
+    expect(giulias.filter((looks) => [1, 2, 3, 4, 5].includes(looks.hairStyle)).length).toBeGreaterThan(330);
+    const lucas = Array.from({ length: 400 }, () => rollLooks("Luca", random));
+    expect(lucas.filter((looks) => [0, 4, 6, 7].includes(looks.hairStyle)).length).toBeGreaterThan(330);
+    expect(lucas.some((looks) => looks.accessory === "beard")).toBe(true);
+  });
+
+  it("lose facial hair for feminine regulars met before", () => {
+    const state = hydrateState(toJson({ version: 7, money: 1, recipes: [], customerBook: { Léa: makeBookEntry({ accessory: "moustache" }), Tom: makeBookEntry({ accessory: "beard" }) } }));
+    expect(state.customerBook.Léa.accessory).toBeNull();
+    expect(state.customerBook.Tom.accessory).toBe("beard");
   });
 
   it("stay the same for a regular", () => {

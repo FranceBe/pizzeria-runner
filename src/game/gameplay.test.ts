@@ -113,7 +113,7 @@ describe("the usual", () => {
   it("is what regulars sometimes order when they pick their favourite", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const state = withRegular(makeState());
-    const customer = createCustomer(state) as Customer;
+    const customer = createCustomer(state, "regular", { name: "Luca" }) as Customer;
     expect(customer.name).toBe("Luca");
     expect(customer.asUsual).toBe(true);
   });
