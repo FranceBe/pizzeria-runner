@@ -11,12 +11,12 @@ export function useGameAudio(state: GameState): void {
   useEffect(() => {
     const unlock = () => audio.unlock();
     const onVisibility = () => audio.setPageVisible(document.visibilityState === "visible");
-    window.addEventListener("pointerdown", unlock);
-    window.addEventListener("keydown", unlock);
+    // iPhone counts the end of a touch (touchend, click) as the gesture, not its start: listen to all of them.
+    const gestures = ["pointerdown", "touchend", "click", "keydown"] as const;
+    gestures.forEach((gesture) => window.addEventListener(gesture, unlock, { passive: true }));
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      gestures.forEach((gesture) => window.removeEventListener(gesture, unlock));
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);

@@ -23,6 +23,9 @@ const SIZZLE_LEVEL = 0.45;
 const QUICK_FADE = 0.08;
 const SOFT_FADE = 0.4;
 
+type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
+
 interface Loop {
   source: AudioBufferSourceNode;
   gain: GainNode;
@@ -39,11 +42,17 @@ class AudioEngine {
   private wantsSizzle = false;
   private musicLevel = 0;
   private effectsLevel = 0;
+  private hasRun = false;
 
   private ensureContext(): AudioContext | null {
     if (this.context) return this.context;
-    if (typeof window === "undefined" || typeof window.AudioContext !== "function") return null;
-    const context = new window.AudioContext();
+    // Older iPhones only have the prefixed constructor.
+    const Context = typeof window === "undefined" ? undefined : (window.AudioContext ?? (window as WebkitWindow).webkitAudioContext);
+    if (!Context) return null;
+    // iPhone: play like a music app, so the side silent switch doesn't mute the game (iOS 17+).
+    const session = (navigator as AudioSessionNavigator).audioSession;
+    if (session) session.type = "playback";
+    const context = new Context();
     this.musicBus = context.createGain();
     this.effectsBus = context.createGain();
     this.musicBus.gain.value = this.musicLevel;
@@ -54,15 +63,26 @@ class AudioEngine {
     return context;
   }
 
-  // On the first click, tap or key press. Resuming takes a moment: loops start once sound actually runs.
+  // On every tap, click or key press until sound runs (and again after iOS interrupts it, back from another app).
+  // Resuming takes a moment: loops start once sound actually runs.
   unlock(): void {
     const context = this.ensureContext();
     if (!context) return;
-    if (context.state === "running") this.onRunning();
-    else void context.resume().then(() => this.onRunning());
+    if (context.state === "running") {
+      if (!this.hasRun) this.onRunning();
+      return;
+    }
+    // iPhone: a sound started inside the touch itself is what really unlocks audio there.
+    const silence = context.createBufferSource();
+    silence.buffer = context.createBuffer(1, 1, 22050);
+    silence.connect(context.destination);
+    silence.start(0);
+    void context.resume().then(() => this.onRunning(), () => undefined);
   }
 
+
   private onRunning(): void {
+    this.hasRun = true;
     void this.refreshMusic();
     if (this.wantsSizzle && !this.sizzle) {
       this.wantsSizzle = false;
@@ -74,8 +94,9 @@ class AudioEngine {
   // When the page is hidden (another tab, the phone locked), sound stops; it comes back with the page.
   setPageVisible(isVisible: boolean): void {
     if (!this.context) return;
-    if (isVisible) void this.context.resume();
-    else void this.context.suspend();
+    // iOS may refuse to resume without a touch: then the next tap does it (see unlock).
+    if (isVisible) this.context.resume().catch(() => undefined);
+    else this.context.suspend().catch(() => undefined);
   }
 
   private load(url: string): Promise<AudioBuffer | null> {
@@ -85,7 +106,8 @@ class AudioEngine {
     const loading = context
       ? fetch(url)
           .then((response) => response.arrayBuffer())
-          .then((data) => context.decodeAudioData(data))
+          // The callback form also works on older iPhones, whose decodeAudioData returns no promise.
+          .then((data) => new Promise<AudioBuffer>((resolve, reject) => void context.decodeAudioData(data, resolve, reject)))
           .catch(() => null)
       : Promise.resolve(null);
     this.buffers.set(url, loading);
@@ -124,7 +146,8 @@ class AudioEngine {
   private async refreshMusic(): Promise<void> {
     if (!this.context || this.context.state !== "running") return;
     if (this.wantsMusic && !this.music) {
-      const buffer = await this.load(canPlayOgg() ? musicOgg : musicM4a);
+      // A browser can claim to play Ogg and still fail to decode it: then the AAC copy.
+      const buffer = (canPlayOgg() ? await this.load(musicOgg) : null) ?? (await this.load(musicM4a));
       // The player may have turned it off while it was loading.
       if (buffer && this.wantsMusic && !this.music && this.musicBus) this.music = this.startLoop(buffer, this.musicBus, 1, MUSIC_SECONDS);
     } else if (!this.wantsMusic && this.music) {
