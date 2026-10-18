@@ -64,6 +64,11 @@ export const en: Dictionary = {
     questReward: ({ reward, xp }, t) => `Reward: ${t.money(reward)} and ${xp} points`,
     questDeadline: ({ days }) => (days <= 1 ? "Last day!" : `${days} days left`),
     dailyMenu: ({ recipes }) => `On today's menu: ${recipes}.`,
+    lateIngredient: ({ id }, t) => `Tonight, ${lower(t.ingredient(id))} only arrives a minute into the service.`,
+    festival: ({ festival }, t) => `It's ${t.festival(festival)}! A festive ingredient and recipe for a few days.`,
+    weekly: "This week",
+    weeklyReward: ({ reward, bonus }, t) => `${t.money(reward)} per mission, ${t.money(bonus)} more for all three`,
+    batchTonight: ({ items }) => `To deliver tonight, all together: ${items}. The faster, the better paid.`,
   },
 
   challenge: {
@@ -140,6 +145,19 @@ export const en: Dictionary = {
     trashUnwanted: ({ count }) => `Bin the ${count} pizzas nobody is waiting for`,
     offerDrink: ({ drink, name }) => `🎁 Offer ${name} the ${drink}`,
     offered: "on the house",
+    batch: "Group order",
+    theBatch: "the group order",
+    batchLine: "{done} / {count}",
+    batchMedal: ({ medal, clock }) => `${medal} for ${clock}`,
+    batchSlow: "Bronze medal",
+    forBatch: "For the group order",
+    streak: ({ count, multiplier }) => `🔥 streak of ${count} · tips ×${multiplier}`,
+    rush: "🔥 Rush hour! Tips ×2 · {clock}",
+    celebrity: "Celebrity",
+    celebrityTitle: "A celebrity! Serve them well: their photo goes up on the front.",
+    warm: "lukewarm",
+    cold: "cold",
+    stillComing: "On its way",
     secret: "Nonna's secret",
     secretTitle: "A pinch of Nonna's secret. It changes nothing in the recipe…",
   },
@@ -229,6 +247,7 @@ export const en: Dictionary = {
     gift: ({ amount }, t) => `+${t.money(amount)} gift`,
     drink: ({ amount }, t) => `+${t.money(amount)} drink`,
     secret: ({ amount }, t) => `+${t.money(amount)} ✨`,
+    batch: ({ amount }, t) => `+${t.money(amount)} order`,
   },
 
   upgrades: {
@@ -297,9 +316,10 @@ export const en: Dictionary = {
     inUse: "In place",
     buyLook: ({ cost }, t) => `Buy · ${t.money(cost)}`,
     slots: { awning: "Awning", sign: "Sign", wall: "Walls" },
-    awnings: { red: "Tomato red", green: "Basil green", blue: "Riviera blue", sun: "Sunny yellow", rose: "Candy pink" },
-    signs: { classic: "Painted", neon: "Neon", gold: "Gold leaf" },
-    walls: { mint: "Mint tiles", terracotta: "Terracotta", azulejo: "Azulejos", checker: "Checkerboard" },
+    awnings: { red: "Tomato red", green: "Basil green", blue: "Riviera blue", sun: "Sunny yellow", rose: "Candy pink", golden: "Starry gold" },
+    signs: { classic: "Painted", neon: "Neon", gold: "Gold leaf", star: "Starry" },
+    walls: { mint: "Mint tiles", terracotta: "Terracotta", azulejo: "Azulejos", checker: "Checkerboard", night: "Starry night" },
+    starsNeeded: "⭐ {count} stars",
   },
 
   settings: {
@@ -346,6 +366,11 @@ export const en: Dictionary = {
     annexe: "Second address",
     quests: "Neighbourhood quests",
     share: "Share the receipt",
+    stars: "Today's stars",
+    starHappy: "Everyone served in time",
+    starWaste: "Nothing binned",
+    starProfit: ({ target }, t) => `Profit of at least ${t.money(target)}`,
+    inspection: ({ xp }) => `Inspection passed: +${xp} reputation`,
     orders: "Orders served",
     order: ({ customer, recipe }) => `${customer} · ${recipe}`,
     noTip: "no tip",
@@ -388,6 +413,9 @@ export const en: Dictionary = {
     questsTotal: ({ count, amount }, t) => `${count} ${plural(count, "quest")} completed · ${t.money(amount)} earned`,
     noQuests: "Completed neighbourhood quests show up here.",
     questDay: "Day {day}",
+    stars: "Stars earned",
+    bestStreak: "Best streak",
+    medal: ({ medal }) => `${medal} medal`,
     likes: ({ recipe }) => `Favourite: ${recipe}`,
     dislikes: ({ id }, t) => `Doesn't like: ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }) => (days === 0 ? "🎂 Birthday today!" : `🎂 Birthday in ${days} ${plural(days, "day")}`),
@@ -398,6 +426,21 @@ export const en: Dictionary = {
   diets: { veggie: "Vegetarian", noPork: "No pork", glutenFree: "Gluten-free" },
 
   drinks: { limonade: "Lemonade", eau: "Sparkling water", chinotto: "Chinotto", vin: "Red wine" },
+
+  festivals: { halloween: "Halloween", christmas: "Christmas", valentine: "Valentine's Day" },
+
+  medals: { gold: "gold", silver: "silver", bronze: "bronze" },
+
+  weeklyMissions: {
+    happy: "Serve {target} customers with a smile",
+    tables: "Serve {target} whole tables",
+    desserts: "Serve {target} dessert pizzas",
+    drinks: "Serve {target} drinks",
+    streak: "Reach a streak of {target}",
+    batchGold: "Win gold on {target} group order",
+    served: "Serve {target} pizzas",
+    tips: "Earn €{target} in tips",
+  },
 
   quests: {
     givers: {
@@ -411,6 +454,7 @@ export const en: Dictionary = {
     serveTotal: ({ target }) => `is throwing a party: serve ${target} pizzas.`,
     happy: ({ target }) => `is running a survey: serve ${target} customers still smiling.`,
     pairing: ({ target }) => `dares you: discover ${target} new pairing.`,
+    batch: ({ target }) => `places a big order tonight: ${target} pizzas to deliver together.`,
     sweet: ({ target }) => `is celebrating a birthday: serve ${target} dessert pizzas.`,
   },
 
@@ -420,6 +464,10 @@ export const en: Dictionary = {
     festival: { name: "Street party", describe: "The whole street is hungry: many more customers tonight." },
     critic: { name: "Food critic", describe: "A critic is coming tonight. Serve them quickly for a glowing review and lots of reputation." },
     sunny: { name: "Sunshine", describe: "A few more customers, many more with a terrace." },
+    powerCut: { name: "Power cut", describe: "One oven, one pizza at a time. But understanding customers tip more." },
+    lateDelivery: { name: "Late delivery", describe: "One ingredient arrives during the service, with a few free portions by way of apology." },
+    inspection: { name: "Health inspection", describe: "A day without binning anything earns lots of reputation." },
+    scooterStrike: { name: "Scooter strike", describe: "No deliveries today, but more people eat in." },
   },
 
   achievements: {
@@ -452,6 +500,10 @@ export const en: Dictionary = {
     quests5: { name: "Good neighbour", describe: "Complete 5 neighbourhood quests" },
     secondOven: { name: "Double fire", describe: "Build a second oven" },
     secondAddress: { name: "Small chain", describe: "Open a second address" },
+    streak10: { name: "On fire", describe: "Reach a streak of 10 smiling customers" },
+    threeStars: { name: "Perfect day", describe: "Earn all three stars in a day" },
+    batchGold: { name: "Lightning delivery", describe: "Win gold on a group order" },
+    celebrity: { name: "Signed photo", describe: "Serve a celebrity" },
     secretCode: { name: "↑↑↓↓←→←→BA", describe: "You know the code." },
   },
 
@@ -499,6 +551,16 @@ export const en: Dictionary = {
       `Nonna shares her secret recipe: ${t.recipe({ id: recipeId, name: null })}!${onMenu ? " (added to the menu)" : ""}`,
     birthday: "Happy birthday {name}! A lovely gift for you.",
     happyTable: "Table of {size} delighted: a bonus from the whole table!",
+    festivalStarts: ({ festival }, t) => `It's ${t.festival(festival)}! A festive ingredient awaits at the market, with a few free portions.`,
+    weeklyDone: ({ reward }, t) => `Weekly mission done! Nonna sends you ${t.money(reward)}.`,
+    weeklyAllDone: ({ reward }, t) => `All three weekly missions! A ${t.money(reward)} bonus.`,
+    batchArrived: ({ giver }, t) => `${t.questGiver(giver)} placed their group order: the clock is ticking!`,
+    lateArrived: ({ ingredientId, portions }, t) => `${t.ingredient(ingredientId)} has arrived, with ${portions} free portions.`,
+    notDeliveredYet: ({ ingredientId }, t) => `${t.ingredient(ingredientId)} hasn't been delivered yet.`,
+    rush: "Rush hour! Customers pour in, tips are doubled.",
+    batchDone: ({ giver, medal, reward }, t) => `Order delivered: ${t.medal(medal)} medal! ${t.questGiver(giver)} pays ${t.money(reward)}.`,
+    batchUnfinished: ({ giver, reward }, t) => `${t.questGiver(giver)} didn't get everything in time and pays ${t.money(reward)} for what arrived.`,
+    celebrity: "{name} loved it! Their signed photo is up on the front.",
     nobodyWantsDrink: ({ drinkId }, t) => `Nobody is waiting for a ${lower(t.drink(drinkId))}.`,
     questDone: ({ giver, reward }, t) => `Quest complete! ${t.questGiver(giver)} thanks you: ${t.money(reward)}.`,
     questExpired: ({ giver }, t) => `${t.questGiver(giver)} found another way. Maybe next time!`,
@@ -567,6 +629,9 @@ export const en: Dictionary = {
     banane: "Banana",
     fraise: "Strawberries",
     noisette: "Hazelnuts",
+    potiron: "Pumpkin",
+    marron: "Chestnuts",
+    framboise: "Raspberries",
   },
 
   recipes: {
@@ -590,5 +655,8 @@ export const en: Dictionary = {
     nonnarosa: "Nonna Rosa",
     segreto: "Il Segreto",
     capolavoro: "Il Capolavoro",
+    zucca: "Zucca",
+    natale: "Natale",
+    amore: "Amore",
   },
 };

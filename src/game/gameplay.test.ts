@@ -26,13 +26,23 @@ const NO_TIP = 0.99;
 describe("daily events", () => {
   it("never happen on the first days", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
-    expect(rollDayEvent(2, null)).toBeNull();
-    expect(rollDayEvent(3, null)).toBe("market");
+    expect(rollDayEvent(makeState({ day: 2 }), null)).toBeNull();
+    expect(rollDayEvent(makeState({ day: 3 }), null)).toBe("market");
   });
 
   it("never repeat two days in a row", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
-    expect(rollDayEvent(5, "market")).toBe("rain");
+    expect(rollDayEvent(makeState({ day: 5 }), "market")).toBe("rain");
+  });
+
+  it("only bring incidents that make sense, and not too early", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    // The last events of the list come up with a high draw: without the delivery upgrade, no scooter strike.
+    const picks = new Set(Array.from({ length: 5 }, () => rollDayEvent(makeState({ day: 9 }), null)));
+    expect(picks.has("scooterStrike")).toBe(false);
+    vi.restoreAllMocks();
+    const early = new Set(Array.from({ length: 300 }, () => rollDayEvent(makeState({ day: 4 }), null)));
+    expect([...early].some((id) => id === "powerCut" || id === "inspection" || id === "lateDelivery")).toBe(false);
   });
 
   it("are picked when the next day starts", () => {
@@ -162,7 +172,7 @@ describe("journal", () => {
   it("keeps every day and lifetime totals", () => {
     vi.spyOn(Math, "random").mockReturnValue(NO_TIP);
     const state = serveFirst(stateInService([makeCustomer()]));
-    expect(state.history).toEqual([{ day: 1, served: 1, revenue: 7, tips: 0, net: 1, xp: expect.any(Number), event: null }]);
+    expect(state.history).toEqual([{ day: 1, served: 1, revenue: 7, tips: 0, net: 1, xp: expect.any(Number), event: null, stars: 1 }]);
     expect(state.lifetime).toMatchObject({ served: 1, revenue: 7, happyServed: 1, bestDay: { day: 1, net: 1 } });
     expect(state.lifetime.byRecipe).toEqual({ margherita: { name: null, count: 1 } });
   });

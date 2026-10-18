@@ -12,6 +12,9 @@ export interface Progress {
   target: number;
 }
 
+// Ingredients signed at the market (festival ones come and go with the calendar).
+const SUPPLIED = INGREDIENTS.filter((ingredient) => !ingredient.festival);
+
 const customRecipeCount = (state: GameState): number => state.recipes.filter((recipe) => recipe.custom).length;
 const upgradeLevels = (state: GameState): number => UPGRADE_KEYS.reduce((total, key) => total + state.upgrades[key], 0);
 const MAX_UPGRADE_LEVELS = UPGRADE_KEYS.reduce((total, key) => total + UPGRADES[key].costs.length, 0);
@@ -35,7 +38,7 @@ const PROGRESS: Record<AchievementId, (state: GameState) => Progress> = {
   profit100: (state) => ({ current: Math.max(0, Math.floor(state.lifetime.bestDay?.net ?? 0)), target: 100 }),
   level5: (state) => ({ current: levelForXp(state.xp), target: 5 }),
   maxLevel: (state) => ({ current: levelForXp(state.xp), target: MAX_LEVEL }),
-  allSuppliers: (state) => ({ current: INGREDIENTS.filter((ingredient) => state.unlocked[ingredient.id]).length, target: INGREDIENTS.length }),
+  allSuppliers: (state) => ({ current: SUPPLIED.filter((ingredient) => state.unlocked[ingredient.id]).length, target: SUPPLIED.length }),
   fullyUpgraded: (state) => ({ current: upgradeLevels(state), target: MAX_UPGRADE_LEVELS }),
   deliveries20: (state) => ({ current: state.lifetime.deliveries, target: 20 }),
   challenge300: (state) => ({ current: state.bestChallengeScore, target: 300 }),
@@ -47,6 +50,10 @@ const PROGRESS: Record<AchievementId, (state: GameState) => Progress> = {
   quests5: (state) => ({ current: state.lifetime.questsDone, target: 5 }),
   secondOven: (state) => ({ current: state.upgrades.oven2 > 0 ? 1 : 0, target: 1 }),
   secondAddress: (state) => ({ current: state.upgrades.annexe > 0 ? 1 : 0, target: 1 }),
+  streak10: (state) => ({ current: state.lifetime.bestStreak, target: 10 }),
+  threeStars: (state) => ({ current: state.history.some((day) => day.stars === 3) ? 1 : 0, target: 1 }),
+  batchGold: (state) => ({ current: state.lifetime.batchGolds, target: 1 }),
+  celebrity: (state) => ({ current: state.lifetime.celebrities, target: 1 }),
   // Only the code unlocks this one: finishing everything else leaves the journal one short.
   secretCode: (state) => ({ current: state.secretCodeFound ? 1 : 0, target: 1 }),
 };

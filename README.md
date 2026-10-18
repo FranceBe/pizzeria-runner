@@ -56,6 +56,10 @@ Nobody ever leaves angry: customers just get hungrier (happy, then patient, then
 - **Sales**: each pizza is paid at its menu price, plus €1.50 for an extra topping and €1 for a delivery.
 - **Tips** depend on the decor (30% of customers, +12 points per decor level), on the mood (happy customers tip more
   often and up to 30% more), on regulars, special requests, diets, offered drinks and rain. Never above 95%.
+- **Perfect streak**: customers served while still happy, in a row, raise every tip: ×1.1 from 3, ×1.25 from 6, ×1.5
+  from 10. A patient customer keeps the streak, a hungry one breaks it. It shows in the message line.
+- **Hot pizzas**: a pizza left on the pass cools down (lukewarm after 25 seconds, cold after 50), and its tip with it.
+- **Rush hour** (from level 3, on busy evenings): once in the evening, 40 seconds where customers pour in and tips double.
 - **Evening charges**: €6, plus a little for each upgrade.
 - **Debt**: if the till can't pay the charges, the rest goes on a tab, repaid automatically with half of the next sales.
 - **Never stuck**: when nothing on the menu can be made and the till can't buy more, the game says so and offers a way
@@ -65,6 +69,9 @@ Nobody ever leaves angry: customers just get hungrier (happy, then patient, then
   day over from this morning's prep.
 - Baked pizzas nobody ordered can be binned one by one, or all at once.
 - Ingredients never go bad. Pizzas still in the oven or on the pass at closing time are counted as waste.
+- **The day's stars**: up to three each evening, one per goal: everyone served before getting hungry (and nobody sent
+  home early), nothing binned, and a profit target that grows with the charges. Stars add up and unlock looks money
+  can't buy (a starry gold awning at 15, a starry sign at 40, a starry night wall at 75).
 
 ### Reputation and levels
 
@@ -98,6 +105,10 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   patient for a bonus of €1.50 each.
 - **Drinks** (with the bar): some customers add a drink, served straight from the bar. A regular's drink can also be
   offered: no money, but a much better chance of a bigger tip, and a little reputation.
+- **Celebrities** (from level 5, rare, at most one a day): they order the finest pizza on the menu with an extra
+  topping, and leave a €10 tip, lots of reputation, and a signed photo that goes up on the front.
+- Customers come in many faces: over 120 names, hairstyles and colours (now and then blue or green), and accessories
+  (glasses, hats, headphones…). Names only shape the looks; diets and everything else are drawn at random.
 
 ### Days and the neighbourhood
 
@@ -105,9 +116,19 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 - **Events**, from day 3, about one day in two: market day (20% off), rain (fewer, more generous customers), street
   party (many more customers), sunshine (more customers, many more with a terrace) and the food critic, who comes in
   once that evening: serve them quickly for a glowing review and lots of reputation.
-- **Neighbourhood quests**, from day 4: a small goal over three days (the football club wants 5 Regina, the town hall
-  throws a party…), paid in money and reputation. No penalty when they run out. The reward has its own line on the day's
-  receipt, and completed quests are listed in the journal with what they brought in.
+- **Incidents**, from day 5, each with something in return: a power cut (one oven, one pizza at a time, but bigger
+  tips), a late delivery (one ingredient arrives a minute into the service, with free portions), a health inspection
+  (a day without binning anything earns lots of reputation) and a scooter strike (no deliveries, more people eating in).
+- **Neighbourhood quests**, from day 4. **Group orders**: in the morning, someone books a big order for tonight
+  (the football club wants 3 Regina and 2 Margherita…). A ticket comes in a little after opening; make the pizzas in any
+  order, between customers. The faster the whole order is delivered, the better the medal and the pay (gold, silver,
+  bronze); an order not finished by closing time pays half for what was delivered. Other quests last three days
+  (serve so many smiling customers, discover a pairing…). No penalty when they run out. Rewards have their own line on
+  the day's receipt, and completed quests are listed in the journal.
+- **Weekly missions**: three goals each week (serve whole tables, reach a streak, earn tips…), €25 each from Nonna and
+  €50 more for all three. They show on the morning screen.
+- **Festivals** follow the real date: Halloween, Christmas and Valentine's Day each bring a festive ingredient (with
+  free portions) and a recipe, for a few days.
 
 ### Upgrades
 
@@ -127,8 +148,8 @@ Once the money piles up, the pizzeria's looks can be bought too: awning colours,
 
 ### The journal
 
-Accounts (profit chart, best sellers, best day), regulars' profiles, the pairings book, and the achievements. 29 of
-them can be earned by playing; the last one keeps its secret.
+Accounts (profit chart, best sellers, best day, stars, best streak, completed quests), regulars' profiles, the pairings
+book, and the achievements. 33 of them can be earned by playing; the last one keeps its secret.
 
 ### Daily challenge
 
@@ -207,6 +228,10 @@ src/
 - `data/drinks.ts`, `data/quests.ts`, `data/cosmetics.ts`: the bar, neighbourhood quests, the pizzeria's looks
 - `game/challenge.ts`: the daily challenge, seeded by the date
 - `game/diets.ts`, `game/quests.ts`, `game/regulars.ts`: diets, quests, regulars' profiles and birthdays
+- `game/batch.ts` + `game/evening.ts`: group orders, rush hour and late deliveries over an evening
+- `game/streak.ts`, `game/stars.ts`, `game/weekly.ts`, `game/calendar.ts`: streaks and cooling pizzas, the day's stars,
+  weekly missions, calendar festivals
+- `game/simulation.test.ts`: a robot plays many full days with everything on, to catch what only shows when it all mixes
 - `data/customers.ts` + `game/looks.ts`: names, hair, hairstyles and accessories
 - `data/achievements.ts` + `game/achievements.ts`: achievements and their progress
 - `game/pairings.ts`: pairing discovery

@@ -11,7 +11,7 @@ import type { GameState, LifetimeStats, SaveData } from "./types";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
@@ -31,11 +31,16 @@ const emptyLifetimeStats = (): LifetimeStats => ({
   questsDone: 0,
   dailyChallenges: 0,
   questRewards: 0,
+  stars: 0,
+  bestStreak: 0,
+  celebrities: 0,
+  batchGolds: 0,
 });
 
 export function createInitialState(language: Language = detectLanguage()): GameState {
   const unlocked: Partial<Record<IngredientId, boolean>> = {};
-  INGREDIENTS.filter((ingredient) => ingredient.supplierFee === 0).forEach((ingredient) => (unlocked[ingredient.id] = true));
+  // Free from the start, except festival ingredients, which follow the calendar (see game/calendar.ts).
+  INGREDIENTS.filter((ingredient) => ingredient.supplierFee === 0 && !ingredient.festival).forEach((ingredient) => (unlocked[ingredient.id] = true));
   return {
     version: SAVE_VERSION,
     name: "Forno Lento",
@@ -68,6 +73,10 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     cosmetics: { owned: ["awning:red", "sign:classic", "wall:mint"], awning: "red", sign: "classic", wall: "mint" },
     secretIngredient: false,
     secretStock: 0,
+    lateIngredient: null,
+    festival: null,
+    weekly: null,
+    celebrityWall: [],
     secretCodeFound: false,
     service: null,
     summary: null,
@@ -202,6 +211,10 @@ function migrateFromVersion7(saved: JsonObject): JsonObject {
   return { ...saved, customerBook };
 }
 
+// Version 8: before group orders, incidents, streaks, stars, weekly missions, celebrities and festivals.
+// Everything new has a default; a quest already running keeps working as it was.
+const migrateFromVersion8 = (saved: JsonObject): JsonObject => saved;
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
 const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion1,
@@ -211,6 +224,7 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion5,
   migrateFromVersion6,
   migrateFromVersion7,
+  migrateFromVersion8,
 ];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.

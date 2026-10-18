@@ -1,5 +1,7 @@
 import type { AchievementId } from "../data/achievements";
 import type { DrinkId } from "../data/drinks";
+import type { FestivalId } from "../data/festivals";
+import type { WeeklyKind } from "../data/weekly";
 import type { DayEventId } from "../data/events";
 import type { QuestGiver } from "../data/quests";
 import type { SeasonId } from "../data/seasons";
@@ -73,6 +75,12 @@ export const fr = {
     questReward: ({ reward, xp }: { reward: number; xp: number }, t: H) => `Récompense : ${t.money(reward)} et ${xp} points`,
     questDeadline: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour !" : `Encore ${days} jours`),
     dailyMenu: ({ recipes }: { recipes: string }) => `Au menu aujourd'hui : ${recipes}.`,
+    lateIngredient: ({ id }: { id: IngredientId }, t: H) => `Ce soir, ${lower(t.ingredient(id))} n'arrivera qu'après une minute de service.`,
+    festival: ({ festival }: { festival: FestivalId }, t: H) => `C'est ${t.festival(festival)} ! Un ingrédient et une recette de fête pour quelques jours.`,
+    weekly: "Cette semaine",
+    weeklyReward: ({ reward, bonus }: { reward: number; bonus: number }, t: H) =>
+      `${t.money(reward)} par mission, ${t.money(bonus)} de plus pour les trois`,
+    batchTonight: ({ items }: { items: string }) => `À livrer ce soir, d'un coup : ${items}. Plus c'est rapide, plus c'est payé.`,
   },
 
   challenge: {
@@ -151,6 +159,19 @@ export const fr = {
     trashUnwanted: ({ count }: { count: number }) => `Jeter les ${count} pizzas que personne n'attend`,
     offerDrink: ({ drink, name }: { drink: string; name: string }) => `🎁 Offrir ${drink} à ${name}`,
     offered: "offerte",
+    batch: "Commande groupée",
+    theBatch: "la commande groupée",
+    batchLine: "{done} / {count}",
+    batchMedal: ({ medal, clock }: { medal: string; clock: string }) => `${medal} encore ${clock}`,
+    batchSlow: "Médaille de bronze",
+    forBatch: "Pour la commande groupée",
+    streak: ({ count, multiplier }: { count: number; multiplier: string }) => `🔥 série de ${count} · pourboires ×${multiplier}`,
+    rush: "🔥 Coup de feu ! Pourboires ×2 · {clock}",
+    celebrity: "Célébrité",
+    celebrityTitle: "Une célébrité ! Sers-la bien : sa photo ira sur la façade.",
+    warm: "tiède",
+    cold: "froide",
+    stillComing: "En route",
     secret: "Secret de Nonna",
     secretTitle: "Une pincée du secret de Nonna. Ça ne change rien à la recette…",
   },
@@ -242,6 +263,7 @@ export const fr = {
     gift: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} cadeau`,
     drink: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} boisson`,
     secret: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} ✨`,
+    batch: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} commande`,
   },
 
   upgrades: {
@@ -314,9 +336,10 @@ export const fr = {
     inUse: "En place",
     buyLook: ({ cost }: { cost: number }, t: H) => `Acheter · ${t.money(cost)}`,
     slots: { awning: "Auvent", sign: "Enseigne", wall: "Murs" },
-    awnings: { red: "Rouge tomate", green: "Vert basilic", blue: "Bleu Riviera", sun: "Jaune soleil", rose: "Rose bonbon" },
-    signs: { classic: "Peinte", neon: "Néon", gold: "Dorée à la feuille" },
-    walls: { mint: "Carreaux menthe", terracotta: "Terre cuite", azulejo: "Azulejos", checker: "Damier" },
+    awnings: { red: "Rouge tomate", green: "Vert basilic", blue: "Bleu Riviera", sun: "Jaune soleil", rose: "Rose bonbon", golden: "Or étoilé" },
+    signs: { classic: "Peinte", neon: "Néon", gold: "Dorée à la feuille", star: "Étoilée" },
+    walls: { mint: "Carreaux menthe", terracotta: "Terre cuite", azulejo: "Azulejos", checker: "Damier", night: "Nuit étoilée" },
+    starsNeeded: "⭐ {count} étoiles",
   },
 
   settings: {
@@ -364,6 +387,11 @@ export const fr = {
     annexe: "Deuxième adresse",
     quests: "Quêtes du quartier",
     share: "Partager le ticket",
+    stars: "Étoiles du jour",
+    starHappy: "Tout le monde servi à temps",
+    starWaste: "Rien jeté",
+    starProfit: ({ target }: { target: number }, t: H) => `Bénéfice d'au moins ${t.money(target)}`,
+    inspection: ({ xp }: { xp: number }) => `Contrôle sanitaire réussi : +${xp} de réputation`,
     orders: "Commandes servies",
     order: ({ customer, recipe }: { customer: string; recipe: string }) => `${customer} · ${recipe}`,
     noTip: "pas de pourboire",
@@ -407,6 +435,9 @@ export const fr = {
       `${count} ${plural(count, "quête réussie", "quêtes réussies")} · ${t.money(amount)} gagnés`,
     noQuests: "Les quêtes du quartier réussies apparaîtront ici.",
     questDay: "Jour {day}",
+    stars: "Étoiles gagnées",
+    bestStreak: "Meilleure série",
+    medal: ({ medal }: { medal: string }) => `médaille ${medal}`,
     likes: ({ recipe }: { recipe: string }) => `Préfère : ${recipe}`,
     dislikes: ({ id }: { id: IngredientId }, t: H) => `N'aime pas : ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }: { days: number }) => (days === 0 ? "🎂 Anniversaire aujourd'hui !" : `🎂 Anniversaire dans ${days} ${plural(days, "jour")}`),
@@ -417,6 +448,21 @@ export const fr = {
   diets: { veggie: "Végétarien", noPork: "Sans porc", glutenFree: "Sans gluten" },
 
   drinks: { limonade: "Limonade", eau: "Eau pétillante", chinotto: "Chinotto", vin: "Vin rouge" } satisfies Record<DrinkId, string>,
+
+  festivals: { halloween: "Halloween", christmas: "Noël", valentine: "la Saint-Valentin" } satisfies Record<FestivalId, string>,
+
+  medals: { gold: "d'or", silver: "d'argent", bronze: "de bronze" },
+
+  weeklyMissions: {
+    happy: "Servir {target} clients tout sourire",
+    tables: "Servir {target} tables en entier",
+    desserts: "Servir {target} pizzas sucrées",
+    drinks: "Servir {target} boissons",
+    streak: "Faire une série de {target}",
+    batchGold: "Décrocher l'or sur {target} commande groupée",
+    served: "Servir {target} pizzas",
+    tips: "Gagner {target} € de pourboires",
+  } as const satisfies Record<WeeklyKind, string>,
 
   quests: {
     givers: {
@@ -430,6 +476,7 @@ export const fr = {
     serveTotal: ({ target }: { target: number }) => `organise une fête : sers ${target} pizzas.`,
     happy: ({ target }: { target: number }) => `fait une enquête : sers ${target} clients encore tout sourire.`,
     pairing: ({ target }: { target: number }) => `te met au défi : découvre ${target} nouvel accord.`,
+    batch: ({ target }: { target: number }) => `passe une grosse commande ce soir : ${target} pizzas à livrer d'un coup.`,
     sweet: ({ target }: { target: number }) => `fête un anniversaire : sers ${target} pizzas sucrées.`,
   },
 
@@ -439,6 +486,10 @@ export const fr = {
     festival: { name: "Fête du quartier", describe: "Toute la rue a faim : beaucoup plus de clients ce soir." },
     critic: { name: "Critique gastronomique", describe: "Une critique passera ce soir. Sers-la vite pour une belle note et beaucoup de réputation." },
     sunny: { name: "Grand soleil", describe: "Un peu plus de clients, et bien plus avec une terrasse." },
+    powerCut: { name: "Panne d'électricité", describe: "Un seul four, une pizza à la fois. Mais les clients, compréhensifs, laissent plus de pourboires." },
+    lateDelivery: { name: "Livraison en retard", describe: "Un ingrédient arrivera en cours de service, avec quelques portions offertes pour se faire pardonner." },
+    inspection: { name: "Contrôle sanitaire", describe: "Une journée sans rien jeter rapporte beaucoup de réputation." },
+    scooterStrike: { name: "Grève des scooters", describe: "Pas de livraisons aujourd'hui, mais plus de monde sur place." },
   } satisfies Record<DayEventId, { name: string; describe: string }>,
 
   achievements: {
@@ -471,6 +522,10 @@ export const fr = {
     quests5: { name: "Bon voisin", describe: "Réussir 5 quêtes du quartier" },
     secondOven: { name: "Double feu", describe: "Construire un deuxième four" },
     secondAddress: { name: "Petite chaîne", describe: "Ouvrir une deuxième adresse" },
+    streak10: { name: "En feu", describe: "Faire une série de 10 clients tout sourire" },
+    threeStars: { name: "Journée parfaite", describe: "Décrocher les trois étoiles en une journée" },
+    batchGold: { name: "Livraison éclair", describe: "Décrocher l'or sur une commande groupée" },
+    celebrity: { name: "Photo dédicacée", describe: "Servir une célébrité" },
     secretCode: { name: "↑↑↓↓←→←→BA", describe: "Tu connais le code." },
   } satisfies Record<AchievementId, { name: string; describe: string }>,
 
@@ -526,6 +581,19 @@ export const fr = {
       `Nonna te confie sa recette secrète : ${t.recipe({ id: recipeId, name: null })} !${onMenu ? " (ajoutée à la carte)" : ""}`,
     birthday: "Joyeux anniversaire {name} ! Un beau cadeau pour toi.",
     happyTable: "Table de {size} ravie : bonus pour toute la tablée !",
+    festivalStarts: ({ festival }: { festival: FestivalId }, t: H) => `C'est ${t.festival(festival)} ! Un ingrédient de fête t'attend au marché, avec quelques portions offertes.`,
+    weeklyDone: ({ reward }: { reward: number }, t: H) => `Mission de la semaine réussie ! Nonna t'envoie ${t.money(reward)}.`,
+    weeklyAllDone: ({ reward }: { reward: number }, t: H) => `Les trois missions de la semaine ! Bonus de ${t.money(reward)}.`,
+    batchArrived: ({ giver }: { giver: QuestGiver }, t: H) => `${t.questGiver(giver)} a passé sa commande groupée : le chrono tourne !`,
+    lateArrived: ({ ingredientId, portions }: { ingredientId: IngredientId; portions: number }, t: H) =>
+      `${t.ingredient(ingredientId)} est arrivé, avec ${portions} portions offertes.`,
+    notDeliveredYet: ({ ingredientId }: { ingredientId: IngredientId }, t: H) => `${t.ingredient(ingredientId)} n'est pas encore livré.`,
+    rush: "Coup de feu ! Les clients arrivent en rafale, pourboires doublés.",
+    batchDone: ({ giver, medal, reward }: { giver: QuestGiver; medal: "gold" | "silver" | "bronze"; reward: number }, t: H) =>
+      `Commande livrée : médaille ${t.medal(medal)} ! ${t.questGiver(giver)} paie ${t.money(reward)}.`,
+    batchUnfinished: ({ giver, reward }: { giver: QuestGiver; reward: number }, t: H) =>
+      `${t.questGiver(giver)} n'a pas tout reçu à temps et paie ${t.money(reward)} pour ce qui est arrivé.`,
+    celebrity: "{name} a adoré ! Sa photo dédicacée est sur la façade.",
     nobodyWantsDrink: ({ drinkId }: { drinkId: DrinkId }, t: H) => `Personne n'attend de ${lower(t.drink(drinkId))}.`,
     questDone: ({ giver, reward }: { giver: QuestGiver; reward: number }, t: H) =>
       `Quête réussie ! ${t.questGiver(giver)} te remercie : ${t.money(reward)}.`,
@@ -596,6 +664,9 @@ export const fr = {
     banane: "Banane",
     fraise: "Fraises",
     noisette: "Noisettes",
+    potiron: "Potiron",
+    marron: "Marrons",
+    framboise: "Framboises",
   } satisfies Record<IngredientId, string>,
 
   recipes: {
@@ -619,5 +690,8 @@ export const fr = {
     nonnarosa: "Nonna Rosa",
     segreto: "Il Segreto",
     capolavoro: "Il Capolavoro",
+    zucca: "Zucca",
+    natale: "Natale",
+    amore: "Amore",
   } satisfies Record<ClassicRecipeId, string>,
 } as const;

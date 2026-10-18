@@ -1,6 +1,7 @@
 import type { IngredientId } from "../data/ingredients";
 import type { AchievementId } from "../data/achievements";
 import type { DrinkId } from "../data/drinks";
+import type { FestivalId } from "../data/festivals";
 import type { QuestGiver } from "../data/quests";
 import type { UpgradeKey } from "../data/progression";
 import type { Pairing } from "../data/recipes";
@@ -27,6 +28,8 @@ export interface TranslationHelpers {
   achievementName(id: AchievementId): string;
   drink(id: DrinkId): string;
   questGiver(giver: QuestGiver): string;
+  festival(id: FestivalId): string;
+  medal(medal: "gold" | "silver" | "bronze"): string;
 }
 
 type Reference = typeof fr;

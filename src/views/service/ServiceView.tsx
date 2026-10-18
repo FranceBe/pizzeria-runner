@@ -9,6 +9,10 @@ import { tutorialStep } from "../../game/tutorial";
 import { useTranslation } from "../../i18n/I18nContext";
 import { formatClock } from "../../utils/format";
 import { challengeRecipe } from "../../game/challenge";
+import { BATCH_ID, nextBatchRecipe, openBatch } from "../../game/batch";
+import { STREAK_SHOWN_FROM, streakMultiplier } from "../../game/streak";
+import { BatchTicket } from "./BatchTicket";
+import { isStillComing } from "../../game/evening";
 import { CoachTip } from "../../components/CoachTip";
 import { MessageTicker } from "../../components/MessageTicker";
 import { Pizza } from "../../components/Pizza";
@@ -19,8 +23,15 @@ import type { IngredientId } from "../../data/ingredients";
 import type { CoachTarget, Customer } from "../../game/types";
 import type { ServiceScreenProps } from "../types";
 
+// What the board is compared with: a customer's order, or the group order's next pizza.
+interface BoardTarget {
+  name: string;
+  ingredients: readonly IngredientId[];
+}
+
 interface WorkBoardProps extends ServiceScreenProps {
   selectedCustomer: Customer | undefined;
+  target: BoardTarget | undefined;
   coachTarget: CoachTarget | null;
 }
 
@@ -38,7 +49,7 @@ function UsualReminder({ customer, dispatch }: { customer: Customer; dispatch: S
 }
 
 // With help on: tells how the pizza being built compares to the selected order.
-function BoardCheck({ customer, board }: { customer: Customer; board: readonly IngredientId[] }) {
+function BoardCheck({ customer, board }: { customer: BoardTarget; board: readonly IngredientId[] }) {
   const t = useTranslation();
   if (haveSameIngredients(customer.ingredients, board)) return <span className="match good">{t("service.readyFor", { name: customer.name })}</span>;
   const missing = customer.ingredients.filter((id) => !board.includes(id)).length;
@@ -46,7 +57,7 @@ function BoardCheck({ customer, board }: { customer: Customer; board: readonly I
   return <span className="match">{t("service.boardCheck", { name: customer.name, missing, extra })}</span>;
 }
 
-function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: WorkBoardProps) {
+function WorkBoard({ state, service, dispatch, selectedCustomer, target, coachTarget }: WorkBoardProps) {
   const t = useTranslation();
   const { board, oven } = service;
   const ovenIsFull = oven.length >= ovenSlots(state);
@@ -56,9 +67,7 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, coachTarget }: 
         {board.length ? <Pizza ingredients={board} className="pizza" /> : <div className="empty">{t("service.emptyBoard")}</div>}
         {service.secretOnBoard && <span className="secret-sparkle" aria-hidden="true">✨</span>}
         {selectedCustomer?.asUsual && <UsualReminder customer={selectedCustomer} dispatch={dispatch} />}
-        {selectedCustomer && !selectedCustomer.asUsual && board.length > 0 && state.settings.showHelp && (
-          <BoardCheck customer={selectedCustomer} board={board} />
-        )}
+        {target && board.length > 0 && state.settings.showHelp && <BoardCheck customer={target} board={board} />}
       </div>
       <div className="peel-btns">
         {state.upgrades.commis >= COMMIS_ASSEMBLES_ORDER && selectedCustomer && (
@@ -97,9 +106,24 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
   const t = useTranslation();
   const selectedCustomer = findSelectedCustomer(service);
   const { challenge } = service;
+  const streak = service.stats.streak ?? 0;
   const progress = challenge
     ? t("service.challenge", { clock: formatClock(challenge.secondsLeft), score: challenge.score })
-    : t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length });
+    : service.rush
+      ? t("service.rush", { clock: formatClock(service.rush.secondsLeft) })
+      : [
+          t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length }),
+          streak >= STREAK_SHOWN_FROM ? t("service.streak", { count: streak, multiplier: t.number(streakMultiplier(streak)) }) : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+  const batchQuest = openBatch(state, service);
+  const isBatchSelected = Boolean(batchQuest) && service.selectedCustomerId === BATCH_ID;
+  const batchRecipe = isBatchSelected ? nextBatchRecipe(state, service) : undefined;
+  // What the board is being built for: the selected customer, or the group order's next pizza.
+  const target = isBatchSelected
+    ? batchRecipe ? { name: t("service.theBatch"), ingredients: batchRecipe.ingredients } : undefined
+    : selectedCustomer && !selectedCustomer.asUsual ? selectedCustomer : undefined;
   const tutorial = tutorialStep(state);
   const coachTarget = tutorial?.target ?? null;
 
@@ -117,7 +141,7 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
   // Messages come first; the tutorial hint takes the message line otherwise.
   const showCoach = tutorial !== null && !state.toasts.length;
   return (
-    <div className={`svc${challenge ? " in-challenge" : ""}`}>
+    <div className={`svc${challenge ? " in-challenge" : ""}${service.rush ? " in-rush" : ""}`}>
       <div className="a-ticker">
         <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} onClick={() => dispatch({ type: "togglePause" })}>
           ⏸
@@ -137,7 +161,10 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
       <section className="a-tickets" aria-label={t("service.orders")}>
         <h3 className="h dsk">{t("service.orders")}</h3>
         <div className="tickets" ref={ticketList}>
-          {service.customers.length === 0 && <div className="card pad hint ticket-empty">{t("service.doorOpening")}</div>}
+          {service.customers.length === 0 && !batchQuest && <div className="card pad hint ticket-empty">{t("service.doorOpening")}</div>}
+          {batchQuest && service.batch && (
+            <BatchTicket quest={batchQuest} elapsed={service.batch.elapsed} isSelected={isBatchSelected} onSelect={() => dispatch({ type: "selectBatch" })} />
+          )}
           {groupByTable(service.customers).map((group) => {
             const tickets = group.customers.map((customer) => (
               <OrderTicket
@@ -163,15 +190,16 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
           })}
         </div>
       </section>
-      <WorkBoard state={state} service={service} dispatch={dispatch} selectedCustomer={selectedCustomer} coachTarget={coachTarget} />
+      <WorkBoard state={state} service={service} dispatch={dispatch} selectedCustomer={selectedCustomer} target={target} coachTarget={coachTarget} />
       <OvenAndPass state={state} service={service} dispatch={dispatch} coachTarget={coachTarget} />
       <div className="a-rail">
         <PrepLine
           state={state}
           isBottomless={Boolean(challenge)}
+          stillComing={state.lateIngredient && isStillComing(state, service, state.lateIngredient) ? state.lateIngredient : null}
           extraIngredients={challenge ? challenge.menu.flatMap((id) => challengeRecipe(id).ingredients) : []}
           board={service.board}
-          neededIngredients={state.settings.showHelp && selectedCustomer && !selectedCustomer.asUsual ? selectedCustomer.ingredients : []}
+          neededIngredients={state.settings.showHelp && target ? target.ingredients : []}
           coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}
           secret={

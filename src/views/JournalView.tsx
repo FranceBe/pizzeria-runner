@@ -5,7 +5,9 @@ import { achievementProgress, isUnlocked } from "../game/achievements";
 import { isDiscovered } from "../game/pairings";
 import { daysUntilBirthday, regularsOf } from "../game/regulars";
 import { CustomerFace } from "../components/CustomerFace";
-import { questText } from "./QuestCard";
+import { batchItemsText, questText } from "./QuestCard";
+
+const MEDAL_ICONS = { gold: "🥇", silver: "🥈", bronze: "🥉" } as const;
 import type { DayRecord, GameState, RecipeSales } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { IngredientIcon } from "../components/IngredientIcon";
@@ -80,6 +82,8 @@ function Accounts({ state }: { state: GameState }) {
         <Stat label={t("journal.revenue")} value={t.money(lifetime.revenue)} />
         <Stat label={t("journal.tips")} value={t.money(lifetime.tips)} />
         <Stat label={t("journal.happy")} value={lifetime.happyServed} />
+        <Stat label={t("journal.stars")} value={`★ ${lifetime.stars}`} />
+        <Stat label={t("journal.bestStreak")} value={lifetime.bestStreak} />
       </div>
       {lifetime.bestDay && <p className="hint">{t("journal.bestDay", lifetime.bestDay)}</p>}
       <QuestLog state={state} />
@@ -122,7 +126,11 @@ function QuestLog({ state }: { state: GameState }) {
       {recent.map((quest, index) => (
         <div key={`${quest.day}-${index}`} className="quest-log-row">
           <span className="quest-log-day">{t("journal.questDay", { day: quest.day })}</span>
-          <span className="grow">{questText(t, quest)}</span>
+          <span className="grow">
+            {questText(t, quest)}
+            {quest.items && ` ${batchItemsText(t, quest)}.`}
+            {quest.medal && ` ${MEDAL_ICONS[quest.medal]}`}
+          </span>
           <strong className="pos">+{t.money(quest.reward)}</strong>
         </div>
       ))}

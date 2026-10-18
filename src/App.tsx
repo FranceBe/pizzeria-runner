@@ -5,6 +5,7 @@ import { useGameLoop } from "./hooks/useGameLoop";
 import { useServiceShortcuts } from "./hooks/useServiceShortcuts";
 import { useSecretCode } from "./hooks/useSecretCode";
 import { createTranslator } from "./i18n";
+import { localDate } from "./game/challenge";
 import { I18nProvider } from "./i18n/I18nContext";
 import { Header } from "./views/Header";
 import { PrepView } from "./views/PrepView";
@@ -53,6 +54,11 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  // Calendar festivals follow the real date: checked when the game opens and when a new day starts.
+  useEffect(() => {
+    dispatch({ type: "syncCalendar", date: localDate() });
+  }, [state.day, dispatch]);
 
   // Theme, text size and the pizzeria's looks are styled from attributes on <html> (see styles.css).
   const { theme, largeText } = state.settings;

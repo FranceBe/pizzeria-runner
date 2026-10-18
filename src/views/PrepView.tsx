@@ -15,6 +15,7 @@ import type { GameState, Recipe } from "../game/types";
 import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
 import { QuestCard } from "./QuestCard";
+import { WEEKLY_BONUS, WEEKLY_REWARD } from "../data/weekly";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -29,12 +30,38 @@ const MAX_REGULARS_SHOWN = 5;
 
 function EventBanner({ state }: { state: GameState }) {
   const t = useTranslation();
-  if (!state.event) return null;
   return (
-    <div className={`event-banner ev-${state.event}`} role="note">
-      <span className="event-label">{t("prep.today")}</span>
-      <strong>{t(`events.${state.event}.name`)}</strong>
-      <span className="event-d">{t(`events.${state.event}.describe`)}</span>
+    <>
+      {state.event && (
+        <div className={`event-banner ev-${state.event}`} role="note">
+          <span className="event-label">{t("prep.today")}</span>
+          <strong>{t(`events.${state.event}.name`)}</strong>
+          <span className="event-d">
+            {t(`events.${state.event}.describe`)}
+            {state.event === "lateDelivery" && state.lateIngredient && ` ${t("prep.lateIngredient", { id: state.lateIngredient })}`}
+          </span>
+        </div>
+      )}
+      {state.festival && <div className="event-banner ev-fete" role="note">🎉 {t("prep.festival", { festival: state.festival })}</div>}
+    </>
+  );
+}
+
+// The week's three missions, compact: what, how far, done or not.
+function WeeklyMissions({ state }: { state: GameState }) {
+  const t = useTranslation();
+  if (!state.weekly) return null;
+  return (
+    <div className="weekly">
+      <h3 className="h">{t("prep.weekly")}</h3>
+      {state.weekly.missions.map((mission) => (
+        <div key={mission.kind} className={`weekly-row${mission.done ? " done" : ""}`}>
+          <span className="weekly-check" aria-hidden="true">{mission.done ? "✓" : ""}</span>
+          <span className="grow">{t(`weeklyMissions.${mission.kind}`, { target: mission.target })}</span>
+          <span className="hint">{`${Math.floor(mission.progress)} / ${mission.target}`}</span>
+        </div>
+      ))}
+      <p className="hint">{t("prep.weeklyReward", { reward: WEEKLY_REWARD, bonus: WEEKLY_BONUS })}</p>
     </div>
   );
 }
@@ -189,6 +216,7 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
           ))}
         </div>
         <Regulars state={state} />
+        <WeeklyMissions state={state} />
       </div>
     </div>
   );

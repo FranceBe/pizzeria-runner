@@ -7,7 +7,7 @@ import { marketPrice } from "../events";
 import { discoverClassics } from "../menu";
 import { levelForXp } from "../progression";
 import { pushToast } from "../toasts";
-import { COSMETIC_PRICES, isLookOf, type CosmeticId, type CosmeticSlot, type LookIds } from "../../data/cosmetics";
+import { COSMETIC_PRICES, STAR_LOOKS, isLookOf, type CosmeticId, type CosmeticSlot, type LookIds } from "../../data/cosmetics";
 import type { ActionHandlers, GameState } from "../types";
 
 const addToStock = (state: GameState, id: IngredientId, quantity: number): void => {
@@ -17,6 +17,8 @@ const addToStock = (state: GameState, id: IngredientId, quantity: number): void 
 function chooseLook<Slot extends CosmeticSlot>(state: GameState, slot: Slot, id: LookIds[Slot]): void {
   const price: number = COSMETIC_PRICES[slot][id];
   const cosmeticId: CosmeticId = `${slot}:${id}`;
+  // Star looks: earned with the days' stars, never bought.
+  if ((STAR_LOOKS[cosmeticId] ?? 0) > state.lifetime.stars) return;
   if (price > 0 && !state.cosmetics.owned.includes(cosmeticId)) {
     if (!canAfford(state.money, price)) {
       pushToast(state, { key: "notEnoughMoney" }, "warn");

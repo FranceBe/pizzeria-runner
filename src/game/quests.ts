@@ -6,12 +6,23 @@ import { activeMenu } from "./menu";
 import { isDiscovered } from "./pairings";
 import { isDessert } from "./pizza";
 import { pushToast } from "./toasts";
-import type { Customer, GameState, Quest } from "./types";
+import { BATCH_XP_PER_PIZZA } from "./batch";
+import type { BatchItem, Customer, GameState, Quest, Recipe } from "./types";
 
 // How many completed quests the journal remembers.
 const QUEST_LOG_SIZE = 30;
 
 type QuestDraft = Omit<Quest, "giver" | "progress" | "deadlineDay">;
+
+// A group order: 4 to 6 pizzas of one to three recipes from the menu. The reward is set when it is delivered.
+function groupOrder(recipes: readonly Recipe[]): QuestDraft {
+  const total = 4 + randomIndex(3);
+  const kinds = Math.min(recipes.length, 1 + randomIndex(3));
+  const picked = [...recipes].sort(() => Math.random() - 0.5).slice(0, kinds);
+  const items: BatchItem[] = picked.map((recipe) => ({ recipeId: recipe.id, recipeName: recipe.name, count: 0, delivered: 0 }));
+  for (let pizza = 0; pizza < total; pizza++) items[pizza % items.length].count += 1;
+  return { kind: "batch", target: total, items, reward: 0, xp: BATCH_XP_PER_PIZZA * total };
+}
 
 // The quests that make sense right now, given the menu and what is left to discover.
 function possibleQuests(state: GameState): QuestDraft[] {
@@ -19,10 +30,7 @@ function possibleQuests(state: GameState): QuestDraft[] {
   const expected = forecastCustomers(state);
   const drafts: QuestDraft[] = [];
   const savoury = menu.filter((recipe) => !isDessert(recipe.ingredients));
-  if (savoury.length) {
-    const recipe = pickRandom(savoury);
-    drafts.push({ kind: "serveRecipe", target: 4 + randomIndex(3), recipeId: recipe.id, recipeName: recipe.name, reward: 35, xp: 40 });
-  }
+  if (savoury.length) drafts.push(groupOrder(savoury));
   if (expected) drafts.push({ kind: "serveTotal", target: Math.round(expected * 2.2), reward: 45, xp: 50 });
   drafts.push({ kind: "happy", target: 8 + randomIndex(5), reward: 30, xp: 40 });
   const canDiscover = GOOD_PAIRINGS.some((pairing) => !isDiscovered(state, pairing) && pairing.every((id) => state.unlocked[id]));
@@ -36,7 +44,10 @@ export function maybeOfferQuest(state: GameState): void {
   if (state.quest || state.day < FIRST_QUEST_DAY || Math.random() >= QUEST_CHANCE) return;
   const drafts = possibleQuests(state);
   if (!drafts.length) return;
-  state.quest = { ...pickRandom(drafts), giver: pickRandom(QUEST_GIVERS), progress: 0, deadlineDay: state.day + QUEST_DAYS - 1 };
+  const draft = pickRandom(drafts);
+  // A group order is for tonight; other quests last a few days.
+  const days = draft.kind === "batch" ? 1 : QUEST_DAYS;
+  state.quest = { ...draft, giver: pickRandom(QUEST_GIVERS), progress: 0, deadlineDay: state.day + days - 1 };
 }
 
 // At the start of a day: a quest past its deadline is simply dropped. Mutates state.
@@ -59,6 +70,9 @@ function questGain(quest: Quest, customer: Customer, isHappy: boolean, newPairin
       return newPairings;
     case "sweet":
       return isDessert(customer.ingredients) ? 1 : 0;
+    case "batch":
+      // Delivered through its own ticket (see game/batch.ts), not by serving customers.
+      return 0;
   }
 }
 

@@ -2,6 +2,8 @@ import type { AchievementId } from "../data/achievements";
 import type { AccessoryId } from "../data/customers";
 import type { AwningId, CosmeticId, CosmeticSlot, SignId, WallId } from "../data/cosmetics";
 import type { DrinkId } from "../data/drinks";
+import type { FestivalId } from "../data/festivals";
+import type { WeeklyKind } from "../data/weekly";
 import type { QuestGiver, QuestKind } from "../data/quests";
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
@@ -70,6 +72,8 @@ export interface Customer extends Looks {
   drinkOffered?: boolean;
   /** A regular on their birthday: their favourite earns a gift. */
   birthday?: boolean;
+  /** A (made-up) celebrity: not in the customer book, a big tip and a signed photo. */
+  celebrity?: boolean;
 }
 
 export type Diet = "veggie" | "noPork" | "glutenFree";
@@ -97,6 +101,8 @@ export interface OvenPizza {
 export interface ReadyPizza {
   id: string;
   secret?: boolean;
+  /** Seconds on the pass: it cools down, and tips with it. */
+  waitingSeconds?: number;
   ingredients: readonly IngredientId[];
 }
 
@@ -127,6 +133,11 @@ export interface ServiceStats {
   drinks?: number;
   /** Neighbourhood quest rewards paid today (not counted in revenue). */
   questRewards?: number;
+  /** Happy customers served in a row (see game/streak.ts). */
+  streak?: number;
+  bestStreak?: number;
+  /** Customers served once already hungry or starving: none means a star for the day. */
+  hungryServed?: number;
   /** Keyed by recipe id, or by recipe name for sales migrated from old saves. */
   byRecipe: Record<string, RecipeSales>;
   orders: OrderRecord[];
@@ -143,6 +154,20 @@ export interface Service {
   secretOnBoard?: boolean;
   /** The clock is stopped: nobody waits, nothing bakes, nobody comes in. */
   paused?: boolean;
+  /** Seconds since the restaurant opened. */
+  elapsed?: number;
+  /** Late delivery day: the ingredient has arrived. */
+  lateArrived?: boolean;
+  /** Rush hour: customers come in quick succession, tips are doubled. */
+  rush?: { secondsLeft: number } | null;
+  /** The rush starts once this many pizzas are served (null: no rush tonight, or it already happened). */
+  rushAtServed?: number | null;
+  /** Tonight's group order: seconds before it comes in, then seconds since it came in. */
+  batchArrivesIn?: number | null;
+  batch?: { elapsed: number } | null;
+  celebrityCame?: boolean;
+  /** Closed before the end: the day can't earn its "everyone served" star. */
+  closedEarly?: boolean;
   oven: OvenPizza[];
   /** The pass: baked pizzas waiting to be served. */
   ready: ReadyPizza[];
@@ -206,6 +231,20 @@ export interface DaySummary {
   annexeIncome?: number;
   /** Neighbourhood quest rewards paid that day. */
   questRewards?: number;
+  /** The day's stars (0–3) and which goals earned them. */
+  stars?: number;
+  starGoals?: StarGoals;
+  /** Inspection day passed. */
+  inspectionPassed?: boolean;
+}
+
+export interface StarGoals {
+  /** Nobody served hungry, nobody sent home early. */
+  happy: boolean;
+  /** Nothing binned. */
+  waste: boolean;
+  /** Profit target reached. */
+  profit: boolean;
 }
 
 /** A finished day, kept for the journal (without the order list, to keep saves small). */
@@ -217,6 +256,7 @@ export interface DayRecord {
   net: number;
   xp: number;
   event: DayEventId | null;
+  stars?: number;
 }
 
 export interface LifetimeStats {
@@ -240,10 +280,41 @@ export interface LifetimeStats {
   dailyChallenges: number;
   /** Money earned from neighbourhood quests. */
   questRewards: number;
+  stars: number;
+  bestStreak: number;
+  celebrities: number;
+  batchGolds: number;
+}
+
+export type Medal = "gold" | "silver" | "bronze";
+
+/** One line of a group order. */
+export interface BatchItem {
+  recipeId: RecipeId;
+  recipeName: string | null;
+  count: number;
+  delivered: number;
+}
+
+export interface WeeklyMission {
+  kind: WeeklyKind;
+  target: number;
+  progress: number;
+  done: boolean;
+}
+
+export interface Weekly {
+  /** Week number: (day - 1) / 7, rounded down. */
+  week: number;
+  missions: WeeklyMission[];
+  bonusPaid: boolean;
 }
 
 /** A completed neighbourhood quest, for the journal. */
-export type QuestRecord = Pick<Quest, "kind" | "giver" | "target" | "recipeId" | "recipeName" | "reward"> & { day: number };
+export type QuestRecord = Pick<Quest, "kind" | "giver" | "target" | "recipeId" | "recipeName" | "reward" | "items"> & {
+  day: number;
+  medal?: Medal;
+};
 
 export interface Quest {
   kind: QuestKind;
@@ -253,6 +324,8 @@ export interface Quest {
   /** For serveRecipe. */
   recipeId?: RecipeId;
   recipeName?: string | null;
+  /** For a group order (kind "batch"): what to make, delivered all together tonight. */
+  items?: BatchItem[];
   /** Last day to complete it. */
   deadlineDay: number;
   reward: number;
@@ -290,7 +363,7 @@ export type ToastKind = "" | "gold" | "warn";
 export type ToastInput = MessageInput<"toasts", ToastKey>;
 export type Toast = ToastInput & { id: string; kind: ToastKind };
 
-export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret";
+export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret" | "batch";
 export interface Pop {
   id: string;
   amount: number;
@@ -346,6 +419,13 @@ export interface GameState {
   secretIngredient: boolean;
   /** Jars of it made at the market and not used yet. */
   secretStock: number;
+  /** Late delivery day: the ingredient that comes late. */
+  lateIngredient: IngredientId | null;
+  /** The calendar festival going on, if any. */
+  festival: FestivalId | null;
+  weekly: Weekly | null;
+  /** Signed photos of the celebrities who came, shown on the front. */
+  celebrityWall: string[];
   /** Someone typed the code. */
   secretCodeFound: boolean;
   service: Service | null;
@@ -381,6 +461,8 @@ export type GameAction =
   | { type: "dismissChallengeResult" }
   | { type: "startNextDay" }
   | { type: "togglePause" }
+  | { type: "selectBatch" }
+  | { type: "syncCalendar"; date: string }
   | { type: "closeEarly" }
   | { type: "restartDay" }
   | { type: "trashUnwantedPizzas" }

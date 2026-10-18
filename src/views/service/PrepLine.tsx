@@ -20,6 +20,8 @@ interface PrepLineProps {
   neededIngredients: readonly IngredientId[];
   coachTarget: CoachTarget | null;
   onPickIngredient: (id: IngredientId) => void;
+  /** Late delivery: this ingredient's pan is waiting for the delivery. */
+  stillComing?: IngredientId | null;
   /** Nonna's secret, once shared: shown as an extra jar at the end of the line. */
   secret?: { isOnBoard: boolean; canAdd: boolean; stock: number; onToggle: () => void };
 }
@@ -57,7 +59,9 @@ function isCoachPan(coachTarget: CoachTarget | null, id: IngredientId, isOnBoard
 
 // The row of ingredient pans along the bottom of the service screen.
 // Pans the selected order still needs get a dashed outline.
-export function PrepLine({ state, isBottomless, extraIngredients = [], board, neededIngredients, coachTarget, onPickIngredient, secret }: PrepLineProps) {
+export function PrepLine({
+  state, isBottomless, extraIngredients = [], board, neededIngredients, coachTarget, onPickIngredient, secret, stillComing,
+}: PrepLineProps) {
   const t = useTranslation();
   const stations = PREP_STATIONS.map((station) => ({
     ...station,
@@ -72,13 +76,14 @@ export function PrepLine({ state, isBottomless, extraIngredients = [], board, ne
           <div className="pans">
             {station.ingredientIds.map((id) => {
               const quantity = isBottomless ? FULL_PAN : state.stock[id] || 0;
+              const isComing = id === stillComing;
               const isOnBoard = board.includes(id);
               const isNeeded = neededIngredients.includes(id);
               return (
                 <button
                   key={id}
                   className={panClassName({ isOnBoard, isNeeded, quantity, isCoachTarget: isCoachPan(coachTarget, id, isOnBoard, isNeeded) })}
-                  disabled={!isOnBoard && quantity === 0}
+                  disabled={isComing || (!isOnBoard && quantity === 0)}
                   aria-pressed={isOnBoard}
                   onClick={() => onPickIngredient(id)}
                   title={isBottomless ? t.ingredient(id) : t("service.panTitle", { id, quantity })}
@@ -86,6 +91,7 @@ export function PrepLine({ state, isBottomless, extraIngredients = [], board, ne
                   <IngredientPan id={id} quantity={quantity} />
                   <span className="pan-n">{t.ingredient(id)}</span>
                   <span className="pan-q">{isBottomless ? "∞" : quantity}</span>
+                  {isComing && <span className="pan-coming">{`🚚 ${t("service.stillComing")}`}</span>}
                 </button>
               );
             })}

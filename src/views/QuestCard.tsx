@@ -17,10 +17,16 @@ export function questText(t: Translator, quest: Quest | QuestRecord): string {
         return t("quests.pairing", { target });
       case "sweet":
         return t("quests.sweet", { target });
+      case "batch":
+        return t("quests.batch", { target });
     }
   })();
   return `${t.questGiver(quest.giver)} ${what}`;
 }
+
+// "3 Regina, 2 Margherita"
+export const batchItemsText = (t: Translator, quest: Pick<Quest, "items">): string =>
+  (quest.items ?? []).map((item) => `${item.count} ${t.recipe({ id: item.recipeId, name: item.recipeName })}`).join(", ");
 
 // The running neighbourhood quest, with its progress and deadline.
 export function QuestCard({ quest, day }: { quest: Quest; day: number }) {
@@ -32,11 +38,18 @@ export function QuestCard({ quest, day }: { quest: Quest; day: number }) {
         <span className="quest-deadline">{t("prep.questDeadline", { days: quest.deadlineDay - day + 1 })}</span>
       </div>
       <p className="quest-t">{questText(t, quest)}</p>
-      <div className="quest-progress" title={`${quest.progress} / ${quest.target}`}>
-        <i style={{ width: `${(quest.progress / quest.target) * 100}%` }} />
-        <span>{quest.progress} / {quest.target}</span>
-      </div>
-      <div className="hint">{t("prep.questReward", { reward: quest.reward, xp: quest.xp })}</div>
+      {quest.items ? (
+        // A group order: what to make tonight; the reward depends on how fast it is delivered.
+        <div className="hint">{t("prep.batchTonight", { items: batchItemsText(t, quest) })}</div>
+      ) : (
+        <>
+          <div className="quest-progress" title={`${quest.progress} / ${quest.target}`}>
+            <i style={{ width: `${(quest.progress / quest.target) * 100}%` }} />
+            <span>{quest.progress} / {quest.target}</span>
+          </div>
+          <div className="hint">{t("prep.questReward", { reward: quest.reward, xp: quest.xp })}</div>
+        </>
+      )}
     </div>
   );
 }

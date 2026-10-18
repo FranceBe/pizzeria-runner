@@ -2,7 +2,7 @@ import { UPGRADES, UPGRADE_KEYS, type Upgrade, type UpgradeKey } from "../data/p
 import { dailyCharges } from "../game/economy";
 import { levelForXp } from "../game/progression";
 import { useTranslation } from "../i18n/I18nContext";
-import { COSMETIC_PRICES, COSMETIC_SLOTS, type CosmeticSlot, type LookIds } from "../data/cosmetics";
+import { COSMETIC_PRICES, COSMETIC_SLOTS, STAR_LOOKS, type CosmeticSlot, type LookIds } from "../data/cosmetics";
 import type { Dispatch, GameState } from "../game/types";
 import { canAfford } from "../utils/math";
 import type { ScreenProps } from "./types";
@@ -75,20 +75,29 @@ function LookGroup<Slot extends CosmeticSlot>({ slot, label, nameOf, state, disp
       <div className="look-options">
         {ids.map((id) => {
           const price: number = COSMETIC_PRICES[slot][id];
-          const isOwned = price === 0 || state.cosmetics.owned.includes(`${slot}:${id}`);
+          // Some looks are earned with the days' stars instead of bought.
+          const starsNeeded = STAR_LOOKS[`${slot}:${id}`];
+          const isEarned = starsNeeded === undefined || state.lifetime.stars >= starsNeeded;
+          const isOwned = isEarned && (price === 0 || state.cosmetics.owned.includes(`${slot}:${id}`));
           const isInUse = state.cosmetics[slot] === id;
           return (
             <button
               key={id}
               className={`look${isInUse ? " in-use" : ""}`}
               aria-pressed={isInUse}
-              disabled={isInUse || (!isOwned && !canAfford(state.money, price))}
+              disabled={isInUse || !isEarned || (!isOwned && !canAfford(state.money, price))}
               onClick={() => dispatch({ type: "chooseCosmetic", slot, id })}
             >
               <LookSwatch slot={slot} id={id} />
               <span className="look-n">{nameOf(id)}</span>
               <span className="look-a">
-                {isInUse ? t("upgrades.inUse") : isOwned ? t("upgrades.choose") : t("upgrades.buyLook", { cost: price })}
+                {isInUse
+                  ? t("upgrades.inUse")
+                  : !isEarned && starsNeeded !== undefined
+                    ? t("upgrades.starsNeeded", { count: starsNeeded })
+                    : isOwned
+                      ? t("upgrades.choose")
+                      : t("upgrades.buyLook", { cost: price })}
               </span>
             </button>
           );

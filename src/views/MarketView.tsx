@@ -115,7 +115,8 @@ function NonnasSecret({ state, dispatch }: ScreenProps) {
 function Suppliers({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
   const level = levelForXp(state.xp);
-  const lockedIngredients = INGREDIENTS.filter((ingredient) => !state.unlocked[ingredient.id]);
+  // Festival ingredients come with the calendar, not from a supplier.
+  const lockedIngredients = INGREDIENTS.filter((ingredient) => !state.unlocked[ingredient.id] && !ingredient.festival);
   return (
     <div className="card pad">
       <h2 className="h">{t("market.suppliers")}</h2>

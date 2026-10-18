@@ -26,6 +26,8 @@ interface IngredientSpec {
   thin?: boolean;
   /** Dessert ingredients: they don't need cheese or a savoury sauce, and clash with meat and fish. */
   sweet?: boolean;
+  /** Only on sale during this calendar festival (see data/festivals.ts). */
+  festival?: "halloween" | "christmas" | "valentine";
   /** For customers' diets. */
   meat?: "pork" | "other";
   fish?: boolean;
@@ -68,6 +70,10 @@ const INGREDIENT_LIST = [
   { id: "banane", kind: "topping", cost: 0.5, requiredLevel: 6, supplierFee: 35, color: "#f2dc8a", shape: "slice", count: 8, sweet: true },
   { id: "fraise", kind: "topping", cost: 0.9, requiredLevel: 6, supplierFee: 45, color: "#d8344a", shape: "heart", count: 8, sweet: true },
   { id: "noisette", kind: "topping", cost: 0.6, requiredLevel: 6, supplierFee: 35, color: "#a86b3c", shape: "dot", count: 16, radius: 2.6, sweet: true },
+  // Festivals: on sale for a few days a year, to everyone
+  { id: "potiron", kind: "topping", cost: 0.5, requiredLevel: 1, supplierFee: 0, color: "#e8862a", shape: "cube", count: 18, festival: "halloween" },
+  { id: "marron", kind: "topping", cost: 0.8, requiredLevel: 1, supplierFee: 0, color: "#7a4a2a", shape: "round", count: 7, festival: "christmas" },
+  { id: "framboise", kind: "topping", cost: 0.8, requiredLevel: 1, supplierFee: 0, color: "#c8285a", shape: "heart", count: 8, sweet: true, festival: "valentine" },
 ] as const satisfies readonly IngredientSpec[];
 
 export type IngredientId = (typeof INGREDIENT_LIST)[number]["id"];
@@ -106,8 +112,8 @@ export const PREP_STATIONS: readonly PrepStation[] = [
   { id: "sauce", ingredientIds: ["tomate", "creme", "chocolat"] },
   { id: "cheese", ingredientIds: ["mozza", "chevre", "gorgo", "parmesan", "reblochon", "burrata", "mascarpone"] },
   { id: "meat", ingredientIds: ["jambon", "salami", "lardons", "jcru", "anchois"] },
-  { id: "veg", ingredientIds: ["champi", "olive", "oignon", "poivron", "artichaut", "patate", "capres"] },
+  { id: "veg", ingredientIds: ["champi", "olive", "oignon", "poivron", "artichaut", "patate", "capres", "potiron"] },
   { id: "herb", ingredientIds: ["basilic", "origan", "roquette", "piment"] },
-  { id: "finish", ingredientIds: ["miel", "oeuf", "truffe"] },
-  { id: "sweet", ingredientIds: ["banane", "fraise", "noisette"] },
+  { id: "finish", ingredientIds: ["miel", "oeuf", "truffe", "marron"] },
+  { id: "sweet", ingredientIds: ["banane", "fraise", "noisette", "framboise"] },
 ];

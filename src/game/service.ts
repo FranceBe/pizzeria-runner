@@ -1,5 +1,6 @@
 import type { IngredientId } from "../data/ingredients";
 import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS } from "../data/progression";
+import { BATCH_ID, batchItemFor } from "./batch";
 import { marketPrice } from "./events";
 import { haveSameIngredients } from "./pizza";
 import type { Customer, GameState, Service } from "./types";
@@ -17,6 +18,8 @@ export interface Oven {
 // The first oven, then each extra oven built: a new oven starts like the first one did, and improves the same way.
 export function ovensOf(state: GameState): Oven[] {
   const first = { index: 0, slots: OVEN_SLOTS[state.upgrades.oven], bakeSeconds: BAKE_SECONDS[state.upgrades.oven] };
+  // Power cut: the first oven alone, one pizza at a time.
+  if (state.event === "powerCut") return [{ ...first, slots: 1 }];
   const extras = EXTRA_OVEN_KEYS.map((key) => state.upgrades[key])
     .filter((level) => level > 0)
     .map((level, position) => ({ index: position + 1, slots: OVEN_SLOTS[level - 1], bakeSeconds: BAKE_SECONDS[level - 1] }));
@@ -47,6 +50,18 @@ export function ovenWithRoom(state: GameState, service: Service): Oven | undefin
 
 export const selectedCustomer = (service: Service): Customer | undefined =>
   service.customers.find((customer) => customer.id === service.selectedCustomerId);
+
+// Where a baked pizza goes: to the group order when its ticket is selected and needs it, otherwise to the
+// customer it matches (the selected one first), otherwise to the group order if it needs it.
+export type Destination = { customer: Customer } | { batch: true } | null;
+
+export function destinationOf(state: GameState, service: Service, ingredients: readonly IngredientId[]): Destination {
+  const forBatch = Boolean(batchItemFor(state, service, ingredients));
+  if (forBatch && service.selectedCustomerId === BATCH_ID) return { batch: true };
+  const customer = customerForPizza(service, ingredients);
+  if (customer) return { customer };
+  return forBatch ? { batch: true } : null;
+}
 
 // The customer a baked pizza goes to: the selected one if it matches, otherwise the first match.
 export function customerForPizza(service: Service, ingredients: readonly IngredientId[]): Customer | undefined {

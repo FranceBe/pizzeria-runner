@@ -1,5 +1,7 @@
 import { menuCapacity } from "../game/progression";
-import type { DaySummary as Summary, OrderRecord } from "../game/types";
+import type { DaySummary as Summary, OrderRecord, StarGoals } from "../game/types";
+import { INSPECTION_XP } from "../data/events";
+import { profitTarget } from "../game/stars";
 import { useTranslation } from "../i18n/I18nContext";
 import { Pizza } from "../components/Pizza";
 import { drawReceipt, shareOrDownload, type ReceiptRow } from "../utils/receiptImage";
@@ -11,6 +13,29 @@ function ReceiptLine({ label, value, className = "" }: { label: string; value: s
       <span>{label}</span>
       <span className="leader" />
       <span className="amount">{value}</span>
+    </div>
+  );
+}
+
+// The day's stars, with the three goals behind them.
+function DayStars({ stars, goals, charges }: { stars: number; goals: StarGoals; charges: number }) {
+  const t = useTranslation();
+  const rows: [boolean, string][] = [
+    [goals.happy, t("summary.starHappy")],
+    [goals.waste, t("summary.starWaste")],
+    [goals.profit, t("summary.starProfit", { target: profitTarget(charges) })],
+  ];
+  return (
+    <div className="day-stars">
+      <div className="day-stars-head">
+        <span>{t("summary.stars")}</span>
+        <span className="day-stars-v" aria-label={`${stars} / 3`}>{"★".repeat(stars)}<span className="off">{"★".repeat(3 - stars)}</span></span>
+      </div>
+      <ul>
+        {rows.map(([isReached, label]) => (
+          <li key={label} className={isReached ? "on" : ""}>{`${isReached ? "✓" : "·"} ${label}`}</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -99,6 +124,8 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           />
           <ReceiptLine label={t("summary.reputation")} value={`+${summary.xp}`} />
           {summary.debt > 0 && <ReceiptLine className="neg" label={t("summary.debt")} value={t.money(summary.debt)} />}
+          {summary.starGoals && <DayStars stars={summary.stars ?? 0} goals={summary.starGoals} charges={summary.charges} />}
+          {summary.inspectionPassed && <p className="receipt-note">✓ {t("summary.inspection", { xp: INSPECTION_XP })}</p>}
           {summary.event && (
             <p className="receipt-note">
               {t("summary.event")} <strong>{t(`events.${summary.event}.name`)}</strong>

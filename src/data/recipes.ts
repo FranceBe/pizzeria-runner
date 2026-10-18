@@ -25,7 +25,11 @@ const CLASSIC_LIST = [
   { id: "nonnarosa", ingredients: ["pate", "creme", "mozza", "jambon", "champi", "roquette"], signatureLevel: 7 },
   { id: "segreto", ingredients: ["pate", "creme", "burrata", "truffe", "roquette", "miel"], signatureLevel: 10 },
   { id: "capolavoro", ingredients: ["pate", "tomate", "burrata", "jcru", "artichaut", "basilic", "parmesan"], signatureLevel: 15 },
-] as const satisfies readonly { id: string; ingredients: readonly IngredientId[]; signatureLevel?: number }[];
+  // Festivals: made with the basics plus the festival's ingredient, so every pizzeria can join in.
+  { id: "zucca", ingredients: ["pate", "mozza", "potiron", "basilic"], festival: "halloween" },
+  { id: "natale", ingredients: ["pate", "tomate", "mozza", "marron"], festival: "christmas" },
+  { id: "amore", ingredients: ["pate", "mozza", "framboise", "basilic"], festival: "valentine" },
+] as const satisfies readonly { id: string; ingredients: readonly IngredientId[]; signatureLevel?: number; festival?: string }[];
 
 export type ClassicRecipeId = (typeof CLASSIC_LIST)[number]["id"];
 
@@ -34,6 +38,8 @@ export interface ClassicRecipe {
   ingredients: readonly IngredientId[];
   /** Nonna's recipes: the level at which she shares them. They are a little more appealing. */
   signatureLevel?: number;
+  /** Only cookable while this calendar festival lasts. */
+  festival?: string;
 }
 
 export const CLASSIC_RECIPES: readonly ClassicRecipe[] = CLASSIC_LIST;

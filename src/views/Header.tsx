@@ -25,7 +25,7 @@ export function Header({ state, dispatch }: ScreenProps) {
       <div className="awning" />
       <div className="wrap top-inner">
         <h1 className="sign">{state.name}</h1>
-        <StorefrontDecor upgrades={state.upgrades} />
+        <StorefrontDecor upgrades={state.upgrades} photos={state.celebrityWall.length} />
         <div className="stats">
           <div className="stat">
             <span className="stat-l">{t("header.day")}</span>

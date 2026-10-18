@@ -44,6 +44,8 @@ export function createTranslator(language: Language): Translator {
     achievementName: (id) => translate(`achievements.${id}.name`),
     drink: (id) => translate(`drinks.${id}`),
     questGiver: (giver) => translate(`quests.givers.${giver}`),
+    festival: (id) => translate(`festivals.${id}`),
+    medal: (medal) => translate(`medals.${medal}`),
   };
 
   // The typed signature lives on Translate; the implementation is the untyped lookup above.

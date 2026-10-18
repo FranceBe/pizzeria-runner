@@ -41,9 +41,11 @@ export interface RestockPlan {
   cost: number;
 }
 
-// What to buy so that every ingredient used by the menu reaches `targetQuantity` portions.
+// What to buy so that every ingredient used by the menu reaches `targetQuantity` portions. Gluten-free
+// customers swap the dough, so once the gluten-free dough is signed it is topped up too.
 export function restockPlan(state: GameState, targetQuantity: number): RestockPlan {
   const usedIds = new Set(activeMenu(state).flatMap((recipe) => recipe.ingredients));
+  if (state.unlocked.pateSG && usedIds.has("pate")) usedIds.add("pateSG");
   const items = [...usedIds]
     .map((id) => ({ id, quantity: Math.max(0, targetQuantity - (state.stock[id] || 0)) }))
     .filter(({ quantity }) => quantity > 0);

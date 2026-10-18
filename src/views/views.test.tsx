@@ -26,7 +26,7 @@ const render = (element: ReactElement, language: Language = "fr"): string =>
 
 // A translation key that slipped through looks like "service.orders" in the HTML.
 const RAW_KEY =
-  /\b(tabs|common|header|prep|challenge|service|market|menu|editor|upgrades|settings|summary|journal|events|achievements|toasts|tutorial|pops|kinds|stations|ingredients|recipes|customerLines)\.\w/;
+  /\b(tabs|common|header|prep|challenge|service|market|menu|editor|upgrades|settings|summary|journal|events|achievements|toasts|tutorial|pops|kinds|stations|ingredients|recipes|customerLines|festivals|medals|weeklyMissions|quests|seasons|diets|drinks|crash)\.\w/;
 
 // A late-game state with every supplier, so every drawing shape gets rendered.
 function lateGameState(): GameState {
@@ -355,6 +355,59 @@ describe("views", () => {
     const html = render(serviceScreen(state), "en");
     expect(html).toContain("Bin the 2 pizzas nobody is waiting for");
     expect(html.match(/class="btn sm bin"/g)).toHaveLength(2);
+  });
+
+  it("shows tonight's group order as its own ticket, with the medal still within reach", () => {
+    const state = stateInService([makeCustomer()], { settings: { ...makeState().settings, tutorialDone: true } });
+    state.quest = { kind: "batch", giver: "football", target: 3, progress: 1, deadlineDay: 1, reward: 0, xp: 24,
+      items: [{ recipeId: "margherita", recipeName: null, count: 2, delivered: 1 }, { recipeId: "margherita", recipeName: "Bis", count: 1, delivered: 0 }] };
+    serviceOf(state).batch = { elapsed: 20 };
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain("Group order");
+    expect(html).toContain("The football club");
+    expect(html).toContain("1 / 2");
+    expect(html).toContain("🥇 0:55");
+  });
+
+  it("puts the streak or the rush in the message line, and nothing more", () => {
+    const state = stateInService([makeCustomer()], { settings: { ...makeState().settings, tutorialDone: true } });
+    serviceOf(state).stats.streak = 6;
+    expect(render(serviceScreen(state), "en")).toContain("🔥 streak of 6 · tips ×1.25");
+    serviceOf(state).rush = { secondsLeft: 30 };
+    expect(render(serviceScreen(state), "en")).toContain("Rush hour! Tips ×2 · 0:30");
+  });
+
+  it("marks cooling pizzas, a late ingredient and celebrities", () => {
+    const state = stateInService([makeCustomer({ celebrity: true, name: "Luna Star" })], { event: "lateDelivery", lateIngredient: "mozza" });
+    serviceOf(state).ready = [{ id: "r", ingredients: MARGHERITA_INGREDIENTS, waitingSeconds: 60 }];
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain(" · cold");
+    expect(html).toContain("🚚 On its way");
+    expect(html).toContain("⭐ Celebrity");
+  });
+
+  it("shows the day's stars and a passed inspection on the receipt", () => {
+    const summary = { ...SUMMARY, stars: 2, starGoals: { happy: true, waste: false, profit: true }, inspectionPassed: true };
+    const html = render(<DaySummary summary={summary} pizzeriaName="Forno Lento" onNextDay={noop} />, "en");
+    expect(html).toContain("Today&#x27;s stars");
+    expect(html).toContain("✓ Everyone served in time");
+    expect(html).toContain("Inspection passed: +40 reputation");
+  });
+
+  it("shows the week's missions, the festival and tonight's group order in the morning", () => {
+    const state = playedState();
+    state.festival = "halloween";
+    state.weekly = { week: 0, bonusPaid: false, missions: [{ kind: "tips", target: 30, progress: 12.6, done: false }, { kind: "served", target: 40, progress: 40, done: true }] };
+    state.quest = { kind: "batch", giver: "bakery", target: 3, progress: 0, deadlineDay: 4, reward: 0, xp: 24, items: [{ recipeId: "margherita", recipeName: null, count: 3, delivered: 0 }] };
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
+    expect(html).toContain("This week");
+    expect(html).toContain("12 / 30");
+    expect(html).toContain("It&#x27;s Halloween!");
+    expect(html).toContain("To deliver tonight, all together: 3 Margherita.");
+  });
+
+  it("keeps star looks locked until enough stars", () => {
+    expect(render(<UpgradesView state={makeState()} dispatch={noop} />, "en")).toContain("⭐ 15 stars");
   });
 
   it("sells looks for the pizzeria", () => {

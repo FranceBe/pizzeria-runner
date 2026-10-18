@@ -1,7 +1,7 @@
 import { COMMIS_ASSEMBLES_ORDER } from "../data/progression";
 import { isRegularCustomer } from "./customers";
 import { hasBase, isBase } from "./pizza";
-import { customerForPizza, selectedCustomer } from "./service";
+import { destinationOf, selectedCustomer, type Destination } from "./service";
 import type { GameAction, GameState, Service } from "./types";
 
 const ARROW_STEPS: Partial<Record<string, -1 | 1>> = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
@@ -33,7 +33,7 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
     return ingredientId ? { type: "toggleIngredient", ingredientId } : null;
   }
   if (key === " ") return hasBase(service.board) ? { type: "bake" } : null;
-  if (key === "Enter") return serveAction(service);
+  if (key === "Enter") return serveAction(state, service);
   if (key === "Backspace" || key === "Delete") return service.board.length ? { type: "trashBoard" } : null;
   if (key === "a" || key === "A") {
     return state.upgrades.commis >= COMMIS_ASSEMBLES_ORDER && selected ? { type: "assembleOrder" } : null;
@@ -53,9 +53,11 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
   return null;
 }
 
-function serveAction(service: Service): GameAction | null {
-  const matches = service.ready.map((pizza) => ({ pizza, customer: customerForPizza(service, pizza.ingredients) }));
-  const best =
-    matches.find(({ customer }) => customer?.id === service.selectedCustomerId) ?? matches.find(({ customer }) => customer);
+// Serves the selected customer's pizza first, then any pizza someone (or the group order) is waiting for.
+function serveAction(state: GameState, service: Service): GameAction | null {
+  const matches = service.ready.map((pizza) => ({ pizza, destination: destinationOf(state, service, pizza.ingredients) }));
+  const isSelected = (destination: Destination) =>
+    destination !== null && ("customer" in destination ? destination.customer.id === service.selectedCustomerId : service.selectedCustomerId === "batch");
+  const best = matches.find(({ destination }) => isSelected(destination)) ?? matches.find(({ destination }) => destination);
   return best ? { type: "servePizza", pizzaId: best.pizza.id } : null;
 }

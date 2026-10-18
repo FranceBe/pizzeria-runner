@@ -99,9 +99,23 @@ function Annexe({ level }: { level: number }) {
   );
 }
 
-export function StorefrontDecor({ upgrades }: { upgrades: Record<UpgradeKey, number> }) {
+// A signed celebrity photo in a little frame.
+function SignedPhoto({ index }: { index: number }) {
+  const colors = ["#f0a43b", "#7fb2d1", "#e28cc0", "#8ec07c"];
+  return (
+    <svg className="decor photo" viewBox="0 0 24 30">
+      <rect x="1" y="1" width="22" height="28" rx="2" fill="#6b4a2f" />
+      <rect x="4" y="4" width="16" height="17" fill={colors[index % colors.length]} />
+      <circle cx="12" cy="10" r="4" fill="#f5d7bd" />
+      <path d="M5 21q7-9 14 0Z" fill="#2b3439" />
+      <path d="M6 25q3-2 6 0t6-1" stroke="#fff" strokeWidth="1.2" fill="none" />
+    </svg>
+  );
+}
+
+export function StorefrontDecor({ upgrades, photos = 0 }: { upgrades: Record<UpgradeKey, number>; photos?: number }) {
   const { deco, salle, oven, terrasse, livraison, bar, oven2, oven3, annexe } = upgrades;
-  if (!deco && !salle && !oven && !terrasse && !livraison && !bar && !annexe) return null;
+  if (!deco && !salle && !oven && !terrasse && !livraison && !bar && !annexe && !photos) return null;
   const extraOvens = (oven2 ? 1 : 0) + (oven3 ? 1 : 0);
   return (
     <div className="storefront" aria-hidden="true">
@@ -114,6 +128,7 @@ export function StorefrontDecor({ upgrades }: { upgrades: Record<UpgradeKey, num
       {livraison >= 1 && <Scooter />}
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} isFlipped />}
       {annexe >= 1 && <Annexe level={annexe} />}
+      {Array.from({ length: photos }, (_, index) => <SignedPhoto key={index} index={index} />)}
     </div>
   );
 }

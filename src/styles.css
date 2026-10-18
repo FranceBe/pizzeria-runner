@@ -194,7 +194,7 @@ button.ticker { width: 100%; text-align: left; gap: 8px; cursor: pointer; font: 
 .pan { position: relative; width: 66px; padding: 0; border: none; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; border-radius: 8px; transition: transform .1s; }
 .pan svg { width: 60px; height: 60px; display: block; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1), 0 2px 4px rgba(0,0,0,.18); }
 .pan:hover:not(:disabled) { transform: translateY(-2px); }
-.pan.on svg { outline: 3px solid var(--basil); outline-offset: 1px; }
+.pan.on svg { outline: 4px solid var(--basil); outline-offset: 0; }
 .pan:disabled { opacity: .5; }
 .pan-n { font-size: 11.5px; font-weight: 700; line-height: 1.15; text-align: center; color: var(--steel-ink); max-width: 66px; }
 .pan-q { position: absolute; top: 4px; right: 6px; min-width: 20px; padding: 0 5px; border-radius: 99px; font-size: 11px; font-weight: 800; line-height: 18px; background: rgba(20,28,24,.78); color: #fff; }
@@ -842,10 +842,8 @@ header.top .top-inner { position: relative; }
   .a-oven { overflow-y: auto; overscroll-behavior: contain; }
   .passe { flex: none; overflow: visible; }
 
-  /* What the selected order needs is easier to spot, without giving it away: a clear gold outline,
-     and the other pans just a little quieter */
-  .rail.has-order .pan:not(.need):not(.on):not(.secret-pan) { opacity: .75; }
-  .a-rail .pan.need svg { outline: 3px solid var(--gold); outline-offset: -3px; }
+  /* What the selected order needs: a light hint only, the player still has to look */
+  .a-rail .pan.need svg { outline: 2px dashed var(--gold); outline-offset: -3px; }
 
   /* Bar: names under the glasses, since there is no hover on a phone */
   .drink-btn { flex-direction: column; gap: 1px; padding: 4px 2px; }
@@ -871,4 +869,65 @@ button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff;
   .ticket .pz { overflow-wrap: anywhere; }
   .ticket .who > div { min-width: 0; }
   .ticket .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* What is already on the pizza must be obvious, so a missed tap gets noticed: thick green outline (see .pan.on) and a ✓ badge */
+.pan.on::after { content: "✓"; position: absolute; top: -5px; left: -5px; z-index: 2; width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px; font-weight: 900; color: #fff; background: var(--basil);
+  box-shadow: 0 0 0 2px var(--surface); }
+.pan.on .pan-n { color: var(--basil); }
+@media (max-width: 700px) {
+  .a-rail .pan.on svg { outline: 4px solid var(--basil); outline-offset: -4px; }
+  .a-rail .pan.on::after { top: 3px; left: 3px; width: 18px; height: 18px; font-size: 11px; }
+  .a-rail .pan.on .pan-n { color: #fff; background: var(--basil); }
+}
+
+/* ---------------------------------------------------------------
+   Group orders, streak and rush, warm pizzas, late delivery, weekly missions, stars
+   (kept low-key: each lives inside an element that already exists)
+---------------------------------------------------------------- */
+.batch-ticket { border: 2px solid var(--basil); background: linear-gradient(180deg, var(--basil-soft), var(--surface) 60%); }
+.batch-ticket[aria-pressed="true"] { outline-color: var(--basil); border-color: var(--basil); }
+.batch-head { display: flex; align-items: baseline; gap: 8px; }
+.batch-head strong { flex: 1; font-size: 14px; }
+.batch-medal { font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.batch-items { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.batch-items li { display: flex; gap: 6px; }
+.batch-items li.done { color: var(--basil); text-decoration: line-through; opacity: .8; }
+.svc.in-rush .a-ticker > .ticker { background: var(--accent-soft); border-color: var(--accent); font-weight: 800; }
+.ready.warm { border-color: #e0a020; }
+.ready.cold { border-color: #7fb2d1; background: color-mix(in srgb, #7fb2d1 10%, var(--surface)); }
+.warmth.warm { color: #b07400; font-weight: 700; }
+.warmth.cold { color: #3b6f97; font-weight: 700; }
+.pan-coming { position: absolute; inset: auto 2px 22px 2px; font-size: 9.5px; font-weight: 800; text-align: center; color: #fff;
+  background: rgba(20, 28, 24, .8); border-radius: 4px; padding: 1px 2px; }
+.mod.celebrity-tag { background: linear-gradient(90deg, #f0a43b, #e26aa6); color: #fff; }
+.ticket.celebrity { background: linear-gradient(180deg, #fff1d6, var(--surface) 55%); border-color: #f0a43b; }
+.ev-fete { --ev-bg: #f3e3f6; --ev-edge: #8a3c99; font-weight: 600; }
+.ev-powerCut, .ev-lateDelivery, .ev-inspection, .ev-scooterStrike { --ev-bg: var(--surface2); --ev-edge: var(--muted); }
+.weekly { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.weekly .hint { margin: 2px 0 0; }
+.weekly-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.weekly-check { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center;
+  font-size: 11px; font-weight: 900; color: #fff; }
+.weekly-row.done .weekly-check { background: var(--basil); border-color: var(--basil); }
+.weekly-row.done .grow { text-decoration: line-through; opacity: .7; }
+.day-stars { margin-top: 10px; }
+.day-stars-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; }
+.day-stars-v { font-size: 22px; color: #d39a12; letter-spacing: 2px; }
+.day-stars-v .off { color: var(--paper-rule); }
+.day-stars ul { list-style: none; margin: 4px 0 0; padding: 0; font-size: 13px; opacity: .65; }
+.day-stars li.on { opacity: 1; font-weight: 600; color: #1f6b3b; }
+.pop.batch { background: var(--basil-soft); color: var(--basil); }
+.decor.photo { width: 22px; height: 28px; align-self: center; }
+.awning-golden { --sw: #d39a12; }
+.sign-star { font-family: var(--f-display); color: #d39a12; background: #1d2440; }
+.wall-night { background: #1d2440 radial-gradient(circle, #ffd36b 0 1px, transparent 1.5px) 0 0 / 10px 10px; }
+:root[data-awning="golden"] { --awning: #d39a12; }
+:root[data-sign="star"] .sign { color: #d39a12; text-shadow: 0 0 6px rgba(255, 211, 107, .7); }
+:root[data-wall="night"] body { background-color: color-mix(in srgb, var(--bg) 80%, #1d2440);
+  background-image: radial-gradient(circle, rgba(255, 211, 107, .45) 0 1px, transparent 1.6px); background-size: 28px 28px; }
+@media (max-width: 700px) {
+  .batch-items { font-size: 11.5px; margin-top: 2px; }
+  .batch-head strong { font-size: 12.5px; }
 }

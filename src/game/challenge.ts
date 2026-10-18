@@ -27,7 +27,7 @@ function draw(challenge: Challenge): number {
 const drawFrom = <T>(challenge: Challenge, list: readonly T[]): T => list[Math.floor(draw(challenge) * list.length)];
 
 // Savoury classics only: every player gets the same four, whatever they have unlocked.
-const CHALLENGE_RECIPES = CLASSIC_RECIPES.filter((classic) => !classic.signatureLevel && !isDessert(classic.ingredients));
+const CHALLENGE_RECIPES = CLASSIC_RECIPES.filter((classic) => !classic.signatureLevel && !classic.festival && !isDessert(classic.ingredients));
 
 export function createChallenge(date: string): Challenge {
   const challenge: Challenge = { secondsLeft: CHALLENGE_SECONDS, score: 0, date, seed: hashString(`forno-lento:${date}`), menu: [], happy: 0 };

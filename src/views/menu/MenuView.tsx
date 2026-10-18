@@ -96,7 +96,8 @@ function RecipeCard({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
 
 function ClassicsToDiscover({ state }: Pick<ScreenProps, "state">) {
   const t = useTranslation();
-  const undiscovered = CLASSIC_RECIPES.filter((classic) => !knowsRecipe(state, classic.id));
+  // Festival recipes show up with their festival, not as something to work towards.
+  const undiscovered = CLASSIC_RECIPES.filter((classic) => !knowsRecipe(state, classic.id) && !classic.festival);
   if (!undiscovered.length) return null;
   return (
     <>

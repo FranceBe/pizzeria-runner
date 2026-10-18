@@ -1,5 +1,5 @@
 import { CUSTOMER_NAMES, LINES_PER_MOOD } from "../data/customers";
-import { CRITIC_NAMES } from "../data/events";
+import { CELEBRITY_NAMES, CRITIC_NAMES } from "../data/events";
 import { INGREDIENTS, type IngredientId } from "../data/ingredients";
 import { DRINKS, DRINK_CHANCE, DRINK_IDS, type DrinkId } from "../data/drinks";
 import { DELIVERY_FEE, tipChanceForDecor } from "../data/progression";
@@ -75,7 +75,7 @@ function rollDrink(state: GameState): DrinkId | null {
   return available.length && Math.random() < DRINK_CHANCE ? pickRandom(available) : null;
 }
 
-export type CustomerKind = "regular" | "critic" | "delivery";
+export type CustomerKind = "regular" | "critic" | "delivery" | "celebrity";
 
 export interface CustomerOptions {
   /** Someone in particular: a regular coming for their birthday, or a table member. */
@@ -91,18 +91,21 @@ export function createCustomer(state: GameState, kind: CustomerKind = "regular",
   if (!fullMenu.length) return null;
   // A name is a person (see regulars.ts), so the same name never waits at the counter twice.
   const waitingNames = new Set(state.service?.customers.map((customer) => customer.name) ?? []);
-  const names = kind === "critic" ? CRITIC_NAMES : CUSTOMER_NAMES;
+  const names = kind === "critic" ? CRITIC_NAMES : kind === "celebrity" ? CELEBRITY_NAMES : CUSTOMER_NAMES;
   const name = options.name ?? pickRandom(names.filter((candidate) => !waitingNames.has(candidate)));
   const entry = kind === "regular" ? bookEntry(state, name) : undefined;
   const isBirthday = Boolean(options.isBirthday && isRegular(entry));
 
-  const diet = kind === "critic" || isBirthday ? null : rollDiet(state, fullMenu);
+  const isGuest = kind === "critic" || kind === "celebrity";
+  const diet = isGuest || isBirthday ? null : rollDiet(state, fullMenu);
   // Diets and dislikes narrow the menu, unless nothing would be left.
   const narrowed = fullMenu.filter(
     (recipe) => dietAllows(diet, recipe.ingredients) && !(entry?.dislikes && recipe.ingredients.includes(entry.dislikes)),
   );
   const menu = narrowed.length ? narrowed : fullMenu;
-  const { recipe, isFavorite } = chooseRecipe(state, menu, entry, isBirthday);
+  // A celebrity asks for the finest pizza on the menu, with an extra topping.
+  const { recipe, isFavorite } =
+    kind === "celebrity" ? { recipe: [...menu].sort((a, b) => b.price - a.price)[0], isFavorite: false } : chooseRecipe(state, menu, entry, isBirthday);
   const asUsual = isFavorite && isRegular(entry) && !diet && Math.random() < AS_USUAL_CHANCE;
 
   let ingredients: IngredientId[] = forDiet(diet, recipe.ingredients);
@@ -111,9 +114,10 @@ export function createCustomer(state: GameState, kind: CustomerKind = "regular",
   let price = recipe.price;
 
   const canAskForChanges = kind !== "critic" && !asUsual && !diet && !isBirthday;
-  if (canAskForChanges && levelForXp(state.xp) >= SPECIAL_REQUESTS_LEVEL && Math.random() < SPECIAL_REQUEST_CHANCE) {
+  const asksForChanges = kind === "celebrity" || (levelForXp(state.xp) >= SPECIAL_REQUESTS_LEVEL && Math.random() < SPECIAL_REQUEST_CHANCE);
+  if (canAskForChanges && asksForChanges) {
     const recipeFillings = fillingsOf(recipe.ingredients);
-    if (Math.random() < EXTRA_RATHER_THAN_REMOVE_CHANCE) {
+    if (kind === "celebrity" || Math.random() < EXTRA_RATHER_THAN_REMOVE_CHANCE) {
       const candidates = unlockedIngredients(state).filter(
         (id) => isFilling(id) && !recipe.ingredients.includes(id) && id !== entry?.dislikes && isDessert([id]) === isDessert(recipe.ingredients),
       );
@@ -147,6 +151,7 @@ export function createCustomer(state: GameState, kind: CustomerKind = "regular",
     lineIndex: randomIndex(LINES_PER_MOOD),
     asUsual,
     critic: kind === "critic",
+    celebrity: kind === "celebrity",
     delivery: kind === "delivery",
     diet,
     tableId: options.tableId ?? null,

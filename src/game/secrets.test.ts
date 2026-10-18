@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { ACHIEVEMENT_IDS } from "../data/achievements";
+import { ACCESSORY_IDS } from "../data/customers";
 import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { tipChance } from "./customers";
 import { rollLooks } from "./looks";
@@ -130,7 +131,7 @@ describe("customers' looks", () => {
     const crowd = Array.from({ length: 300 }, () => rollLooks("Sam", random));
     expect(new Set(crowd.map((looks) => looks.hairStyle)).size).toBe(8);
     expect(crowd.some((looks) => ["#3d6fd9", "#2fa36b", "#e26aa6", "#8a55d6", "#1fb3b3"].includes(looks.hair))).toBe(true);
-    expect(new Set(crowd.map((looks) => looks.accessory)).size).toBe(9);
+    expect(new Set(crowd.map((looks) => looks.accessory)).size).toBe(ACCESSORY_IDS.length + 1); // every accessory, and none
   });
 
   it("follow the name: no facial hair for feminine names, mostly longer or shorter hair", () => {

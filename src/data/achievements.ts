@@ -30,6 +30,10 @@ export const ACHIEVEMENT_IDS = [
   "quests5",
   "secondOven",
   "secondAddress",
+  "streak10",
+  "threeStars",
+  "batchGold",
+  "celebrity",
   "secretCode",
 ] as const;
 

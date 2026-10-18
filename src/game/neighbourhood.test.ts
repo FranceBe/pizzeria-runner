@@ -115,14 +115,24 @@ describe("regulars' profiles", () => {
 });
 
 describe("neighbourhood quests", () => {
-  it("are offered from day 4, then completed for a reward", () => {
+  it("are offered from day 4: a group order is for tonight", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
-    const state = makeState({ day: 4, money: 0 });
+    const state = makeState({ day: 4 });
     maybeOfferQuest(state);
-    expect(state.quest).toMatchObject({ kind: "serveRecipe", recipeId: "margherita", target: 4, deadlineDay: 6 });
-    for (let i = 0; i < 4; i++) advanceQuest(state, makeCustomer(), true, 0);
+    expect(state.quest).toMatchObject({ kind: "batch", target: 4, deadlineDay: 4 });
+    expect(state.quest?.items).toEqual([{ recipeId: "margherita", recipeName: null, count: 4, delivered: 0 }]);
+    expect(makeState({ day: 3 }).quest).toBeNull();
+  });
+
+  it("pay their reward once complete", () => {
+    const state = makeState({ day: 4, money: 0 });
+    state.quest = { kind: "happy", giver: "school", target: 2, progress: 0, deadlineDay: 6, reward: 30, xp: 40 };
+    advanceQuest(state, makeCustomer(), false, 0);
+    expect(state.quest).toMatchObject({ progress: 0 });
+    advanceQuest(state, makeCustomer(), true, 0);
+    advanceQuest(state, makeCustomer(), true, 0);
     expect(state.quest).toBeNull();
-    expect(state.money).toBe(35);
+    expect(state.money).toBe(30);
     expect(state.lifetime.questsDone).toBe(1);
   });
 

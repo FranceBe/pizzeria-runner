@@ -2,7 +2,8 @@ import { findRecipeByIngredients } from "../../game/menu";
 import { DRINKS, DRINK_IDS } from "../../data/drinks";
 import { isRegularCustomer } from "../../game/customers";
 import { selectedCustomer } from "../../game/service";
-import { customerForPizza, ovensOf } from "../../game/service";
+import { destinationOf, ovensOf } from "../../game/service";
+import { warmthOf } from "../../game/streak";
 import { DrinkGlass } from "../../components/DrinkGlass";
 import { useTranslation } from "../../i18n/I18nContext";
 import { Pizza } from "../../components/Pizza";
@@ -93,7 +94,7 @@ function Bar({ state, service, dispatch }: ServiceScreenProps) {
 // The pass: baked pizzas waiting to be served.
 function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
   const t = useTranslation();
-  const unwantedCount = service.ready.filter((pizza) => !customerForPizza(service, pizza.ingredients)).length;
+  const unwantedCount = service.ready.filter((pizza) => !destinationOf(state, service, pizza.ingredients)).length;
   return (
     <div className="passe">
       <h3 className="h">{t("service.pass")}</h3>
@@ -104,10 +105,12 @@ function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
         </button>
       )}
       {service.ready.map((pizza) => {
-        const customer = customerForPizza(service, pizza.ingredients);
+        const destination = destinationOf(state, service, pizza.ingredients);
+        const customer = destination && "customer" in destination ? destination.customer : undefined;
+        const warmth = warmthOf(pizza.waitingSeconds);
         const recipe = findRecipeByIngredients(state, pizza.ingredients);
         return (
-          <div key={pizza.id} className={`ready${customer ? "" : " unwanted"}`}>
+          <div key={pizza.id} className={`ready${destination ? "" : " unwanted"} ${warmth}`}>
             <Pizza ingredients={pizza.ingredients} baked />
             <div className="grow">
               <div className="rn">
@@ -115,12 +118,13 @@ function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
                 {pizza.secret && <span aria-hidden="true"> ✨</span>}
               </div>
               <div className="hint rt">
-                {customer ? t("service.forCustomer", { name: customer.name }) : t("service.nobodyWaiting")}
+                {customer ? t("service.forCustomer", { name: customer.name }) : destination ? t("service.forBatch") : t("service.nobodyWaiting")}
+                {destination && warmth !== "hot" && <span className={`warmth ${warmth}`}>{` · ${t(`service.${warmth}`)}`}</span>}
               </div>
             </div>
             {/* Nobody waiting for it: binning it is the only thing to do, so that is the button. */}
             <div className="ready-btns">
-              {customer ? (
+              {destination ? (
                 <>
                   <button
                     className={`btn sm go${coachTarget === "serve" ? " coach-target" : ""}`}

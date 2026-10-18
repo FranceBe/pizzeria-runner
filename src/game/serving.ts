@@ -4,8 +4,15 @@ import type { Pairing } from "../data/recipes";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
 import { receivePayment } from "./economy";
 import { fillingsOf, isDessert } from "./pizza";
+import { CELEBRITY_TIP, CELEBRITY_XP } from "../data/events";
+import { RUSH_TIP_FACTOR } from "./evening";
+import { streakMultiplier, warmthTipFactor } from "./streak";
 import { pushPop, pushToast } from "./toasts";
-import type { Customer, GameState, Mood, Service } from "./types";
+import { recordWeekly } from "./weekly";
+import type { Customer, GameState, Mood, ReadyPizza, Service } from "./types";
+
+// Signed photos shown on the front (the latest ones).
+const CELEBRITY_WALL_SIZE = 4;
 
 const SPECIAL_REQUEST_XP_BONUS = 3;
 const AS_USUAL_XP_BONUS = 4;
@@ -37,13 +44,25 @@ export function serveForChallenge(service: Service, customer: Customer): void {
   service.stats.served += 1;
 }
 
+const roundToTenCents = (amount: number): number => Math.round(amount * 10) / 10;
+
+// A tip, raised by the streak and the rush, lowered if the pizza cooled on the pass.
+function tipFor(state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number {
+  const base = rollTip(state, customer);
+  if (!base) return 0;
+  const factor = streakMultiplier(service.stats.streak ?? 0) * warmthTipFactor(pizza.waitingSeconds) * (service.rush ? RUSH_TIP_FACTOR : 1);
+  return Math.max(0.1, roundToTenCents(base * factor));
+}
+
 // Money, tips, the express bonus and the birthday gift for a served order. Returns the extra given on top of the price.
-export function collectPayment(state: GameState, customer: Customer): number {
+export function collectPayment(state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number {
   let extra = 0;
   if (customer.delivery) {
     if (customer.waitedSeconds < DELIVERY_EXPRESS_SECONDS) extra = DELIVERY_EXPRESS_BONUS;
+  } else if (customer.celebrity) {
+    extra = CELEBRITY_TIP;
   } else if (!customer.critic) {
-    extra = rollTip(state, customer);
+    extra = tipFor(state, service, customer, pizza);
   }
   const gift = customer.birthday ? BIRTHDAY_GIFT : 0;
   receivePayment(state, customer.price + extra + gift);
@@ -65,6 +84,7 @@ export function settleTable(state: GameState, service: Service, customer: Custom
   table.allHappy = table.allHappy && moodForWait(customer.waitedSeconds) <= 1;
   if (table.served < table.size) return 0;
   delete service.tables?.[customer.tableId];
+  recordWeekly(state, "tables", 1);
   if (!table.allHappy) return 0;
   const bonus = TABLE_BONUS_PER_PERSON * table.size;
   receivePayment(state, bonus);
@@ -99,6 +119,11 @@ export function reputationFor(state: GameState, customer: Customer, newPairings:
   if (customer.birthday) xp += BIRTHDAY_XP;
   if (customer.drinkOffered) xp += OFFERED_DRINK_XP;
   xp += NEW_PAIRING_XP * newPairings.length;
+  if (customer.celebrity) {
+    xp += CELEBRITY_XP;
+    pushToast(state, { key: "celebrity", params: { name: customer.name } }, "gold");
+    if (!state.celebrityWall.includes(customer.name)) state.celebrityWall = [...state.celebrityWall, customer.name].slice(-CELEBRITY_WALL_SIZE);
+  }
   if (customer.critic) {
     xp += CRITIC_XP[mood];
     pushToast(state, { key: "critic", params: { name: customer.name, stars: CRITIC_STARS[mood] } }, "gold");
@@ -116,7 +141,14 @@ export function recordLifetime(state: GameState, customer: Customer, tip: number
   if (customer.asUsual) lifetime.asUsualServed += 1;
   if (customer.delivery) lifetime.deliveries += 1;
   if (customer.critic && mood <= 1) lifetime.criticsPleased += 1;
-  if (isDessert(customer.ingredients)) lifetime.sweetServed += 1;
+  if (customer.celebrity) lifetime.celebrities += 1;
+  if (isDessert(customer.ingredients)) {
+    lifetime.sweetServed += 1;
+    recordWeekly(state, "desserts", 1);
+  }
+  if (mood === 0) recordWeekly(state, "happy", 1);
+  recordWeekly(state, "served", 1);
+  if (tip) recordWeekly(state, "tips", tip);
   const sales = lifetime.byRecipe[customer.recipeId] ?? { name: customer.recipeName, count: 0 };
   lifetime.byRecipe[customer.recipeId] = { ...sales, count: sales.count + 1 };
 }

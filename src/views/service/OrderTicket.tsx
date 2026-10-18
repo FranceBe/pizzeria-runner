@@ -52,6 +52,7 @@ function Scooter() {
 
 function ticketClassName(customer: Customer, table: TableProgress | undefined): string {
   if (customer.critic) return "ticket critic";
+  if (customer.celebrity) return "ticket celebrity";
   if (customer.delivery) return "ticket delivery";
   if (customer.birthday) return "ticket birthday";
   if (table) return `ticket at-table tb-${table.color}`;
@@ -64,7 +65,7 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
   const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
   const hasExpress = Boolean(customer.delivery) && expressSecondsLeft > 0;
   return (
-    <button className={ticketClassName(customer, table)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : undefined}>
+    <button className={ticketClassName(customer, table)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : customer.celebrity ? t("service.celebrityTitle") : undefined}>
       <span className="price">{t.money(customer.price)}</span>
       <div className="who">
         {customer.delivery ? <Scooter /> : <CustomerFace customer={customer} mood={mood} />}
@@ -85,9 +86,10 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
       </div>
       <div className="pz">{customer.asUsual ? t("service.asUsual") : t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
       {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
-      {(customer.critic || customer.birthday || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
+      {(customer.critic || customer.celebrity || customer.birthday || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
+          {customer.celebrity && <span className="mod celebrity-tag">{`⭐ ${t("service.celebrity")}`}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
           {hasExpress && <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>}
           {customer.extraIngredient && <span className="mod add">{t("service.extra", { id: customer.extraIngredient })}</span>}
