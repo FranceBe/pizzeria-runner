@@ -4,6 +4,7 @@ import { loadState } from "./game/state";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { useServiceShortcuts } from "./hooks/useServiceShortcuts";
 import { useSecretCode } from "./hooks/useSecretCode";
+import { useGameAudio } from "./hooks/useGameAudio";
 import { createTranslator } from "./i18n";
 import { localDate } from "./game/challenge";
 import { I18nProvider } from "./i18n/I18nContext";
@@ -48,6 +49,7 @@ export function App() {
   const [tab, setTab] = useState<TabId>("service");
   useGameLoop(state, dispatch);
   const secretPad = useSecretCode(dispatch);
+  useGameAudio(state);
 
   const { language } = state.settings;
   const t = useMemo(() => createTranslator(language), [language]);

@@ -340,6 +340,7 @@ export interface Cosmetics {
 }
 
 export type Theme = "auto" | "light" | "dark";
+export type SoundChannel = "music" | "effects";
 
 export interface CustomerBookEntry extends Looks {
   visits: number;
@@ -356,6 +357,11 @@ export interface Settings {
   language: Language;
   theme: Theme;
   largeText: boolean;
+  /** 0 to 1. */
+  musicVolume: number;
+  effectsVolume: number;
+  musicMuted: boolean;
+  effectsMuted: boolean;
   tutorialDone: boolean;
 }
 
@@ -485,6 +491,8 @@ export type GameAction =
   | { type: "toggleHelp" }
   | { type: "setTheme"; theme: Theme }
   | { type: "toggleLargeText" }
+  | { type: "setVolume"; channel: SoundChannel; volume: number }
+  | { type: "toggleMute"; channel: SoundChannel }
   | { type: "skipTutorial" }
   | { type: "setLanguage"; language: Language }
   | { type: "dismissToast"; toastId: string }

@@ -58,8 +58,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Built files have a hash in their name: the cache first, the network as a fallback.
+  // Built files have a hash in their name: the cache first, the network as a fallback. Files loaded on demand
+  // (the sounds) are kept as they come, so they work offline too without weighing on the first visit.
   if (url.origin === self.location.origin) {
-    event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok && url.pathname.includes("/assets/")) {
+              const copy = response.clone();
+              void caches.open(CACHE).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          }),
+      ),
+    );
   }
 });

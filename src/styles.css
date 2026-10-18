@@ -931,3 +931,10 @@ button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff;
   .batch-items { font-size: 11.5px; margin-top: 2px; }
   .batch-head strong { font-size: 12.5px; }
 }
+
+/* Sound settings */
+.sound-settings { display: flex; flex-direction: column; gap: 6px; }
+.volume-row { display: flex; align-items: center; gap: 10px; }
+.volume-mute { flex: none; width: 38px; padding: 4px 0; font-size: 16px; }
+.volume-label { flex: none; width: 120px; font-size: 14px; font-weight: 600; }
+.volume-slider { flex: 1; min-width: 0; accent-color: var(--accent); height: 28px; }

@@ -159,6 +159,9 @@ a result to paste to friends.
 
 ### Everything else
 
+- **Music and sound effects**: background music, the oven's sizzle while a pizza bakes, a bell for each new order and a
+  till for each payment. Music and effects each have their own volume and mute button in Settings; the music softens
+  during a pause. Sound starts with the first tap or click, as browsers require.
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
 - The game installs as an app and plays offline.
 - Have you tried every combination of keys (or of swipes)? Nonna has. And she doesn't share her secrets with just anyone: perhaps
@@ -233,6 +236,9 @@ src/
   weekly missions, calendar festivals
 - `game/simulation.test.ts`: a robot plays many full days with everything on, to catch what only shows when it all mixes
 - `data/customers.ts` + `game/looks.ts`: names, hair, hairstyles and accessories
+- `assets/sounds/`: the music and sound effects; `audio/engine.ts` plays them (Web Audio, seamless loops, live fades),
+  `audio/cues.ts` decides what plays when. The music comes as Ogg and as AAC (`music.m4a`, for older iPhones); after
+  replacing `music.ogg`, rebuild the AAC copy with `afconvert music.ogg -o music.m4a -f m4af -d aac -b 128000` (macOS)
 - `data/achievements.ts` + `game/achievements.ts`: achievements and their progress
 - `game/pairings.ts`: pairing discovery
 

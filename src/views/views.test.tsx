@@ -410,6 +410,13 @@ describe("views", () => {
     expect(render(<UpgradesView state={makeState()} dispatch={noop} />, "en")).toContain("⭐ 15 stars");
   });
 
+  it("offers music and sound effects volumes in the settings", () => {
+    const html = render(<SettingsView state={play(makeState(), { type: "toggleMute", channel: "effects" })} dispatch={noop} />, "en");
+    expect(html).toContain("Music");
+    expect(html).toMatch(/aria-label="Unmute: Sound effects"/);
+    expect(html).toMatch(/id="volume-music"[^>]*value="35"|value="35"[^>]*id="volume-music"/);
+  });
+
   it("sells looks for the pizzeria", () => {
     const html = render(<UpgradesView state={makeState({ money: 130 })} dispatch={noop} />, "en");
     expect(html).toContain("Make it yours");

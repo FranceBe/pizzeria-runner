@@ -17,6 +17,23 @@ export const settingsActions = {
     state.settings.theme = theme;
   },
 
+  // Volumes from 0 to 1. Moving a slider also unmutes.
+  setVolume(state, { channel, volume }) {
+    const level = Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 0));
+    if (channel === "music") {
+      state.settings.musicVolume = level;
+      state.settings.musicMuted = false;
+    } else {
+      state.settings.effectsVolume = level;
+      state.settings.effectsMuted = false;
+    }
+  },
+
+  toggleMute(state, { channel }) {
+    if (channel === "music") state.settings.musicMuted = !state.settings.musicMuted;
+    else state.settings.effectsMuted = !state.settings.effectsMuted;
+  },
+
   toggleLargeText(state) {
     state.settings.largeText = !state.settings.largeText;
   },

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toSaveData } from "../game/state";
 import { LANGUAGES, LANGUAGE_NAMES, type Language } from "../i18n";
 import { useTranslation } from "../i18n/I18nContext";
-import type { Dispatch, Theme } from "../game/types";
+import type { Dispatch, SoundChannel, Theme } from "../game/types";
 import { encodeSaveCode, decodeSaveCode } from "../utils/saveCode";
 import type { ScreenProps } from "./types";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
@@ -44,6 +44,50 @@ function InstallButton() {
   );
 }
 
+// One sound channel: a mute button and a volume slider (moving the slider also unmutes).
+function VolumeControl({ channel, volume, isMuted, dispatch }: { channel: SoundChannel; volume: number; isMuted: boolean; dispatch: Dispatch }) {
+  const t = useTranslation();
+  const name = t(`settings.${channel}`);
+  const isSilent = isMuted || volume === 0;
+  return (
+    <div className="volume-row">
+      <button
+        className="btn sm volume-mute"
+        aria-pressed={isSilent}
+        aria-label={isSilent ? t("settings.unmute", { channel: name }) : t("settings.mute", { channel: name })}
+        onClick={() => (isMuted || volume > 0 ? dispatch({ type: "toggleMute", channel }) : dispatch({ type: "setVolume", channel, volume: 0.5 }))}
+      >
+        {isSilent ? "🔇" : "🔊"}
+      </button>
+      <label className="volume-label" htmlFor={`volume-${channel}`}>{name}</label>
+      <input
+        id={`volume-${channel}`}
+        className="volume-slider"
+        type="range"
+        min={0}
+        max={100}
+        step={5}
+        value={Math.round((isMuted ? 0 : volume) * 100)}
+        aria-label={t("settings.volume", { channel: name })}
+        onChange={(event) => dispatch({ type: "setVolume", channel, volume: Number(event.target.value) / 100 })}
+      />
+    </div>
+  );
+}
+
+function SoundSettings({ state, dispatch }: ScreenProps) {
+  const t = useTranslation();
+  const { musicVolume, musicMuted, effectsVolume, effectsMuted } = state.settings;
+  return (
+    <div className="sound-settings">
+      <span className="binlabel" style={{ margin: 0 }}>{t("settings.sound")}</span>
+      <VolumeControl channel="music" volume={musicVolume} isMuted={musicMuted} dispatch={dispatch} />
+      <VolumeControl channel="effects" volume={effectsVolume} isMuted={effectsMuted} dispatch={dispatch} />
+      <p className="hint" style={{ margin: 0 }}>{t("settings.soundHint")}</p>
+    </div>
+  );
+}
+
 function PizzeriaSettings({ state, dispatch }: ScreenProps) {
   const t = useTranslation();
   return (
@@ -75,6 +119,7 @@ function PizzeriaSettings({ state, dispatch }: ScreenProps) {
           </button>
         ))}
       </div>
+      <SoundSettings state={state} dispatch={dispatch} />
       <label className="switch">
         <input id="large-text" type="checkbox" checked={state.settings.largeText} onChange={() => dispatch({ type: "toggleLargeText" })} />
         {t("settings.largeText")}
