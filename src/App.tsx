@@ -103,7 +103,8 @@ export function App() {
       <main className="wrap">
         {/* The service screen has its own ticker inside its grid; elsewhere it floats over the page, so nothing jumps. */}
         {!isServing && (
-          <div className="toast-float">
+          // Over a dialog (the day's receipt, the challenge score), messages go to the top, clear of its buttons.
+          <div className={`toast-float${(state.phase === "summary" && state.summary) || state.challengeResult ? " on-top" : ""}`}>
             <MessageTicker toasts={state.toasts} dispatch={dispatch} />
           </div>
         )}

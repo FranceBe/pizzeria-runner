@@ -112,7 +112,6 @@ export const fr = {
       if (extra) parts.push(`${extra} en trop`);
       return `Pour ${name} : ${parts.join(" · ")}`;
     },
-    commisAssemble: "Commis : monter la {recipe}",
     bake: "Enfourner",
     ovenFull: "Four plein",
     ovenAndPass: "Four et passe",
@@ -130,6 +129,8 @@ export const fr = {
     visit: ({ number }: { number: number }) => `${number}ᵉ visite`,
     regular: "Habitué",
     shortcuts: "Clavier : 0 pâte · 1-9 ingrédients du ticket · Espace enfourner · Entrée servir · ← → changer de ticket",
+    shortcutSecret: "S secret de Nonna",
+    shortcutMamma: "M secret de Mamma",
     asUsual: "« Comme d'habitude ! »",
     asUsualCheck: "Pour {name} : comme d'habitude, tu te souviens ?",
     revealUsual: "Rappelle-moi…",
@@ -143,7 +144,11 @@ export const fr = {
     tableHead: "Table de {size} · chacun sa commande",
     birthday: "Anniversaire !",
     bar: "Bar",
-    drinkTitle: ({ drink }: { drink: string }) => `Servir : ${drink}`,
+    pourTitle: ({ drink, cost }: { drink: string; cost: number }, t: H) => `Verser : ${drink} (le verre coûte ${t.money(cost)})`,
+    tray: "Plateau",
+    trayTitle: ({ drink }: { drink: string }) => `${drink} sur le plateau : touchez pour le servir`,
+    binTray: "Vider le plateau",
+    offerShort: "Offrir",
     ovenNumber: "Four {number}",
     pause: "Pause",
     paused: "Pause",
@@ -163,9 +168,7 @@ export const fr = {
     batch: "Commande groupée",
     theBatch: "la commande groupée",
     pizzaDone: "Pizza servie ✓",
-    waitingDrink: "attend sa boisson : touchez pour servir",
-    serveDrink: ({ drink, price }: { drink: string; price: number }, t: H) => `Servir ${drink} · ${t.money(price)}`,
-    offer: "🎁 Offrir",
+    waitingDrink: "attend sa boisson",
     trashUnwantedShort: "🗑 Tout jeter ({count})",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }: { medal: string; clock: string }) => `${medal} encore ${clock}`,
@@ -178,8 +181,12 @@ export const fr = {
     warm: "tiède",
     cold: "froide",
     stillComing: "En route",
-    secret: "Secret de Nonna",
     secretTitle: "Une pincée du secret de Nonna. Ça ne change rien à la recette…",
+    secretPan: "Nonna",
+    mammaPan: "Mamma",
+    mammaTitle: "Une cuillère du secret de Mamma : ce client parlera de toi au suivant.",
+    charmed: "Charmé·e",
+    charmedTitle: "On lui a dit le plus grand bien de ta pizzeria : patience au maximum, et un pourboire assuré.",
   },
 
   market: {
@@ -201,6 +208,10 @@ export const fr = {
     secretBonus: "Ajouté sur une pizza, il ne change rien à la recette et le client ne voit pas la différence. Mais environ une fois sur trois, il laisse un pourboire égal au prix de la pizza.",
     secretStock: "{count} en réserve",
     craft: ({ cost }: { cost: number }, t: H) => `Fabriquer · ${t.money(cost)}`,
+    secretJar: ({ portions }: { portions: number }) => `Un pot = ${portions} pizzas.`,
+    mammaTitle: "Le secret de Mamma",
+    mammaIntro: "Une cuillère par pizza. Celui qui la mange parle de toi au client suivant.",
+    mammaBonus: "Le client qui mange cette pizza parle de toi au suivant : celui-là retrouve toute sa patience et laisse un pourboire à coup sûr (du montant habituel). Sans effet sur un critique, une livraison ou une célébrité.",
   },
 
   menu: {
@@ -298,7 +309,12 @@ export const fr = {
     commis: {
       name: "Commis",
       describe: ({ level }: { level: number }) =>
-        ["Tu es seule en cuisine", "Étale la pâte tout seul après chaque enfournage", "Monte la pizza du ticket choisi en un clic"][level],
+        [
+          "Tu es seule en cuisine",
+          "Étale la pâte tout seul après chaque enfournage",
+          "Pousse un peu les bacs dont le ticket choisi n'a pas besoin",
+          "Pousse encore plus loin les bacs inutiles",
+        ][level],
     },
     terrasse: {
       name: "Terrasse",
@@ -442,6 +458,7 @@ export const fr = {
     nextPage: "Page suivante",
     secretAchievement: "Succès secret",
     secretHint: "Certains secrets ne se méritent pas, ils se tapent.",
+    mammaHint: "Mamma aime les comptes qui tombent juste, jour après jour.",
     achievements: "Succès",
     achievementsIntro: "{count} / {total} débloqués",
     unlockedOn: "Jour {day}",
@@ -545,6 +562,7 @@ export const fr = {
     batchGold: { name: "Livraison éclair", describe: "Décrocher l'or sur une commande groupée" },
     celebrity: { name: "Photo dédicacée", describe: "Servir une célébrité" },
     secretCode: { name: "↑↑↓↓←→←→BA", describe: "Tu connais le code." },
+    mammaSecret: { name: "La fierté de Mamma", describe: "Gagner la confiance de Mamma." },
   } satisfies Record<AchievementId, { name: string; describe: string }>,
 
   tutorial: {
@@ -570,8 +588,6 @@ export const fr = {
     outOfStock: ({ ingredientId }: { ingredientId: IngredientId }, t: H) =>
       `Plus de ${lower(t.ingredient(ingredientId))} en stock : passe au marché.`,
     ovenFull: "Le four est plein.",
-    missingIngredients: ({ ingredientIds }: { ingredientIds: readonly IngredientId[] }, t: H) =>
-      `Il manque : ${t.ingredientList(ingredientIds)}.`,
     nobodyOrdered: "Personne n'a commandé cette pizza. Garde-la au chaud ou jette-la.",
     levelUp: ({ level, ingredientIds }: { level: number; ingredientIds: readonly IngredientId[] }, t: H) =>
       `Niveau ${level} ! ${
@@ -612,6 +628,7 @@ export const fr = {
     batchUnfinished: ({ giver, reward }: { giver: QuestGiver; reward: number }, t: H) =>
       `${t.questGiver(giver)} n'a pas tout reçu à temps et paie ${t.money(reward)} pour ce qui est arrivé.`,
     celebrity: "{name} a adoré ! Sa photo dédicacée est sur la façade.",
+    trayFull: "Le plateau est plein : servez ou videz-le.",
     nobodyWantsDrink: ({ drinkId }: { drinkId: DrinkId }, t: H) => `Personne n'attend de ${lower(t.drink(drinkId))}.`,
     questDone: ({ giver, reward }: { giver: QuestGiver; reward: number }, t: H) =>
       `Quête réussie ! ${t.questGiver(giver)} te remercie : ${t.money(reward)}.`,
@@ -620,6 +637,8 @@ export const fr = {
     nonnaLoan: ({ amount }: { amount: number }, t: H) => `Nonna te prête ${t.money(amount)}. « Tu me rendras ça quand tu pourras. »`,
     drinkOffered: "{name} est touché·e par l'attention.",
     secretTip: "{name} a adoré, sans savoir pourquoi. Pourboire royal !",
+    secretFromMamma: ({ days }: { days: number }) =>
+      `${days} jours de bénéfice d'affilée : Mamma est fière de toi et te confie son propre secret. À fabriquer au marché.`,
     secretFromNonna: "Nonna a goûté ses recettes chez toi. Émue, elle te confie son ingrédient secret : tu peux le fabriquer au marché.",
     secretFromCode: "Nonna te fait un clin d'œil : son ingrédient secret est à toi. Tu peux le fabriquer au marché.",
     secretCodeAgain: "Nonna sourit. Tu connais déjà le secret.",

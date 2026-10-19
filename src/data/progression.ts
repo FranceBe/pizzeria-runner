@@ -27,7 +27,7 @@ export const UPGRADES: Record<UpgradeKey, Upgrade> = {
   oven: { costs: [70, 180, 400], requiredLevel: [2, 4, 6], dailyCharge: 2 },
   salle: { costs: [50, 130, 280, 550], requiredLevel: [1, 3, 5, 7], dailyCharge: 3 },
   deco: { costs: [40, 120, 300], requiredLevel: [2, 4, 6], dailyCharge: 2 },
-  commis: { costs: [150, 400], requiredLevel: [3, 6], dailyCharge: 5 },
+  commis: { costs: [150, 350, 600], requiredLevel: [3, 6, 8], dailyCharge: 4 },
   terrasse: { costs: [120, 320], requiredLevel: [4, 7], dailyCharge: 3 },
   livraison: { costs: [220], requiredLevel: [5], dailyCharge: 4 },
   bar: { costs: [90, 240, 350], requiredLevel: [3, 5, 7], dailyCharge: 2 },
@@ -46,6 +46,12 @@ export const ANNEXE_INCOME: readonly number[] = [0, 30, 70, 140];
 
 // Nonna's secret isn't bought: it is made, one jar at a time, at the market.
 export const SECRET_CRAFT_COST = 10;
+export const SECRET_JAR_PORTIONS = 4;
+// Mamma's secret: shared after this many profitable days in a row, from this level; made at the market too.
+export const MAMMA_LEVEL = 6;
+export const MAMMA_PROFIT_DAYS = 5;
+export const MAMMA_CRAFT_COST = 8;
+export const MAMMA_JAR_PORTIONS = 3;
 
 // Terrace: extra customers per level every day, and more on sunny days.
 export const TERRACE_CUSTOMERS = 1;
@@ -61,7 +67,8 @@ export const DELIVERY_EXPRESS_BONUS = 1.5;
 
 // Commis levels that unlock each helper behaviour.
 export const COMMIS_SPREADS_DOUGH = 1;
-export const COMMIS_ASSEMBLES_ORDER = 2;
+// From level 2, the pans the selected order doesn't need fade a little, then more at level 3.
+export const COMMIS_FADES_PANS = 2;
 
 // Bar level that hires a barman: drinks go out on their own, one at a time, this many seconds each.
 export const BARMAN_LEVEL = 3;

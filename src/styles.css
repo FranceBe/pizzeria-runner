@@ -263,6 +263,10 @@ html:not(.svc-mode) main { padding-bottom: 76px; }
   width: min(560px, calc(100% - 32px)); z-index: 60; pointer-events: none; }
 .toast-float .ticker { pointer-events: auto; min-height: 44px; box-shadow: 0 10px 28px -8px rgba(20,40,30,.45); animation: rise .25s ease-out; }
 .toast-float .ticker.msg { background: var(--surface); }
+.toast-float.on-top { top: max(12px, env(safe-area-inset-top, 0px)); bottom: auto; }
+/* An open dialog keeps the page under it still */
+html.modal-open, html.modal-open body, html.modal-open main.wrap { overflow: hidden; }
+.overlay { overscroll-behavior: contain; }
 @keyframes rise { from { transform: translateY(10px); opacity: 0; } }
 @keyframes slide-in { from { transform: translateY(-4px); opacity: 0; } }
 
@@ -632,7 +636,9 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
 /* Larger text, for comfort (Settings) */
 html.large-text:not(.svc-mode) #root { zoom: 1.12; }
 /* During service the screen fits the window, so only what is read gets bigger */
-html.large-text.svc-mode :is(.ticket, .ticker, .passe, .match, .pan-n, .drink-btn) { zoom: 1.1; }
+/* Inside the tickets, not on them: Safari sizes zoomed flex items wrongly, and a row of tickets would overlap */
+html.large-text.svc-mode :is(.ticker, .passe, .match, .pan-n) { zoom: 1.1; }
+html.large-text.svc-mode .ticket > * { zoom: 1.1; }
 
 /* The evening sky: it darkens behind the sign as the service goes on */
 header.top.evening::before { content: ""; position: absolute; inset: 0; pointer-events: none; transition: opacity 1.5s ease;
@@ -664,19 +670,13 @@ header.top .top-inner { position: relative; }
 /* Tickets: diets, tables, birthdays, drinks */
 .mod.diet { background: #e5f4dc; color: #3d7a2a; }
 .mod.birthday-tag { background: #fde7ef; color: #a32c58; }
+.mod.charmed-tag { background: #fff1c9; color: #8a5d00; }
 .ticket.at-table { border-left: 5px solid var(--tb); }
 .tb-0 { --tb: #2f6db5; } .tb-1 { --tb: #8a3c99; } .tb-2 { --tb: #1f8a7a; } .tb-3 { --tb: #c0671b; }
 .ticket.birthday { background: linear-gradient(180deg, #fde7ef, var(--surface) 55%); border-color: #e0708f; }
 .drink-order { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 2px 8px 2px 4px; border-radius: 99px;
   font-size: 12px; font-weight: 700; background: #e8f3fa; color: #24516e; border: 1px dashed #7fb2d1; }
 .drink-order.served { border-style: solid; background: var(--basil-soft); color: var(--basil); border-color: var(--basil); }
-.bar-rack { margin-top: 12px; }
-.drinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.drink-btn { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
-  font-size: 12.5px; font-weight: 700; text-align: left; min-width: 0; }
-.drink-btn.wanted { border-color: #7fb2d1; box-shadow: 0 0 0 2px #cfe5f2; }
-.drink-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.drink-btn svg { flex: none; }
 .oven-group + .oven-group { margin-top: 8px; }
 .oven-label { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #d8b89a; margin: 0 0 4px 4px; }
 .pop.table { background: #e2ebf5; color: #2f6db5; }
@@ -705,11 +705,6 @@ header.top .top-inner { position: relative; }
   .oven.multi .slot svg { width: 24px; height: 24px; }
   .oven-label { font-size: 9px; margin-bottom: 2px; }
   .oven-group + .oven-group { margin-top: 4px; }
-  .bar-rack { margin-top: 6px; }
-  .bar-rack h3.h { display: none; }
-  .drinks { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .drink-btn { justify-content: center; padding: 5px 2px; }
-  .drink-btn span { display: none; }
 }
 /* Tickets are buttons, which centre their content (see .ticket): these keep their natural width */
 .ticket > :is(.mods, .chips, .drink-order) { align-self: flex-start; }
@@ -737,7 +732,6 @@ header.top .top-inner { position: relative; }
 .secret-pan svg { box-shadow: 0 0 0 2px rgba(224, 160, 32, .6), 0 2px 6px rgba(0,0,0,.25); }
 .secret-pan.on svg { outline: 3px solid var(--gold); outline-offset: 1px; }
 .secret-sparkle { position: absolute; top: 6px; right: calc(50% - 110px); font-size: 26px; animation: twinkle 1.2s ease-in-out infinite alternate; pointer-events: none; }
-.offer-btn { margin-top: 6px; width: 100%; justify-content: center; background: var(--gold-soft); border-color: var(--gold); }
 .hidden-badge .medal { background: repeating-linear-gradient(45deg, var(--line) 0 4px, var(--surface2) 4px 8px); color: var(--muted); }
 
 /* Shown instead of the game if it ever fails to render (components/ErrorBoundary.tsx) */
@@ -845,8 +839,6 @@ header.top .top-inner { position: relative; }
   .a-rail .pan.need svg { outline: 2px dashed var(--gold); outline-offset: -3px; }
 
   /* Bar: names under the glasses, since there is no hover on a phone */
-  .drink-btn { flex-direction: column; gap: 1px; padding: 4px 2px; }
-  .drink-btn span { display: block; font-size: 9.5px; line-height: 1.1; max-width: 100%; }
 }
 button.secret-info { border: 1px solid var(--gold); background: var(--surface); font-size: 14px; padding: 0; width: 28px; height: 28px; }
 button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff; }
@@ -946,20 +938,14 @@ button, .pan { touch-action: manipulation; }
 .label-short { display: none; }
 
 /* Drinks: right under the board, for the selected customer */
-.drink-actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-.drink-serve { display: inline-flex; align-items: center; gap: 6px; border-color: #7fb2d1; background: #e8f3fa; color: #24516e; font-weight: 700; }
-.drink-offer { background: var(--gold-soft); border-color: var(--gold); font-weight: 700; }
 .ticket.served-pizza { opacity: .85; border-style: dashed; background: var(--surface2); }
 .ticket .waiting-drink { font-weight: 700; color: #24516e; }
 
 @media (max-width: 700px) {
   .label-full { display: none; }
   .label-short { display: inline; }
-  .drink-actions { gap: 4px; }
-  .drink-actions .btn { padding: 5px 8px; font-size: 13px; }
   .ticket .waiting-drink { display: block; font-size: 11.5px; }
   /* The drink buttons under the board replace the bar rack on a phone */
-  .bar-rack { display: none; }
   /* The oven's flames, smaller */
   .oven-fire { display: block; width: 48px; height: 17px; margin: -4px auto 4px; }
   .passe .bin-all { width: auto; align-self: stretch; }
@@ -990,27 +976,46 @@ button, .pan { touch-action: manipulation; }
   .volume-label { width: 92px; font-size: 13px; }
 }
 
-/* Drinks on a phone: a waiting ticket is the serve button (tap it), and the selected order's drink sits in the
-   board's corner so the fixed-height board never hides it. */
-.ticket.served-pizza { cursor: pointer; }
-@media (max-width: 700px) {
-  .ticket.served-pizza { opacity: 1; border: 2px solid #7fb2d1; background: #e8f3fa; }
-  .ticket.served-pizza .drink-order .drink-name { display: inline; }
-  .ticket.served-pizza .waiting-drink { color: #24516e; }
-  .a-peel { position: relative; }
-  .drink-actions { position: absolute; top: 6px; left: 6px; z-index: 2; flex-direction: column; align-items: stretch; }
-  .drink-actions .btn { padding: 3px 6px; font-size: 12px; justify-content: center; }
-  .drink-serve { flex-direction: column; gap: 0; }
-  .drink-serve svg { width: 22px; height: 22px; }
-}
-@media (max-width: 700px) and (prefers-color-scheme: dark) {
+/* Someone with their pizza, waiting only for a drink: a blue ticket */
+.ticket.served-pizza { border: 2px solid #7fb2d1; background: #e8f3fa; }
+.ticket.served-pizza .waiting-drink { color: #24516e; }
+@media (max-width: 700px) { .ticket.served-pizza .drink-order .drink-name { display: inline; } }
+@media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .ticket.served-pizza { background: #1d3442; border-color: #4f86a8; }
   :root:not([data-theme="light"]) .ticket.served-pizza .waiting-drink { color: #bfe0f3; }
 }
+:root[data-theme="dark"] .ticket.served-pizza { background: #1d3442; border-color: #4f86a8; }
+:root[data-theme="dark"] .ticket.served-pizza .waiting-drink { color: #bfe0f3; }
+
+/* The bar in the board's corners: the fridge on the left (pour), the tray on the right (serve or clear) */
+.a-peel { position: relative; }
+.bar-fridge, .bar-tray { position: absolute; top: 10px; z-index: 2; display: flex; flex-direction: column; gap: 5px; }
+.bar-fridge { left: 10px; }
+.bar-tray { right: 10px; padding: 4px; border-radius: 12px; background: rgba(255, 246, 232, .3); }
+.glass-btn { display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 5px; border-radius: 10px; border: 1px solid rgba(0,0,0,.12);
+  background: var(--surface); color: var(--ink); font-size: 12.5px; font-weight: 700; box-shadow: 0 2px 4px rgba(60,30,10,.2); }
+.glass-btn svg { width: 22px; height: 22px; flex: none; }
+.glass-btn:active { transform: scale(.94); }
+.glass-btn.offer { background: var(--gold-soft); border-color: var(--gold); }
+.glass-btn.on-tray, .glass-btn.tray-bin { padding: 4px; justify-content: center; }
+.glass-btn.tray-bin { font-size: 15px; background: var(--surface2); }
 @media (max-width: 700px) {
-  :root[data-theme="dark"] .ticket.served-pizza { background: #1d3442; border-color: #4f86a8; }
-  :root[data-theme="dark"] .ticket.served-pizza .waiting-drink { color: #bfe0f3; }
+  .bar-fridge, .bar-tray { top: 6px; gap: 3px; }
+  .bar-fridge { left: 5px; }
+  .bar-tray { right: 5px; padding: 2px; }
+  .glass-btn { padding: 2px; width: 28px; height: 28px; justify-content: center; border-radius: 8px; }
+  .glass-btn svg { width: 20px; height: 20px; }
+  .glass-btn .glass-n { display: none; }
+  .glass-btn.tray-bin { font-size: 13px; }
+
+  /* The board's buttons stay small: the pizza is what matters there */
+  .peel-btns .btn { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }
 }
+
+/* The commis pushes back the pans the order being built doesn't need: a little, then more */
+.rail .pan { transition: transform .1s, opacity .2s; }
+.rail.fade-1 .pan.pushed-back { opacity: .6; }
+.rail.fade-2 .pan.pushed-back { opacity: .35; }
 
 /* The barman's glass fills on the ticket while he pours */
 .drink-order.pouring { border-style: solid; background: linear-gradient(90deg, #bfe0f3 var(--pour), #e8f3fa var(--pour)); }

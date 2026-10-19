@@ -1,5 +1,6 @@
 // What happens when an order is served: payment, tips and bonuses, reputation, and what the game remembers.
-import { DELIVERY_EXPRESS_BONUS, DELIVERY_EXPRESS_SECONDS } from "../data/progression";
+import { DELIVERY_EXPRESS_BONUS, DELIVERY_EXPRESS_SECONDS, MAMMA_LEVEL, MAMMA_PROFIT_DAYS } from "../data/progression";
+import { levelForXp } from "./progression";
 import type { Pairing } from "../data/recipes";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
 import { receivePayment } from "./economy";
@@ -101,6 +102,15 @@ export function secretBonus(state: GameState, customer: Customer, hasSecret: boo
   pushPop(state, customer.price, "secret");
   pushToast(state, { key: "secretTip", params: { name: customer.name } }, "gold");
   return customer.price;
+}
+
+// After enough profitable days in a row, Mamma shares her own secret. Mutates state.
+export function maybeShareMammasSecret(state: GameState): void {
+  if (state.mammaSecret || levelForXp(state.xp) < MAMMA_LEVEL) return;
+  const lastDays = state.history.slice(-MAMMA_PROFIT_DAYS);
+  if (lastDays.length < MAMMA_PROFIT_DAYS || lastDays.some((day) => day.net <= 0)) return;
+  state.mammaSecret = true;
+  pushToast(state, { key: "secretFromMamma", params: { days: MAMMA_PROFIT_DAYS } }, "gold");
 }
 
 export function maybeShareNonnasSecret(state: GameState): void {

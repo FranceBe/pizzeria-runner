@@ -56,6 +56,7 @@ const PROGRESS: Record<AchievementId, (state: GameState) => Progress> = {
   celebrity: (state) => ({ current: state.lifetime.celebrities, target: 1 }),
   // Only the code unlocks this one: finishing everything else leaves the journal one short.
   secretCode: (state) => ({ current: state.secretCodeFound ? 1 : 0, target: 1 }),
+  mammaSecret: (state) => ({ current: state.mammaSecret ? 1 : 0, target: 1 }),
 };
 
 export function achievementProgress(state: GameState, id: AchievementId): Progress {

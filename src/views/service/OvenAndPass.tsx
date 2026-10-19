@@ -1,10 +1,6 @@
 import { findRecipeByIngredients } from "../../game/menu";
-import { DRINKS, DRINK_IDS } from "../../data/drinks";
-import { isRegularCustomer } from "../../game/customers";
-import { selectedCustomer } from "../../game/service";
 import { destinationOf, ovensOf } from "../../game/service";
 import { warmthOf } from "../../game/streak";
-import { DrinkGlass } from "../../components/DrinkGlass";
 import { useTranslation } from "../../i18n/I18nContext";
 import { Pizza } from "../../components/Pizza";
 import type { CoachTarget, GameState, Service } from "../../game/types";
@@ -51,42 +47,6 @@ function Ovens({ state, service }: { state: GameState; service: Service }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-// The bar fridge: one button per drink on offer. Tapping one serves it to whoever ordered it.
-function Bar({ state, service, dispatch }: ServiceScreenProps) {
-  const t = useTranslation();
-  const drinks = DRINK_IDS.filter((id) => DRINKS[id].barLevel <= state.upgrades.bar);
-  if (!drinks.length || service.challenge) return null;
-  const selected = selectedCustomer(service);
-  const canOffer = selected?.drink && !selected.drinkServed && isRegularCustomer(state, selected);
-  return (
-    <div className="bar-rack">
-      <h3 className="h">{t("service.bar")}</h3>
-      <div className="drinks">
-        {drinks.map((id) => {
-          const isWanted = service.customers.some((customer) => customer.drink === id && !customer.drinkServed);
-          return (
-            <button
-              key={id}
-              className={`drink-btn${isWanted ? " wanted" : ""}`}
-              title={t("service.drinkTitle", { drink: t.drink(id) })}
-              onClick={() => dispatch({ type: "serveDrink", drinkId: id })}
-            >
-              <DrinkGlass id={id} />
-              <span>{t.drink(id)}</span>
-            </button>
-          );
-        })}
-      </div>
-      {canOffer && selected.drink && (
-        <button className="btn sm offer-btn" onClick={() => dispatch({ type: "offerDrink" })}>
-          {t("service.offerDrink", { drink: t.drink(selected.drink).toLowerCase(), name: selected.name })}
-          <kbd className="kbd">O</kbd>
-        </button>
-      )}
     </div>
   );
 }
@@ -156,7 +116,6 @@ export function OvenAndPass({ state, service, dispatch, coachTarget }: WithCoach
     <section className="a-oven" aria-label={t("service.ovenAndPass")}>
       <Ovens state={state} service={service} />
       <Pass state={state} service={service} dispatch={dispatch} coachTarget={coachTarget} />
-      <Bar state={state} service={service} dispatch={dispatch} />
     </section>
   );
 }

@@ -1,11 +1,12 @@
-import { DRINKS } from "../../data/drinks";
+import { DRINKS, TRAY_SIZE, type DrinkId } from "../../data/drinks";
+import { canAfford } from "../../utils/math";
 import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
 import { ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE } from "../../data/progression";
 import { randomBetween, randomIndex, makeId } from "../../utils/random";
 import { createChallenge, createChallengeCustomer, nextChallengeArrival } from "../challenge";
 import { createCustomer, isRegularCustomer, moodForWait, type CustomerKind } from "../customers";
 import { birthdaysToday, recordVisit } from "../regulars";
-import { dailyCharges, forecastCustomers, payCharges, receivePayment } from "../economy";
+import { dailyCharges, forecastCustomers, payCharges, receivePayment, spend } from "../economy";
 import { pickLateIngredient, rollDayEvent } from "../events";
 import { advanceEvening, deliverToBatch, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR, settleUnfinishedBatch } from "../evening";
 import { syncFestival } from "../calendar";
@@ -21,7 +22,7 @@ import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
 import {
-  collectPayment, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable,
+  collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable,
 } from "../serving";
 import { pushToast, pushPop } from "../toasts";
 import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, Service } from "../types";
@@ -84,9 +85,10 @@ function endDay(state: GameState, service: Service): void {
   settleUnfinishedBatch(state, service);
   const unservedPizzas = [...service.ready, ...service.oven];
   const waste = service.stats.waste + unservedPizzas.reduce((total, pizza) => total + ingredientCost(pizza.ingredients), 0);
-  // Whatever is still on the board goes back in the fridge, and the secret back on its shelf.
+  // Whatever is still on the board goes back in the fridge, and the secrets back on their shelf.
   service.board.forEach((id) => addToStock(state, id));
   if (service.secretOnBoard) state.secretStock += 1;
+  if (service.mammaOnBoard) state.mammaStock += 1;
 
   const annexeIncome = ANNEXE_INCOME[state.upgrades.annexe] ?? 0;
   if (annexeIncome) receivePayment(state, annexeIncome);
@@ -131,6 +133,7 @@ function endDay(state: GameState, service: Service): void {
     ...state.history,
     { day: state.day, served: stats.served, revenue: stats.revenue, tips: stats.tips, net, xp: stats.xp, event: state.event, stars },
   ].slice(-MAX_HISTORY_DAYS);
+  maybeShareMammasSecret(state);
   const { lifetime } = state;
   if (stats.served >= WASTE_FREE_MIN_SERVED && waste === 0) lifetime.wasteFreeDays += 1;
   if (!lifetime.bestDay || net > lifetime.bestDay.net) lifetime.bestDay = { day: state.day, net };
@@ -157,13 +160,15 @@ const isDayOver = (service: Service): boolean => service.customersToCome === 0 &
 
 // After a pizza goes out, the next order to work on: the first customer still waiting for a pizza.
 // The drink goes out and is paid; then the customer may leave (and that may end the day). Mutates state.
-function sellDrink(state: GameState, service: Service, customer: Customer): void {
+// pourCost: the glass, when it is paid along with the sale (the barman's), after the money comes in.
+function sellDrink(state: GameState, service: Service, customer: Customer, pourCost = 0): void {
   if (!customer.drink) return;
   // Served by hand while the barman was pouring it: he starts over on the next one.
   if (barmanTarget(state, service) === customer) service.barmanSeconds = 0;
   customer.drinkServed = true;
   const { price } = DRINKS[customer.drink];
   receivePayment(state, price);
+  if (pourCost) spend(state, pourCost);
   pushPop(state, price, "drink");
   service.stats.revenue += price;
   service.stats.drinks = (service.stats.drinks ?? 0) + price;
@@ -173,7 +178,14 @@ function sellDrink(state: GameState, service: Service, customer: Customer): void
   leaveIfDone(state, service, customer);
 }
 
-// The barman pours one drink at a time, for the first customer still waiting for one. Mutates state.
+// Who a glass of this drink goes to: the selected customer first, then the first one waiting for it.
+function thirstyFor(service: Service, drinkId: DrinkId): Customer | undefined {
+  const wantsIt = (customer: Customer) => customer.drink === drinkId && !customer.drinkServed;
+  return service.customers.find((c) => c.id === service.selectedCustomerId && wantsIt(c)) ?? service.customers.find(wantsIt);
+}
+
+// The barman pours one drink at a time, for the first customer still waiting for one; he never gets it wrong.
+// Mutates state.
 function pourWithBarman(state: GameState, service: Service, seconds: number): void {
   const customer = barmanTarget(state, service);
   if (!customer) {
@@ -183,7 +195,43 @@ function pourWithBarman(state: GameState, service: Service, seconds: number): vo
   service.barmanSeconds = (service.barmanSeconds ?? 0) + seconds;
   if (service.barmanSeconds < BARMAN_SECONDS) return;
   service.barmanSeconds = 0;
-  sellDrink(state, service, customer);
+  if (customer.drink) sellDrink(state, service, customer, DRINKS[customer.drink].cost);
+}
+
+// Both secrets go back on their shelf (the dough came off the board). Mutates state.
+function putSecretsBack(state: GameState, service: Service): void {
+  if (service.secretOnBoard) state.secretStock += 1;
+  if (service.mammaOnBoard) state.mammaStock += 1;
+  service.secretOnBoard = false;
+  service.mammaOnBoard = false;
+}
+
+// Mamma's secret: whoever ate it tells the next customer about the place. That one, if they tip at all (not a critic,
+// a delivery or a celebrity), gets their patience back and will tip for sure. Nobody waiting: the next one to come in.
+const canBeCharmed = (customer: Customer): boolean =>
+  !customer.charmed && !customer.pizzaServed && !customer.critic && !customer.delivery && !customer.celebrity;
+
+function charmNextCustomer(service: Service, eater: Customer): void {
+  const next = service.customers.find((customer) => customer.id !== eater.id && canBeCharmed(customer));
+  if (!next) {
+    service.charmsPending = (service.charmsPending ?? 0) + 1;
+    return;
+  }
+  charm(next);
+}
+
+function charm(customer: Customer): void {
+  customer.charmed = true;
+  customer.waitedSeconds = 0;
+}
+
+function charmWaitingCustomers(service: Service): void {
+  while (service.charmsPending) {
+    const next = service.customers.find(canBeCharmed);
+    if (!next) return;
+    charm(next);
+    service.charmsPending -= 1;
+  }
 }
 
 function selectNextForPizza(service: Service): void {
@@ -344,7 +392,7 @@ export const serviceActions = {
     const isBaked = (pizza: { bakedSeconds: number; bakeDuration: number }) => pizza.bakedSeconds >= pizza.bakeDuration;
     service.oven
       .filter(isBaked)
-      .forEach((pizza) => service.ready.push({ id: pizza.id, ingredients: pizza.ingredients, secret: pizza.secret, waitingSeconds: 0 }));
+      .forEach(({ id, ingredients, secret, mamma }) => service.ready.push({ id, ingredients, secret, mamma, waitingSeconds: 0 }));
     service.oven = service.oven.filter((pizza) => !isBaked(pizza));
     if (!service.challenge) advanceEvening(state, service, seconds);
     pourWithBarman(state, service, seconds);
@@ -359,6 +407,7 @@ export const serviceActions = {
     const someoneCanArrive =
       service.nextArrivalIn <= 0 && service.customersToCome > 0 && service.customers.length < maxQueueLength(state);
     if (someoneCanArrive) letCustomersIn(state, service);
+    if (service.charmsPending) charmWaitingCustomers(service);
   },
 
   selectBatch(state) {
@@ -381,18 +430,42 @@ export const serviceActions = {
   },
 
   // Drinks come straight from the bar fridge: to the selected customer if they want it, otherwise to the first who does.
-  serveDrink(state, { drinkId, customerId }) {
+  // Pours a glass: it goes straight to the selected customer if that is their drink, onto the tray otherwise.
+  pourDrink(state, { drinkId }) {
     const { service } = state;
-    if (!service) return;
-    const wantsIt = (customer: Customer) => customer.drink === drinkId && !customer.drinkServed;
-    // A tap on a waiting ticket names its customer; otherwise the selected one, then whoever ordered it.
-    const customer =
-      service.customers.find((c) => c.id === (customerId ?? service.selectedCustomerId) && wantsIt(c)) ?? service.customers.find(wantsIt);
+    if (!service || service.challenge || DRINKS[drinkId].barLevel > state.upgrades.bar) return;
+    const selected = selectedCustomer(service);
+    const isForSelected = selected?.drink === drinkId && !selected.drinkServed;
+    const tray = service.tray ?? [];
+    if (!isForSelected && tray.length >= TRAY_SIZE) {
+      pushToast(state, { key: "trayFull" }, "warn");
+      return;
+    }
+    if (!canAfford(state.money, DRINKS[drinkId].cost)) {
+      pushToast(state, { key: "notEnoughMoney" }, "warn");
+      return;
+    }
+    spend(state, DRINKS[drinkId].cost);
+    if (isForSelected) sellDrink(state, service, selected);
+    else service.tray = [...tray, drinkId];
+  },
+
+  // A glass from the tray: to the selected customer if they want it, otherwise to whoever ordered that drink.
+  serveTrayDrink(state, { index }) {
+    const { service } = state;
+    const drinkId = service?.tray?.[index];
+    if (!service || !drinkId) return;
+    const customer = thirstyFor(service, drinkId);
     if (!customer) {
       pushToast(state, { key: "nobodyWantsDrink", params: { drinkId } });
       return;
     }
+    service.tray = service.tray?.filter((_, i) => i !== index);
     sellDrink(state, service, customer);
+  },
+
+  binTray(state) {
+    if (state.service) state.service.tray = [];
   },
 
   // A regular's drink on the house: no money, but they remember it in the tip.
@@ -401,6 +474,11 @@ export const serviceActions = {
     const customer = service && selectedCustomer(service);
     // Before the pizza only: the gesture shows in the tip, which comes with the pizza.
     if (!customer?.drink || customer.drinkServed || customer.pizzaServed || !isRegularCustomer(state, customer)) return;
+    if (!canAfford(state.money, DRINKS[customer.drink].cost)) {
+      pushToast(state, { key: "notEnoughMoney" }, "warn");
+      return;
+    }
+    spend(state, DRINKS[customer.drink].cost);
     customer.drinkServed = true;
     customer.drinkOffered = true;
     pushToast(state, { key: "drinkOffered", params: { name: customer.name } });
@@ -420,6 +498,20 @@ export const serviceActions = {
     state.secretStock -= 1;
   },
 
+  // A spoon of Mamma's secret on the pizza being built (or back in the jar).
+  toggleMamma(state) {
+    const { service } = state;
+    if (!service || !state.mammaSecret || service.challenge) return;
+    if (service.mammaOnBoard) {
+      service.mammaOnBoard = false;
+      state.mammaStock += 1;
+      return;
+    }
+    if (!hasBase(service.board) || state.mammaStock < 1) return;
+    service.mammaOnBoard = true;
+    state.mammaStock -= 1;
+  },
+
   toggleIngredient(state, { ingredientId: id }) {
     const { service } = state;
     if (!service) return;
@@ -430,11 +522,8 @@ export const serviceActions = {
       }
       service.board = service.board.filter((x) => x !== id);
       addToStock(state, id);
-      // No dough left: the secret goes back on its shelf.
-      if (!hasBase(service.board) && service.secretOnBoard) {
-        service.secretOnBoard = false;
-        state.secretStock += 1;
-      }
+      // No dough left: the secrets go back on their shelf.
+      if (!hasBase(service.board)) putSecretsBack(state, service);
       return;
     }
     if (!isBase(id) && !hasBase(service.board)) {
@@ -465,6 +554,7 @@ export const serviceActions = {
     addWaste(service, service.board);
     service.board = [];
     service.secretOnBoard = false;
+    service.mammaOnBoard = false;
   },
 
   bake(state) {
@@ -479,34 +569,20 @@ export const serviceActions = {
       id: makeId(),
       ovenIndex: oven.index,
       secret: service.secretOnBoard,
+      mamma: service.mammaOnBoard,
       ingredients: sortByLayer(service.board),
       bakedSeconds: 0,
       bakeDuration: oven.bakeSeconds,
     });
     service.board = [];
     service.secretOnBoard = false;
+    service.mammaOnBoard = false;
     // The commis rolls out the dough the selected order needs (gluten-free when asked).
     const dough = selectedCustomer(service)?.ingredients.find(isBase) ?? DOUGH;
     if (state.upgrades.commis >= COMMIS_SPREADS_DOUGH && inStock(state, dough) > 0) {
       service.board = [dough];
       takeFromStock(state, dough);
     }
-  },
-
-  // Commis level 2: puts exactly the selected order on the board.
-  assembleOrder(state) {
-    const { service } = state;
-    const customer = service && selectedCustomer(service);
-    if (!service || !customer) return;
-    const toAdd = customer.ingredients.filter((id) => !service.board.includes(id));
-    const missing = toAdd.filter((id) => inStock(state, id) < 1 || isStillComing(state, service, id));
-    if (missing.length) {
-      pushToast(state, { key: "missingIngredients", params: { ingredientIds: missing } }, "warn");
-      return;
-    }
-    service.board.filter((id) => !customer.ingredients.includes(id)).forEach((id) => addToStock(state, id));
-    toAdd.forEach((id) => takeFromStock(state, id));
-    service.board = [...customer.ingredients];
   },
 
   servePizza(state, { pizzaId }) {
@@ -547,6 +623,7 @@ export const serviceActions = {
     if (mood >= 2) service.stats.hungryServed = (service.stats.hungryServed ?? 0) + 1;
     const tip =
       collectPayment(state, service, customer, pizza) + settleTable(state, service, customer) + secretBonus(state, customer, pizza.secret);
+    if (pizza.mamma) charmNextCustomer(service, customer);
     // Critics, deliveries and celebrities are passing through: they never join the customer book.
     const isPerson = !customer.critic && !customer.delivery && !customer.celebrity;
     if (isPerson && recordVisit(state, customer)) pushToast(state, { key: "newRegular", params: { name: customer.name } }, "gold");

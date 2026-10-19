@@ -98,7 +98,6 @@ export const en: Dictionary = {
       if (extra) parts.push(`${extra} extra`);
       return `For ${name}: ${parts.join(" · ")}`;
     },
-    commisAssemble: "Assistant: build the {recipe}",
     bake: "Bake",
     ovenFull: "Oven full",
     ovenAndPass: "Oven and pass",
@@ -116,6 +115,8 @@ export const en: Dictionary = {
     visit: ({ number }) => `visit #${number}`,
     regular: "Regular",
     shortcuts: "Keys: 0 dough · 1-9 ticket ingredients · Space bake · Enter serve · ← → switch ticket",
+    shortcutSecret: "S Nonna's secret",
+    shortcutMamma: "M Mamma's secret",
     asUsual: "“The usual!”",
     asUsualCheck: "For {name}: the usual, remember?",
     revealUsual: "Remind me…",
@@ -129,7 +130,11 @@ export const en: Dictionary = {
     tableHead: "Table of {size} · one order each",
     birthday: "Birthday!",
     bar: "Bar",
-    drinkTitle: ({ drink }) => `Serve: ${drink}`,
+    pourTitle: ({ drink, cost }, t) => `Pour: ${drink} (the glass costs ${t.money(cost)})`,
+    tray: "Tray",
+    trayTitle: ({ drink }) => `${drink} on the tray: tap to serve it`,
+    binTray: "Clear the tray",
+    offerShort: "Offer",
     ovenNumber: "Oven {number}",
     pause: "Pause",
     paused: "Paused",
@@ -149,9 +154,7 @@ export const en: Dictionary = {
     batch: "Group order",
     theBatch: "the group order",
     pizzaDone: "Pizza served ✓",
-    waitingDrink: "waiting for their drink: tap to serve",
-    serveDrink: ({ drink, price }, t) => `Serve ${drink} · ${t.money(price)}`,
-    offer: "🎁 On the house",
+    waitingDrink: "waiting for their drink",
     trashUnwantedShort: "🗑 Bin all ({count})",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }) => `${medal} for ${clock}`,
@@ -164,8 +167,12 @@ export const en: Dictionary = {
     warm: "lukewarm",
     cold: "cold",
     stillComing: "On its way",
-    secret: "Nonna's secret",
     secretTitle: "A pinch of Nonna's secret. It changes nothing in the recipe…",
+    secretPan: "Nonna",
+    mammaPan: "Mamma",
+    mammaTitle: "A spoon of Mamma's secret: this customer will tell the next one about you.",
+    charmed: "Charmed",
+    charmedTitle: "They heard great things about your pizzeria: patience back to full, and a tip for sure.",
   },
 
   market: {
@@ -187,6 +194,10 @@ export const en: Dictionary = {
     secretBonus: "Added to a pizza, it changes nothing in the recipe and the customer can't tell. But about one time in three, they tip as much as the pizza costs.",
     secretStock: "{count} in stock",
     craft: ({ cost }, t) => `Make one · ${t.money(cost)}`,
+    secretJar: ({ portions }) => `One jar = ${portions} pizzas.`,
+    mammaTitle: "Mamma's secret",
+    mammaIntro: "One spoon per pizza. Whoever eats it tells the next customer about you.",
+    mammaBonus: "The customer who eats this pizza tells the next one about you: that one gets all their patience back and tips for sure (the usual amount). No effect on a critic, a delivery or a celebrity.",
   },
 
   menu: {
@@ -281,7 +292,12 @@ export const en: Dictionary = {
     commis: {
       name: "Kitchen assistant",
       describe: ({ level }) =>
-        ["You're alone in the kitchen", "Rolls out fresh dough after each bake", "Builds the selected order in one tap"][level],
+        [
+          "You're alone in the kitchen",
+          "Rolls out fresh dough after each bake",
+          "Pushes back a little the pans the selected order doesn't need",
+          "Pushes the unneeded pans back even further",
+        ][level],
     },
     terrasse: {
       name: "Terrace",
@@ -421,6 +437,7 @@ export const en: Dictionary = {
     nextPage: "Next page",
     secretAchievement: "Secret achievement",
     secretHint: "Some secrets aren't earned. They're typed.",
+    mammaHint: "Mamma likes books that balance, day after day.",
     achievements: "Achievements",
     achievementsIntro: "{count} / {total} unlocked",
     unlockedOn: "Day {day}",
@@ -523,6 +540,7 @@ export const en: Dictionary = {
     batchGold: { name: "Lightning delivery", describe: "Win gold on a group order" },
     celebrity: { name: "Signed photo", describe: "Serve a celebrity" },
     secretCode: { name: "↑↑↓↓←→←→BA", describe: "You know the code." },
+    mammaSecret: { name: "Mamma's pride", describe: "Earn Mamma's trust." },
   },
 
   tutorial: {
@@ -545,7 +563,6 @@ export const en: Dictionary = {
     spreadDoughFirst: "Roll out the dough first.",
     outOfStock: ({ ingredientId }, t) => `Out of ${lower(t.ingredient(ingredientId))}: head to the market.`,
     ovenFull: "The oven is full.",
-    missingIngredients: ({ ingredientIds }, t) => `Missing: ${t.ingredientList(ingredientIds)}.`,
     nobodyOrdered: "Nobody ordered this pizza. Keep it warm or bin it.",
     levelUp: ({ level, ingredientIds }, t) =>
       `Level ${level}! ${ingredientIds.length ? `New suppliers: ${lower(t.ingredientList(ingredientIds))}.` : "Your menu grows."}`,
@@ -579,6 +596,7 @@ export const en: Dictionary = {
     batchDone: ({ giver, medal, reward }, t) => `Order delivered: ${t.medal(medal)} medal! ${t.questGiver(giver)} pays ${t.money(reward)}.`,
     batchUnfinished: ({ giver, reward }, t) => `${t.questGiver(giver)} didn't get everything in time and pays ${t.money(reward)} for what arrived.`,
     celebrity: "{name} loved it! Their signed photo is up on the front.",
+    trayFull: "The tray is full: serve or clear it.",
     nobodyWantsDrink: ({ drinkId }, t) => `Nobody is waiting for a ${lower(t.drink(drinkId))}.`,
     questDone: ({ giver, reward }, t) => `Quest complete! ${t.questGiver(giver)} thanks you: ${t.money(reward)}.`,
     questExpired: ({ giver }, t) => `${t.questGiver(giver)} found another way. Maybe next time!`,
@@ -586,6 +604,7 @@ export const en: Dictionary = {
     nonnaLoan: ({ amount }, t) => `Nonna lends you ${t.money(amount)}. “Pay me back when you can.”`,
     drinkOffered: "{name} is touched by the gesture.",
     secretTip: "{name} loved it, without knowing why. A royal tip!",
+    secretFromMamma: ({ days }) => `${days} profitable days in a row: Mamma is proud of you and shares her own secret. Make it at the market.`,
     secretFromNonna: "Nonna tasted her recipes at your place. Moved, she shares her secret ingredient: you can make it at the market.",
     secretFromCode: "Nonna winks at you: her secret ingredient is yours. You can make it at the market.",
     secretCodeAgain: "Nonna smiles. You already know the secret.",

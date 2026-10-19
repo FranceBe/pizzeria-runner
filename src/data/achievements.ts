@@ -35,9 +35,10 @@ export const ACHIEVEMENT_IDS = [
   "batchGold",
   "celebrity",
   "secretCode",
+  "mammaSecret",
 ] as const;
 
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[number];
 
 // Shown as "???" in the journal until unlocked.
-export const HIDDEN_ACHIEVEMENTS: ReadonlySet<AchievementId> = new Set(["secretCode"]);
+export const HIDDEN_ACHIEVEMENTS: ReadonlySet<AchievementId> = new Set(["secretCode", "mammaSecret"]);

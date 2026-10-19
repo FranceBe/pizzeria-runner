@@ -202,7 +202,7 @@ function Achievements({ state }: { state: GameState }) {
                 <span className="medal" aria-hidden="true">?</span>
                 <div className="grow">
                   <strong>{t("journal.secretAchievement")}</strong>
-                  <div className="hint">{t("journal.secretHint")}</div>
+                  <div className="hint">{t(id === "mammaSecret" ? "journal.mammaHint" : "journal.secretHint")}</div>
                 </div>
               </div>
             );

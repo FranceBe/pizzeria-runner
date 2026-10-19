@@ -1,4 +1,5 @@
 import { menuCapacity } from "../game/progression";
+import { Overlay } from "../components/Overlay";
 import type { DaySummary as Summary, OrderRecord, StarGoals } from "../game/types";
 import { INSPECTION_XP } from "../data/events";
 import { profitTarget } from "../game/stars";
@@ -92,7 +93,7 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
     }
   };
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("summary.dialog")}>
+    <Overlay label={t("summary.dialog")} onClose={onNextDay}>
       <div className="summary-modal">
         <div className="receipt">
           <div className="receipt-head">
@@ -150,6 +151,6 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           <button className="btn primary big" onClick={onNextDay}>{t("summary.nextDay", { day: summary.day + 1 })}</button>
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 }

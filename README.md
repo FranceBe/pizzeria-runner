@@ -44,9 +44,7 @@ Nobody ever leaves angry: customers just get hungrier (happy, then patient, then
 | `Enter` | Serve (the selected customer's pizza first) |
 | `←` `→` | Previous / next order |
 | `Backspace` | Bin the pizza on the board |
-| `A` | Kitchen assistant builds the order (once upgraded) |
-| `D` | Serve the selected customer's drink (with the bar) |
-| `O` | Offer that drink, for a regular |
+| `O` | Offer the selected regular's drink (with the bar) |
 | `P` or `Esc` | Pause |
 
 ## Rules
@@ -103,10 +101,14 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 - **Diets** (from level 4): vegetarian, no pork, gluten-free (with the gluten-free dough, signed at the market).
 - **Tables** (from level 3): two to four people come in together. Serve the whole table while they are still happy or
   patient for a bonus of €1.50 each.
-- **Drinks** (with the bar): some customers add a drink, served straight from the bar. A regular's drink can also be
-  offered (before the pizza): no money, but a much better chance of a bigger tip, and a little reputation. Someone who
-  got their pizza first waits at the counter for their drink: tap their ticket to serve it. At bar level 3, a barman
-  serves the drinks on his own, one every 6 seconds; serving by hand is still quicker.
+- **Drinks** (with the bar): some customers add a drink to their order. The bar sits in the board's left corner: a tap
+  pours that drink, and each glass costs a little. If it is the selected customer's drink, it goes straight to them and
+  is paid; otherwise it lands on the tray (right corner, three glasses at most), where a tap serves it to whoever
+  ordered it. Nothing but the tickets tells which drink is wanted: a glass poured for nobody waits on the tray until
+  someone orders it or the tray is cleared, and its cost is lost. Someone who got their pizza first waits at the counter,
+  on a blue ticket, until their drink comes. A regular's drink can also be offered (before the pizza): the glass costs,
+  nothing comes in, but a much better chance of a bigger tip, and a little reputation. At bar level 3, a barman serves
+  the drinks on his own, one every 6 seconds, and never gets them wrong; pouring by hand is still quicker.
 - **Celebrities** (from level 5, rare, at most one a day): they order the finest pizza on the menu with an extra
   topping, and leave a €10 tip, lots of reputation, and a signed photo that goes up on the front.
 - Customers come in many faces: over 120 names, hairstyles and colours (now and then blue or green), and accessories
@@ -139,7 +141,7 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 | Wood-fired oven | More pizzas at once, faster baking |
 | Dining room | More customers, one more order at the counter |
 | Decor | More tips (and string lights) |
-| Kitchen assistant | Rolls out fresh dough, then builds the selected order in one tap |
+| Kitchen assistant | Rolls out fresh dough after each bake, then fades the pans the selected order doesn't need (a little, then more) |
 | Terrace | More customers, especially on sunny days |
 | Delivery | Scooter orders, with an express bonus when they leave within 45 seconds |
 | Bar | Drinks: lemonade and sparkling water, then chinotto and red wine, then a barman who serves them on his own |
@@ -151,7 +153,8 @@ Once the money piles up, the pizzeria's looks can be bought too: awning colours,
 ### The journal
 
 Accounts (profit chart, best sellers, best day, stars, best streak, completed quests), regulars' profiles, the pairings
-book, and the achievements. 33 of them can be earned by playing; the last one keeps its secret.
+book, and the achievements. 34 of them can be earned by playing (one stays hidden until then); the last one keeps its
+secret.
 
 ### Daily challenge
 
@@ -167,7 +170,8 @@ a result to paste to friends.
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
 - The game installs as an app and plays offline.
 - Have you tried every combination of keys (or of swipes)? Nonna has. And she doesn't share her secrets with just anyone: perhaps
-  with someone who has served every one of hers.
+  with someone who has served every one of hers. Mamma keeps something in a jar too, for those whose books balance day
+  after day. Once shared, a secret is made at the market and goes on a pizza from the prep line (or with `S` and `M`).
 
 ## Running locally
 

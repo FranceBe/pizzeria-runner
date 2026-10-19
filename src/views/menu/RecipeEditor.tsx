@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Overlay } from "../../components/Overlay";
 import { PREP_STATIONS, type IngredientId } from "../../data/ingredients";
 import { MAX_FILLINGS, validateRecipe } from "../../game/menu";
 import {
@@ -82,7 +83,8 @@ export function RecipeEditor({ state, dispatch, onClose }: ScreenProps & { onClo
   };
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("editor.title")}>
+    // No closing by tapping outside: a recipe being written would be lost.
+    <Overlay label={t("editor.title")}>
       <div className="card pad modal" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div className="row">
           <h2 className="h grow">{t("editor.title")}</h2>
@@ -144,6 +146,6 @@ export function RecipeEditor({ state, dispatch, onClose }: ScreenProps & { onClo
           <button className="btn primary" onClick={save}>{t("editor.save")}</button>
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 }

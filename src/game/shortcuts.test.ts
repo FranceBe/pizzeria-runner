@@ -47,11 +47,8 @@ describe("shortcutAction", () => {
     expect(shortcutAction(state, "ArrowLeft")).toEqual({ type: "selectCustomer", customerId: "cust-2" });
   });
 
-  it("bins the board with Backspace and lets the assistant build with A", () => {
+  it("bins the board with Backspace", () => {
     const state = play(stateInService([luca]), { type: "toggleIngredient", ingredientId: "pate" });
     expect(shortcutAction(state, "Backspace")).toEqual({ type: "trashBoard" });
-    expect(shortcutAction(state, "a")).toBeNull();
-    state.upgrades.commis = 2;
-    expect(shortcutAction(state, "a")).toEqual({ type: "assembleOrder" });
   });
 });

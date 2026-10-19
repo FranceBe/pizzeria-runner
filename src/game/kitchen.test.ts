@@ -47,23 +47,6 @@ describe("gluten-free dough", () => {
   });
 });
 
-describe("drinks", () => {
-  it("go to whoever ordered them and are paid right away", () => {
-    const state = stateInService([makeCustomer(), makeCustomer({ id: "cust-2", name: "Sofia", drink: "vin" })], { money: 0 });
-    const served = play(state, { type: "serveDrink", drinkId: "vin" });
-    expect(serviceOf(served).customers[1].drinkServed).toBe(true);
-    expect(served.money).toBe(4.5);
-    expect(serviceOf(served).stats.drinks).toBe(4.5);
-    expect(served.lifetime.drinksSold).toBe(1);
-    expect(play(served, { type: "serveDrink", drinkId: "vin" }).toasts.at(-1)?.key).toBe("nobodyWantsDrink");
-  });
-
-  it("have a keyboard shortcut for the selected customer", () => {
-    const state = stateInService([makeCustomer({ drink: "limonade" })]);
-    expect(shortcutAction(state, "d")).toEqual({ type: "serveDrink", drinkId: "limonade" });
-  });
-});
-
 describe("dessert pizzas", () => {
   it("need neither cheese nor sauce, but don't mix with meat", () => {
     const choco = ["pate", "chocolat", "banane", "noisette"] as const;

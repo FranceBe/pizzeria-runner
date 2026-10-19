@@ -1,6 +1,6 @@
 import { INGREDIENTS_BY_ID, type IngredientId } from "../../data/ingredients";
 import { MARGHERITA } from "../../data/recipes";
-import { SECRET_CRAFT_COST, UPGRADES } from "../../data/progression";
+import { MAMMA_CRAFT_COST, MAMMA_JAR_PORTIONS, SECRET_CRAFT_COST, SECRET_JAR_PORTIONS, UPGRADES } from "../../data/progression";
 import { canAfford } from "../../utils/math";
 import { canBorrowFromNonna, NONNA_LOAN, restockPlan, spend } from "../economy";
 import { marketPrice } from "../events";
@@ -102,7 +102,17 @@ export const shopActions = {
       return;
     }
     spend(state, SECRET_CRAFT_COST);
-    state.secretStock += 1;
+    state.secretStock += SECRET_JAR_PORTIONS;
+  },
+
+  craftMamma(state) {
+    if (!state.mammaSecret) return;
+    if (!canAfford(state.money, MAMMA_CRAFT_COST)) {
+      pushToast(state, { key: "notEnoughMoney" }, "warn");
+      return;
+    }
+    spend(state, MAMMA_CRAFT_COST);
+    state.mammaStock += MAMMA_JAR_PORTIONS;
   },
 
   // Picks a look for the pizzeria, buying it first if needed. Free looks are always owned.

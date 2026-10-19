@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Overlay } from "../components/Overlay";
 import type { ChallengeResult as Result, Dispatch } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 
@@ -32,7 +33,7 @@ export function ChallengeResult({ result, best, dispatch }: { result: Result; be
   };
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("challenge.dialog")}>
+    <Overlay label={t("challenge.dialog")} onClose={() => dispatch({ type: "dismissChallengeResult" })}>
       <div className="card pad challenge-result">
         <h2 className="h">{t("challenge.title")}</h2>
         <div className="challenge-score">{result.score}</div>
@@ -46,6 +47,6 @@ export function ChallengeResult({ result, best, dispatch }: { result: Result; be
         </div>
         {isCopied && <p className="hint" role="status">{t("challenge.copied")}</p>}
       </div>
-    </div>
+    </Overlay>
   );
 }

@@ -40,8 +40,16 @@ function nextMove(state: GameState): GameAction {
   const servable = service.ready.find((pizza) => destinationOf(state, service, pizza.ingredients));
   if (servable) return { type: "servePizza", pizzaId: servable.id };
   if (service.ready.length > 2) return { type: "trashUnwantedPizzas" };
-  const thirsty = service.customers.find((customer) => customer.drink && !customer.drinkServed);
-  if (thirsty?.drink) return { type: "serveDrink", drinkId: thirsty.drink };
+  // Drinks: the selected customer's, poured right (or now and then wrong, like a player), and the tray kept moving.
+  const trayIndex = (service.tray ?? []).findIndex((id) => service.customers.some((c) => c.drink === id && !c.drinkServed));
+  if (trayIndex >= 0) return { type: "serveTrayDrink", index: trayIndex };
+  if ((service.tray?.length ?? 0) >= 3) return { type: "binTray" };
+  const selected = selectedCustomer(service);
+  if (selected?.drink && !selected.drinkServed) {
+    return { type: "pourDrink", drinkId: Math.random() < 0.15 ? "eau" : selected.drink };
+  }
+  const waiting = service.customers.find((customer) => customer.pizzaServed && !customer.drinkServed);
+  if (waiting && waiting.id !== service.selectedCustomerId) return { type: "selectCustomer", customerId: waiting.id };
   if (openBatch(state, service) && service.selectedCustomerId !== BATCH_ID && Math.random() < 0.3) return { type: "selectBatch" };
   const canMake = (ingredients: readonly string[]) =>
     ingredients.every((id) => service.board.includes(id as never) || (state.stock[id as keyof typeof state.stock] ?? 0) > 0);

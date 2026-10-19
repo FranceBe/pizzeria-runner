@@ -97,11 +97,12 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
             : t.recipe({ id: customer.recipeId, name: customer.recipeName })}
       </div>
       {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
-      {(customer.critic || customer.celebrity || customer.birthday || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
+      {(customer.critic || customer.celebrity || customer.birthday || customer.charmed || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
           {customer.celebrity && <span className="mod celebrity-tag">{`⭐ ${t("service.celebrity")}`}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
+          {customer.charmed && <span className="mod charmed-tag" title={t("service.charmedTitle")}>{`💛 ${t("service.charmed")}`}</span>}
           {hasExpress && <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>}
           {customer.extraIngredient && <span className="mod add">{t("service.extra", { id: customer.extraIngredient })}</span>}
           {customer.removedIngredient && <span className="mod rem">{t("service.without", { id: customer.removedIngredient })}</span>}
@@ -116,7 +117,7 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
               <span className="drink-name">
                 {`${t.drink(customer.drink)} · ${customer.drinkOffered ? t("service.offered") : t.money(DRINKS[customer.drink].price)}`}
               </span>
-              {customer.drinkServed ? <span aria-hidden="true">✓</span> : isSelected && <kbd className="kbd">D</kbd>}
+              {customer.drinkServed && <span aria-hidden="true">✓</span>}
             </span>
           )}
         </div>

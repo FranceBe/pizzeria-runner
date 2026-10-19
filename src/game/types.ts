@@ -72,6 +72,8 @@ export interface Customer extends Looks {
   drinkOffered?: boolean;
   /** Pizza served, drink not yet: they stay at the counter until it comes. */
   pizzaServed?: boolean;
+  /** Heard good things from the customer before (Mamma's secret): patience back to full, and a tip for sure. */
+  charmed?: boolean;
   /** A regular on their birthday: their favourite earns a gift. */
   birthday?: boolean;
   /** A (made-up) celebrity: not in the customer book, a big tip and a signed photo. */
@@ -93,6 +95,8 @@ export interface OvenPizza {
   id: string;
   /** With a pinch of Nonna's secret: it looks and matches like any other pizza. */
   secret?: boolean;
+  /** With Mamma's secret: whoever eats it charms the next customer. */
+  mamma?: boolean;
   /** Which oven it bakes in (see ovensOf); missing on older saves, meaning the first. */
   ovenIndex?: number;
   ingredients: readonly IngredientId[];
@@ -103,6 +107,7 @@ export interface OvenPizza {
 export interface ReadyPizza {
   id: string;
   secret?: boolean;
+  mamma?: boolean;
   /** Seconds on the pass: it cools down, and tips with it. */
   waitingSeconds?: number;
   ingredients: readonly IngredientId[];
@@ -154,6 +159,12 @@ export interface Service {
   board: IngredientId[];
   /** Nonna's secret is on the pizza being built. */
   secretOnBoard?: boolean;
+  /** Mamma's secret is on the pizza being built. */
+  mammaOnBoard?: boolean;
+  /** Customers to charm as soon as they come in (Mamma's secret, served while nobody else was waiting). */
+  charmsPending?: number;
+  /** Drinks poured that nobody took yet. */
+  tray?: DrinkId[];
   /** How far the barman is with the drink he is pouring (seconds). */
   barmanSeconds?: number;
   /** The clock is stopped: nobody waits, nothing bakes, nobody comes in. */
@@ -429,6 +440,10 @@ export interface GameState {
   secretIngredient: boolean;
   /** Jars of it made at the market and not used yet. */
   secretStock: number;
+  /** Mamma's secret ingredient, once she has shared it. */
+  mammaSecret: boolean;
+  /** Portions of it made at the market and not used yet. */
+  mammaStock: number;
   /** Late delivery day: the ingredient that comes late. */
   lateIngredient: IngredientId | null;
   /** The calendar festival going on, if any. */
@@ -458,15 +473,18 @@ export type GameAction =
   | { type: "toggleIngredient"; ingredientId: IngredientId }
   | { type: "trashBoard" }
   | { type: "bake" }
-  | { type: "assembleOrder" }
   | { type: "servePizza"; pizzaId: string }
   | { type: "trashReadyPizza"; pizzaId: string }
   | { type: "revealUsualOrder"; customerId: string }
   | { type: "startChallenge"; date: string }
-  | { type: "serveDrink"; drinkId: DrinkId; customerId?: string }
+  | { type: "pourDrink"; drinkId: DrinkId }
+  | { type: "serveTrayDrink"; index: number }
+  | { type: "binTray" }
   | { type: "offerDrink" }
   | { type: "toggleSecret" }
   | { type: "craftSecret" }
+  | { type: "toggleMamma" }
+  | { type: "craftMamma" }
   | { type: "enterSecretCode" }
   | { type: "dismissChallengeResult" }
   | { type: "startNextDay" }

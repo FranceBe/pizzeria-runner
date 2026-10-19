@@ -9,7 +9,8 @@ export function DrinkGlass({ id, className }: { id: DrinkId; className?: string 
       {isBottle ? (
         <>
           <path d="M10 2h4v5c2 1 3 2.5 3 4.5V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-9.5C7 9.5 8 8 10 7V2Z" fill={color} />
-          <rect x="7.5" y="13" width="9" height="5" rx="1" fill="#fff" opacity=".8" />
+          {/* Chinotto's label is orange, so it never passes for the wine at a glance */}
+          <rect x="7.5" y="13" width="9" height="5" rx="1" fill={id === "chinotto" ? "#f08a24" : "#fff"} opacity=".9" />
         </>
       ) : (
         <>

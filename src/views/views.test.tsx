@@ -278,7 +278,7 @@ describe("views", () => {
     expect(html).toContain("Table of 2");
     expect(html).toContain("Vegetarian");
     expect(html).toContain("Birthday!");
-    expect(html).toMatch(/class="drink-btn wanted"[^>]*title="Serve: Red wine"/);
+    expect(html).toMatch(/class="glass-btn"[^>]*title="Pour: Red wine \(the glass costs €1.50\)"/);
     expect(html).toContain('class="drink-order served"');
   });
 
@@ -417,16 +417,37 @@ describe("views", () => {
     expect(html).toMatch(/id="volume-music"[^>]*value="35"|value="35"[^>]*id="volume-music"/);
   });
 
-  it("offers the selected customer's drink under the board, with its price, and shows who waits for one", () => {
+  it("puts the bar and the tray on the board, without telling which drink is wanted, and shows who waits for one", () => {
     const state = stateInService([makeCustomer({ drink: "vin" }), makeCustomer({ id: "c2", name: "Zoé", drink: "eau", pizzaServed: true })], {
       customerBook: { Luca: makeBookEntry({ visits: 4 }) },
     });
+    state.upgrades.bar = 2;
+    serviceOf(state).tray = ["chinotto"];
     const html = render(serviceScreen(state), "en");
-    expect(html).toContain("Serve red wine · €4.50");
-    expect(html).toContain("🎁 On the house");
+    expect(html.match(/class="glass-btn"/g)).toHaveLength(4);
+    expect(html).toContain('title="🎁 Offer Luca the red wine"');
+    expect(html).toContain('title="Chinotto on the tray: tap to serve it"');
+    expect(html).toContain('title="Clear the tray"');
     expect(html).toContain("Red wine · €4.50");
     expect(html).toContain("Pizza served ✓");
     expect(html).toContain("waiting for their drink");
+  });
+
+  it("lets the commis push back the pans the selected order doesn't need, more at each level", () => {
+    const state = stateInService([makeCustomer()]);
+    state.unlocked.origan = true;
+    expect(render(serviceScreen(state), "en")).not.toContain("pushed-back");
+    state.upgrades.commis = 2;
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain('class="rail fade-1"');
+    expect(html).toMatch(/class="pan pushed-back[^"]*"[^>]*title="Oregano/);
+    expect(html).not.toMatch(/class="pan pushed-back[^"]*"[^>]*title="Basil/);
+    state.upgrades.commis = 3;
+    expect(render(serviceScreen(state), "en")).toContain('class="rail fade-2"');
+    // The usual is for the player to remember: the commis doesn't give it away.
+    const usual = stateInService([makeCustomer({ asUsual: true })]);
+    usual.upgrades.commis = 3;
+    expect(render(serviceScreen(usual), "en")).not.toContain("pushed-back");
   });
 
   it("sells looks for the pizzeria", () => {

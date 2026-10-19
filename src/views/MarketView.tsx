@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { INGREDIENTS } from "../data/ingredients";
 import { CLASSIC_RECIPES } from "../data/recipes";
-import { SECRET_CRAFT_COST } from "../data/progression";
+import { MAMMA_CRAFT_COST, MAMMA_JAR_PORTIONS, SECRET_CRAFT_COST, SECRET_JAR_PORTIONS } from "../data/progression";
 import { SUPPLIER_WELCOME_PORTIONS } from "../game/actions/shopActions";
 import { canBorrowFromNonna, NONNA_LOAN, restockPlan, type RestockPlan } from "../game/economy";
 import { marketPrice } from "../game/events";
@@ -75,16 +75,28 @@ function Fridge({ state, dispatch }: ScreenProps) {
   );
 }
 
-// Nonna's secret, once shared: made by hand, one jar at a time, never part of the restock buttons.
-function NonnasSecret({ state, dispatch }: ScreenProps) {
+// The secret ingredients, once shared: made by hand, a jar at a time, never part of the restock buttons.
+interface SecretCardProps {
+  title: string;
+  intro: string;
+  bonus: string;
+  icon: string;
+  stock: number;
+  cost: number;
+  portions: number;
+  onCraft: () => void;
+  money: number;
+}
+
+// A secret ingredient, made at the market a jar at a time.
+function SecretCard({ title, intro, bonus, icon, stock, cost, portions, onCraft, money }: SecretCardProps) {
   const t = useTranslation();
   // A button, not a hover tooltip: phones have no hover.
   const [isExplained, setExplained] = useState(false);
-  if (!state.secretIngredient) return null;
   return (
     <div className="card pad secret-card">
       <div className="row">
-        <h2 className="h grow">{t("market.secretTitle")}</h2>
+        <h2 className="h grow">{title}</h2>
         <button
           className="secret-info"
           aria-expanded={isExplained}
@@ -95,20 +107,49 @@ function NonnasSecret({ state, dispatch }: ScreenProps) {
           ⓘ
         </button>
       </div>
-      <p className="sub">{t("market.secretIntro")}</p>
-      {isExplained && <p className="secret-bonus">{t("market.secretBonus")}</p>}
+      <p className="sub">{`${intro} ${t("market.secretJar", { portions })}`}</p>
+      {isExplained && <p className="secret-bonus">{bonus}</p>}
       <div className="row">
-        <span className="secret-stock">✨ {t("market.secretStock", { count: state.secretStock })}</span>
-        <button
-          className="btn primary"
-          title={t("market.secretBonus")}
-          disabled={!canAfford(state.money, SECRET_CRAFT_COST)}
-          onClick={() => dispatch({ type: "craftSecret" })}
-        >
-          {t("market.craft", { cost: SECRET_CRAFT_COST })}
+        <span className="secret-stock">{`${icon} ${t("market.secretStock", { count: stock })}`}</span>
+        <button className="btn primary" title={bonus} disabled={!canAfford(money, cost)} onClick={onCraft}>
+          {t("market.craft", { cost })}
         </button>
       </div>
     </div>
+  );
+}
+
+function Secrets({ state, dispatch }: ScreenProps) {
+  const t = useTranslation();
+  return (
+    <>
+      {state.secretIngredient && (
+        <SecretCard
+          title={t("market.secretTitle")}
+          intro={t("market.secretIntro")}
+          bonus={t("market.secretBonus")}
+          icon="✨"
+          stock={state.secretStock}
+          cost={SECRET_CRAFT_COST}
+          portions={SECRET_JAR_PORTIONS}
+          money={state.money}
+          onCraft={() => dispatch({ type: "craftSecret" })}
+        />
+      )}
+      {state.mammaSecret && (
+        <SecretCard
+          title={t("market.mammaTitle")}
+          intro={t("market.mammaIntro")}
+          bonus={t("market.mammaBonus")}
+          icon="💛"
+          stock={state.mammaStock}
+          cost={MAMMA_CRAFT_COST}
+          portions={MAMMA_JAR_PORTIONS}
+          money={state.money}
+          onCraft={() => dispatch({ type: "craftMamma" })}
+        />
+      )}
+    </>
   );
 }
 
@@ -164,7 +205,7 @@ export function MarketView({ state, dispatch }: ScreenProps) {
     <div className="market">
       <div className="market-main">
         <Fridge state={state} dispatch={dispatch} />
-        <NonnasSecret state={state} dispatch={dispatch} />
+        <Secrets state={state} dispatch={dispatch} />
       </div>
       <Suppliers state={state} dispatch={dispatch} />
     </div>

@@ -1,4 +1,3 @@
-import { COMMIS_ASSEMBLES_ORDER } from "../data/progression";
 import { isRegularCustomer } from "./customers";
 import { hasBase, isBase } from "./pizza";
 import { destinationOf, selectedCustomer, type Destination } from "./service";
@@ -13,8 +12,7 @@ const ARROW_STEPS: Partial<Record<string, -1 | 1>> = { ArrowLeft: -1, ArrowUp: -
 //   Enter      serve (the selected customer's pizza first)
 //   ← → ↑ ↓    previous / next order
 //   Backspace  bin the pizza on the board
-//   A          kitchen assistant builds the selected order
-//   D          the selected customer's drink
+//   S, M       Nonna's secret, Mamma's secret (on or off the pizza being built)
 //   O          offer it, for a regular
 //   P, Escape  pause (the only key that works while paused)
 export function shortcutAction(state: GameState, key: string): GameAction | null {
@@ -35,12 +33,8 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
   if (key === " ") return hasBase(service.board) ? { type: "bake" } : null;
   if (key === "Enter") return serveAction(state, service);
   if (key === "Backspace" || key === "Delete") return service.board.length ? { type: "trashBoard" } : null;
-  if (key === "a" || key === "A") {
-    return state.upgrades.commis >= COMMIS_ASSEMBLES_ORDER && selected ? { type: "assembleOrder" } : null;
-  }
-  if (key === "d" || key === "D") {
-    return selected?.drink && !selected.drinkServed ? { type: "serveDrink", drinkId: selected.drink } : null;
-  }
+  if (key === "s" || key === "S") return state.secretIngredient && !service.challenge ? { type: "toggleSecret" } : null;
+  if (key === "m" || key === "M") return state.mammaSecret && !service.challenge ? { type: "toggleMamma" } : null;
   if (key === "o" || key === "O") {
     return selected?.drink && !selected.drinkServed && !selected.pizzaServed && isRegularCustomer(state, selected) ? { type: "offerDrink" } : null;
   }

@@ -83,6 +83,8 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     cosmetics: { owned: ["awning:red", "sign:classic", "wall:mint"], awning: "red", sign: "classic", wall: "mint" },
     secretIngredient: false,
     secretStock: 0,
+    mammaSecret: false,
+    mammaStock: 0,
     lateIngredient: null,
     festival: null,
     weekly: null,

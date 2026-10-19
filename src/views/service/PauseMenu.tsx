@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Overlay } from "../../components/Overlay";
 import { canBorrowFromNonna, NONNA_LOAN } from "../../game/economy";
 import { useTranslation } from "../../i18n/I18nContext";
 import type { ServiceScreenProps } from "../types";
@@ -45,13 +46,13 @@ export function ServiceWayOut({ state, service, dispatch }: ServiceScreenProps) 
 export function PauseMenu(props: ServiceScreenProps) {
   const t = useTranslation();
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label={t("service.paused")}>
+    <Overlay label={t("service.paused")} onClose={() => props.dispatch({ type: "togglePause" })}>
       <div className="card pad pause-menu">
         <h2 className="h">⏸ {t("service.paused")}</h2>
         <p className="hint">{t("service.pausedHint")}</p>
         <button className="btn primary big" autoFocus onClick={() => props.dispatch({ type: "togglePause" })}>{t("service.resume")}</button>
         <ServiceWayOut {...props} />
       </div>
-    </div>
+    </Overlay>
   );
 }

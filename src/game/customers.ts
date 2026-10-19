@@ -192,7 +192,8 @@ export function tipChance(state: GameState, customer: Customer): number {
 
 // Rolls the tip for a customer being served: 0, or an amount rounded to 10 cents.
 export function rollTip(state: GameState, customer: Customer): number {
-  if (Math.random() >= tipChance(state, customer)) return 0;
+  // Charmed by Mamma's secret (through the customer before): the tip is certain, its size as usual.
+  if (!customer.charmed && Math.random() >= tipChance(state, customer)) return 0;
   const base = randomBetween(0.5, 1 + 0.8 * state.upgrades.deco);
   const multiplier = MOOD_TIP_MULTIPLIER[moodForWait(customer.waitedSeconds)] * (customer.drinkOffered ? OFFERED_DRINK_TIP_MULTIPLIER : 1);
   return Math.round(base * multiplier * 10) / 10;
