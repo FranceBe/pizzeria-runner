@@ -6,6 +6,7 @@ import { DELIVERY_EXPRESS_SECONDS } from "../../data/progression";
 import type { IngredientId } from "../../data/ingredients";
 import type { Customer, TableProgress } from "../../game/types";
 import { DrinkGlass } from "../../components/DrinkGlass";
+import { DRINKS } from "../../data/drinks";
 
 type ChipStatus = "" | "ok" | "miss" | "extra";
 
@@ -51,6 +52,7 @@ function Scooter() {
 }
 
 function ticketClassName(customer: Customer, table: TableProgress | undefined): string {
+  if (customer.pizzaServed) return "ticket served-pizza";
   if (customer.critic) return "ticket critic";
   if (customer.celebrity) return "ticket celebrity";
   if (customer.delivery) return "ticket delivery";
@@ -84,7 +86,13 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
           </div>
         </div>
       </div>
-      <div className="pz">{customer.asUsual ? t("service.asUsual") : t.recipe({ id: customer.recipeId, name: customer.recipeName })}</div>
+      <div className="pz">
+        {customer.pizzaServed
+          ? t("service.pizzaDone")
+          : customer.asUsual
+            ? t("service.asUsual")
+            : t.recipe({ id: customer.recipeId, name: customer.recipeName })}
+      </div>
       {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
       {(customer.critic || customer.celebrity || customer.birthday || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
@@ -98,13 +106,16 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
           {customer.drink && (
             <span className={`drink-order${customer.drinkServed ? " served" : ""}`}>
               <DrinkGlass id={customer.drink} />
-              <span className="drink-name">{t.drink(customer.drink)}{customer.drinkOffered && ` · ${t("service.offered")}`}</span>
+              <span className="drink-name">
+                {`${t.drink(customer.drink)} · ${customer.drinkOffered ? t("service.offered") : t.money(DRINKS[customer.drink].price)}`}
+              </span>
               {customer.drinkServed ? <span aria-hidden="true">✓</span> : isSelected && <kbd className="kbd">D</kbd>}
             </span>
           )}
         </div>
       )}
-      {showIngredients && !customer.asUsual && (
+      {customer.pizzaServed && <div className="say waiting-drink">{t("service.waitingDrink")}</div>}
+      {showIngredients && !customer.asUsual && !customer.pizzaServed && (
         <div className="chips">
           {ingredientChips(customer, board, isSelected).map(({ id, status }, index) => (
             <span key={id} className={`chip ${status}`} title={t.ingredient(id)}>

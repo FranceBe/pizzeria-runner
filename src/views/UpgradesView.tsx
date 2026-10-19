@@ -45,7 +45,7 @@ function UpgradeCard({ upgradeKey, upgrade, currentLevel, playerLevel, money, di
       {!isMaxed && (
         <div>
           <span className="hint">{t("upgrades.next")}</span> {describe(currentLevel + 1)}{" "}
-          <span className="hint">{t("upgrades.extraCharges", { amount: upgrade.dailyCharge })}</span>
+          {upgrade.dailyCharge > 0 && <span className="hint">{t("upgrades.extraCharges", { amount: upgrade.dailyCharge })}</span>}
         </div>
       )}
       {action}

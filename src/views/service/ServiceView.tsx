@@ -12,6 +12,8 @@ import { challengeRecipe } from "../../game/challenge";
 import { BATCH_ID, nextBatchRecipe, openBatch } from "../../game/batch";
 import { STREAK_SHOWN_FROM, streakMultiplier } from "../../game/streak";
 import { BatchTicket } from "./BatchTicket";
+import { DrinkGlass } from "../../components/DrinkGlass";
+import { DRINKS } from "../../data/drinks";
 import { isStillComing } from "../../game/evening";
 import { CoachTip } from "../../components/CoachTip";
 import { MessageTicker } from "../../components/MessageTicker";
@@ -33,6 +35,30 @@ interface WorkBoardProps extends ServiceScreenProps {
   selectedCustomer: Customer | undefined;
   target: BoardTarget | undefined;
   coachTarget: CoachTarget | null;
+}
+
+// The selected customer's drink, right under the board: serve it, or offer it to a regular (before the pizza,
+// since the gesture shows in the pizza's tip).
+function DrinkActions({ state, customer, dispatch }: { state: ServiceScreenProps["state"]; customer: Customer; dispatch: ServiceScreenProps["dispatch"] }) {
+  const t = useTranslation();
+  const { drink } = customer;
+  if (!drink || customer.drinkServed) return null;
+  const canOffer = !customer.pizzaServed && isRegularCustomer(state, customer);
+  return (
+    <div className="drink-actions">
+      <button className="btn sm drink-serve" onClick={() => dispatch({ type: "serveDrink", drinkId: drink })}>
+        <DrinkGlass id={drink} />
+        {/* The full label on wide screens; just the price on a phone, next to the glass. */}
+        <span className="label-full">{t("service.serveDrink", { drink: t.drink(drink).toLowerCase(), price: DRINKS[drink].price })}</span>
+        <span className="label-short">{t.money(DRINKS[drink].price)}</span>
+      </button>
+      {canOffer && (
+        <button className="btn sm drink-offer" title={t("service.offerDrink", { drink: t.drink(drink).toLowerCase(), name: customer.name })} onClick={() => dispatch({ type: "offerDrink" })}>
+          {t("service.offer")}
+        </button>
+      )}
+    </div>
+  );
 }
 
 // The usual is for the player to remember, with a way to give up and see the recipe.
@@ -66,9 +92,10 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, target, coachTa
       <div className="peel-pz">
         {board.length ? <Pizza ingredients={board} className="pizza" /> : <div className="empty">{t("service.emptyBoard")}</div>}
         {service.secretOnBoard && <span className="secret-sparkle" aria-hidden="true">✨</span>}
-        {selectedCustomer?.asUsual && <UsualReminder customer={selectedCustomer} dispatch={dispatch} />}
+        {selectedCustomer?.asUsual && !selectedCustomer.pizzaServed && <UsualReminder customer={selectedCustomer} dispatch={dispatch} />}
         {target && board.length > 0 && state.settings.showHelp && <BoardCheck customer={target} board={board} />}
       </div>
+      {selectedCustomer && <DrinkActions state={state} customer={selectedCustomer} dispatch={dispatch} />}
       <div className="peel-btns">
         {state.upgrades.commis >= COMMIS_ASSEMBLES_ORDER && selectedCustomer && (
           <button className="btn sm" onClick={() => dispatch({ type: "assembleOrder" })}>
@@ -123,7 +150,7 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
   // What the board is being built for: the selected customer, or the group order's next pizza.
   const target = isBatchSelected
     ? batchRecipe ? { name: t("service.theBatch"), ingredients: batchRecipe.ingredients } : undefined
-    : selectedCustomer && !selectedCustomer.asUsual ? selectedCustomer : undefined;
+    : selectedCustomer && !selectedCustomer.asUsual && !selectedCustomer.pizzaServed ? selectedCustomer : undefined;
   const tutorial = tutorialStep(state);
   const coachTarget = tutorial?.target ?? null;
 

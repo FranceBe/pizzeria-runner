@@ -701,7 +701,6 @@ header.top .top-inner { position: relative; }
 @media (max-width: 700px) {
   .ticket .who > div { padding-right: 0; }
   /* Phone service: ovens and bar stay compact so the prep line keeps its room */
-  .oven-fire { display: none; }
   .oven.multi .slot { min-height: 36px; padding: 3px; }
   .oven.multi .slot svg { width: 24px; height: 24px; }
   .oven-label { font-size: 9px; margin-bottom: 2px; }
@@ -938,3 +937,55 @@ button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff;
 .volume-mute { flex: none; width: 38px; padding: 4px 0; font-size: 16px; }
 .volume-label { flex: none; width: 120px; font-size: 14px; font-weight: 600; }
 .volume-slider { flex: 1; min-width: 0; accent-color: var(--accent); height: 28px; }
+
+/* Taps: no double-tap zoom, so two quick taps (Serve, then a pan) both count. Scrolling and pinch still work. */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button, .pan { touch-action: manipulation; }
+
+/* Short labels on phones, full ones elsewhere */
+.label-short { display: none; }
+
+/* Drinks: right under the board, for the selected customer */
+.drink-actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.drink-serve { display: inline-flex; align-items: center; gap: 6px; border-color: #7fb2d1; background: #e8f3fa; color: #24516e; font-weight: 700; }
+.drink-offer { background: var(--gold-soft); border-color: var(--gold); font-weight: 700; }
+.ticket.served-pizza { opacity: .85; border-style: dashed; background: var(--surface2); }
+.ticket .waiting-drink { font-weight: 700; color: #24516e; }
+
+@media (max-width: 700px) {
+  .label-full { display: none; }
+  .label-short { display: inline; }
+  .drink-actions { gap: 4px; }
+  .drink-actions .btn { padding: 5px 8px; font-size: 13px; }
+  .ticket .waiting-drink { display: block; font-size: 11.5px; }
+  /* The drink buttons under the board replace the bar rack on a phone */
+  .bar-rack { display: none; }
+  /* The oven's flames, smaller */
+  .oven-fire { display: block; width: 48px; height: 17px; margin: -4px auto 4px; }
+  .passe .bin-all { width: auto; align-self: stretch; }
+}
+
+/* ---------------------------------------------------------------
+   Phone pass on the screens outside service
+---------------------------------------------------------------- */
+@media (max-width: 700px) {
+  /* Prep: the main button takes the whole width; the daily challenge stacks its button under its text */
+  .prep .btn.primary.big { width: 100%; }
+  .challenge-offer { flex-direction: column; align-items: stretch; gap: 8px; }
+  .challenge-offer .btn { width: 100%; }
+
+  /* Market: three smaller crates per row, so the suppliers are not miles away */
+  .crates { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .crate { padding: 8px 4px 6px; gap: 3px; }
+  .crate-ic { width: 40px; height: 40px; }
+  .crate-n { font-size: 11.5px; min-height: 2.4em; }
+  .crate-qty { top: 4px; right: 4px; min-width: 20px; line-height: 17px; font-size: 11px; }
+  .crate-season { top: auto; bottom: auto; left: 4px; top: 4px; font-size: 8.5px; padding: 0 4px; }
+  .price-tag { font-size: 11.5px; padding: 1px 6px 1px 11px; }
+  .price-tag s { display: none; }
+  .crate-btns { gap: 3px; }
+  .crate-btns .btn.sm { padding: 4px 6px; font-size: 12px; }
+
+  /* Settings: room for the volume sliders */
+  .volume-label { width: 92px; font-size: 13px; }
+}

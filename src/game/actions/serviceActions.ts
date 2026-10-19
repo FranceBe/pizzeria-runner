@@ -155,6 +155,19 @@ function finishChallenge(state: GameState, service: Service): void {
 
 const isDayOver = (service: Service): boolean => service.customersToCome === 0 && service.customers.length === 0;
 
+// After a pizza goes out, the next order to work on: the first customer still waiting for a pizza.
+function selectNextForPizza(service: Service): void {
+  service.selectedCustomerId = service.customers.find((customer) => !customer.pizzaServed)?.id ?? service.customers[0]?.id ?? null;
+}
+
+// A customer who had their pizza and now their drink goes home. Mutates state.
+function leaveIfDone(state: GameState, service: Service, customer: Customer): void {
+  if (!customer.pizzaServed || !customer.drinkServed) return;
+  service.customers = service.customers.filter((c) => c.id !== customer.id);
+  if (service.selectedCustomerId === customer.id) selectNextForPizza(service);
+  if (isDayOver(service)) endDay(state, service);
+}
+
 // Who walks in next: the critic and birthday regulars show up at a random point of the evening
 // (surely by the last arrival), deliveries come in with the delivery upgrade.
 function nextCustomerKind(state: GameState, service: Service): CustomerKind {
@@ -354,13 +367,16 @@ export const serviceActions = {
     state.lifetime.revenue += price;
     state.lifetime.drinksSold += 1;
     recordWeekly(state, "drinks", 1);
+    // Paid first, then they may leave (and that may end the day).
+    leaveIfDone(state, service, customer);
   },
 
   // A regular's drink on the house: no money, but they remember it in the tip.
   offerDrink(state) {
     const { service } = state;
     const customer = service && selectedCustomer(service);
-    if (!customer?.drink || customer.drinkServed || !isRegularCustomer(state, customer)) return;
+    // Before the pizza only: the gesture shows in the tip, which comes with the pizza.
+    if (!customer?.drink || customer.drinkServed || customer.pizzaServed || !isRegularCustomer(state, customer)) return;
     customer.drinkServed = true;
     customer.drinkOffered = true;
     pushToast(state, { key: "drinkOffered", params: { name: customer.name } });
@@ -485,8 +501,10 @@ export const serviceActions = {
     }
     const { customer } = destination;
     service.ready = service.ready.filter((p) => p.id !== pizza.id);
-    service.customers = service.customers.filter((c) => c.id !== customer.id);
-    if (service.selectedCustomerId === customer.id) service.selectedCustomerId = service.customers[0]?.id ?? null;
+    // Someone still waiting for their drink stays at the counter until it comes; everyone else leaves.
+    if (customer.drink && !customer.drinkServed && !service.challenge) customer.pizzaServed = true;
+    else service.customers = service.customers.filter((c) => c.id !== customer.id);
+    if (service.selectedCustomerId === customer.id) selectNextForPizza(service);
 
     if (service.challenge) {
       serveForChallenge(service, customer);

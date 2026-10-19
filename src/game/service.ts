@@ -34,8 +34,9 @@ const pizzasIn = (service: Service, ovenIndex: number): number =>
 // Nothing more can come out of the kitchen: no pizza in the oven or on the pass, and every waiting order
 // misses something the fridge doesn't have and the till can't pay for. The service screen then offers a way out.
 export function isStuck(state: GameState, service: Service): boolean {
-  if (service.challenge || service.oven.length || service.ready.length || !service.customers.length) return false;
-  return service.customers.every((customer) => {
+  const waitingForPizza = service.customers.filter((customer) => !customer.pizzaServed);
+  if (service.challenge || service.oven.length || service.ready.length || !waitingForPizza.length) return false;
+  return waitingForPizza.every((customer) => {
     const missing = customer.ingredients.filter((id) => !service.board.includes(id) && (state.stock[id] || 0) < 1);
     return missing.length > 0 && missing.reduce((total, id) => total + marketPrice(state, id), 0) > state.money;
   });
@@ -64,8 +65,9 @@ export function destinationOf(state: GameState, service: Service, ingredients: r
 }
 
 // The customer a baked pizza goes to: the selected one if it matches, otherwise the first match.
+// Someone who already had their pizza (and waits for a drink) takes no other.
 export function customerForPizza(service: Service, ingredients: readonly IngredientId[]): Customer | undefined {
-  const matches = (customer: Customer) => haveSameIngredients(customer.ingredients, ingredients);
+  const matches = (customer: Customer) => !customer.pizzaServed && haveSameIngredients(customer.ingredients, ingredients);
   return (
     service.customers.find((customer) => customer.id === service.selectedCustomerId && matches(customer)) ||
     service.customers.find(matches)

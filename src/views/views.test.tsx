@@ -417,6 +417,18 @@ describe("views", () => {
     expect(html).toMatch(/id="volume-music"[^>]*value="35"|value="35"[^>]*id="volume-music"/);
   });
 
+  it("offers the selected customer's drink under the board, with its price, and shows who waits for one", () => {
+    const state = stateInService([makeCustomer({ drink: "vin" }), makeCustomer({ id: "c2", name: "Zoé", drink: "eau", pizzaServed: true })], {
+      customerBook: { Luca: makeBookEntry({ visits: 4 }) },
+    });
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain("Serve red wine · €4.50");
+    expect(html).toContain("🎁 On the house");
+    expect(html).toContain("Red wine · €4.50");
+    expect(html).toContain("Pizza served ✓");
+    expect(html).toContain("waiting for their drink");
+  });
+
   it("sells looks for the pizzeria", () => {
     const html = render(<UpgradesView state={makeState({ money: 130 })} dispatch={noop} />, "en");
     expect(html).toContain("Make it yours");

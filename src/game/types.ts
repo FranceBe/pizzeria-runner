@@ -70,6 +70,8 @@ export interface Customer extends Looks {
   drinkServed?: boolean;
   /** A regular's drink, on the house: a better tip and a little reputation. */
   drinkOffered?: boolean;
+  /** Pizza served, drink not yet: they stay at the counter until it comes. */
+  pizzaServed?: boolean;
   /** A regular on their birthday: their favourite earns a gift. */
   birthday?: boolean;
   /** A (made-up) celebrity: not in the customer book, a big tip and a signed photo. */

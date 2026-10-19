@@ -28,7 +28,7 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
   if (key === "0") return { type: "toggleIngredient", ingredientId: selected?.ingredients.find(isBase) ?? "pate" };
   if (/^[1-9]$/.test(key)) {
     // The usual order is for the player to remember.
-    if (!state.settings.showHelp || !selected || selected.asUsual) return null;
+    if (!state.settings.showHelp || !selected || selected.asUsual || selected.pizzaServed) return null;
     const ingredientId = selected.ingredients.filter((id) => id !== "pate")[Number(key) - 1];
     return ingredientId ? { type: "toggleIngredient", ingredientId } : null;
   }
@@ -42,7 +42,7 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
     return selected?.drink && !selected.drinkServed ? { type: "serveDrink", drinkId: selected.drink } : null;
   }
   if (key === "o" || key === "O") {
-    return selected?.drink && !selected.drinkServed && isRegularCustomer(state, selected) ? { type: "offerDrink" } : null;
+    return selected?.drink && !selected.drinkServed && !selected.pizzaServed && isRegularCustomer(state, selected) ? { type: "offerDrink" } : null;
   }
   const step = ARROW_STEPS[key];
   if (step && service.customers.length) {

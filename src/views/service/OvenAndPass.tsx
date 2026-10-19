@@ -101,7 +101,8 @@ function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
       {service.ready.length === 0 && <p className="hint passe-empty">{t("service.passEmpty")}</p>}
       {unwantedCount > 1 && (
         <button className="btn sm ghost bin-all" onClick={() => dispatch({ type: "trashUnwantedPizzas" })}>
-          {t("service.trashUnwanted", { count: unwantedCount })}
+          <span className="label-full">{t("service.trashUnwanted", { count: unwantedCount })}</span>
+          <span className="label-short">{t("service.trashUnwantedShort", { count: unwantedCount })}</span>
         </button>
       )}
       {service.ready.map((pizza) => {
