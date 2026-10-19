@@ -1,6 +1,6 @@
 import { DRINKS } from "../../data/drinks";
 import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
-import { ANNEXE_INCOME, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE } from "../../data/progression";
+import { ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE } from "../../data/progression";
 import { randomBetween, randomIndex, makeId } from "../../utils/random";
 import { createChallenge, createChallengeCustomer, nextChallengeArrival } from "../challenge";
 import { createCustomer, isRegularCustomer, moodForWait, type CustomerKind } from "../customers";
@@ -19,7 +19,7 @@ import { discoverPairings } from "../pairings";
 import { hasBase, ingredientCost, isBase, isSauce, sortByLayer } from "../pizza";
 import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest } from "../quests";
-import { destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
+import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
 import {
   collectPayment, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable,
 } from "../serving";
@@ -156,6 +156,36 @@ function finishChallenge(state: GameState, service: Service): void {
 const isDayOver = (service: Service): boolean => service.customersToCome === 0 && service.customers.length === 0;
 
 // After a pizza goes out, the next order to work on: the first customer still waiting for a pizza.
+// The drink goes out and is paid; then the customer may leave (and that may end the day). Mutates state.
+function sellDrink(state: GameState, service: Service, customer: Customer): void {
+  if (!customer.drink) return;
+  // Served by hand while the barman was pouring it: he starts over on the next one.
+  if (barmanTarget(state, service) === customer) service.barmanSeconds = 0;
+  customer.drinkServed = true;
+  const { price } = DRINKS[customer.drink];
+  receivePayment(state, price);
+  pushPop(state, price, "drink");
+  service.stats.revenue += price;
+  service.stats.drinks = (service.stats.drinks ?? 0) + price;
+  state.lifetime.revenue += price;
+  state.lifetime.drinksSold += 1;
+  recordWeekly(state, "drinks", 1);
+  leaveIfDone(state, service, customer);
+}
+
+// The barman pours one drink at a time, for the first customer still waiting for one. Mutates state.
+function pourWithBarman(state: GameState, service: Service, seconds: number): void {
+  const customer = barmanTarget(state, service);
+  if (!customer) {
+    service.barmanSeconds = 0;
+    return;
+  }
+  service.barmanSeconds = (service.barmanSeconds ?? 0) + seconds;
+  if (service.barmanSeconds < BARMAN_SECONDS) return;
+  service.barmanSeconds = 0;
+  sellDrink(state, service, customer);
+}
+
 function selectNextForPizza(service: Service): void {
   service.selectedCustomerId = service.customers.find((customer) => !customer.pizzaServed)?.id ?? service.customers[0]?.id ?? null;
 }
@@ -317,6 +347,8 @@ export const serviceActions = {
       .forEach((pizza) => service.ready.push({ id: pizza.id, ingredients: pizza.ingredients, secret: pizza.secret, waitingSeconds: 0 }));
     service.oven = service.oven.filter((pizza) => !isBaked(pizza));
     if (!service.challenge) advanceEvening(state, service, seconds);
+    pourWithBarman(state, service, seconds);
+    if (state.phase !== "service") return;
 
     if (service.challenge) {
       service.challenge.secondsLeft = Math.max(0, service.challenge.secondsLeft - seconds);
@@ -349,26 +381,18 @@ export const serviceActions = {
   },
 
   // Drinks come straight from the bar fridge: to the selected customer if they want it, otherwise to the first who does.
-  serveDrink(state, { drinkId }) {
+  serveDrink(state, { drinkId, customerId }) {
     const { service } = state;
     if (!service) return;
     const wantsIt = (customer: Customer) => customer.drink === drinkId && !customer.drinkServed;
-    const customer = service.customers.find((c) => c.id === service.selectedCustomerId && wantsIt(c)) ?? service.customers.find(wantsIt);
+    // A tap on a waiting ticket names its customer; otherwise the selected one, then whoever ordered it.
+    const customer =
+      service.customers.find((c) => c.id === (customerId ?? service.selectedCustomerId) && wantsIt(c)) ?? service.customers.find(wantsIt);
     if (!customer) {
       pushToast(state, { key: "nobodyWantsDrink", params: { drinkId } });
       return;
     }
-    customer.drinkServed = true;
-    const { price } = DRINKS[drinkId];
-    receivePayment(state, price);
-    pushPop(state, price, "drink");
-    service.stats.revenue += price;
-    service.stats.drinks = (service.stats.drinks ?? 0) + price;
-    state.lifetime.revenue += price;
-    state.lifetime.drinksSold += 1;
-    recordWeekly(state, "drinks", 1);
-    // Paid first, then they may leave (and that may end the day).
-    leaveIfDone(state, service, customer);
+    sellDrink(state, service, customer);
   },
 
   // A regular's drink on the house: no money, but they remember it in the tip.

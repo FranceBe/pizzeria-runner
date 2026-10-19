@@ -154,6 +154,8 @@ export interface Service {
   board: IngredientId[];
   /** Nonna's secret is on the pizza being built. */
   secretOnBoard?: boolean;
+  /** How far the barman is with the drink he is pouring (seconds). */
+  barmanSeconds?: number;
   /** The clock is stopped: nobody waits, nothing bakes, nobody comes in. */
   paused?: boolean;
   /** Seconds since the restaurant opened. */
@@ -461,7 +463,7 @@ export type GameAction =
   | { type: "trashReadyPizza"; pizzaId: string }
   | { type: "revealUsualOrder"; customerId: string }
   | { type: "startChallenge"; date: string }
-  | { type: "serveDrink"; drinkId: DrinkId }
+  | { type: "serveDrink"; drinkId: DrinkId; customerId?: string }
   | { type: "offerDrink" }
   | { type: "toggleSecret" }
   | { type: "craftSecret" }

@@ -104,7 +104,9 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 - **Tables** (from level 3): two to four people come in together. Serve the whole table while they are still happy or
   patient for a bonus of €1.50 each.
 - **Drinks** (with the bar): some customers add a drink, served straight from the bar. A regular's drink can also be
-  offered: no money, but a much better chance of a bigger tip, and a little reputation.
+  offered (before the pizza): no money, but a much better chance of a bigger tip, and a little reputation. Someone who
+  got their pizza first waits at the counter for their drink: tap their ticket to serve it. At bar level 3, a barman
+  serves the drinks on his own, one every 6 seconds; serving by hand is still quicker.
 - **Celebrities** (from level 5, rare, at most one a day): they order the finest pizza on the menu with an extra
   topping, and leave a €10 tip, lots of reputation, and a signed photo that goes up on the front.
 - Customers come in many faces: over 120 names, hairstyles and colours (now and then blue or green), and accessories
@@ -140,7 +142,7 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 | Kitchen assistant | Rolls out fresh dough, then builds the selected order in one tap |
 | Terrace | More customers, especially on sunny days |
 | Delivery | Scooter orders, with an express bonus when they leave within 45 seconds |
-| Bar | Drinks: lemonade and sparkling water, then chinotto and red wine |
+| Bar | Drinks: lemonade and sparkling water, then chinotto and red wine, then a barman who serves them on his own |
 | Second and third oven | One slow slot when built, then improving like the first oven |
 | Second address | Brings in money every evening |
 

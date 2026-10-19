@@ -989,3 +989,28 @@ button, .pan { touch-action: manipulation; }
   /* Settings: room for the volume sliders */
   .volume-label { width: 92px; font-size: 13px; }
 }
+
+/* Drinks on a phone: a waiting ticket is the serve button (tap it), and the selected order's drink sits in the
+   board's corner so the fixed-height board never hides it. */
+.ticket.served-pizza { cursor: pointer; }
+@media (max-width: 700px) {
+  .ticket.served-pizza { opacity: 1; border: 2px solid #7fb2d1; background: #e8f3fa; }
+  .ticket.served-pizza .drink-order .drink-name { display: inline; }
+  .ticket.served-pizza .waiting-drink { color: #24516e; }
+  .a-peel { position: relative; }
+  .drink-actions { position: absolute; top: 6px; left: 6px; z-index: 2; flex-direction: column; align-items: stretch; }
+  .drink-actions .btn { padding: 3px 6px; font-size: 12px; justify-content: center; }
+  .drink-serve { flex-direction: column; gap: 0; }
+  .drink-serve svg { width: 22px; height: 22px; }
+}
+@media (max-width: 700px) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ticket.served-pizza { background: #1d3442; border-color: #4f86a8; }
+  :root:not([data-theme="light"]) .ticket.served-pizza .waiting-drink { color: #bfe0f3; }
+}
+@media (max-width: 700px) {
+  :root[data-theme="dark"] .ticket.served-pizza { background: #1d3442; border-color: #4f86a8; }
+  :root[data-theme="dark"] .ticket.served-pizza .waiting-drink { color: #bfe0f3; }
+}
+
+/* The barman's glass fills on the ticket while he pours */
+.drink-order.pouring { border-style: solid; background: linear-gradient(90deg, #bfe0f3 var(--pour), #e8f3fa var(--pour)); }

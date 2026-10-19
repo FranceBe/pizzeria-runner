@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { COMMIS_ASSEMBLES_ORDER } from "../../data/progression";
+import { BARMAN_SECONDS, COMMIS_ASSEMBLES_ORDER } from "../../data/progression";
 import { revealInList } from "../../utils/scroll";
 import { isRegularCustomer } from "../../game/customers";
-import { isStuck, ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
+import { barmanTarget, isStuck, ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
 import { PauseMenu, ServiceWayOut } from "./PauseMenu";
 import { hasBase, haveSameIngredients } from "../../game/pizza";
 import { tutorialStep } from "../../game/tutorial";
@@ -167,6 +167,7 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
   }, [service.selectedCustomerId, customerCount]);
   // Messages come first; the tutorial hint takes the message line otherwise.
   const showCoach = tutorial !== null && !state.toasts.length;
+  const pouringFor = barmanTarget(state, service);
   return (
     <div className={`svc${challenge ? " in-challenge" : ""}${service.rush ? " in-rush" : ""}`}>
       <div className="a-ticker">
@@ -202,7 +203,13 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
                 board={service.board}
                 isRegular={isRegularCustomer(state, customer)}
                 table={group.tableId ? service.tables?.[group.tableId] : undefined}
-                onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
+                pour={customer.id === pouringFor?.id ? Math.min(1, (service.barmanSeconds ?? 0) / BARMAN_SECONDS) : undefined}
+                onSelect={() =>
+                  // Someone who already has their pizza is only waiting for their drink: the tap serves it.
+                  customer.pizzaServed && customer.drink
+                    ? dispatch({ type: "serveDrink", drinkId: customer.drink, customerId: customer.id })
+                    : dispatch({ type: "selectCustomer", customerId: customer.id })
+                }
               />
             ));
             const table = group.tableId ? service.tables?.[group.tableId] : undefined;

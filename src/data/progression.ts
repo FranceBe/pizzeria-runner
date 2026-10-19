@@ -30,7 +30,7 @@ export const UPGRADES: Record<UpgradeKey, Upgrade> = {
   commis: { costs: [150, 400], requiredLevel: [3, 6], dailyCharge: 5 },
   terrasse: { costs: [120, 320], requiredLevel: [4, 7], dailyCharge: 3 },
   livraison: { costs: [220], requiredLevel: [5], dailyCharge: 4 },
-  bar: { costs: [90, 240], requiredLevel: [3, 5], dailyCharge: 2 },
+  bar: { costs: [90, 240, 350], requiredLevel: [3, 5, 7], dailyCharge: 2 },
   // Extra ovens: building one gives a single slow slot, then it improves like the first oven.
   oven2: { costs: [450, 250, 500, 900], requiredLevel: [7, 7, 8, 9], dailyCharge: 3 },
   oven3: { costs: [1100, 600, 1100, 1800], requiredLevel: [10, 11, 13, 15], dailyCharge: 4 },
@@ -62,6 +62,10 @@ export const DELIVERY_EXPRESS_BONUS = 1.5;
 // Commis levels that unlock each helper behaviour.
 export const COMMIS_SPREADS_DOUGH = 1;
 export const COMMIS_ASSEMBLES_ORDER = 2;
+
+// Bar level that hires a barman: drinks go out on their own, one at a time, this many seconds each.
+export const BARMAN_LEVEL = 3;
+export const BARMAN_SECONDS = 6;
 
 export function tipChanceForDecor(decorLevel: number): number {
   return 0.3 + 0.12 * decorLevel;

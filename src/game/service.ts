@@ -1,5 +1,5 @@
 import type { IngredientId } from "../data/ingredients";
-import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS } from "../data/progression";
+import { BAKE_SECONDS, BARMAN_LEVEL, EXTRA_OVEN_KEYS, OVEN_SLOTS } from "../data/progression";
 import { BATCH_ID, batchItemFor } from "./batch";
 import { marketPrice } from "./events";
 import { haveSameIngredients } from "./pizza";
@@ -33,6 +33,12 @@ const pizzasIn = (service: Service, ovenIndex: number): number =>
 
 // Nothing more can come out of the kitchen: no pizza in the oven or on the pass, and every waiting order
 // misses something the fridge doesn't have and the till can't pay for. The service screen then offers a way out.
+// With the barman hired, the customer whose drink he is pouring: the first one still waiting for a drink.
+export const barmanTarget = (state: GameState, service: Service): Customer | undefined =>
+  state.upgrades.bar >= BARMAN_LEVEL && !service.challenge
+    ? service.customers.find((customer) => customer.drink && !customer.drinkServed)
+    : undefined;
+
 export function isStuck(state: GameState, service: Service): boolean {
   const waitingForPizza = service.customers.filter((customer) => !customer.pizzaServed);
   if (service.challenge || service.oven.length || service.ready.length || !waitingForPizza.length) return false;

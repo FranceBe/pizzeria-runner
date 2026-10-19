@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { moodForWait, hasSpecialRequest } from "../../game/customers";
 import { useTranslation } from "../../i18n/I18nContext";
 import { CustomerFace } from "../../components/CustomerFace";
@@ -18,6 +19,8 @@ interface OrderTicketProps {
   board: readonly IngredientId[];
   /** The table this customer sits at, if they came in with others. */
   table?: TableProgress;
+  /** How full the barman has poured this customer's drink, from 0 to 1, while he is on it. */
+  pour?: number;
   onSelect: () => void;
 }
 
@@ -61,7 +64,7 @@ function ticketClassName(customer: Customer, table: TableProgress | undefined): 
   return "ticket";
 }
 
-export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, table, onSelect }: OrderTicketProps) {
+export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, table, pour, onSelect }: OrderTicketProps) {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
@@ -104,7 +107,11 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
           {customer.removedIngredient && <span className="mod rem">{t("service.without", { id: customer.removedIngredient })}</span>}
           {customer.diet && <span className="mod diet">{t(`diets.${customer.diet}`)}</span>}
           {customer.drink && (
-            <span className={`drink-order${customer.drinkServed ? " served" : ""}`}>
+            <span
+              className={`drink-order${customer.drinkServed ? " served" : pour !== undefined ? " pouring" : ""}`}
+              style={pour !== undefined ? ({ "--pour": `${Math.round(pour * 100)}%` } as CSSProperties) : undefined}
+              title={pour !== undefined ? t("service.barmanPouring") : undefined}
+            >
               <DrinkGlass id={customer.drink} />
               <span className="drink-name">
                 {`${t.drink(customer.drink)} · ${customer.drinkOffered ? t("service.offered") : t.money(DRINKS[customer.drink].price)}`}

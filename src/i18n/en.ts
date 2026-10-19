@@ -145,10 +145,11 @@ export const en: Dictionary = {
     trashUnwanted: ({ count }) => `Bin the ${count} pizzas nobody is waiting for`,
     offerDrink: ({ drink, name }) => `🎁 Offer ${name} the ${drink}`,
     offered: "on the house",
+    barmanPouring: "The barman is pouring it",
     batch: "Group order",
     theBatch: "the group order",
     pizzaDone: "Pizza served ✓",
-    waitingDrink: "waiting for their drink",
+    waitingDrink: "waiting for their drink: tap to serve",
     serveDrink: ({ drink, price }, t) => `Serve ${drink} · ${t.money(price)}`,
     offer: "🎁 On the house",
     trashUnwantedShort: "🗑 Bin all ({count})",
@@ -295,7 +296,12 @@ export const en: Dictionary = {
     },
     bar: {
       name: "Bar",
-      describe: ({ level }) => ["No drinks", "Lemonade and sparkling water", "Lemonade, sparkling water, chinotto and red wine"][level],
+      describe: ({ level }) => [
+          "No drinks",
+          "Lemonade and sparkling water",
+          "Lemonade, sparkling water, chinotto and red wine",
+          "A barman serves the drinks on his own, one at a time",
+        ][level],
     },
     oven2: {
       name: "Second oven",

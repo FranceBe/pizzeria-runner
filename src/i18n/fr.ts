@@ -159,10 +159,11 @@ export const fr = {
     trashUnwanted: ({ count }: { count: number }) => `Jeter les ${count} pizzas que personne n'attend`,
     offerDrink: ({ drink, name }: { drink: string; name: string }) => `🎁 Offrir ${drink} à ${name}`,
     offered: "offerte",
+    barmanPouring: "Le barman la prépare",
     batch: "Commande groupée",
     theBatch: "la commande groupée",
     pizzaDone: "Pizza servie ✓",
-    waitingDrink: "attend sa boisson",
+    waitingDrink: "attend sa boisson : touchez pour servir",
     serveDrink: ({ drink, price }: { drink: string; price: number }, t: H) => `Servir ${drink} · ${t.money(price)}`,
     offer: "🎁 Offrir",
     trashUnwantedShort: "🗑 Tout jeter ({count})",
@@ -314,7 +315,12 @@ export const fr = {
     bar: {
       name: "Bar",
       describe: ({ level }: { level: number }): string =>
-        ["Pas de boissons", "Limonade et eau pétillante", "Limonade, eau pétillante, chinotto et vin rouge"][level],
+        [
+          "Pas de boissons",
+          "Limonade et eau pétillante",
+          "Limonade, eau pétillante, chinotto et vin rouge",
+          "Un barman sert les boissons tout seul, une à la fois",
+        ][level],
     },
     oven2: {
       name: "Deuxième four",
