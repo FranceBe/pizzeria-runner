@@ -92,11 +92,16 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 
 ### Customers
 
-- **Regulars**: a name is a person. From their third visit they are regulars: they keep their look (hair, accessories),
-  often reorder their favourite and tip more. Each has a profile in the journal: their favourite, one ingredient they
-  never order, and a birthday. On their birthday they come for their favourite and leave a €5 gift.
+- **The neighbourhood**: a name is a person, and everyone keeps their look (hair, accessories). About twenty people live
+  nearby and come most of the time; everyone else passes by now and then.
+- **Regulars**: someone who has ordered the same pizza three times is a regular: they often reorder it and tip more.
+  Each has a profile in the journal: their favourite, one ingredient they never order, and a birthday. On their
+  birthday they come for their favourite and leave a €5 gift. A regular who stays away more than 10 days is lost from
+  sight, and a regular again as soon as they come back.
 - **"The usual"**: a regular ordering their favourite sometimes just says "the usual". The ticket hides the recipe and
   the help is off: remember it for a bonus, or tap "Remind me…" to see it, without the bonus.
+- **Back for dessert**: with a dessert pizza on the menu, a customer served happy sometimes comes back later in the
+  evening for one, on top of the day's customers. Served quickly, they add €1.50.
 - **Special requests** (from level 3): an extra topping, or one left out.
 - **Diets** (from level 4): vegetarian, no pork, gluten-free (with the gluten-free dough, signed at the market).
 - **Tables** (from level 3): two to four people come in together. Serve the whole table while they are still happy or

@@ -97,11 +97,12 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
             : t.recipe({ id: customer.recipeId, name: customer.recipeName })}
       </div>
       {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
-      {(customer.critic || customer.celebrity || customer.birthday || customer.charmed || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
+      {(customer.critic || customer.celebrity || customer.birthday || customer.charmed || customer.forDessert || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
           {customer.celebrity && <span className="mod celebrity-tag">{`⭐ ${t("service.celebrity")}`}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
+          {customer.forDessert && <span className="mod dessert-tag" title={t("service.forDessertTitle")}>{`🍰 ${t("service.forDessert")}`}</span>}
           {customer.charmed && <span className="mod charmed-tag" title={t("service.charmedTitle")}>{`💛 ${t("service.charmed")}`}</span>}
           {hasExpress && <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>}
           {customer.extraIngredient && <span className="mod add">{t("service.extra", { id: customer.extraIngredient })}</span>}

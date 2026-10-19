@@ -53,8 +53,10 @@ export function makeCustomer(overrides: Partial<Customer> = {}): Customer {
   };
 }
 
+// Unless told otherwise, every visit was for a margherita: four visits make a regular.
 export function makeBookEntry(overrides: Partial<CustomerBookEntry> = {}): CustomerBookEntry {
-  return { skin: "#e0ac83", hair: "#5b3a22", hairStyle: 1, visits: 1, orders: {}, ...overrides };
+  const visits = overrides.visits ?? 1;
+  return { skin: "#e0ac83", hair: "#5b3a22", hairStyle: 1, visits, orders: { margherita: visits }, ...overrides };
 }
 
 // Round-trips a value through JSON, the way saves are stored.

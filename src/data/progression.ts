@@ -65,6 +65,12 @@ export const DELIVERY_FEE = 1;
 export const DELIVERY_EXPRESS_SECONDS = 45;
 export const DELIVERY_EXPRESS_BONUS = 1.5;
 
+// A happy customer sometimes comes back later the same evening for a dessert pizza (when the menu has one).
+export const DESSERT_RETURN_CHANCE = 0.3;
+export const DESSERT_RETURN_SECONDS: readonly [number, number] = [25, 45];
+// Served happy, someone back for dessert adds this on top of the price.
+export const DESSERT_QUICK_BONUS = 1.5;
+
 // Commis levels that unlock each helper behaviour.
 export const COMMIS_SPREADS_DOUGH = 1;
 // From level 2, the pans the selected order doesn't need fade a little, then more at level 3.

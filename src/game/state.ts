@@ -84,6 +84,7 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     secretIngredient: false,
     secretStock: 0,
     mammaSecret: false,
+    locals: [],
     mammaStock: 0,
     lateIngredient: null,
     festival: null,

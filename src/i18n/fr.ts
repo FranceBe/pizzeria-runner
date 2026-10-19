@@ -186,6 +186,8 @@ export const fr = {
     mammaPan: "Mamma",
     mammaTitle: "Une cuillère du secret de Mamma : ce client parlera de toi au suivant.",
     charmed: "Charmé·e",
+    forDessert: "Pour le dessert",
+    forDessertTitle: "Revenu·e pour une pizza dessert : un petit bonus si elle arrive vite.",
     charmedTitle: "On lui a dit le plus grand bien de ta pizzeria : patience au maximum, et un pourboire assuré.",
   },
 
@@ -463,7 +465,7 @@ export const fr = {
     achievementsIntro: "{count} / {total} débloqués",
     unlockedOn: "Jour {day}",
     regulars: "Habitués",
-    noRegulars: "Tes habitués apparaîtront ici à leur troisième visite.",
+    noRegulars: "Tes habitués apparaîtront ici dès qu'un client aura commandé trois fois la même pizza.",
     visits: "{count} visites",
     quests: "Quêtes réussies",
     questsTotal: ({ count, amount }: { count: number; amount: number }, t: H) =>

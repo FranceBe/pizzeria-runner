@@ -237,7 +237,7 @@ describe("saves from version 3", () => {
     money: 50,
     xp: 300,
     recipes: [{ id: "c-x", name: "Miel", ingredients: ["pate", "creme", "chevre", "miel"], price: 9, classic: false, custom: true, onMenu: true, newUntil: 0 }],
-    customerBook: { Luca: { visits: 3, orders: {} }, Sofia: { visits: 2, orders: {} } },
+    customerBook: { Luca: { visits: 3, orders: { margherita: 3 } }, Sofia: { visits: 2, orders: {} } },
   };
 
   it("count pairings already used and pizzas served", () => {

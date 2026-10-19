@@ -72,6 +72,8 @@ export interface Customer extends Looks {
   drinkOffered?: boolean;
   /** Pizza served, drink not yet: they stay at the counter until it comes. */
   pizzaServed?: boolean;
+  /** Came back the same evening for a dessert pizza: a bonus if it comes quickly. */
+  forDessert?: boolean;
   /** Heard good things from the customer before (Mamma's secret): patience back to full, and a tip for sure. */
   charmed?: boolean;
   /** A regular on their birthday: their favourite earns a gift. */
@@ -161,6 +163,8 @@ export interface Service {
   secretOnBoard?: boolean;
   /** Mamma's secret is on the pizza being built. */
   mammaOnBoard?: boolean;
+  /** Happy customers who will come back later tonight for a dessert pizza, and in how many seconds. */
+  dessertReturns?: { name: string; inSeconds: number }[];
   /** Customers to charm as soon as they come in (Mamma's secret, served while nobody else was waiting). */
   charmsPending?: number;
   /** Drinks poured that nobody took yet. */
@@ -365,6 +369,10 @@ export interface CustomerBookEntry extends Looks {
   dislikes?: IngredientId;
   /** Day of the 28-day month (1–28), given when they become a regular. */
   birthday?: number;
+  /** The last day they came; missing on older saves until the next day starts. */
+  lastVisit?: number;
+  /** A regular who hasn't come for a while: no longer counted as one until they come back. */
+  lapsed?: boolean;
 }
 
 export interface Settings {
@@ -440,6 +448,8 @@ export interface GameState {
   secretIngredient: boolean;
   /** Jars of it made at the market and not used yet. */
   secretStock: number;
+  /** The neighbourhood: names who come often (see regulars.ts). */
+  locals: string[];
   /** Mamma's secret ingredient, once she has shared it. */
   mammaSecret: boolean;
   /** Portions of it made at the market and not used yet. */

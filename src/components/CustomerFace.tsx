@@ -5,11 +5,20 @@ import type { Looks, Mood } from "../game/types";
 const MOUTH_PATHS: Record<Mood, string> = ["M13,27 Q20,33 27,27", "M14,28.5 L26,28.5", "M14,30 Q20,27 26,30", "M13,31 Q20,25 27,31"];
 const INK = "#1f1a17";
 
-// Hair behind the head: long hair, curls, a ponytail. Drawn before the face.
+// Hair behind the head: long hair, curls, a ponytail, an afro, braids. Drawn before the face.
 function HairBack({ style, color }: { style: number; color: string }) {
   if (style === 3) return <path d="M5,24 Q4,5 20,5 Q36,5 35,24 L36,38 L4,38Z" fill={color} />;
   if (style === 4) return <circle cx="20" cy="16" r="15" fill={color} />;
   if (style === 5) return <ellipse cx="34" cy="25" rx="4" ry="10" fill={color} transform="rotate(-12 34 25)" />;
+  if (style === 8) return <ellipse cx="20" cy="17" rx="18" ry="16.5" fill={color} />;
+  if (style === 11) {
+    return (
+      <>
+        <rect x="3" y="20" width="5" height="17" rx="2.5" fill={color} />
+        <rect x="32" y="20" width="5" height="17" rx="2.5" fill={color} />
+      </>
+    );
+  }
   return null;
 }
 
@@ -38,6 +47,22 @@ function HairFront({ style, color }: { style: number; color: string }) {
           <circle cx="29" cy="13" r="4" fill={color} />
         </>
       );
+    case 8:
+      // Afro: the volume is behind the head; a soft hairline in front.
+      return <path d="M7,19 Q9,9 20,9 Q31,9 33,19 Q27,14 20,14 Q13,14 7,19Z" fill={color} />;
+    case 9:
+      // Side part: swept to one side.
+      return <path d="M6,21 Q6,6 21,6 Q34,6 34,19 Q29,10 17,13 Q11,15 6,21Z" fill={color} />;
+    case 10:
+      return (
+        <>
+          <circle cx="9" cy="8" r="4.5" fill={color} />
+          <circle cx="31" cy="8" r="4.5" fill={color} />
+          <path d="M6,19 Q8,7 20,7 Q32,7 34,19 Q28,12 20,12 Q12,12 6,19Z" fill={color} />
+        </>
+      );
+    case 11:
+      return <path d="M5,24 Q5,6 20,6 Q35,6 35,24 L32,22 Q31,12 20,12 Q9,12 8,22Z" fill={color} />;
     case 6:
       // Bald: just a little shine.
       return <ellipse cx="15" cy="12" rx="4" ry="2" fill="#fff" opacity=".35" />;
@@ -49,6 +74,7 @@ function HairFront({ style, color }: { style: number; color: string }) {
 // Facial hair goes under the mouth line; everything else on top of the face.
 function FacialHair({ accessory, color }: { accessory: AccessoryId | null | undefined; color: string }) {
   if (accessory === "beard") return <path d="M8,24 Q8,37 20,37 Q32,37 32,24 Q30,31 20,32 Q10,31 8,24Z" fill={color} />;
+  if (accessory === "goatee") return <path d="M16,30 Q20,29 24,30 Q24,35 20,36 Q16,35 16,30Z" fill={color} />;
   if (accessory === "moustache") return <path d="M14,26 Q17,23 20,25 Q23,23 26,26 Q23,27.5 20,26.4 Q17,27.5 14,26Z" fill={color} />;
   return null;
 }
@@ -144,6 +170,38 @@ function Accessory({ accessory }: { accessory: AccessoryId | null | undefined })
           <rect x="11" y="8" width="18" height="2.2" fill="#2b1d14" />
         </>
       );
+    case "beanie":
+      return (
+        <>
+          <path d="M6,16 Q6,3 20,3 Q34,3 34,16Z" fill="#2fa36b" />
+          <rect x="5.5" y="13" width="29" height="4.5" rx="2" fill="#24835a" />
+          <circle cx="20" cy="2.5" r="2.5" fill="#f4f1e8" />
+        </>
+      );
+    case "scarf":
+      return (
+        <>
+          <path d="M8,33 Q20,39 32,33 L33,38 Q20,42 7,38Z" fill="#e0453a" />
+          <rect x="24" y="35" width="4" height="5" rx="1" fill="#b52f26" />
+        </>
+      );
+    case "noseRing":
+      return <circle cx="21.6" cy="25" r="1.3" fill="none" stroke="#e0a020" strokeWidth=".9" />;
+    case "pearls":
+      return (
+        <g fill="#f7f3ea" stroke="#c9c2b2" strokeWidth=".4">
+          {[9, 13, 17, 21, 25, 29].map((x, index) => (
+            <circle key={x} cx={x + 1} cy={35.5 + (index === 0 || index === 5 ? -1.5 : index === 1 || index === 4 ? 0 : 0.8)} r="1.5" />
+          ))}
+        </g>
+      );
+    case "monocle":
+      return (
+        <g fill="none" stroke="#c9a227" strokeWidth="1.2">
+          <circle cx="25" cy="21" r="4" />
+          <path d="M29,22 Q31,28 29,34" strokeWidth=".8" />
+        </g>
+      );
     default:
       return null;
   }
@@ -152,12 +210,12 @@ function Accessory({ accessory }: { accessory: AccessoryId | null | undefined })
 export function CustomerFace({ customer, mood }: { customer: Looks; mood: Mood }) {
   const { hairStyle, hair, accessory } = customer;
   // Hats sit on the hair, so the hairstyle shows only around them.
-  const wearsHat = accessory === "beret" || accessory === "cap" || accessory === "hat" || accessory === "bandana";
+  const wearsHat = accessory === "beret" || accessory === "cap" || accessory === "hat" || accessory === "bandana" || accessory === "beanie";
   return (
     <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
       <HairBack style={hairStyle} color={hair} />
       <circle cx="20" cy="22" r="14" fill={customer.skin} />
-      {!(wearsHat && hairStyle === 4) && <HairFront style={hairStyle} color={hair} />}
+      {!(wearsHat && (hairStyle === 4 || hairStyle === 10)) && <HairFront style={hairStyle} color={hair} />}
       <circle cx="15" cy="21" r="1.6" fill={INK} />
       <circle cx="25" cy="21" r="1.6" fill={INK} />
       {mood >= 2 && (
@@ -168,7 +226,7 @@ export function CustomerFace({ customer, mood }: { customer: Looks; mood: Mood }
       )}
       <FacialHair accessory={accessory} color={hair} />
       <path d={MOUTH_PATHS[mood]} stroke="#5a2d22" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-      {mood === 0 && accessory !== "beard" && (
+      {mood === 0 && accessory !== "beard" && accessory !== "goatee" && (
         <>
           <circle cx="11" cy="26" r="2" fill="#ff8a8a" opacity=".4" />
           <circle cx="29" cy="26" r="2" fill="#ff8a8a" opacity=".4" />

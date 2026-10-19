@@ -1,5 +1,5 @@
 // What happens when an order is served: payment, tips and bonuses, reputation, and what the game remembers.
-import { DELIVERY_EXPRESS_BONUS, DELIVERY_EXPRESS_SECONDS, MAMMA_LEVEL, MAMMA_PROFIT_DAYS } from "../data/progression";
+import { DELIVERY_EXPRESS_BONUS, DELIVERY_EXPRESS_SECONDS, DESSERT_QUICK_BONUS, MAMMA_LEVEL, MAMMA_PROFIT_DAYS } from "../data/progression";
 import { levelForXp } from "./progression";
 import type { Pairing } from "../data/recipes";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
@@ -64,6 +64,8 @@ export function collectPayment(state: GameState, service: Service, customer: Cus
     extra = CELEBRITY_TIP;
   } else if (!customer.critic) {
     extra = tipFor(state, service, customer, pizza);
+    // Back for dessert and served before getting impatient: they add a little on top.
+    if (customer.forDessert && moodForWait(customer.waitedSeconds) === 0) extra += DESSERT_QUICK_BONUS;
   }
   const gift = customer.birthday ? BIRTHDAY_GIFT : 0;
   receivePayment(state, customer.price + extra + gift);

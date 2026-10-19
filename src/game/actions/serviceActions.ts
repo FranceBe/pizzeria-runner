@@ -1,11 +1,14 @@
 import { DRINKS, TRAY_SIZE, type DrinkId } from "../../data/drinks";
 import { canAfford } from "../../utils/math";
 import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
-import { ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE } from "../../data/progression";
+import {
+  ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS,
+} from "../../data/progression";
 import { randomBetween, randomIndex, makeId } from "../../utils/random";
 import { createChallenge, createChallengeCustomer, nextChallengeArrival } from "../challenge";
 import { createCustomer, isRegularCustomer, moodForWait, type CustomerKind } from "../customers";
-import { birthdaysToday, recordVisit } from "../regulars";
+import { birthdaysToday, ensureLocals, lapseAbsentRegulars, recordVisit } from "../regulars";
+import { CUSTOMER_NAMES } from "../../data/customers";
 import { dailyCharges, forecastCustomers, payCharges, receivePayment, spend } from "../economy";
 import { pickLateIngredient, rollDayEvent } from "../events";
 import { advanceEvening, deliverToBatch, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR, settleUnfinishedBatch } from "../evening";
@@ -15,9 +18,9 @@ import { starCount, starGoals } from "../stars";
 import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
-import { discoverClassics } from "../menu";
+import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
-import { hasBase, ingredientCost, isBase, isSauce, sortByLayer } from "../pizza";
+import { hasBase, ingredientCost, isBase, isDessert, isSauce, sortByLayer } from "../pizza";
 import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
@@ -158,7 +161,33 @@ function finishChallenge(state: GameState, service: Service): void {
 
 const isDayOver = (service: Service): boolean => service.customersToCome === 0 && service.customers.length === 0;
 
-// After a pizza goes out, the next order to work on: the first customer still waiting for a pizza.
+// A happy customer may come back later tonight for a dessert pizza, if the menu has one and the evening goes on.
+function maybePlanDessertReturn(state: GameState, service: Service, customer: Customer, mood: number): void {
+  const canComeBack = !customer.forDessert && !customer.critic && !customer.delivery && !customer.celebrity && mood <= 1;
+  const hasDessert = activeMenu(state).some((recipe) => isDessert(recipe.ingredients));
+  if (!canComeBack || !hasDessert || isDessert(customer.ingredients) || service.customersToCome === 0) return;
+  if (Math.random() >= DESSERT_RETURN_CHANCE) return;
+  const inSeconds = randomBetween(DESSERT_RETURN_SECONDS[0], DESSERT_RETURN_SECONDS[1]);
+  service.dessertReturns = [...(service.dessertReturns ?? []), { name: customer.name, inSeconds }];
+}
+
+// Brings back, when their time comes and there is room at the counter, those coming back for dessert. They come on
+// top of the evening's customers. Mutates the service.
+function bringBackForDessert(state: GameState, service: Service, seconds: number): void {
+  if (!service.dessertReturns?.length) return;
+  service.dessertReturns.forEach((planned) => (planned.inSeconds -= seconds));
+  const due = service.dessertReturns.filter((planned) => planned.inSeconds <= 0);
+  for (const planned of due) {
+    if (service.customers.length >= maxQueueLength(state)) break;
+    const waiting = service.customers.some((customer) => customer.name === planned.name);
+    const customer = waiting ? null : createCustomer(state, "regular", { name: planned.name, forDessert: true });
+    service.dessertReturns = service.dessertReturns.filter((candidate) => candidate !== planned);
+    if (!customer) continue;
+    service.customers.push(customer);
+    if (!service.selectedCustomerId) service.selectedCustomerId = customer.id;
+  }
+}
+
 // The drink goes out and is paid; then the customer may leave (and that may end the day). Mutates state.
 // pourCost: the glass, when it is paid along with the sale (the barman's), after the money comes in.
 function sellDrink(state: GameState, service: Service, customer: Customer, pourCost = 0): void {
@@ -234,6 +263,7 @@ function charmWaitingCustomers(service: Service): void {
   }
 }
 
+// After a pizza goes out, the next order to work on: the first customer still waiting for a pizza.
 function selectNextForPizza(service: Service): void {
   service.selectedCustomerId = service.customers.find((customer) => !customer.pizzaServed)?.id ?? service.customers[0]?.id ?? null;
 }
@@ -330,6 +360,8 @@ export const serviceActions = {
       pushToast(state, { key: "emptyMenu" }, "warn");
       return;
     }
+    // The first day, or an older save: the neighbourhood is set up before anyone comes in.
+    ensureLocals(state, CUSTOMER_NAMES);
     // Kept to start the day over. Copied, so later changes to the game never reach it.
     const { toasts, pops, dayStart, ...beforeOpening } = state;
     state.dayStart = structuredClone(beforeOpening);
@@ -408,6 +440,7 @@ export const serviceActions = {
       service.nextArrivalIn <= 0 && service.customersToCome > 0 && service.customers.length < maxQueueLength(state);
     if (someoneCanArrive) letCustomersIn(state, service);
     if (service.charmsPending) charmWaitingCustomers(service);
+    if (!service.challenge) bringBackForDessert(state, service, seconds);
   },
 
   selectBatch(state) {
@@ -626,11 +659,13 @@ export const serviceActions = {
     if (pizza.mamma) charmNextCustomer(service, customer);
     // Critics, deliveries and celebrities are passing through: they never join the customer book.
     const isPerson = !customer.critic && !customer.delivery && !customer.celebrity;
-    if (isPerson && recordVisit(state, customer)) pushToast(state, { key: "newRegular", params: { name: customer.name } }, "gold");
+    // Back for dessert, they already counted as a visit tonight.
+    if (isPerson && !customer.forDessert && recordVisit(state, customer)) pushToast(state, { key: "newRegular", params: { name: customer.name } }, "gold");
     // The first pizza served completes the tutorial.
     state.settings.tutorialDone = true;
     recordLifetime(state, customer, tip);
     maybeShareNonnasSecret(state);
+    maybePlanDessertReturn(state, service, customer, mood);
 
     const newPairings = discoverPairings(state, customer.ingredients);
     if (newPairings.length) pushToast(state, { key: "newPairing", params: { pairings: newPairings } }, "gold");
@@ -683,6 +718,8 @@ export const serviceActions = {
     state.event = rollDayEvent(state, state.event);
     state.lateIngredient = state.event === "lateDelivery" ? pickLateIngredient(state) : null;
     ensureWeek(state);
+    lapseAbsentRegulars(state);
+    ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;
     expireQuest(state);
     maybeOfferQuest(state);

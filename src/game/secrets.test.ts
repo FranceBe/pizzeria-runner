@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { ACHIEVEMENT_IDS } from "../data/achievements";
-import { ACCESSORY_IDS } from "../data/customers";
+import { ACCESSORY_IDS, FACIAL_HAIR, HAIR_STYLE_COUNT, LONGER_HAIR_STYLES, SHORTER_HAIR_STYLES } from "../data/customers";
 import { REPUTATION_THRESHOLDS } from "../data/progression";
 import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { tipChance } from "./customers";
@@ -136,7 +136,7 @@ describe("customers' looks", () => {
     let seed = 0;
     const random = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
     const crowd = Array.from({ length: 300 }, () => rollLooks("Sam", random));
-    expect(new Set(crowd.map((looks) => looks.hairStyle)).size).toBe(8);
+    expect(new Set(crowd.map((looks) => looks.hairStyle)).size).toBe(HAIR_STYLE_COUNT);
     expect(crowd.some((looks) => ["#3d6fd9", "#2fa36b", "#e26aa6", "#8a55d6", "#1fb3b3"].includes(looks.hair))).toBe(true);
     expect(new Set(crowd.map((looks) => looks.accessory)).size).toBe(ACCESSORY_IDS.length + 1); // every accessory, and none
   });
@@ -145,10 +145,10 @@ describe("customers' looks", () => {
     let seed = 7;
     const random = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
     const giulias = Array.from({ length: 400 }, () => rollLooks("Giulia", random));
-    expect(giulias.some((looks) => looks.accessory === "moustache" || looks.accessory === "beard")).toBe(false);
-    expect(giulias.filter((looks) => [1, 2, 3, 4, 5].includes(looks.hairStyle)).length).toBeGreaterThan(330);
+    expect(giulias.some((looks) => looks.accessory && FACIAL_HAIR.has(looks.accessory))).toBe(false);
+    expect(giulias.filter((looks) => LONGER_HAIR_STYLES.includes(looks.hairStyle)).length).toBeGreaterThan(330);
     const lucas = Array.from({ length: 400 }, () => rollLooks("Luca", random));
-    expect(lucas.filter((looks) => [0, 4, 6, 7].includes(looks.hairStyle)).length).toBeGreaterThan(330);
+    expect(lucas.filter((looks) => SHORTER_HAIR_STYLES.includes(looks.hairStyle)).length).toBeGreaterThan(330);
     expect(lucas.some((looks) => looks.accessory === "beard")).toBe(true);
   });
 

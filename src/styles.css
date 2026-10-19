@@ -671,6 +671,7 @@ header.top .top-inner { position: relative; }
 .mod.diet { background: #e5f4dc; color: #3d7a2a; }
 .mod.birthday-tag { background: #fde7ef; color: #a32c58; }
 .mod.charmed-tag { background: #fff1c9; color: #8a5d00; }
+.mod.dessert-tag { background: #f6e4f0; color: #8a2f6b; }
 .ticket.at-table { border-left: 5px solid var(--tb); }
 .tb-0 { --tb: #2f6db5; } .tb-1 { --tb: #8a3c99; } .tb-2 { --tb: #1f8a7a; } .tb-3 { --tb: #c0671b; }
 .ticket.birthday { background: linear-gradient(180deg, #fde7ef, var(--surface) 55%); border-color: #e0708f; }
@@ -1019,3 +1020,13 @@ button, .pan { touch-action: manipulation; }
 
 /* The barman's glass fills on the ticket while he pours */
 .drink-order.pouring { border-style: solid; background: linear-gradient(90deg, #bfe0f3 var(--pour), #e8f3fa var(--pour)); }
+
+/* Tickets in a row get a real width, not 100% of a box sized from them: Safari then measured a table's frame too
+   narrow for its tickets, and the next ticket covered the last one. */
+@media (max-width: 1020px) {
+  .tickets > .ticket, .table-tickets > .ticket { width: 230px; }
+  .tickets > .table-group { width: max-content; }
+}
+@media (max-width: 700px) {
+  .tickets > .ticket, .table-tickets > .ticket { width: 150px; }
+}

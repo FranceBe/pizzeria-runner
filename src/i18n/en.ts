@@ -172,6 +172,8 @@ export const en: Dictionary = {
     mammaPan: "Mamma",
     mammaTitle: "A spoon of Mamma's secret: this customer will tell the next one about you.",
     charmed: "Charmed",
+    forDessert: "For dessert",
+    forDessertTitle: "Back for a dessert pizza: a little bonus if it comes quickly.",
     charmedTitle: "They heard great things about your pizzeria: patience back to full, and a tip for sure.",
   },
 
@@ -442,7 +444,7 @@ export const en: Dictionary = {
     achievementsIntro: "{count} / {total} unlocked",
     unlockedOn: "Day {day}",
     regulars: "Regulars",
-    noRegulars: "Your regulars show up here on their third visit.",
+    noRegulars: "Your regulars show up here once someone has ordered the same pizza three times.",
     visits: "{count} visits",
     quests: "Completed quests",
     questsTotal: ({ count, amount }, t) => `${count} ${plural(count, "quest")} completed · ${t.money(amount)} earned`,
