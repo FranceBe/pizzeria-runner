@@ -4,6 +4,7 @@ import { createTranslator } from "../i18n";
 import { I18nProvider } from "../i18n/I18nContext";
 import { makeCustomer, makeState, play, serviceOf, stateInService, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { Header } from "../views/Header";
+import { DaySummary } from "../views/DaySummary";
 import { JournalView } from "../views/JournalView";
 import { averageRating, rateOrder, toneOf, writeReviews } from "./reviews";
 import { hydrateState } from "./state";
@@ -107,5 +108,42 @@ describe("online reviews", () => {
       );
     expect(header({ count: 0, total: 0 })).toMatch(/aria-label="No online reviews yet"[\s\S]*width:0%/);
     expect(header({ count: 10, total: 39 })).toMatch(/aria-label="3.9 out of 5 · 10 online reviews"[\s\S]*width:78%/);
+  });
+
+  it("are shown three at a time in the journal, newest first, with pages to turn", () => {
+    const state = makeState();
+    state.reviews = Array.from({ length: 7 }, (_, index) => ({
+      day: index + 1, name: `Guest ${index + 1}`, stars: 5, reason: "perfect" as const, line: 0, recipeId: "margherita" as const, recipeName: null,
+    }));
+    const html = renderToString(
+      <I18nProvider value={createTranslator("en")}>
+        <JournalView state={state} />
+      </I18nProvider>,
+    );
+    expect(html.match(/class="review"/g)).toHaveLength(3);
+    expect(html).toContain("Guest 7");
+    expect(html).not.toContain("Guest 4");
+    expect(html).toContain("Page 1 / 3");
+  });
+});
+
+describe("the day's receipt", () => {
+  it("marks the people who came as a table", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const state = stateInService([makeCustomer({ tableId: "t" }), makeCustomer({ id: "c2", name: "Zoé", tableId: "t" })]);
+    serviceOf(state).tables = { t: { size: 2, served: 0, allHappy: true, color: 2 } };
+    const serveOne = (current: typeof state) => {
+      const baked = play(current, ...toggle(...MARGHERITA), { type: "bake" }, { type: "tick", seconds: 10 });
+      return play(baked, { type: "servePizza", pizzaId: serviceOf(baked).ready[0].id });
+    };
+    const closed = serveOne(serveOne(state));
+    expect(closed.summary?.orders?.map((order) => order.table)).toEqual([{ size: 2, color: 2 }, { size: 2, color: 2 }]);
+    const html = renderToString(
+      <I18nProvider value={createTranslator("en")}>
+        {closed.summary && <DaySummary summary={closed.summary} pizzeriaName="Chez Fran" onNextDay={() => undefined} />}
+      </I18nProvider>,
+    );
+    expect(html.match(/receipt-order at-table tb-2/g)).toHaveLength(2);
+    expect(html).toContain("Table of 2");
   });
 });

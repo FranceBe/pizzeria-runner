@@ -48,10 +48,12 @@ const OrderLines = ({ orders }: { orders: readonly OrderRecord[] }) => {
   return (
     <div className="receipt-orders">
       {orders.map((order, index) => (
-        <div key={index} className="receipt-order">
+        // People who came as a table carry its colour, as on the tickets during service.
+        <div key={index} className={`receipt-order${order.table ? ` at-table tb-${order.table.color}` : ""}`}>
           <Pizza ingredients={order.ingredients} baked />
           <span className="grow">
             {t("summary.order", { customer: order.customerName, recipe: t.recipe({ id: order.recipeId, name: order.recipeName }) })}
+            {order.table && <span className="receipt-table">{t("service.table", { size: order.table.size })}</span>}
           </span>
           <span className="amount">{t.money(order.price)}</span>
           <span className={`receipt-tip${order.tip ? "" : " none"}`}>{order.tip ? `+${t.money(order.tip)}` : t("summary.noTip")}</span>

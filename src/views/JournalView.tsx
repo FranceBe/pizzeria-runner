@@ -262,14 +262,37 @@ const RegularsBook = ({ state }: { state: GameState }) => {
   );
 };
 
-// The latest reviews shown, newest first.
-const REVIEWS_SHOWN = 8;
+// Reviews and articles are shown a few at a time, newest first, so the card stays short and the papers stay in view.
+const REVIEWS_PER_PAGE = 3;
+const ARTICLES_PER_PAGE = 2;
+
+// Turns the pages of a list, newest first; renders nothing when everything fits on one page.
+const usePages = <T,>(items: readonly T[], perPage: number) => {
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(items.length / perPage));
+  // A list that got shorter (another save loaded) never leaves the page past its end.
+  const current = Math.min(page, pageCount - 1);
+  const shown = [...items].reverse().slice(current * perPage, (current + 1) * perPage);
+  return { shown, page: current, pageCount, setPage };
+};
+
+const Pager = ({ page, pageCount, setPage }: { page: number; pageCount: number; setPage: (page: number) => void }) => {
+  const t = useTranslation();
+  if (pageCount < 2) return null;
+  return (
+    <div className="book-nav">
+      <button className="btn sm ghost" disabled={page === 0} aria-label={t("journal.previousPage")} onClick={() => setPage(page - 1)}>◀</button>
+      <span className="hint">{t("journal.page", { page: page + 1, count: pageCount })}</span>
+      <button className="btn sm ghost" disabled={page >= pageCount - 1} aria-label={t("journal.nextPage")} onClick={() => setPage(page + 1)}>▶</button>
+    </div>
+  );
+};
 
 // Online reviews: only for show, but a perfectionist's nightmare.
 const Reviews = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const average = averageRating(state.reviewScore);
-  const latest = [...state.reviews].reverse().slice(0, REVIEWS_SHOWN);
+  const { shown, ...pages } = usePages(state.reviews, REVIEWS_PER_PAGE);
   return (
     <div className="card pad journal-card j-reviews reviews">
       <h2 className="h">{t("journal.reviews")}</h2>
@@ -284,7 +307,7 @@ const Reviews = ({ state }: { state: GameState }) => {
         </div>
       )}
       <ul className="review-list">
-        {latest.map((review, index) => (
+        {shown.map((review, index) => (
           <li key={`${review.day}-${review.name}-${index}`} className={`review${review.stars <= 2 ? " bad" : ""}`}>
             <div className="review-head">
               <StarRow stars={review.stars} />
@@ -295,6 +318,7 @@ const Reviews = ({ state }: { state: GameState }) => {
           </li>
         ))}
       </ul>
+      <Pager {...pages} />
       <PressCuttings state={state} />
     </div>
   );
@@ -313,13 +337,14 @@ const PRESS_TONE = { 5: "rave", 4: "good", 3: "fair" } as const;
 // Food critics' articles, newest first.
 const PressCuttings = ({ state }: { state: GameState }) => {
   const t = useTranslation();
+  const { shown, ...pages } = usePages(state.press, ARTICLES_PER_PAGE);
   if (!state.press.length) return null;
   return (
     <>
       <h3 className="h">{t("journal.press")}</h3>
       {/* Each article as a cutting from the paper: masthead, dateline, the critic's words, their signature. */}
       <ul className="press-list">
-        {[...state.press].reverse().map((article, index) => (
+        {shown.map((article, index) => (
           <li key={`${article.day}-${index}`} className="press-cutting">
             <div className="press-masthead">{PRESS_PAPERS[article.paper] ?? PRESS_PAPERS[0]}</div>
             <div className="press-dateline">
@@ -333,6 +358,7 @@ const PressCuttings = ({ state }: { state: GameState }) => {
           </li>
         ))}
       </ul>
+      <Pager {...pages} />
     </>
   );
 };

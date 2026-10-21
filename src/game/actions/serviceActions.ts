@@ -658,6 +658,8 @@ export const serviceActions = {
     state.lifetime.bestStreak = Math.max(state.lifetime.bestStreak, streak);
     recordWeekly(state, "streak", streak, "max");
     if (mood >= 2) service.stats.hungryServed = (service.stats.hungryServed ?? 0) + 1;
+    // Read before settling: the table is forgotten once its last guest is served.
+    const table = customer.tableId ? service.tables?.[customer.tableId] : undefined;
     const tip =
       collectPayment(state, service, customer, pizza) + settleTable(state, service, customer) + secretBonus(state, customer, pizza.secret);
     if (pizza.mamma) charmNextCustomer(service, customer);
@@ -697,6 +699,7 @@ export const serviceActions = {
         ingredients: customer.ingredients,
         price: customer.price,
         tip,
+        ...(table ? { table: { size: table.size, color: table.color } } : {}),
         ...(customer.critic ? {} : rateOrder(customer, pizza)),
       },
     ];

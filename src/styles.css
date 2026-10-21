@@ -1145,3 +1145,9 @@ button, .pan { touch-action: manipulation; }
   .oven.multi .slot.idle { font-size: 9.5px; }
   .oven.multi .oven-label { font-size: 8px; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* The receipt marks the people who came as a table, in their table's colour */
+.receipt-order.at-table { box-shadow: inset 3px 0 0 var(--tb); padding-left: 6px; }
+.receipt-table { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 99px; font-size: 10.5px; font-weight: 700;
+  color: var(--tb); border: 1px solid var(--tb); vertical-align: 1px; white-space: nowrap; }
+@media (max-width: 700px) { .press-quote { text-align: left; } }

@@ -130,6 +130,8 @@ export interface OrderRecord {
   ingredients: readonly IngredientId[];
   price: number;
   tip: number;
+  /** They came as a table: its size, and its colour on the tickets. */
+  table?: { size: number; color: number };
   /** How it went, for a possible review (see reviews.ts); missing for critics, who write their own. */
   stars?: number;
   reason?: ReviewReason;
