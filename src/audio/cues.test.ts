@@ -29,9 +29,11 @@ describe("sound cues", () => {
 
   it("soften the music on pause and follow the settings", () => {
     const state = makeState();
-    expect(musicLevel(state)).toBe(0.35);
+    // A new game starts quiet: it may open from a shared link.
+    expect(musicLevel(state)).toBe(0.08);
+    expect(effectsLevel(state)).toBe(0.2);
     const paused = play(play(state, { type: "openRestaurant" }), { type: "togglePause" });
-    expect(musicLevel(paused)).toBeCloseTo(0.35 * 0.3);
+    expect(musicLevel(paused)).toBeCloseTo(0.08 * 0.3);
     expect(musicLevel(play(state, { type: "toggleMute", channel: "music" }))).toBe(0);
     expect(effectsLevel(play(state, { type: "setVolume", channel: "effects", volume: 0.4 }))).toBe(0.4);
   });

@@ -57,8 +57,9 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
       language,
       theme: "auto",
       largeText: false,
-      musicVolume: 0.35,
-      effectsVolume: 0.8,
+      // Low at first: the game may open from a shared link, in an office or on a train.
+      musicVolume: 0.08,
+      effectsVolume: 0.2,
       musicMuted: false,
       effectsMuted: false,
       tutorialDone: false,

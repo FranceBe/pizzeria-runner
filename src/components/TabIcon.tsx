@@ -27,25 +27,27 @@ const ICON_PATHS: Record<TabId, ReactNode> = {
       <path d="M6 9.5h3M6 12.5h3M15 9.5h3M15 12.5h3" />
     </>
   ),
-  // An arrow going up out of a bar
+  // A hammer: work on the pizzeria
   upgrades: (
-    <>
-      <path d="M12 16V4M7 9l5-5 5 5" />
-      <path d="M5 20h14" />
-    </>
+    <g transform="rotate(35 12 12)">
+      <rect x="6" y="3" width="12" height="5" rx="1.2" />
+      <path d="M12 8v13" strokeWidth="2.6" />
+    </g>
   ),
-  // A notebook with a bookmark
+  // A bar chart: the accounts open the journal
   journal: (
     <>
-      <path d="M6 3.5h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z" />
-      <path d="M8 3.5v17M14 3.5v6l1.5-1.2L17 9.5v-6" />
+      <path d="M4 20.5h16" />
+      <path d="M7.5 17v-4M12 17V7M16.5 17v-6.5" strokeWidth="3" />
     </>
   ),
-  // A gear
+  // Sliders
   settings: (
     <>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" />
+      <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="12" r="2" />
+      <circle cx="17" cy="17" r="2" />
     </>
   ),
 };

@@ -414,7 +414,7 @@ describe("views", () => {
     const html = render(<SettingsView state={play(makeState(), { type: "toggleMute", channel: "effects" })} dispatch={noop} />, "en");
     expect(html).toContain("Music");
     expect(html).toMatch(/aria-label="Unmute: Sound effects"/);
-    expect(html).toMatch(/id="volume-music"[^>]*value="35"|value="35"[^>]*id="volume-music"/);
+    expect(html).toMatch(/id="volume-music"[^>]*value="8"|value="8"[^>]*id="volume-music"/);
   });
 
   it("puts the bar and the tray on the board, without telling which drink is wanted, and shows who waits for one", () => {
