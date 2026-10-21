@@ -3,7 +3,7 @@ import type { Translator } from "../i18n";
 import { useTranslation } from "../i18n/I18nContext";
 
 // "The football club wants 5 Regina for their evening."
-export function questText(t: Translator, quest: Quest | QuestRecord): string {
+export const questText = (t: Translator, quest: Quest | QuestRecord): string => {
   const { target } = quest;
   const what = (() => {
     switch (quest.kind) {
@@ -22,14 +22,14 @@ export function questText(t: Translator, quest: Quest | QuestRecord): string {
     }
   })();
   return `${t.questGiver(quest.giver)} ${what}`;
-}
+};
 
 // "3 Regina, 2 Margherita"
 export const batchItemsText = (t: Translator, quest: Pick<Quest, "items">): string =>
   (quest.items ?? []).map((item) => `${item.count} ${t.recipe({ id: item.recipeId, name: item.recipeName })}`).join(", ");
 
 // The running neighbourhood quest, with its progress and deadline.
-export function QuestCard({ quest, day }: { quest: Quest; day: number }) {
+export const QuestCard = ({ quest, day }: { quest: Quest; day: number }) => {
   const t = useTranslation();
   return (
     <div className="quest" role="note">
@@ -52,4 +52,4 @@ export function QuestCard({ quest, day }: { quest: Quest; day: number }) {
       )}
     </div>
   );
-}
+};

@@ -15,17 +15,17 @@ const QUEST_LOG_SIZE = 30;
 type QuestDraft = Omit<Quest, "giver" | "progress" | "deadlineDay">;
 
 // A group order: 4 to 6 pizzas of one to three recipes from the menu. The reward is set when it is delivered.
-function groupOrder(recipes: readonly Recipe[]): QuestDraft {
+const groupOrder = (recipes: readonly Recipe[]): QuestDraft => {
   const total = 4 + randomIndex(3);
   const kinds = Math.min(recipes.length, 1 + randomIndex(3));
   const picked = [...recipes].sort(() => Math.random() - 0.5).slice(0, kinds);
   const items: BatchItem[] = picked.map((recipe) => ({ recipeId: recipe.id, recipeName: recipe.name, count: 0, delivered: 0 }));
   for (let pizza = 0; pizza < total; pizza++) items[pizza % items.length].count += 1;
   return { kind: "batch", target: total, items, reward: 0, xp: BATCH_XP_PER_PIZZA * total };
-}
+};
 
 // The quests that make sense right now, given the menu and what is left to discover.
-function possibleQuests(state: GameState): QuestDraft[] {
+const possibleQuests = (state: GameState): QuestDraft[] => {
   const menu = activeMenu(state);
   const expected = forecastCustomers(state);
   const drafts: QuestDraft[] = [];
@@ -37,10 +37,10 @@ function possibleQuests(state: GameState): QuestDraft[] {
   if (canDiscover) drafts.push({ kind: "pairing", target: 1, reward: 25, xp: 30 });
   if (menu.some((recipe) => isDessert(recipe.ingredients))) drafts.push({ kind: "sweet", target: 5, reward: 40, xp: 45 });
   return drafts;
-}
+};
 
 // At the start of a day: maybe a new quest, if none is running. Mutates state.
-export function maybeOfferQuest(state: GameState): void {
+export const maybeOfferQuest = (state: GameState): void => {
   if (state.quest || state.day < FIRST_QUEST_DAY || Math.random() >= QUEST_CHANCE) return;
   const drafts = possibleQuests(state);
   if (!drafts.length) return;
@@ -48,17 +48,17 @@ export function maybeOfferQuest(state: GameState): void {
   // A group order is for tonight; other quests last a few days.
   const days = draft.kind === "batch" ? 1 : QUEST_DAYS;
   state.quest = { ...draft, giver: pickRandom(QUEST_GIVERS), progress: 0, deadlineDay: state.day + days - 1 };
-}
+};
 
 // At the start of a day: a quest past its deadline is simply dropped. Mutates state.
-export function expireQuest(state: GameState): void {
+export const expireQuest = (state: GameState): void => {
   if (state.quest && state.day > state.quest.deadlineDay) {
     pushToast(state, { key: "questExpired", params: { giver: state.quest.giver } });
     state.quest = null;
   }
-}
+};
 
-function questGain(quest: Quest, customer: Customer, isHappy: boolean, newPairings: number): number {
+const questGain = (quest: Quest, customer: Customer, isHappy: boolean, newPairings: number): number => {
   switch (quest.kind) {
     case "serveRecipe":
       return customer.recipeId === quest.recipeId ? 1 : 0;
@@ -74,10 +74,10 @@ function questGain(quest: Quest, customer: Customer, isHappy: boolean, newPairin
       // Delivered through its own ticket (see game/batch.ts), not by serving customers.
       return 0;
   }
-}
+};
 
 // After a pizza is served. Pays the reward when the quest is complete. Mutates state.
-export function advanceQuest(state: GameState, customer: Customer, isHappy: boolean, newPairings: number): void {
+export const advanceQuest = (state: GameState, customer: Customer, isHappy: boolean, newPairings: number): void => {
   const { quest } = state;
   if (!quest) return;
   quest.progress = Math.min(quest.target, quest.progress + questGain(quest, customer, isHappy, newPairings));
@@ -91,4 +91,4 @@ export function advanceQuest(state: GameState, customer: Customer, isHappy: bool
   state.questLog = [...state.questLog, { day: state.day, kind, giver, target, recipeId, recipeName, reward }].slice(-QUEST_LOG_SIZE);
   pushToast(state, { key: "questDone", params: { giver: quest.giver, reward: quest.reward } }, "gold");
   state.quest = null;
-}
+};

@@ -59,16 +59,16 @@ const PROGRESS: Record<AchievementId, (state: GameState) => Progress> = {
   mammaSecret: (state) => ({ current: state.mammaSecret ? 1 : 0, target: 1 }),
 };
 
-export function achievementProgress(state: GameState, id: AchievementId): Progress {
+export const achievementProgress = (state: GameState, id: AchievementId): Progress => {
   const { current, target } = PROGRESS[id](state);
   return { current: Math.min(current, target), target };
-}
+};
 
 export const isUnlocked = (state: GameState, id: AchievementId): boolean => state.achievements[id] !== undefined;
 
 // Records every achievement newly reached, with a toast each unless silent
 // (used when loading a save from before achievements existed). Returns them. Mutates state.
-export function unlockAchievements(state: GameState, { silent = false } = {}): AchievementId[] {
+export const unlockAchievements = (state: GameState, { silent = false } = {}): AchievementId[] => {
   const reached = ACHIEVEMENT_IDS.filter((id) => {
     if (isUnlocked(state, id)) return false;
     const { current, target } = PROGRESS[id](state);
@@ -79,4 +79,4 @@ export function unlockAchievements(state: GameState, { silent = false } = {}): A
     if (!silent) pushToast(state, { key: "achievement", params: { achievementId: id } }, "gold");
   });
   return reached;
-}
+};

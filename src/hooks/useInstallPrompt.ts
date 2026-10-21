@@ -10,7 +10,7 @@ interface InstallPromptEvent extends Event {
 const isStandalone = (): boolean =>
   typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches;
 
-export function useInstallPrompt(): { canInstall: boolean; isInstalled: boolean; install: () => void } {
+export const useInstallPrompt = (): { canInstall: boolean; isInstalled: boolean; install: () => void } => {
   const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(null);
   const [isInstalled, setInstalled] = useState(isStandalone);
 
@@ -38,4 +38,4 @@ export function useInstallPrompt(): { canInstall: boolean; isInstalled: boolean;
   };
 
   return { canInstall: promptEvent !== null, isInstalled, install };
-}
+};

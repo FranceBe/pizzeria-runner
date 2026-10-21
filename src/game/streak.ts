@@ -13,11 +13,11 @@ export const STREAK_SHOWN_FROM = TIERS[TIERS.length - 1].from;
 
 export const streakMultiplier = (streak: number): number => TIERS.find((tier) => streak >= tier.from)?.multiplier ?? 1;
 
-export function nextStreak(streak: number, mood: Mood): number {
+export const nextStreak = (streak: number, mood: Mood): number => {
   if (mood === 0) return streak + 1;
   if (mood === 1) return streak;
   return 0;
-}
+};
 
 // A pizza cools on the pass: warm after a while, cold after longer, and the tip follows.
 export const WARM_AFTER_SECONDS = 25;

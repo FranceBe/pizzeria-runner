@@ -9,7 +9,7 @@ interface CoachTipProps {
 }
 
 // The tutorial hint for the current step (see game/tutorial.ts), with a way out.
-export function CoachTip({ step, dispatch, className = "" }: CoachTipProps) {
+export const CoachTip = ({ step, dispatch, className = "" }: CoachTipProps) => {
   const t = useTranslation();
   return (
     <div className={`coach ${className}`} role="status">
@@ -18,4 +18,4 @@ export function CoachTip({ step, dispatch, className = "" }: CoachTipProps) {
       <button className="btn sm ghost coach-skip" onClick={() => dispatch({ type: "skipTutorial" })}>{t("tutorial.skip")}</button>
     </div>
   );
-}
+};

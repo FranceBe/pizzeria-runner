@@ -6,7 +6,7 @@ import { setBrokenSaveAside } from "../game/state";
 afterEach(() => vi.unstubAllGlobals());
 
 // A tiny stand-in for the browser's localStorage.
-function stubStorage(entries: Record<string, string>): Map<string, string> {
+const stubStorage = (entries: Record<string, string>): Map<string, string> => {
   const store = new Map(Object.entries(entries));
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => store.get(key) ?? null,
@@ -14,7 +14,7 @@ function stubStorage(entries: Record<string, string>): Map<string, string> {
     removeItem: (key: string) => store.delete(key),
   });
   return store;
-}
+};
 
 describe("ErrorBoundary", () => {
   it("shows the game until something breaks, then a way out", () => {

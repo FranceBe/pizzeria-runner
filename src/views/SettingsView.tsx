@@ -11,7 +11,7 @@ const THEMES: readonly Theme[] = ["auto", "light", "dark"];
 
 type StatusMessage = "settings.copied" | "settings.selected" | "settings.invalidCode";
 
-function LanguagePicker({ language, dispatch }: { language: Language; dispatch: Dispatch }) {
+const LanguagePicker = ({ language, dispatch }: { language: Language; dispatch: Dispatch }) => {
   const t = useTranslation();
   return (
     <div className="row">
@@ -29,10 +29,10 @@ function LanguagePicker({ language, dispatch }: { language: Language; dispatch: 
       ))}
     </div>
   );
-}
+};
 
 // Offers to install the game as an app where the browser supports it; otherwise explains how.
-function InstallButton() {
+const InstallButton = () => {
   const t = useTranslation();
   const { canInstall, isInstalled, install } = useInstallPrompt();
   if (isInstalled) return null;
@@ -42,10 +42,10 @@ function InstallButton() {
       <p className="hint" style={{ margin: 0 }}>{t("settings.installHint")}</p>
     </div>
   );
-}
+};
 
 // One sound channel: a mute button and a volume slider (moving the slider also unmutes).
-function VolumeControl({ channel, volume, isMuted, dispatch }: { channel: SoundChannel; volume: number; isMuted: boolean; dispatch: Dispatch }) {
+const VolumeControl = ({ channel, volume, isMuted, dispatch }: { channel: SoundChannel; volume: number; isMuted: boolean; dispatch: Dispatch }) => {
   const t = useTranslation();
   const name = t(`settings.${channel}`);
   const isSilent = isMuted || volume === 0;
@@ -73,9 +73,9 @@ function VolumeControl({ channel, volume, isMuted, dispatch }: { channel: SoundC
       />
     </div>
   );
-}
+};
 
-function SoundSettings({ state, dispatch }: ScreenProps) {
+const SoundSettings = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const { musicVolume, musicMuted, effectsVolume, effectsMuted } = state.settings;
   return (
@@ -86,9 +86,9 @@ function SoundSettings({ state, dispatch }: ScreenProps) {
       <p className="hint" style={{ margin: 0 }}>{t("settings.soundHint")}</p>
     </div>
   );
-}
+};
 
-function PizzeriaSettings({ state, dispatch }: ScreenProps) {
+const PizzeriaSettings = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   return (
     <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -127,9 +127,9 @@ function PizzeriaSettings({ state, dispatch }: ScreenProps) {
       <InstallButton />
     </div>
   );
-}
+};
 
-function SaveTransfer({ state, dispatch }: ScreenProps) {
+const SaveTransfer = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const [exportCode, setExportCode] = useState("");
   const [importCode, setImportCode] = useState("");
@@ -204,13 +204,13 @@ function SaveTransfer({ state, dispatch }: ScreenProps) {
       )}
     </div>
   );
-}
+};
 
-export function SettingsView({ state, dispatch }: ScreenProps) {
+export const SettingsView = ({ state, dispatch }: ScreenProps) => {
   return (
     <div className="grid2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" }}>
       <PizzeriaSettings state={state} dispatch={dispatch} />
       <SaveTransfer state={state} dispatch={dispatch} />
     </div>
   );
-}
+};

@@ -37,7 +37,7 @@ interface WorkBoardProps extends ServiceScreenProps {
 }
 
 // The usual is for the player to remember, with a way to give up and see the recipe.
-function UsualReminder({ customer, dispatch }: { customer: Customer; dispatch: ServiceScreenProps["dispatch"] }) {
+const UsualReminder = ({ customer, dispatch }: { customer: Customer; dispatch: ServiceScreenProps["dispatch"] }) => {
   const t = useTranslation();
   return (
     <span className="match usual">
@@ -47,18 +47,18 @@ function UsualReminder({ customer, dispatch }: { customer: Customer; dispatch: S
       </button>
     </span>
   );
-}
+};
 
 // With help on: tells how the pizza being built compares to the selected order.
-function BoardCheck({ customer, board }: { customer: BoardTarget; board: readonly IngredientId[] }) {
+const BoardCheck = ({ customer, board }: { customer: BoardTarget; board: readonly IngredientId[] }) => {
   const t = useTranslation();
   if (haveSameIngredients(customer.ingredients, board)) return <span className="match good">{t("service.readyFor", { name: customer.name })}</span>;
   const missing = customer.ingredients.filter((id) => !board.includes(id)).length;
   const extra = board.filter((id) => !customer.ingredients.includes(id)).length;
   return <span className="match">{t("service.boardCheck", { name: customer.name, missing, extra })}</span>;
-}
+};
 
-function WorkBoard({ state, service, dispatch, selectedCustomer, target, coachTarget }: WorkBoardProps) {
+const WorkBoard = ({ state, service, dispatch, selectedCustomer, target, coachTarget }: WorkBoardProps) => {
   const t = useTranslation();
   const { board, oven } = service;
   const ovenIsFull = oven.length >= ovenSlots(state);
@@ -95,10 +95,10 @@ function WorkBoard({ state, service, dispatch, selectedCustomer, target, coachTa
       </p>
     </section>
   );
-}
+};
 
 // The secret ingredients shared so far, as jars at the end of the prep line.
-function secretJars(state: GameState, service: Service, dispatch: ServiceScreenProps["dispatch"]): SecretJarState[] {
+const secretJars = (state: GameState, service: Service, dispatch: ServiceScreenProps["dispatch"]): SecretJarState[] => {
   const jars: SecretJarState[] = [];
   const hasDough = hasBase(service.board);
   if (state.secretIngredient) {
@@ -120,10 +120,10 @@ function secretJars(state: GameState, service: Service, dispatch: ServiceScreenP
     });
   }
   return jars;
-}
+};
 
 // Customers in order, with the people of a table kept together (they arrive together, but this keeps them so).
-function groupByTable(customers: readonly Customer[]): { tableId: string | null; customers: Customer[] }[] {
+const groupByTable = (customers: readonly Customer[]): { tableId: string | null; customers: Customer[] }[] => {
   const groups: { tableId: string | null; customers: Customer[] }[] = [];
   customers.forEach((customer) => {
     const group = customer.tableId ? groups.find((candidate) => candidate.tableId === customer.tableId) : undefined;
@@ -131,11 +131,11 @@ function groupByTable(customers: readonly Customer[]): { tableId: string | null;
     else groups.push({ tableId: customer.tableId ?? null, customers: [customer] });
   });
   return groups;
-}
+};
 
 // Layout (see .svc in styles.css): orders on the left, message line and work board in the middle,
 // oven and pass on the right, prep line along the bottom. Re-flows on tablets and phones.
-export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
+export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) => {
   const t = useTranslation();
   const selectedCustomer = findSelectedCustomer(service);
   const { challenge } = service;
@@ -244,4 +244,4 @@ export function ServiceView({ state, service, dispatch }: ServiceScreenProps) {
       </div>
     </div>
   );
-}
+};

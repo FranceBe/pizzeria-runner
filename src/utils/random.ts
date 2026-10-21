@@ -7,18 +7,18 @@ export const pickRandom = <T>(list: readonly T[]): T => list[randomIndex(list.le
 export const makeId = (): string => Math.random().toString(36).slice(2, 9);
 
 // FNV-1a: turns a string into a stable 32-bit number, used to seed drawings.
-export function hashString(text: string): number {
+export const hashString = (text: string): number => {
   let hash = 2166136261;
   for (const char of text) {
     hash ^= char.charCodeAt(0);
     hash = Math.imul(hash, 16777619);
   }
   return hash >>> 0;
-}
+};
 
 // Xorshift generator: same seed, same sequence of numbers in [0, 1).
 // Keeps toppings in the same spot on every render.
-export function seededRandom(seed: number): () => number {
+export const seededRandom = (seed: number): () => number => {
   let state = seed || 1;
   return () => {
     state ^= state << 13;
@@ -26,15 +26,15 @@ export function seededRandom(seed: number): () => number {
     state ^= state << 5;
     return ((state >>> 0) % 10000) / 10000;
   };
-}
+};
 
 // One step of the same xorshift generator, for sequences that must survive a save and reload:
 // the caller stores `next` and passes it back for the following number.
-export function seededStep(seed: number): { value: number; next: number } {
+export const seededStep = (seed: number): { value: number; next: number } => {
   let next = seed || 1;
   next ^= next << 13;
   next ^= next >>> 17;
   next ^= next << 5;
   next >>>= 0;
   return { value: (next % 10000) / 10000, next };
-}
+};

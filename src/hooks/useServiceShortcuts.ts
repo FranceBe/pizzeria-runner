@@ -3,7 +3,7 @@ import { shortcutAction } from "../game/shortcuts";
 import type { Dispatch, GameState } from "../game/types";
 
 // Listens to the keyboard while the service screen is shown (see game/shortcuts.ts for the keys).
-export function useServiceShortcuts(state: GameState, dispatch: Dispatch, isEnabled: boolean): void {
+export const useServiceShortcuts = (state: GameState, dispatch: Dispatch, isEnabled: boolean): void => {
   const latestState = useRef(state);
   latestState.current = state;
 
@@ -25,4 +25,4 @@ export function useServiceShortcuts(state: GameState, dispatch: Dispatch, isEnab
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isEnabled, dispatch]);
-}
+};

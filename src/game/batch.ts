@@ -20,19 +20,19 @@ export const BATCH_GOLD_XP = 20;
 export const pizzaCount = (items: readonly BatchItem[]): number => items.reduce((total, item) => total + item.count, 0);
 export const deliveredCount = (items: readonly BatchItem[]): number => items.reduce((total, item) => total + item.delivered, 0);
 
-export function medalFor(elapsed: number, count: number): Medal {
+export const medalFor = (elapsed: number, count: number): Medal => {
   if (elapsed <= GOLD_SECONDS_PER_PIZZA * count) return "gold";
   if (elapsed <= SILVER_SECONDS_PER_PIZZA * count) return "silver";
   return "bronze";
-}
+};
 
 // The medal still within reach right now, and the seconds left to keep it (null for bronze).
-export function medalInReach(elapsed: number, count: number): { medal: Medal; secondsLeft: number | null } {
+export const medalInReach = (elapsed: number, count: number): { medal: Medal; secondsLeft: number | null } => {
   const medal = medalFor(elapsed, count);
   if (medal === "bronze") return { medal, secondsLeft: null };
   const limit = (medal === "gold" ? GOLD_SECONDS_PER_PIZZA : SILVER_SECONDS_PER_PIZZA) * count;
   return { medal, secondsLeft: Math.max(0, limit - elapsed) };
-}
+};
 
 const recipeOf = (state: GameState, item: BatchItem): Recipe | undefined => state.recipes.find((recipe) => recipe.id === item.recipeId);
 
@@ -46,21 +46,21 @@ export const unfinishedPay = (state: GameState, items: readonly BatchItem[]): nu
   Math.round(valueOf(state, items, (item) => item.delivered) * UNFINISHED_FACTOR);
 
 // Tonight's group order, if it has come in and isn't complete.
-export function openBatch(state: GameState, service: Service): Quest | null {
+export const openBatch = (state: GameState, service: Service): Quest | null => {
   const { quest } = state;
   return service.batch && quest?.kind === "batch" && quest.items ? quest : null;
-}
+};
 
 // The line of the open group order this pizza would complete, if any.
-export function batchItemFor(state: GameState, service: Service, ingredients: readonly IngredientId[]): BatchItem | undefined {
+export const batchItemFor = (state: GameState, service: Service, ingredients: readonly IngredientId[]): BatchItem | undefined => {
   return openBatch(state, service)?.items?.find((item) => {
     const recipe = recipeOf(state, item);
     return item.delivered < item.count && recipe !== undefined && haveSameIngredients(recipe.ingredients, ingredients);
   });
-}
+};
 
 // What to make next for the group order: the first line still missing pizzas.
-export function nextBatchRecipe(state: GameState, service: Service): Recipe | undefined {
+export const nextBatchRecipe = (state: GameState, service: Service): Recipe | undefined => {
   const item = openBatch(state, service)?.items?.find((candidate) => candidate.delivered < candidate.count);
   return item ? recipeOf(state, item) : undefined;
-}
+};

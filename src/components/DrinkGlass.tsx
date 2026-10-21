@@ -1,7 +1,7 @@
 import { DRINKS, type DrinkId } from "../data/drinks";
 
 // A small glass (or bottle, for wine and chinotto) filled with the drink's colour.
-export function DrinkGlass({ id, className }: { id: DrinkId; className?: string }) {
+export const DrinkGlass = ({ id, className }: { id: DrinkId; className?: string }) => {
   const { color } = DRINKS[id];
   const isBottle = id === "vin" || id === "chinotto";
   return (
@@ -22,4 +22,4 @@ export function DrinkGlass({ id, className }: { id: DrinkId; className?: string 
       )}
     </svg>
   );
-}
+};

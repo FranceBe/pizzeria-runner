@@ -2,7 +2,7 @@ import type { Dispatch, Pop } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 
 // Small "+7,00 €" bubbles floating up from the till. Each one removes itself when its animation ends.
-export function MoneyPops({ pops, dispatch }: { pops: readonly Pop[]; dispatch: Dispatch }) {
+export const MoneyPops = ({ pops, dispatch }: { pops: readonly Pop[]; dispatch: Dispatch }) => {
   const t = useTranslation();
   if (!pops.length) return null;
   return (
@@ -14,4 +14,4 @@ export function MoneyPops({ pops, dispatch }: { pops: readonly Pop[]; dispatch: 
       ))}
     </div>
   );
-}
+};

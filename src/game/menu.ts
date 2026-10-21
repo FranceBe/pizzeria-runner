@@ -30,7 +30,7 @@ export const isNewRecipe = (state: GameState, recipe: Recipe): boolean => recipe
 export const knowsRecipe = (state: GameState, recipeId: string): boolean => state.recipes.some((recipe) => recipe.id === recipeId);
 
 // Classic recipes have no stored name: it is translated from their id when shown.
-export function createClassicRecipe(classic: ClassicRecipe, { onMenu, newUntil }: { onMenu: boolean; newUntil: number }): Recipe {
+export const createClassicRecipe = (classic: ClassicRecipe, { onMenu, newUntil }: { onMenu: boolean; newUntil: number }): Recipe => {
   return {
     id: classic.id,
     name: null,
@@ -41,11 +41,11 @@ export function createClassicRecipe(classic: ClassicRecipe, { onMenu, newUntil }
     onMenu,
     newUntil,
   };
-}
+};
 
 // Adds classics whose ingredients are all unlocked, and Nonna's recipes once the level is reached;
 // called after each unlock and level up. Mutates state.
-export function discoverClassics(state: GameState): void {
+export const discoverClassics = (state: GameState): void => {
   const level = levelForXp(state.xp);
   CLASSIC_RECIPES.forEach((classic) => {
     if (knowsRecipe(state, classic.id)) return;
@@ -56,7 +56,7 @@ export function discoverClassics(state: GameState): void {
     const key = classic.signatureLevel ? "nonnaRecipe" : "classicDiscovered";
     pushToast(state, { key, params: { recipeId: classic.id, onMenu } }, "gold");
   });
-}
+};
 
 export const MAX_FILLINGS = 8;
 
@@ -65,18 +65,17 @@ export type RecipeError = "missingName" | "noTopping" | "duplicateIngredients" |
 
 // Returns why the recipe can't be saved, or null if it can.
 // displayName turns a recipe into the name the player sees (classic names are translated).
-export function validateRecipe(
+export const validateRecipe = (
   recipes: readonly Recipe[],
   name: string,
   ingredients: readonly IngredientId[],
-  displayName: (recipe: Recipe) => string,
-): RecipeError | null {
+  displayName: (recipe: Recipe) => string,): RecipeError | null => {
   if (!name) return "missingName";
   if (ingredients.length < 2) return "noTopping";
   if (recipes.some((recipe) => haveSameIngredients(recipe.ingredients, ingredients))) return "duplicateIngredients";
   if (recipes.some((recipe) => displayName(recipe).toLowerCase() === name.toLowerCase())) return "duplicateName";
   return null;
-}
+};
 
 // The recipe a pizza is, whatever its dough (a gluten-free Margherita is still a Margherita).
 const withRegularDough = (ingredients: readonly IngredientId[]): IngredientId[] =>

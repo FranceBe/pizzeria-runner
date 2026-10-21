@@ -20,7 +20,7 @@ interface RecipeCardProps extends ScreenProps {
   onCancelDelete: () => void;
 }
 
-function RecipeCard({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, onCancelDelete }: RecipeCardProps) {
+const RecipeCard = ({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, onCancelDelete }: RecipeCardProps) => {
   const t = useTranslation();
   const name = t.recipe(recipe);
   const isSpecial = state.chefSpecial === recipe.id;
@@ -92,9 +92,9 @@ function RecipeCard({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
       </div>
     </div>
   );
-}
+};
 
-function ClassicsToDiscover({ state }: Pick<ScreenProps, "state">) {
+const ClassicsToDiscover = ({ state }: Pick<ScreenProps, "state">) => {
   const t = useTranslation();
   // Festival recipes show up with their festival, not as something to work towards.
   const undiscovered = CLASSIC_RECIPES.filter((classic) => !knowsRecipe(state, classic.id) && !classic.festival);
@@ -120,9 +120,9 @@ function ClassicsToDiscover({ state }: Pick<ScreenProps, "state">) {
       </div>
     </>
   );
-}
+};
 
-export function MenuView({ state, dispatch }: ScreenProps) {
+export const MenuView = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const [isEditorOpen, setEditorOpen] = useState(false);
   const [recipeIdToDelete, setRecipeIdToDelete] = useState<RecipeId | null>(null);
@@ -163,4 +163,4 @@ export function MenuView({ state, dispatch }: ScreenProps) {
       {isEditorOpen && <RecipeEditor state={state} dispatch={dispatch} onClose={() => setEditorOpen(false)} />}
     </>
   );
-}
+};

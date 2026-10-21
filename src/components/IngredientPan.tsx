@@ -5,7 +5,7 @@ import { ToppingPiece } from "./ToppingPiece";
 // Stock at which a pan looks full.
 const FULL_PAN_QUANTITY = 12;
 
-function DoughBalls({ quantity }: { quantity: number }) {
+const DoughBalls = ({ quantity }: { quantity: number }) => {
   const ballCount = Math.min(6, Math.ceil(quantity / 2));
   return <>{Array.from({ length: ballCount }, (_, index) => {
     const cx = 16 + (index % 3) * 14;
@@ -17,7 +17,7 @@ function DoughBalls({ quantity }: { quantity: number }) {
       </g>
     );
   })}</>;
-}
+};
 
 interface FillProps {
   ingredient: Ingredient;
@@ -25,7 +25,7 @@ interface FillProps {
   fillRatio: number;
 }
 
-function LiquidLevel({ ingredient, fillRatio }: FillProps) {
+const LiquidLevel = ({ ingredient, fillRatio }: FillProps) => {
   const level = Math.max(0.25, fillRatio);
   return (
     <>
@@ -34,15 +34,15 @@ function LiquidLevel({ ingredient, fillRatio }: FillProps) {
       {ingredient.id === "miel" && <path d="M14,34 Q22,28 30,34 T46,34" stroke="#c9850f" strokeWidth="1.4" fill="none" opacity=".6" />}
     </>
   );
-}
+};
 
-function maxPiecesInPan(shape: ToppingShape | undefined): number {
+const maxPiecesInPan = (shape: ToppingShape | undefined): number => {
   if (shape === "dot") return 70;
   if (shape === "cube") return 34;
   return 16;
-}
+};
 
-function LoosePieces({ ingredient, fillRatio }: FillProps) {
+const LoosePieces = ({ ingredient, fillRatio }: FillProps) => {
   const isBig = ingredient.shape === "egg" || ingredient.shape === "ball";
   const random = seededRandom(hashString("pan" + ingredient.id));
   const maxPieces = isBig ? 4 : maxPiecesInPan(ingredient.shape);
@@ -66,18 +66,18 @@ function LoosePieces({ ingredient, fillRatio }: FillProps) {
       />
     );
   })}</>;
-}
+};
 
-function PanContents({ ingredient, quantity }: { ingredient: Ingredient; quantity: number }) {
+const PanContents = ({ ingredient, quantity }: { ingredient: Ingredient; quantity: number }) => {
   if (quantity <= 0) return null;
   const fillRatio = Math.min(1, quantity / FULL_PAN_QUANTITY);
   if (ingredient.kind === "base") return <DoughBalls quantity={quantity} />;
   if (ingredient.kind === "sauce" || ingredient.id === "miel") return <LiquidLevel ingredient={ingredient} fillRatio={fillRatio} />;
   return <LoosePieces ingredient={ingredient} fillRatio={fillRatio} />;
-}
+};
 
 // Top-down view of a stainless gastro pan; how full it looks follows the stock.
-export function IngredientPan({ id, quantity }: { id: IngredientId; quantity: number }) {
+export const IngredientPan = ({ id, quantity }: { id: IngredientId; quantity: number }) => {
   const ingredient = INGREDIENTS_BY_ID[id];
   const isPale = PALE_COLORS.includes(ingredient.color);
   return (
@@ -88,4 +88,4 @@ export function IngredientPan({ id, quantity }: { id: IngredientId; quantity: nu
       <PanContents ingredient={ingredient} quantity={quantity} />
     </svg>
   );
-}
+};

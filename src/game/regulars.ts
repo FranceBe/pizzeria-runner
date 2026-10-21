@@ -29,18 +29,18 @@ export const isRegular = (entry: CustomerBookEntry | undefined): entry is Custom
   entry !== undefined && !entry.lapsed && hasAUsual(entry);
 
 // The recipe this customer ordered most, or null.
-export function favoriteRecipeId(entry: CustomerBookEntry | undefined): string | null {
+export const favoriteRecipeId = (entry: CustomerBookEntry | undefined): string | null => {
   const [mostOrdered] = Object.entries(entry?.orders ?? {}).sort((a, b) => b[1] - a[1]);
   return mostOrdered?.[0] ?? null;
-}
+};
 
 // Regulars, most loyal first.
-export function regularsOf(state: GameState): Regular[] {
+export const regularsOf = (state: GameState): Regular[] => {
   return Object.entries(state.customerBook)
     .filter(([, entry]) => isRegular(entry))
     .map(([name, entry]) => ({ name, ...entry, favoriteRecipeId: favoriteRecipeId(entry) }))
     .sort((a, b) => b.visits - a.visits);
-}
+};
 
 // Birthdays come round every MONTH_DAYS days.
 const MONTH_DAYS = 28;
@@ -53,16 +53,16 @@ export const birthdaysToday = (state: GameState): string[] =>
   regularsOf(state).filter((regular) => regular.birthday === dayOfMonth(state.day)).map((regular) => regular.name);
 
 // Something a new regular never wants on their pizza: a filling the player knows, never one of their favourite.
-function pickDislike(state: GameState, entry: CustomerBookEntry): IngredientId | undefined {
+const pickDislike = (state: GameState, entry: CustomerBookEntry): IngredientId | undefined => {
   const favorite = state.recipes.find((recipe) => recipe.id === favoriteRecipeId(entry));
   const known = [...new Set(state.recipes.flatMap((recipe) => fillingsOf(recipe.ingredients)))];
   const candidates = known.filter((id) => !favorite?.ingredients.includes(id));
   return candidates.length ? pickRandom(candidates) : undefined;
-}
+};
 
 // Adds a visit to the book. Returns true when this visit makes them a regular, which gives them a dislike and a
 // birthday. One lost from sight is simply a regular again when they come back. Mutates state.
-export function recordVisit(state: GameState, customer: Customer): boolean {
+export const recordVisit = (state: GameState, customer: Customer): boolean => {
   const entry: CustomerBookEntry = state.customerBook[customer.name] ?? {
     skin: customer.skin,
     hair: customer.hair,
@@ -81,16 +81,16 @@ export function recordVisit(state: GameState, customer: Customer): boolean {
   }
   state.customerBook[customer.name] = updated;
   return becomesRegular;
-}
+};
 
 // At the start of each day: regulars who stayed away too long are lost from sight. Mutates state.
-export function lapseAbsentRegulars(state: GameState): void {
+export const lapseAbsentRegulars = (state: GameState): void => {
   Object.values(state.customerBook).forEach((entry) => {
     // Older saves didn't keep the date: the count starts now.
     if (entry.lastVisit === undefined) entry.lastVisit = state.day;
     else if (!entry.lapsed && hasAUsual(entry) && state.day - entry.lastVisit > LAPSE_DAYS) entry.lapsed = true;
   });
-}
+};
 
 // The neighbourhood: a few people who live nearby and come often. Everyone else passes by now and then, so the
 // regulars stay a small crowd the player can get to know.
@@ -99,7 +99,7 @@ export const LOCAL_SHARE = 0.7;
 
 // Fills the neighbourhood up to LOCALS_COUNT: first with the most loyal faces already met, then with new names.
 // Mutates state.
-export function ensureLocals(state: GameState, names: readonly string[]): void {
+export const ensureLocals = (state: GameState, names: readonly string[]): void => {
   if (state.locals.length >= LOCALS_COUNT) return;
   const known = Object.entries(state.customerBook)
     .filter(([name]) => names.includes(name) && !state.locals.includes(name))
@@ -110,13 +110,13 @@ export function ensureLocals(state: GameState, names: readonly string[]): void {
     const name = known.shift() ?? strangers.splice(randomIndex(strangers.length), 1)[0];
     state.locals.push(name);
   }
-}
+};
 
 // Who comes in next, among the names not already at the counter: most often someone from the neighbourhood.
-export function pickCustomerName(state: GameState, names: readonly string[], waiting: ReadonlySet<string>): string {
+export const pickCustomerName = (state: GameState, names: readonly string[], waiting: ReadonlySet<string>): string => {
   const free = names.filter((name) => !waiting.has(name));
   const locals = free.filter((name) => state.locals.includes(name));
   const passersBy = free.filter((name) => !state.locals.includes(name));
   const fromLocals = locals.length > 0 && (passersBy.length === 0 || Math.random() < LOCAL_SHARE);
   return pickRandom(fromLocals ? locals : passersBy);
-}
+};

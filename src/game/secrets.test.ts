@@ -17,10 +17,10 @@ const CODE = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "Arro
 const typeAll = (keys: readonly string[]) =>
   keys.reduce((progress, key) => (progress.isComplete ? progress : typeSecretKey(progress.typed, key)), { typed: [] as string[], isComplete: false });
 
-function bakeAndServe(state: GameState, ...beforeBake: Parameters<typeof play>[1][]): GameState {
+const bakeAndServe = (state: GameState, ...beforeBake: Parameters<typeof play>[1][]): GameState => {
   const baked = play(play(state, ...toggle(...MARGHERITA), ...beforeBake, { type: "bake" }), { type: "tick", seconds: 10 });
   return play(baked, { type: "servePizza", pizzaId: serviceOf(baked).ready[0].id });
-}
+};
 
 describe("the secret code", () => {
   it("is recognised only in full and in order, even after other keys", () => {

@@ -9,17 +9,17 @@ import { en } from "./en";
 import { fr } from "./fr";
 
 // Flattens a dictionary into "path.to.key" -> "string" | "function" | "array".
-function shapeOf(node: object, prefix = ""): [string, string][] {
+const shapeOf = (node: object, prefix = ""): [string, string][] => {
   return Object.entries(node).flatMap(([key, value]): [string, string][] => {
     const path = prefix ? `${prefix}.${key}` : key;
     if (Array.isArray(value)) return [[path, `array(${value.map((row: unknown[]) => row.length).join(",")})`]];
     if (typeof value === "object" && value !== null) return shapeOf(value, path);
     return [[path, typeof value]];
   });
-}
+};
 
 // "{name}" placeholders of every plain-string entry, by path.
-function placeholdersOf(node: object, prefix = ""): Record<string, string[]> {
+const placeholdersOf = (node: object, prefix = ""): Record<string, string[]> => {
   return Object.fromEntries(
     Object.entries(node).flatMap(([key, value]): [string, string[]][] => {
       const path = prefix ? `${prefix}.${key}` : key;
@@ -28,15 +28,15 @@ function placeholdersOf(node: object, prefix = ""): Record<string, string[]> {
       return [];
     }),
   );
-}
+};
 
-function sourceFiles(directory: string): string[] {
+const sourceFiles = (directory: string): string[] => {
   return readdirSync(directory).flatMap((name) => {
     const path = join(directory, name);
     if (statSync(path).isDirectory()) return sourceFiles(path);
     return /\.tsx?$/.test(name) && !name.includes(".test.") ? [path] : [];
   });
-}
+};
 
 describe("dictionaries", () => {
   it("have exactly the same keys in every language", () => {

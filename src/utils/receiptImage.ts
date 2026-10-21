@@ -15,7 +15,7 @@ const INK = "#2a2620";
 const RULE = "#cfc6b4";
 const ACCENT = "#c63a21";
 
-function rule(context: CanvasRenderingContext2D, y: number): void {
+const rule = (context: CanvasRenderingContext2D, y: number): void => {
   context.strokeStyle = RULE;
   context.setLineDash([6, 5]);
   context.lineWidth = 2;
@@ -24,9 +24,9 @@ function rule(context: CanvasRenderingContext2D, y: number): void {
   context.lineTo(WIDTH - PADDING, y);
   context.stroke();
   context.setLineDash([]);
-}
+};
 
-export function drawReceipt(name: string, title: string, rows: readonly ReceiptRow[], thanks: string): Promise<Blob | null> {
+export const drawReceipt = (name: string, title: string, rows: readonly ReceiptRow[], thanks: string): Promise<Blob | null> => {
   const scale = 2;
   const height = PADDING * 2 + 70 + rows.length * ROW_HEIGHT + 60;
   const canvas = document.createElement("canvas");
@@ -67,10 +67,10 @@ export function drawReceipt(name: string, title: string, rows: readonly ReceiptR
   context.fillStyle = INK;
   context.fillText(thanks.toUpperCase(), WIDTH / 2, y + 30);
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-}
+};
 
 // Shares the image where the device can (phones), otherwise downloads it.
-export async function shareOrDownload(blob: Blob, fileName: string): Promise<void> {
+export const shareOrDownload = async (blob: Blob, fileName: string): Promise<void> => {
   const file = new File([blob], fileName, { type: "image/png" });
   if (navigator.canShare?.({ files: [file] })) {
     await navigator.share({ files: [file] });
@@ -82,4 +82,4 @@ export async function shareOrDownload(blob: Blob, fileName: string): Promise<voi
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
-}
+};

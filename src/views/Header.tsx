@@ -6,14 +6,14 @@ import { StorefrontDecor } from "../components/StorefrontDecor";
 import type { ScreenProps } from "./types";
 
 // 0 when the service opens, 1 when the last customer is in: the sky behind the sign darkens as the evening goes on.
-function eveningProgress(state: ScreenProps["state"]): number {
+const eveningProgress = (state: ScreenProps["state"]): number => {
   const { service } = state;
   if (!service || service.challenge) return 0;
   const total = service.stats.served + service.customers.length + service.customersToCome;
   return total ? service.stats.served / total : 0;
-}
+};
 
-export function Header({ state, dispatch }: ScreenProps) {
+export const Header = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const level = levelForXp(state.xp);
   const evening = eveningProgress(state);
@@ -48,4 +48,4 @@ export function Header({ state, dispatch }: ScreenProps) {
       {state.upgrades.deco >= 2 && <div className="lights" aria-hidden="true" />}
     </header>
   );
-}
+};

@@ -7,10 +7,10 @@ const DATE = "2026-10-17";
 const ready = (): GameState => makeState({ settings: { ...makeState().settings, tutorialDone: true } });
 
 // Lets the first customers in and returns what they ordered.
-function firstOrders(state: GameState): string[] {
+const firstOrders = (state: GameState): string[] => {
   const after = play(state, { type: "tick", seconds: 1 }, { type: "tick", seconds: 5 }, { type: "tick", seconds: 5 });
   return serviceOf(after).customers.map((customer) => `${customer.name}:${customer.recipeId}`);
-}
+};
 
 describe("daily challenge", () => {
   it("has the same menu and the same customers for everyone on a date", () => {

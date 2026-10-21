@@ -6,7 +6,7 @@ import type { ServiceScreenProps } from "../types";
 
 // The ways out of a service: borrow from Nonna, close for today, start the day over.
 // Closing and restarting ask once more before doing anything.
-export function ServiceWayOut({ state, service, dispatch }: ServiceScreenProps) {
+export const ServiceWayOut = ({ state, service, dispatch }: ServiceScreenProps) => {
   const t = useTranslation();
   const [confirming, setConfirming] = useState<"close" | "restart" | null>(null);
   if (service.challenge) return null;
@@ -40,10 +40,10 @@ export function ServiceWayOut({ state, service, dispatch }: ServiceScreenProps) 
       )}
     </div>
   );
-}
+};
 
 // The clock stops while this is open.
-export function PauseMenu(props: ServiceScreenProps) {
+export const PauseMenu = (props: ServiceScreenProps) => {
   const t = useTranslation();
   return (
     <Overlay label={t("service.paused")} onClose={() => props.dispatch({ type: "togglePause" })}>
@@ -55,4 +55,4 @@ export function PauseMenu(props: ServiceScreenProps) {
       </div>
     </Overlay>
   );
-}
+};

@@ -283,3 +283,14 @@ the broken save is kept aside in `localStorage` under `forno-lento-broken-save`.
 
 If you change the shape of the saved state, bump `SAVE_VERSION` in `game/state.ts` and add the conversion
 to `migrateSave`, so existing games still load.
+
+## Privacy and security
+
+- Nothing about the player leaves the browser: the game and its saves live in `localStorage`, and save codes are only
+  copied and pasted by hand.
+- Visits are counted with Cloudflare Web Analytics (the script at the end of `index.html`): no cookies, no personal
+  data, no tracking across sites.
+- Built versions carry a Content-Security-Policy (see `vite.config.ts`): the page may only load its own files, Google
+  Fonts and the analytics script, and only send data to itself and Cloudflare's analytics. It is added at build time,
+  since the dev server needs an inline script for hot reload. A new third-party resource has to be added there too.
+- The page never inserts HTML from strings: everything shown, the pizzeria's name included, goes through React.

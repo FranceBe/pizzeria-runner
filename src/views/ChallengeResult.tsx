@@ -8,7 +8,7 @@ const shortDate = (date: string, language: string): string =>
   new Date(`${date}T12:00:00`).toLocaleDateString(language, { day: "numeric", month: "numeric" });
 
 // Shown when the daily challenge's clock runs out, with a way to brag about it.
-export function ChallengeResult({ result, best, dispatch }: { result: Result; best: number; dispatch: Dispatch }) {
+export const ChallengeResult = ({ result, best, dispatch }: { result: Result; best: number; dispatch: Dispatch }) => {
   const t = useTranslation();
   const [isCopied, setCopied] = useState(false);
 
@@ -49,4 +49,4 @@ export function ChallengeResult({ result, best, dispatch }: { result: Result; be
       </div>
     </Overlay>
   );
-}
+};

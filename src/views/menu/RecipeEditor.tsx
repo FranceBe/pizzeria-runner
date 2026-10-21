@@ -22,7 +22,7 @@ interface IngredientPickerProps {
 
 const STARTING_INGREDIENTS: readonly IngredientId[] = ["pate", "tomate", "mozza"];
 
-function IngredientPicker({ state, ingredients, onToggle }: IngredientPickerProps) {
+const IngredientPicker = ({ state, ingredients, onToggle }: IngredientPickerProps) => {
   const t = useTranslation();
   return (
     <div className="picker">
@@ -51,9 +51,9 @@ function IngredientPicker({ state, ingredients, onToggle }: IngredientPickerProp
       })}
     </div>
   );
-}
+};
 
-export function RecipeEditor({ state, dispatch, onClose }: ScreenProps & { onClose: () => void }) {
+export const RecipeEditor = ({ state, dispatch, onClose }: ScreenProps & { onClose: () => void }) => {
   const t = useTranslation();
   const [ingredients, setIngredients] = useState(STARTING_INGREDIENTS);
   const [name, setName] = useState("");
@@ -148,4 +148,4 @@ export function RecipeEditor({ state, dispatch, onClose }: ScreenProps & { onClo
       </div>
     </Overlay>
   );
-}
+};

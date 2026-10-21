@@ -50,10 +50,10 @@ const ICON_PATHS: Record<TabId, ReactNode> = {
   ),
 };
 
-export function TabIcon({ tab }: { tab: TabId }) {
+export const TabIcon = ({ tab }: { tab: TabId }) => {
   return (
     <svg className="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {ICON_PATHS[tab]}
     </svg>
   );
-}
+};

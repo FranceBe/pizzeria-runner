@@ -2,7 +2,7 @@ const MARGIN = 8;
 
 // Scrolls a list (and its scrolling parent) just enough to show an element inside it. Only these containers move,
 // never the page: during service the page itself is fixed, and scrolling it would leave everything stuck.
-export function revealInList(list: HTMLElement, element: HTMLElement): void {
+export const revealInList = (list: HTMLElement, element: HTMLElement): void => {
   for (const scroller of [list, list.parentElement]) {
     if (!scroller) continue;
     const box = scroller.getBoundingClientRect();
@@ -16,4 +16,4 @@ export function revealInList(list: HTMLElement, element: HTMLElement): void {
       else if (target.bottom > box.bottom) scroller.scrollTop += target.bottom - box.bottom + MARGIN;
     }
   }
-}
+};

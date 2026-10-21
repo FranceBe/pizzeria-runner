@@ -41,7 +41,7 @@ interface PrepLineProps {
 }
 
 // A small jar: Nonna's with a sparkle, Mamma's with a heart.
-function SecretJar({ id }: { id: SecretJarState["id"] }) {
+const SecretJar = ({ id }: { id: SecretJarState["id"] }) => {
   const isMamma = id === "mamma";
   return (
     <svg viewBox="0 0 60 60" aria-hidden="true">
@@ -55,12 +55,12 @@ function SecretJar({ id }: { id: SecretJarState["id"] }) {
       )}
     </svg>
   );
-}
+};
 
 const LOW_PAN_THRESHOLD = 3;
 const FULL_PAN = 12;
 
-function panClassName({ isOnBoard, isNeeded, isPushedBack, isCoachTarget, quantity }: PanState): string {
+const panClassName = ({ isOnBoard, isNeeded, isPushedBack, isCoachTarget, quantity }: PanState): string => {
   let className = "pan";
   if (isOnBoard) className += " on";
   else if (isNeeded) className += " need";
@@ -68,21 +68,21 @@ function panClassName({ isOnBoard, isNeeded, isPushedBack, isCoachTarget, quanti
   if (isCoachTarget) className += " coach-target";
   if (quantity < LOW_PAN_THRESHOLD) className += " low";
   return className;
-}
+};
 
 // Which pans the tutorial points at for its current step.
-function isCoachPan(coachTarget: CoachTarget | null, id: IngredientId, isOnBoard: boolean, isNeeded: boolean): boolean {
+const isCoachPan = (coachTarget: CoachTarget | null, id: IngredientId, isOnBoard: boolean, isNeeded: boolean): boolean => {
   if (coachTarget === "dough") return id === "pate";
   if (coachTarget === "toppings") return isNeeded && !isOnBoard;
   return false;
-}
+};
 
 // The row of ingredient pans along the bottom of the service screen.
 // Pans the selected order still needs get a dashed outline.
-export function PrepLine({
+export const PrepLine = ({
   state, isBottomless, extraIngredients = [], board, neededIngredients, orderIngredients = [], fadeLevel = 0, coachTarget,
   onPickIngredient, secrets = [], stillComing,
-}: PrepLineProps) {
+}: PrepLineProps) => {
   const t = useTranslation();
   const stations = PREP_STATIONS.map((station) => ({
     ...station,
@@ -144,4 +144,4 @@ export function PrepLine({
       )}
     </section>
   );
-}
+};

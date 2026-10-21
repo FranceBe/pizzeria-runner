@@ -14,16 +14,16 @@ export const isDiscovered = (state: GameState, pairing: Pairing): boolean => sta
 export const goodPairingsIn = (ingredients: readonly IngredientId[]): Pairing[] => findPairings(ingredients).good;
 
 // Records the good pairings of a served pizza. Returns the ones that are new. Mutates state.
-export function discoverPairings(state: GameState, ingredients: readonly IngredientId[]): Pairing[] {
+export const discoverPairings = (state: GameState, ingredients: readonly IngredientId[]): Pairing[] => {
   const found = goodPairingsIn(ingredients).filter((pairing) => !isDiscovered(state, pairing));
   state.discoveredPairings.push(...found.map(pairingKey));
   return found;
-}
+};
 
 // What the recipe editor shows: discovered pairings by name, the others only as a hint that one exists.
-export function visiblePairings(state: GameState, ingredients: readonly IngredientId[]): { known: Pairing[]; hasSecret: boolean } {
+export const visiblePairings = (state: GameState, ingredients: readonly IngredientId[]): { known: Pairing[]; hasSecret: boolean } => {
   const good = goodPairingsIn(ingredients);
   return { known: good.filter((pairing) => isDiscovered(state, pairing)), hasSecret: good.some((pairing) => !isDiscovered(state, pairing)) };
-}
+};
 
 export const ALL_PAIRINGS_COUNT = GOOD_PAIRINGS.length;

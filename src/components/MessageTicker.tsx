@@ -10,7 +10,7 @@ interface MessageTickerProps {
 
 // A single slim line showing the newest message; tapping it dismisses it.
 // With no message, shows `idleText` if given (the service progress), or nothing.
-export function MessageTicker({ toasts, dispatch, idleText }: MessageTickerProps) {
+export const MessageTicker = ({ toasts, dispatch, idleText }: MessageTickerProps) => {
   const t = useTranslation();
   const newest = toasts[toasts.length - 1];
   if (!newest) return idleText ? <div className="ticker">{idleText}</div> : null;
@@ -24,4 +24,4 @@ export function MessageTicker({ toasts, dispatch, idleText }: MessageTickerProps
       <span className="ticker-x" aria-hidden="true">×</span>
     </button>
   );
-}
+};

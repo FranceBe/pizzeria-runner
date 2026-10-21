@@ -3,7 +3,7 @@ import { ToppingPiece } from "./ToppingPiece";
 
 const DOT_POSITIONS: readonly (readonly [number, number])[] = [[-5, -3], [4, -5], [0, 3], [-4, 6], [6, 4], [-8, 1]];
 
-function IconBody({ ingredient }: { ingredient: Ingredient }) {
+const IconBody = ({ ingredient }: { ingredient: Ingredient }) => {
   const { kind, shape, color } = ingredient;
   if (kind === "base") return <circle r="12" fill="#efd7a6" stroke="#dcae6d" strokeWidth="3" />;
   if (kind === "sauce") {
@@ -38,9 +38,9 @@ function IconBody({ ingredient }: { ingredient: Ingredient }) {
     );
   }
   return <ToppingPiece ingredient={ingredient} x={0} y={0} rotation={-15} scale={1.15} />;
-}
+};
 
-export function IngredientIcon({ id, className }: { id: IngredientId; className?: string }) {
+export const IngredientIcon = ({ id, className }: { id: IngredientId; className?: string }) => {
   const ingredient = INGREDIENTS_BY_ID[id];
   const needsBackdrop = PALE_COLORS.includes(ingredient.color) && ingredient.kind !== "base";
   return (
@@ -49,4 +49,4 @@ export function IngredientIcon({ id, className }: { id: IngredientId; className?
       <IconBody ingredient={ingredient} />
     </svg>
   );
-}
+};

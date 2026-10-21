@@ -16,7 +16,7 @@ import type { ScreenProps } from "./types";
 const BUY_QUANTITIES = [1, 5, 10];
 const RESTOCK_TARGETS = [10, 20] as const;
 
-function Fridge({ state, dispatch }: ScreenProps) {
+const Fridge = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const ownedIngredients = INGREDIENTS.filter((ingredient) => state.unlocked[ingredient.id]);
   const [smallTarget, bigTarget] = RESTOCK_TARGETS;
@@ -73,7 +73,7 @@ function Fridge({ state, dispatch }: ScreenProps) {
       </div>
     </div>
   );
-}
+};
 
 // The secret ingredients, once shared: made by hand, a jar at a time, never part of the restock buttons.
 interface SecretCardProps {
@@ -89,7 +89,7 @@ interface SecretCardProps {
 }
 
 // A secret ingredient, made at the market a jar at a time.
-function SecretCard({ title, intro, bonus, icon, stock, cost, portions, onCraft, money }: SecretCardProps) {
+const SecretCard = ({ title, intro, bonus, icon, stock, cost, portions, onCraft, money }: SecretCardProps) => {
   const t = useTranslation();
   // A button, not a hover tooltip: phones have no hover.
   const [isExplained, setExplained] = useState(false);
@@ -117,9 +117,9 @@ function SecretCard({ title, intro, bonus, icon, stock, cost, portions, onCraft,
       </div>
     </div>
   );
-}
+};
 
-function Secrets({ state, dispatch }: ScreenProps) {
+const Secrets = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   return (
     <>
@@ -151,9 +151,9 @@ function Secrets({ state, dispatch }: ScreenProps) {
       )}
     </>
   );
-}
+};
 
-function Suppliers({ state, dispatch }: ScreenProps) {
+const Suppliers = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const level = levelForXp(state.xp);
   // Festival ingredients come with the calendar, not from a supplier.
@@ -198,9 +198,9 @@ function Suppliers({ state, dispatch }: ScreenProps) {
       </div>
     </div>
   );
-}
+};
 
-export function MarketView({ state, dispatch }: ScreenProps) {
+export const MarketView = ({ state, dispatch }: ScreenProps) => {
   return (
     <div className="market">
       <div className="market-main">
@@ -210,4 +210,4 @@ export function MarketView({ state, dispatch }: ScreenProps) {
       <Suppliers state={state} dispatch={dispatch} />
     </div>
   );
-}
+};

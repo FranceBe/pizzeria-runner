@@ -80,6 +80,6 @@ export const COMMIS_FADES_PANS = 2;
 export const BARMAN_LEVEL = 3;
 export const BARMAN_SECONDS = 6;
 
-export function tipChanceForDecor(decorLevel: number): number {
+export const tipChanceForDecor = (decorLevel: number): number => {
   return 0.3 + 0.12 * decorLevel;
-}
+};

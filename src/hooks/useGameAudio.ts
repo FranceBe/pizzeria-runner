@@ -4,7 +4,7 @@ import { audio } from "../audio/engine";
 import type { GameState } from "../game/types";
 
 // Plays the music and the sound effects that follow the game (see audio/cues.ts for what plays when).
-export function useGameAudio(state: GameState): void {
+export const useGameAudio = (state: GameState): void => {
   const previous = useRef(snapshotOf(state));
 
   // Browsers only allow sound after the player touches the page.
@@ -40,4 +40,4 @@ export function useGameAudio(state: GameState): void {
     if (cues.newOrder) audio.play("newOrder");
     if (cues.payment) audio.play("payment");
   }, [state]);
-}
+};

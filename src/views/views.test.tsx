@@ -29,22 +29,22 @@ const RAW_KEY =
   /\b(tabs|common|header|prep|challenge|service|market|menu|editor|upgrades|settings|summary|journal|events|achievements|toasts|tutorial|pops|kinds|stations|ingredients|recipes|customerLines|festivals|medals|weeklyMissions|quests|seasons|diets|drinks|crash)\.\w/;
 
 // A late-game state with every supplier, so every drawing shape gets rendered.
-function lateGameState(): GameState {
+const lateGameState = (): GameState => {
   const signAll = INGREDIENTS.map(({ id }) => ({ type: "signSupplier", ingredientId: id }) as const);
   return play(makeState({ money: 5000, xp: 5000 }), ...signAll);
-}
+};
 
-function withRegulars(state: GameState): GameState {
+const withRegulars = (state: GameState): GameState => {
   state.customerBook = { Giulia: makeBookEntry({ visits: 5, orders: { margherita: 5 } }) };
   return state;
-}
+};
 
 const serviceScreen = (state: GameState): ReactElement => (
   <ServiceView state={state} service={serviceOf(state)} dispatch={noop} />
 );
 
 // A journal with a few days, a discovered pairing and an achievement.
-function playedState(): GameState {
+const playedState = (): GameState => {
   const state = makeState({ day: 4, event: "critic", settings: { ...makeState().settings, tutorialDone: true } });
   state.history = [
     { day: 1, served: 5, revenue: 35, tips: 2, net: 12, xp: 50, event: null },
@@ -57,10 +57,10 @@ function playedState(): GameState {
   state.quest = { kind: "serveRecipe", giver: "football", target: 5, progress: 2, recipeId: "margherita", recipeName: null, deadlineDay: 5, reward: 35, xp: 40 };
   state.customerBook = { Giulia: makeBookEntry({ visits: 5, orders: { margherita: 5 }, dislikes: "basilic", birthday: 4 }) };
   return state;
-}
+};
 
 // Every late-game upgrade, with a busy kitchen: two ovens, the bar, tables and birthdays.
-function lateKitchen(): GameState {
+const lateKitchen = (): GameState => {
   const state = stateInService(
     [
       makeCustomer({ id: "t1", name: "Rosa", tableId: "tab", drink: "vin" }),
@@ -73,7 +73,7 @@ function lateKitchen(): GameState {
   serviceOf(state).oven = [{ id: "o", ovenIndex: 1, ingredients: MARGHERITA_INGREDIENTS, bakedSeconds: 1, bakeDuration: 3 }];
   state.settings.tutorialDone = true;
   return state;
-}
+};
 
 // Every kind of ticket at once.
 const SPECIAL_CUSTOMERS = [
@@ -82,13 +82,13 @@ const SPECIAL_CUSTOMERS = [
   makeCustomer({ id: "c3", name: "Giulia", asUsual: true, visitNumber: 6 }),
 ];
 
-function serviceInProgress(): GameState {
+const serviceInProgress = (): GameState => {
   const customer = makeCustomer({ extraIngredient: "basilic", waitedSeconds: 100 });
   let state = stateInService([customer, makeCustomer({ id: "cust-2" })]);
   state.settings.tutorialDone = true;
   state = play(state, ...toggle("pate"), { type: "bake" }, { type: "tick", seconds: 10 });
   return play(state, ...toggle("pate", "tomate"));
-}
+};
 
 const SUMMARY: Summary = {
   day: 2, served: 4, revenue: 28, tips: 1.5, purchases: 3, charges: 6, waste: 1, xp: 40,

@@ -8,7 +8,7 @@ import type { ServiceScreenProps } from "../types";
 
 type WithCoach = ServiceScreenProps & { coachTarget: CoachTarget | null };
 
-function Fire() {
+const Fire = () => {
   return (
     <svg className="oven-fire" viewBox="0 0 60 22" aria-hidden="true">
       <path className="fire-a" d="M8 22c-4-5 0-9 3-12 0 4 3 5 4 2 3 4 3 7 1 10z" />
@@ -16,10 +16,10 @@ function Fire() {
       <path className="fire-a" d="M42 22c-4-5 0-9 4-12-1 4 3 5 4 2 2 4 2 7 0 10z" />
     </svg>
   );
-}
+};
 
 // Every oven, each with its own slots; with several, each gets a small label.
-function Ovens({ state, service }: { state: GameState; service: Service }) {
+const Ovens = ({ state, service }: { state: GameState; service: Service }) => {
   const t = useTranslation();
   const ovens = ovensOf(state);
   return (
@@ -49,10 +49,10 @@ function Ovens({ state, service }: { state: GameState; service: Service }) {
       })}
     </div>
   );
-}
+};
 
 // The pass: baked pizzas waiting to be served.
-function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
+const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
   const t = useTranslation();
   const unwantedCount = service.ready.filter((pizza) => !destinationOf(state, service, pizza.ingredients)).length;
   return (
@@ -108,9 +108,9 @@ function Pass({ state, service, dispatch, coachTarget }: WithCoach) {
       })}
     </div>
   );
-}
+};
 
-export function OvenAndPass({ state, service, dispatch, coachTarget }: WithCoach) {
+export const OvenAndPass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
   const t = useTranslation();
   return (
     <section className="a-oven" aria-label={t("service.ovenAndPass")}>
@@ -118,4 +118,4 @@ export function OvenAndPass({ state, service, dispatch, coachTarget }: WithCoach
       <Pass state={state} service={service} dispatch={dispatch} coachTarget={coachTarget} />
     </section>
   );
-}
+};

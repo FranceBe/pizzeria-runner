@@ -6,7 +6,7 @@ import type { Looks } from "./types";
 
 // A new face for this name. `random` is Math.random, or the daily challenge's seeded generator.
 // Feminine names: no moustache or beard, mostly longer hair. Masculine names: mostly shorter hair.
-export function rollLooks(name: string, random: () => number = Math.random): Looks {
+export const rollLooks = (name: string, random: () => number = Math.random): Looks => {
   const pick = <T>(list: readonly T[]): T => list[Math.floor(random() * list.length)];
   const kind = nameKind(name);
   const usual = kind === "feminine" ? LONGER_HAIR_STYLES : SHORTER_HAIR_STYLES;
@@ -18,10 +18,10 @@ export function rollLooks(name: string, random: () => number = Math.random): Loo
     hairStyle,
     accessory: random() < ACCESSORY_CHANCE ? pick(accessories) : null,
   };
-}
+};
 
 // For faces met before names mattered: drops facial hair from feminine names.
-export function fitAccessory(name: string, accessory: AccessoryId | null | undefined): AccessoryId | null {
+export const fitAccessory = (name: string, accessory: AccessoryId | null | undefined): AccessoryId | null => {
   if (!accessory) return null;
   return nameKind(name) === "feminine" && FACIAL_HAIR.has(accessory) ? null : accessory;
-}
+};

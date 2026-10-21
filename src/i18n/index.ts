@@ -21,7 +21,7 @@ const lookup = (dictionary: Dictionary, key: string): unknown =>
 // Returns t(key, params). Dictionary entries are either strings with {placeholders},
 // or functions (params, helpers) => string for plurals and formatted values.
 // Keys and params are checked at compile time (see types.ts); at runtime, a missing key renders as the key itself.
-export function createTranslator(language: Language): Translator {
+export const createTranslator = (language: Language): Translator => {
   const dictionary = DICTIONARIES[language] ?? DICTIONARIES[DEFAULT_LANGUAGE];
 
   const translate = (key: string, params: Params = {}): string => {
@@ -51,14 +51,14 @@ export function createTranslator(language: Language): Translator {
   // The typed signature lives on Translate; the implementation is the untyped lookup above.
   const t = ((key: string, params?: Params) => translate(key, params)) as Translate;
   return Object.assign(t, helpers, { language });
-}
+};
 
 /**
  * Translates a message stored in the game state (a toast or a tutorial step). Each stored message
  * pairs a key with its own params (see MessageInput), which TypeScript can't follow through the union,
  * hence the untyped call.
  */
-export function translateMessage(t: Translator, section: "toasts" | "tutorial", message: { key: string; params?: object }): string {
+export const translateMessage = (t: Translator, section: "toasts" | "tutorial", message: { key: string; params?: object }): string => {
   const untyped = t as unknown as (key: string, params?: object) => string;
   return untyped(`${section}.${message.key}`, message.params);
-}
+};

@@ -8,7 +8,7 @@ import { Pizza } from "../components/Pizza";
 import { drawReceipt, shareOrDownload, type ReceiptRow } from "../utils/receiptImage";
 
 // A line of the receipt: label, dotted leader, amount.
-function ReceiptLine({ label, value, className = "" }: { label: string; value: string | number; className?: string }) {
+const ReceiptLine = ({ label, value, className = "" }: { label: string; value: string | number; className?: string }) => {
   return (
     <div className={`receipt-line ${className}`}>
       <span>{label}</span>
@@ -16,10 +16,10 @@ function ReceiptLine({ label, value, className = "" }: { label: string; value: s
       <span className="amount">{value}</span>
     </div>
   );
-}
+};
 
 // The day's stars, with the three goals behind them.
-function DayStars({ stars, goals, charges }: { stars: number; goals: StarGoals; charges: number }) {
+const DayStars = ({ stars, goals, charges }: { stars: number; goals: StarGoals; charges: number }) => {
   const t = useTranslation();
   const rows: [boolean, string][] = [
     [goals.happy, t("summary.starHappy")],
@@ -39,10 +39,10 @@ function DayStars({ stars, goals, charges }: { stars: number; goals: StarGoals; 
       </ul>
     </div>
   );
-}
+};
 
 // One row per pizza served today, with its tip.
-function OrderLines({ orders }: { orders: readonly OrderRecord[] }) {
+const OrderLines = ({ orders }: { orders: readonly OrderRecord[] }) => {
   const t = useTranslation();
   return (
     <div className="receipt-orders">
@@ -58,7 +58,7 @@ function OrderLines({ orders }: { orders: readonly OrderRecord[] }) {
       ))}
     </div>
   );
-}
+};
 
 // The end of the day, printed as a till receipt.
 interface DaySummaryProps {
@@ -67,7 +67,7 @@ interface DaySummaryProps {
   onNextDay: () => void;
 }
 
-export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps) {
+export const DaySummary = ({ summary, pizzeriaName, onNextDay }: DaySummaryProps) => {
   const t = useTranslation();
   const isProfit = summary.net >= 0;
   const reachedLevel = summary.levelUps.at(-1);
@@ -153,4 +153,4 @@ export function DaySummary({ summary, pizzeriaName, onNextDay }: DaySummaryProps
       </div>
     </Overlay>
   );
-}
+};

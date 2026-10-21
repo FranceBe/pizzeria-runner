@@ -7,7 +7,7 @@ const AUTOSAVE_INTERVAL_MS = 2000;
 const TOAST_DURATION_MS = 4000;
 
 // Drives the game clock, autosaves, and expires the message shown in the ticker.
-export function useGameLoop(state: GameState, dispatch: Dispatch): void {
+export const useGameLoop = (state: GameState, dispatch: Dispatch): void => {
   const latestState = useRef(state);
   latestState.current = state;
 
@@ -40,4 +40,4 @@ export function useGameLoop(state: GameState, dispatch: Dispatch): void {
     const timer = setTimeout(() => dispatch({ type: "dismissToast", toastId: newest.id }), TOAST_DURATION_MS);
     return () => clearTimeout(timer);
   }, [state.toasts, dispatch]);
-}
+};

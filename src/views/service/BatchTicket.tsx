@@ -6,7 +6,7 @@ import { formatClock } from "../../utils/format";
 const MEDAL_ICONS = { gold: "🥇", silver: "🥈", bronze: "🥉" } as const;
 
 // Tonight's group order: what to make, what is already delivered, and the medal still within reach.
-export function BatchTicket({ quest, elapsed, isSelected, onSelect }: { quest: Quest; elapsed: number; isSelected: boolean; onSelect: () => void }) {
+export const BatchTicket = ({ quest, elapsed, isSelected, onSelect }: { quest: Quest; elapsed: number; isSelected: boolean; onSelect: () => void }) => {
   const t = useTranslation();
   const items = quest.items ?? [];
   const { medal, secondsLeft } = medalInReach(elapsed, pizzaCount(items));
@@ -29,4 +29,4 @@ export function BatchTicket({ quest, elapsed, isSelected, onSelect }: { quest: Q
       </ul>
     </button>
   );
-}
+};

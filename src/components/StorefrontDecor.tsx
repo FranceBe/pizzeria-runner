@@ -5,7 +5,7 @@
 //   terrace  a parasol table (striped, then with a second one) · delivery  a scooter
 import type { UpgradeKey } from "../data/progression";
 
-function PottedPlant({ isFlowering, isFlipped = false }: { isFlowering: boolean; isFlipped?: boolean }) {
+const PottedPlant = ({ isFlowering, isFlipped = false }: { isFlowering: boolean; isFlipped?: boolean }) => {
   return (
     <svg className="decor plant" viewBox="0 0 30 40" style={isFlipped ? { transform: "scaleX(-1)" } : undefined}>
       <ellipse cx="10" cy="17" rx="4" ry="9" transform="rotate(-25 10 17)" fill="#3f8f3a" />
@@ -22,9 +22,9 @@ function PottedPlant({ isFlowering, isFlipped = false }: { isFlowering: boolean;
       <rect x="6" y="24" width="18" height="4" rx="1" fill="#b05a33" />
     </svg>
   );
-}
+};
 
-function BistroTable() {
+const BistroTable = () => {
   return (
     <svg className="decor table" viewBox="0 0 44 40">
       <path d="M6 16v22M6 26h7v12M38 16v22M38 26h-7v12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
@@ -33,9 +33,9 @@ function BistroTable() {
       <path d="M22 25v13M17 38h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
-}
+};
 
-function WoodOven({ level }: { level: number }) {
+const WoodOven = ({ level }: { level: number }) => {
   return (
     <svg className="decor oven-front" viewBox="0 0 44 40">
       <rect x="18" y="1" width="7" height="10" fill="#8a4a33" />
@@ -48,9 +48,9 @@ function WoodOven({ level }: { level: number }) {
       </g>
     </svg>
   );
-}
+};
 
-function Parasol() {
+const Parasol = () => {
   return (
     <svg className="decor parasol" viewBox="0 0 44 48">
       <path d="M4 18 Q22 0 40 18Z" fill="var(--accent)" />
@@ -60,9 +60,9 @@ function Parasol() {
       <ellipse cx="22" cy="32" rx="11" ry="3" fill="var(--wood)" />
     </svg>
   );
-}
+};
 
-function Scooter() {
+const Scooter = () => {
   return (
     <svg className="decor scooter-front" viewBox="0 0 48 40">
       <path d="M10 30h20l6-14h5" stroke="var(--accent)" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -72,9 +72,9 @@ function Scooter() {
       <circle cx="37" cy="33" r="5" fill="currentColor" />
     </svg>
   );
-}
+};
 
-function BarGlass() {
+const BarGlass = () => {
   return (
     <svg className="decor bar-front" viewBox="0 0 30 40">
       <path d="M6 6h18l-2 22a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2L6 6Z" fill="#fff" opacity=".75" stroke="currentColor" strokeWidth="1.5" />
@@ -83,10 +83,10 @@ function BarGlass() {
       <path d="M11 38h8M15 30v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
-}
+};
 
 // The second address: a little shopfront with its own awning.
-function Annexe({ level }: { level: number }) {
+const Annexe = ({ level }: { level: number }) => {
   return (
     <svg className="decor annexe-front" viewBox="0 0 44 40">
       <rect x="4" y="12" width="36" height="28" fill="#f3e6cf" stroke="currentColor" strokeWidth="1.2" />
@@ -97,10 +97,10 @@ function Annexe({ level }: { level: number }) {
       {level >= 3 && <circle cx="32" cy="4" r="2.4" fill="#ffd36b" />}
     </svg>
   );
-}
+};
 
 // A signed celebrity photo in a little frame.
-function SignedPhoto({ index }: { index: number }) {
+const SignedPhoto = ({ index }: { index: number }) => {
   const colors = ["#f0a43b", "#7fb2d1", "#e28cc0", "#8ec07c"];
   return (
     <svg className="decor photo" viewBox="0 0 24 30">
@@ -111,9 +111,9 @@ function SignedPhoto({ index }: { index: number }) {
       <path d="M6 25q3-2 6 0t6-1" stroke="#fff" strokeWidth="1.2" fill="none" />
     </svg>
   );
-}
+};
 
-export function StorefrontDecor({ upgrades, photos = 0 }: { upgrades: Record<UpgradeKey, number>; photos?: number }) {
+export const StorefrontDecor = ({ upgrades, photos = 0 }: { upgrades: Record<UpgradeKey, number>; photos?: number }) => {
   const { deco, salle, oven, terrasse, livraison, bar, oven2, oven3, annexe } = upgrades;
   if (!deco && !salle && !oven && !terrasse && !livraison && !bar && !annexe && !photos) return null;
   const extraOvens = (oven2 ? 1 : 0) + (oven3 ? 1 : 0);
@@ -131,4 +131,4 @@ export function StorefrontDecor({ upgrades, photos = 0 }: { upgrades: Record<Upg
       {Array.from({ length: photos }, (_, index) => <SignedPhoto key={index} index={index} />)}
     </div>
   );
-}
+};

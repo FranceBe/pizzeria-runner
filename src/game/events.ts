@@ -11,12 +11,12 @@ const NO_EVENT: DayEvent = { weight: 0, customerFactor: 1, marketPriceFactor: 1,
 export const todaysEvent = (state: GameState): DayEvent => (state.event ? DAY_EVENTS[state.event] : NO_EVENT);
 
 // Some events only make sense for some pizzerias.
-function canHappen(state: GameState, id: DayEventId): boolean {
+const canHappen = (state: GameState, id: DayEventId): boolean => {
   if (state.day < (DAY_EVENTS[id].firstDay ?? FIRST_EVENT_DAY)) return false;
   if (id === "scooterStrike") return state.upgrades.livraison > 0;
   if (id === "lateDelivery") return lateCandidates(state).length > 0;
   return true;
-}
+};
 
 // What can arrive late: an ingredient of tonight's menu, never the dough.
 const lateCandidates = (state: GameState): IngredientId[] =>
@@ -29,7 +29,7 @@ export const pickLateIngredient = (state: GameState): IngredientId | null => {
 
 // Picks the event of a new day (state.day is already the new day), or null for an ordinary day.
 // Never the same event two days in a row.
-export function rollDayEvent(state: GameState, yesterday: DayEventId | null): DayEventId | null {
+export const rollDayEvent = (state: GameState, yesterday: DayEventId | null): DayEventId | null => {
   if (state.day < FIRST_EVENT_DAY || Math.random() >= EVENT_CHANCE) return null;
   const candidates = DAY_EVENT_IDS.filter((id) => id !== yesterday && canHappen(state, id));
   if (!candidates.length) return null;
@@ -39,7 +39,7 @@ export function rollDayEvent(state: GameState, yesterday: DayEventId | null): Da
     if (remaining <= 0) return id;
   }
   return candidates[0];
-}
+};
 
 // What a portion costs at the market today (market day, in-season discount), rounded to the cent.
 export const marketPrice = (state: GameState, id: IngredientId): number =>

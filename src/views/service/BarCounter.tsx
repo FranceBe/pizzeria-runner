@@ -8,7 +8,7 @@ import type { ServiceScreenProps } from "../types";
 // The bar, in the board's corners. On the left, the fridge: a tap pours that drink (it costs the glass). It goes straight
 // to the selected customer if it is theirs; otherwise it lands on the tray, on the right, until someone who ordered it
 // gets it, or the tray is cleared. Nothing says which drink is wanted besides the tickets: a wrong pour is possible.
-export function BarCounter({ state, service, dispatch }: ServiceScreenProps) {
+export const BarCounter = ({ state, service, dispatch }: ServiceScreenProps) => {
   const t = useTranslation();
   const drinks = DRINK_IDS.filter((id) => DRINKS[id].barLevel <= state.upgrades.bar);
   if (!drinks.length || service.challenge) return null;
@@ -59,4 +59,4 @@ export function BarCounter({ state, service, dispatch }: ServiceScreenProps) {
       )}
     </>
   );
-}
+};

@@ -25,7 +25,7 @@ import type { ScreenProps } from "./views/types";
 
 const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "settings"];
 
-function TabContent({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabId; goToTab: (tab: TabId) => void }) {
+const TabContent = ({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabId; goToTab: (tab: TabId) => void }) => {
   switch (tab) {
     case "service":
       return state.phase === "service" && state.service
@@ -42,9 +42,9 @@ function TabContent({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabI
     case "settings":
       return <SettingsView state={state} dispatch={dispatch} />;
   }
-}
+};
 
-export function App() {
+export const App = () => {
   const [state, dispatch] = useReducer(gameReducer, null, loadState);
   const [tab, setTab] = useState<TabId>("service");
   useGameLoop(state, dispatch);
@@ -115,4 +115,4 @@ export function App() {
       {state.challengeResult && <ChallengeResult result={state.challengeResult} best={state.dailyChallenge?.best ?? 0} dispatch={dispatch} />}
     </I18nProvider>
   );
-}
+};

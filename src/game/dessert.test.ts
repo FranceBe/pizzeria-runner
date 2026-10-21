@@ -11,7 +11,7 @@ const CHOCO: Recipe = {
 };
 
 // A service with a dessert pizza on the menu, its ingredients in stock, and more customers still to come.
-function withDessert(customers = [makeCustomer()]): GameState {
+const withDessert = (customers = [makeCustomer()]): GameState => {
   const state = stateInService(customers, { stock: { pate: 9, tomate: 9, mozza: 9, basilic: 9, chocolat: 9, banane: 9 } });
   state.unlocked.chocolat = true;
   state.unlocked.banane = true;
@@ -19,12 +19,12 @@ function withDessert(customers = [makeCustomer()]): GameState {
   serviceOf(state).customersToCome = 5;
   serviceOf(state).nextArrivalIn = 999;
   return state;
-}
+};
 
-function serveMargherita(state: GameState): GameState {
+const serveMargherita = (state: GameState): GameState => {
   const baked = play(state, ...toggle(...MARGHERITA), { type: "bake" }, { type: "tick", seconds: 10 });
   return play(baked, { type: "servePizza", pizzaId: serviceOf(baked).ready[0].id });
-}
+};
 
 describe("coming back for dessert", () => {
   it("happens now and then to a happy customer, who comes back later tonight on top of the evening's customers", () => {

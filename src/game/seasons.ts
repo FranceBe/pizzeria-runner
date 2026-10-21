@@ -13,11 +13,11 @@ export const isInSeason = (state: GameState, id: IngredientId): boolean => SEASO
 export const seasonalPriceFactor = (state: GameState, id: IngredientId): number => (isInSeason(state, id) ? 1 - IN_SEASON_DISCOUNT : 1);
 
 // The recipe of the season, if one of the season's recipes is on tonight's menu.
-export function seasonalRecipe(state: GameState): Recipe | undefined {
+export const seasonalRecipe = (state: GameState): Recipe | undefined => {
   const menu = activeMenu(state);
   for (const id of SEASONS[seasonOf(state.day)].recipes) {
     const recipe = menu.find((candidate) => candidate.id === id);
     if (recipe) return recipe;
   }
   return undefined;
-}
+};

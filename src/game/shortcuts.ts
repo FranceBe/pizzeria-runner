@@ -15,7 +15,7 @@ const ARROW_STEPS: Partial<Record<string, -1 | 1>> = { ArrowLeft: -1, ArrowUp: -
 //   S, M       Nonna's secret, Mamma's secret (on or off the pizza being built)
 //   O          offer it, for a regular
 //   P, Escape  pause (the only key that works while paused)
-export function shortcutAction(state: GameState, key: string): GameAction | null {
+export const shortcutAction = (state: GameState, key: string): GameAction | null => {
   const { service } = state;
   if (state.phase !== "service" || !service) return null;
   if (key === "p" || key === "P" || key === "Escape") return { type: "togglePause" };
@@ -45,13 +45,13 @@ export function shortcutAction(state: GameState, key: string): GameAction | null
     return { type: "selectCustomer", customerId: next.id };
   }
   return null;
-}
+};
 
 // Serves the selected customer's pizza first, then any pizza someone (or the group order) is waiting for.
-function serveAction(state: GameState, service: Service): GameAction | null {
+const serveAction = (state: GameState, service: Service): GameAction | null => {
   const matches = service.ready.map((pizza) => ({ pizza, destination: destinationOf(state, service, pizza.ingredients) }));
   const isSelected = (destination: Destination) =>
     destination !== null && ("customer" in destination ? destination.customer.id === service.selectedCustomerId : service.selectedCustomerId === "batch");
   const best = matches.find(({ destination }) => isSelected(destination)) ?? matches.find(({ destination }) => destination);
   return best ? { type: "servePizza", pizzaId: best.pizza.id } : null;
-}
+};

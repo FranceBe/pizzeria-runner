@@ -8,7 +8,7 @@ interface PriceStepperProps {
   increaseLabel: string;
 }
 
-export function PriceStepper({ price, onDecrease, onIncrease, decreaseLabel, increaseLabel }: PriceStepperProps) {
+export const PriceStepper = ({ price, onDecrease, onIncrease, decreaseLabel, increaseLabel }: PriceStepperProps) => {
   const t = useTranslation();
   return (
     <span className="stepper">
@@ -17,4 +17,4 @@ export function PriceStepper({ price, onDecrease, onIncrease, decreaseLabel, inc
       <button aria-label={increaseLabel} onClick={onIncrease}>+</button>
     </span>
   );
-}
+};

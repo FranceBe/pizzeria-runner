@@ -19,12 +19,12 @@ export interface DayResults {
   charges: number;
 }
 
-export function starGoals(day: DayResults): StarGoals {
+export const starGoals = (day: DayResults): StarGoals => {
   return {
     happy: day.served > 0 && day.hungryServed === 0 && !day.closedEarly,
     waste: day.served >= WASTE_MIN_SERVED && day.waste === 0,
     profit: day.net >= profitTarget(day.charges),
   };
-}
+};
 
 export const starCount = (goals: StarGoals): number => [goals.happy, goals.waste, goals.profit].filter(Boolean).length;

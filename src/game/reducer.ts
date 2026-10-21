@@ -12,7 +12,7 @@ const actionHandlers: ActionHandlers = { ...serviceActions, ...shopActions, ...m
 
 type AnyHandler = (state: GameState, action: GameAction) => GameState | void;
 
-export function gameReducer(state: GameState, action: GameAction): GameState {
+export const gameReducer = (state: GameState, action: GameAction): GameState => {
   // Ticks fire four times a second all game long; skip the copy when no service is running.
   if (action.type === "tick" && (state.phase !== "service" || state.service?.paused)) return state;
   // actionHandlers[action.type] always matches action, but TypeScript can't correlate the two unions.
@@ -22,4 +22,4 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   // Ticks only matter here when they end the day (the menu emptied mid-service).
   if (action.type !== "tick" || next.phase !== state.phase) unlockAchievements(next);
   return next;
-}
+};

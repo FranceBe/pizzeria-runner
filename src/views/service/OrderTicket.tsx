@@ -26,11 +26,10 @@ interface OrderTicketProps {
 
 // On the selected ticket, chips show what is already on the board (ok), still missing (miss)
 // and on the board but not ordered (extra).
-function ingredientChips(
+const ingredientChips = (
   customer: Customer,
   board: readonly IngredientId[],
-  isSelected: boolean,
-): { id: IngredientId; status: ChipStatus }[] {
+  isSelected: boolean,): { id: IngredientId; status: ChipStatus }[] => {
   const ordered = customer.ingredients.filter((id) => id !== "pate");
   if (!isSelected || !board.length) return ordered.map((id) => ({ id, status: "" as const }));
   const extras = board.filter((id) => id !== "pate" && !customer.ingredients.includes(id));
@@ -38,10 +37,10 @@ function ingredientChips(
     ...ordered.map((id) => ({ id, status: board.includes(id) ? ("ok" as const) : ("miss" as const) })),
     ...extras.map((id) => ({ id, status: "extra" as const })),
   ];
-}
+};
 
 // Delivery orders have a scooter instead of a face.
-function Scooter() {
+const Scooter = () => {
   return (
     <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" className="scooter">
       <circle cx="20" cy="20" r="18" fill="var(--surface2)" />
@@ -52,9 +51,9 @@ function Scooter() {
       <circle cx="28" cy="27" r="3.2" fill="var(--ink)" />
     </svg>
   );
-}
+};
 
-function ticketClassName(customer: Customer, table: TableProgress | undefined): string {
+const ticketClassName = (customer: Customer, table: TableProgress | undefined): string => {
   if (customer.pizzaServed) return "ticket served-pizza";
   if (customer.critic) return "ticket critic";
   if (customer.celebrity) return "ticket celebrity";
@@ -62,9 +61,9 @@ function ticketClassName(customer: Customer, table: TableProgress | undefined): 
   if (customer.birthday) return "ticket birthday";
   if (table) return `ticket at-table tb-${table.color}`;
   return "ticket";
-}
+};
 
-export function OrderTicket({ customer, isSelected, isRegular, showIngredients, board, table, pour, onSelect }: OrderTicketProps) {
+export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, board, table, pour, onSelect }: OrderTicketProps) => {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
@@ -138,4 +137,4 @@ export function OrderTicket({ customer, isSelected, isRegular, showIngredients, 
       )}
     </button>
   );
-}
+};

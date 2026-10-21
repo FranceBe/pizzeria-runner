@@ -11,7 +11,7 @@ interface OverlayProps {
 }
 
 // A dialog over the page. The page under it doesn't scroll while it is open.
-export function Overlay({ label, onClose, children }: OverlayProps) {
+export const Overlay = ({ label, onClose, children }: OverlayProps) => {
   useEffect(() => {
     openCount += 1;
     document.documentElement.classList.add("modal-open");
@@ -31,4 +31,4 @@ export function Overlay({ label, onClose, children }: OverlayProps) {
       {children}
     </div>
   );
-}
+};

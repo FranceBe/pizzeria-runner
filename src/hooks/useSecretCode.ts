@@ -12,7 +12,7 @@ export interface SecretPad {
 
 // Listens for a certain sequence, anywhere in the game: typed on a keyboard, or swiped on a touch screen,
 // where two buttons then show up to finish it. They go away on success, on a wrong press, or after a few seconds.
-export function useSecretCode(dispatch: Dispatch): SecretPad {
+export const useSecretCode = (dispatch: Dispatch): SecretPad => {
   const typed = useRef<string[]>([]);
   const [isOpen, setOpen] = useState(false);
 
@@ -79,4 +79,4 @@ export function useSecretCode(dispatch: Dispatch): SecretPad {
   }, [type]);
 
   return { isOpen, press };
-}
+};

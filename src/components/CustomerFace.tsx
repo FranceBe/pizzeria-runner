@@ -6,7 +6,7 @@ const MOUTH_PATHS: Record<Mood, string> = ["M13,27 Q20,33 27,27", "M14,28.5 L26,
 const INK = "#1f1a17";
 
 // Hair behind the head: long hair, curls, a ponytail, an afro, braids. Drawn before the face.
-function HairBack({ style, color }: { style: number; color: string }) {
+const HairBack = ({ style, color }: { style: number; color: string }) => {
   if (style === 3) return <path d="M5,24 Q4,5 20,5 Q36,5 35,24 L36,38 L4,38Z" fill={color} />;
   if (style === 4) return <circle cx="20" cy="16" r="15" fill={color} />;
   if (style === 5) return <ellipse cx="34" cy="25" rx="4" ry="10" fill={color} transform="rotate(-12 34 25)" />;
@@ -20,10 +20,10 @@ function HairBack({ style, color }: { style: number; color: string }) {
     );
   }
   return null;
-}
+};
 
 // Hair on top of the head. Drawn after the face.
-function HairFront({ style, color }: { style: number; color: string }) {
+const HairFront = ({ style, color }: { style: number; color: string }) => {
   switch (style) {
     case 0:
     case 5:
@@ -69,17 +69,17 @@ function HairFront({ style, color }: { style: number; color: string }) {
     default:
       return <path d="M7,18 L9,8 L13,13 L16,4 L20,11 L24,3 L27,12 L31,7 L33,18 Q27,12 20,12 Q13,12 7,18Z" fill={color} />;
   }
-}
+};
 
 // Facial hair goes under the mouth line; everything else on top of the face.
-function FacialHair({ accessory, color }: { accessory: AccessoryId | null | undefined; color: string }) {
+const FacialHair = ({ accessory, color }: { accessory: AccessoryId | null | undefined; color: string }) => {
   if (accessory === "beard") return <path d="M8,24 Q8,37 20,37 Q32,37 32,24 Q30,31 20,32 Q10,31 8,24Z" fill={color} />;
   if (accessory === "goatee") return <path d="M16,30 Q20,29 24,30 Q24,35 20,36 Q16,35 16,30Z" fill={color} />;
   if (accessory === "moustache") return <path d="M14,26 Q17,23 20,25 Q23,23 26,26 Q23,27.5 20,26.4 Q17,27.5 14,26Z" fill={color} />;
   return null;
-}
+};
 
-function Accessory({ accessory }: { accessory: AccessoryId | null | undefined }) {
+const Accessory = ({ accessory }: { accessory: AccessoryId | null | undefined }) => {
   switch (accessory) {
     case "glasses":
       return (
@@ -205,9 +205,9 @@ function Accessory({ accessory }: { accessory: AccessoryId | null | undefined })
     default:
       return null;
   }
-}
+};
 
-export function CustomerFace({ customer, mood }: { customer: Looks; mood: Mood }) {
+export const CustomerFace = ({ customer, mood }: { customer: Looks; mood: Mood }) => {
   const { hairStyle, hair, accessory } = customer;
   // Hats sit on the hair, so the hairstyle shows only around them.
   const wearsHat = accessory === "beret" || accessory === "cap" || accessory === "hat" || accessory === "bandana" || accessory === "beanie";
@@ -235,4 +235,4 @@ export function CustomerFace({ customer, mood }: { customer: Looks; mood: Mood }
       <Accessory accessory={accessory} />
     </svg>
   );
-}
+};

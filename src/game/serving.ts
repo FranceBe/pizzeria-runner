@@ -36,27 +36,27 @@ const CHALLENGE_BASE_POINTS = 10;
 const CHALLENGE_FILLING_POINTS = 3;
 const CHALLENGE_MOOD_POINTS: Record<Mood, number> = [10, 6, 3, 0];
 
-export function serveForChallenge(service: Service, customer: Customer): void {
+export const serveForChallenge = (service: Service, customer: Customer): void => {
   if (!service.challenge) return;
   const mood = moodForWait(customer.waitedSeconds);
   service.challenge.score +=
     CHALLENGE_BASE_POINTS + CHALLENGE_FILLING_POINTS * fillingsOf(customer.ingredients).length + CHALLENGE_MOOD_POINTS[mood];
   if (mood === 0) service.challenge.happy += 1;
   service.stats.served += 1;
-}
+};
 
 const roundToTenCents = (amount: number): number => Math.round(amount * 10) / 10;
 
 // A tip, raised by the streak and the rush, lowered if the pizza cooled on the pass.
-function tipFor(state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number {
+const tipFor = (state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number => {
   const base = rollTip(state, customer);
   if (!base) return 0;
   const factor = streakMultiplier(service.stats.streak ?? 0) * warmthTipFactor(pizza.waitingSeconds) * (service.rush ? RUSH_TIP_FACTOR : 1);
   return Math.max(0.1, roundToTenCents(base * factor));
-}
+};
 
 // Money, tips, the express bonus and the birthday gift for a served order. Returns the extra given on top of the price.
-export function collectPayment(state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number {
+export const collectPayment = (state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number => {
   let extra = 0;
   if (customer.delivery) {
     if (customer.waitedSeconds < DELIVERY_EXPRESS_SECONDS) extra = DELIVERY_EXPRESS_BONUS;
@@ -77,10 +77,10 @@ export function collectPayment(state: GameState, service: Service, customer: Cus
     state.lifetime.birthdays += 1;
   }
   return extra + gift;
-}
+};
 
 // The table bonus, once the last member of a table is served. Returns it.
-export function settleTable(state: GameState, service: Service, customer: Customer): number {
+export const settleTable = (state: GameState, service: Service, customer: Customer): number => {
   const table = customer.tableId ? service.tables?.[customer.tableId] : undefined;
   if (!table || !customer.tableId) return 0;
   table.served += 1;
@@ -95,35 +95,35 @@ export function settleTable(state: GameState, service: Service, customer: Custom
   pushToast(state, { key: "happyTable", params: { size: table.size } }, "gold");
   state.lifetime.happyTables += 1;
   return bonus;
-}
+};
 
 // Nonna's secret, now and then: a tip as big as the pizza. Customers can't tell why. Returns it.
-export function secretBonus(state: GameState, customer: Customer, hasSecret: boolean | undefined): number {
+export const secretBonus = (state: GameState, customer: Customer, hasSecret: boolean | undefined): number => {
   if (!hasSecret || Math.random() >= SECRET_TIP_CHANCE) return 0;
   receivePayment(state, customer.price);
   pushPop(state, customer.price, "secret");
   pushToast(state, { key: "secretTip", params: { name: customer.name } }, "gold");
   return customer.price;
-}
+};
 
 // After enough profitable days in a row, Mamma shares her own secret. Mutates state.
-export function maybeShareMammasSecret(state: GameState): void {
+export const maybeShareMammasSecret = (state: GameState): void => {
   if (state.mammaSecret || levelForXp(state.xp) < MAMMA_LEVEL) return;
   const lastDays = state.history.slice(-MAMMA_PROFIT_DAYS);
   if (lastDays.length < MAMMA_PROFIT_DAYS || lastDays.some((day) => day.net <= 0)) return;
   state.mammaSecret = true;
   pushToast(state, { key: "secretFromMamma", params: { days: MAMMA_PROFIT_DAYS } }, "gold");
-}
+};
 
-export function maybeShareNonnasSecret(state: GameState): void {
+export const maybeShareNonnasSecret = (state: GameState): void => {
   if (state.secretIngredient) return;
   if (!NONNA_TRUST_RECIPES.every((id) => (state.lifetime.byRecipe[id]?.count ?? 0) > 0)) return;
   state.secretIngredient = true;
   pushToast(state, { key: "secretFromNonna" }, "gold");
-}
+};
 
 // Reputation for a served order, including the critic's review.
-export function reputationFor(state: GameState, customer: Customer, newPairings: readonly Pairing[]): number {
+export const reputationFor = (state: GameState, customer: Customer, newPairings: readonly Pairing[]): number => {
   const mood = moodForWait(customer.waitedSeconds);
   let xp = 6 + 2 * fillingsOf(customer.ingredients).length;
   if (hasSpecialRequest(customer)) xp += SPECIAL_REQUEST_XP_BONUS;
@@ -141,9 +141,9 @@ export function reputationFor(state: GameState, customer: Customer, newPairings:
     pushToast(state, { key: "critic", params: { name: customer.name, stars: CRITIC_STARS[mood] } }, "gold");
   }
   return xp;
-}
+};
 
-export function recordLifetime(state: GameState, customer: Customer, tip: number): void {
+export const recordLifetime = (state: GameState, customer: Customer, tip: number): void => {
   const { lifetime } = state;
   const mood = moodForWait(customer.waitedSeconds);
   lifetime.served += 1;
@@ -163,4 +163,4 @@ export function recordLifetime(state: GameState, customer: Customer, tip: number
   if (tip) recordWeekly(state, "tips", tip);
   const sales = lifetime.byRecipe[customer.recipeId] ?? { name: customer.recipeName, count: 0 };
   lifetime.byRecipe[customer.recipeId] = { ...sales, count: sales.count + 1 };
-}
+};

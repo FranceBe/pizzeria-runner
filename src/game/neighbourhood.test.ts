@@ -15,10 +15,10 @@ afterEach(() => vi.restoreAllMocks());
 
 const NO_TIP = 0.99;
 const waitForOven = (state: GameState): GameState => play(state, { type: "tick", seconds: 10 });
-function serveFirst(state: GameState, ingredients = MARGHERITA): GameState {
+const serveFirst = (state: GameState, ingredients = MARGHERITA): GameState => {
   const baked = waitForOven(play(state, ...toggle(...ingredients), { type: "bake" }));
   return play(baked, { type: "servePizza", pizzaId: serviceOf(baked).ready[0].id });
-}
+};
 
 describe("seasons", () => {
   it("turn every 7 days and make their ingredients cheaper", () => {

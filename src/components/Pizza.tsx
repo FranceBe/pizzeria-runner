@@ -11,7 +11,7 @@ const CHAR_SPOT_ANGLES = [20, 75, 140, 200, 260, 320];
 
 const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
 
-function ScatteredToppings({ ingredient }: { ingredient: Ingredient }) {
+const ScatteredToppings = ({ ingredient }: { ingredient: Ingredient }) => {
   if (ingredient.count === 1) return <ToppingPiece ingredient={ingredient} x={CENTER} y={CENTER} rotation={0} />;
   // Seeded by ingredient id so pieces stay put between renders and look the same on every pizza.
   const random = seededRandom(hashString(ingredient.id));
@@ -32,7 +32,7 @@ function ScatteredToppings({ ingredient }: { ingredient: Ingredient }) {
       })}
     </g>
   );
-}
+};
 
 interface PizzaProps {
   ingredients: readonly IngredientId[];
@@ -41,7 +41,7 @@ interface PizzaProps {
   size?: number;
 }
 
-export function Pizza({ ingredients, baked = false, className, size }: PizzaProps) {
+export const Pizza = ({ ingredients, baked = false, className, size }: PizzaProps) => {
   const t = useTranslation();
   const layers = sortByLayer(ingredients);
   const sauce = layers.find(isSauce);
@@ -73,4 +73,4 @@ export function Pizza({ ingredients, baked = false, className, size }: PizzaProp
       {baked && <circle cx={CENTER} cy={CENTER} r={SAUCE_RADIUS} fill="#a85a1a" opacity=".07" />}
     </svg>
   );
-}
+};

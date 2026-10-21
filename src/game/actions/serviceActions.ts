@@ -61,7 +61,7 @@ const addWaste = (service: Service, ingredients: readonly IngredientId[]): void 
   if (!service.challenge) service.stats.waste += ingredientCost(ingredients);
 };
 
-function createService(customerCount: number): Service {
+const createService = (customerCount: number): Service => {
   return {
     customersToCome: customerCount,
     nextArrivalIn: FIRST_ARRIVAL_DELAY,
@@ -74,17 +74,17 @@ function createService(customerCount: number): Service {
     tables: {},
     birthdayGuests: [],
   };
-}
+};
 
 // The most ordered recipe of the day, or null.
-function bestSellerOf(byRecipe: Record<string, RecipeSales>): BestSeller | null {
+const bestSellerOf = (byRecipe: Record<string, RecipeSales>): BestSeller | null => {
   const [best] = Object.entries(byRecipe).sort((a, b) => b[1].count - a[1].count);
   if (!best) return null;
   const [recipeId, sales] = best;
   return { recipeId, name: sales.name, count: sales.count };
-}
+};
 
-function endDay(state: GameState, service: Service): void {
+const endDay = (state: GameState, service: Service): void => {
   settleUnfinishedBatch(state, service);
   const unservedPizzas = [...service.ready, ...service.oven];
   const waste = service.stats.waste + unservedPizzas.reduce((total, pizza) => total + ingredientCost(pizza.ingredients), 0);
@@ -143,9 +143,9 @@ function endDay(state: GameState, service: Service): void {
 
   state.service = null;
   state.phase = "summary";
-}
+};
 
-function finishChallenge(state: GameState, service: Service): void {
+const finishChallenge = (state: GameState, service: Service): void => {
   const challenge = service.challenge;
   if (!challenge) return;
   const { score, date, happy } = challenge;
@@ -157,23 +157,23 @@ function finishChallenge(state: GameState, service: Service): void {
   state.challengeResult = { date, score, served: service.stats.served, happy, isNewBest };
   state.service = null;
   state.phase = "prep";
-}
+};
 
 const isDayOver = (service: Service): boolean => service.customersToCome === 0 && service.customers.length === 0;
 
 // A happy customer may come back later tonight for a dessert pizza, if the menu has one and the evening goes on.
-function maybePlanDessertReturn(state: GameState, service: Service, customer: Customer, mood: number): void {
+const maybePlanDessertReturn = (state: GameState, service: Service, customer: Customer, mood: number): void => {
   const canComeBack = !customer.forDessert && !customer.critic && !customer.delivery && !customer.celebrity && mood <= 1;
   const hasDessert = activeMenu(state).some((recipe) => isDessert(recipe.ingredients));
   if (!canComeBack || !hasDessert || isDessert(customer.ingredients) || service.customersToCome === 0) return;
   if (Math.random() >= DESSERT_RETURN_CHANCE) return;
   const inSeconds = randomBetween(DESSERT_RETURN_SECONDS[0], DESSERT_RETURN_SECONDS[1]);
   service.dessertReturns = [...(service.dessertReturns ?? []), { name: customer.name, inSeconds }];
-}
+};
 
 // Brings back, when their time comes and there is room at the counter, those coming back for dessert. They come on
 // top of the evening's customers. Mutates the service.
-function bringBackForDessert(state: GameState, service: Service, seconds: number): void {
+const bringBackForDessert = (state: GameState, service: Service, seconds: number): void => {
   if (!service.dessertReturns?.length) return;
   service.dessertReturns.forEach((planned) => (planned.inSeconds -= seconds));
   const due = service.dessertReturns.filter((planned) => planned.inSeconds <= 0);
@@ -186,11 +186,11 @@ function bringBackForDessert(state: GameState, service: Service, seconds: number
     service.customers.push(customer);
     if (!service.selectedCustomerId) service.selectedCustomerId = customer.id;
   }
-}
+};
 
 // The drink goes out and is paid; then the customer may leave (and that may end the day). Mutates state.
 // pourCost: the glass, when it is paid along with the sale (the barman's), after the money comes in.
-function sellDrink(state: GameState, service: Service, customer: Customer, pourCost = 0): void {
+const sellDrink = (state: GameState, service: Service, customer: Customer, pourCost = 0): void => {
   if (!customer.drink) return;
   // Served by hand while the barman was pouring it: he starts over on the next one.
   if (barmanTarget(state, service) === customer) service.barmanSeconds = 0;
@@ -205,17 +205,17 @@ function sellDrink(state: GameState, service: Service, customer: Customer, pourC
   state.lifetime.drinksSold += 1;
   recordWeekly(state, "drinks", 1);
   leaveIfDone(state, service, customer);
-}
+};
 
 // Who a glass of this drink goes to: the selected customer first, then the first one waiting for it.
-function thirstyFor(service: Service, drinkId: DrinkId): Customer | undefined {
+const thirstyFor = (service: Service, drinkId: DrinkId): Customer | undefined => {
   const wantsIt = (customer: Customer) => customer.drink === drinkId && !customer.drinkServed;
   return service.customers.find((c) => c.id === service.selectedCustomerId && wantsIt(c)) ?? service.customers.find(wantsIt);
-}
+};
 
 // The barman pours one drink at a time, for the first customer still waiting for one; he never gets it wrong.
 // Mutates state.
-function pourWithBarman(state: GameState, service: Service, seconds: number): void {
+const pourWithBarman = (state: GameState, service: Service, seconds: number): void => {
   const customer = barmanTarget(state, service);
   if (!customer) {
     service.barmanSeconds = 0;
@@ -225,88 +225,88 @@ function pourWithBarman(state: GameState, service: Service, seconds: number): vo
   if (service.barmanSeconds < BARMAN_SECONDS) return;
   service.barmanSeconds = 0;
   if (customer.drink) sellDrink(state, service, customer, DRINKS[customer.drink].cost);
-}
+};
 
 // Both secrets go back on their shelf (the dough came off the board). Mutates state.
-function putSecretsBack(state: GameState, service: Service): void {
+const putSecretsBack = (state: GameState, service: Service): void => {
   if (service.secretOnBoard) state.secretStock += 1;
   if (service.mammaOnBoard) state.mammaStock += 1;
   service.secretOnBoard = false;
   service.mammaOnBoard = false;
-}
+};
 
 // Mamma's secret: whoever ate it tells the next customer about the place. That one, if they tip at all (not a critic,
 // a delivery or a celebrity), gets their patience back and will tip for sure. Nobody waiting: the next one to come in.
 const canBeCharmed = (customer: Customer): boolean =>
   !customer.charmed && !customer.pizzaServed && !customer.critic && !customer.delivery && !customer.celebrity;
 
-function charmNextCustomer(service: Service, eater: Customer): void {
+const charmNextCustomer = (service: Service, eater: Customer): void => {
   const next = service.customers.find((customer) => customer.id !== eater.id && canBeCharmed(customer));
   if (!next) {
     service.charmsPending = (service.charmsPending ?? 0) + 1;
     return;
   }
   charm(next);
-}
+};
 
-function charm(customer: Customer): void {
+const charm = (customer: Customer): void => {
   customer.charmed = true;
   customer.waitedSeconds = 0;
-}
+};
 
-function charmWaitingCustomers(service: Service): void {
+const charmWaitingCustomers = (service: Service): void => {
   while (service.charmsPending) {
     const next = service.customers.find(canBeCharmed);
     if (!next) return;
     charm(next);
     service.charmsPending -= 1;
   }
-}
+};
 
 // After a pizza goes out, the next order to work on: the first customer still waiting for a pizza.
-function selectNextForPizza(service: Service): void {
+const selectNextForPizza = (service: Service): void => {
   service.selectedCustomerId = service.customers.find((customer) => !customer.pizzaServed)?.id ?? service.customers[0]?.id ?? null;
-}
+};
 
 // A customer who had their pizza and now their drink goes home. Mutates state.
-function leaveIfDone(state: GameState, service: Service, customer: Customer): void {
+const leaveIfDone = (state: GameState, service: Service, customer: Customer): void => {
   if (!customer.pizzaServed || !customer.drinkServed) return;
   service.customers = service.customers.filter((c) => c.id !== customer.id);
   if (service.selectedCustomerId === customer.id) selectNextForPizza(service);
   if (isDayOver(service)) endDay(state, service);
-}
+};
 
 // Who walks in next: the critic and birthday regulars show up at a random point of the evening
 // (surely by the last arrival), deliveries come in with the delivery upgrade.
-function nextCustomerKind(state: GameState, service: Service): CustomerKind {
+const nextCustomerKind = (state: GameState, service: Service): CustomerKind => {
   if (service.criticPending && Math.random() < 1 / service.customersToCome) return "critic";
   if (!service.celebrityCame && levelForXp(state.xp) >= CELEBRITY_LEVEL && Math.random() < CELEBRITY_CHANCE) return "celebrity";
   const deliveriesToday = state.upgrades.livraison > 0 && state.event !== "scooterStrike";
   if (deliveriesToday && Math.random() < DELIVERY_CHANCE) return "delivery";
   return "regular";
-}
+};
 
 // A birthday regular, if one is due now and not already at the counter.
-function nextBirthdayGuest(service: Service): string | undefined {
+const nextBirthdayGuest = (service: Service): string | undefined => {
   const guests = (service.birthdayGuests ?? []).filter((name) => !service.customers.some((customer) => customer.name === name));
   if (!guests.length || Math.random() >= guests.length / service.customersToCome) return undefined;
   return guests[0];
-}
+};
 
 // How many people come in together: 1, or a table of 2 to 4 when there is room.
-function partySize(state: GameState, service: Service): number {
+const partySize = (state: GameState, service: Service): number => {
   if (levelForXp(state.xp) < TABLES_LEVEL || Math.random() >= TABLE_CHANCE) return 1;
   const room = Math.min(service.customersToCome, maxQueueLength(state) - service.customers.length);
   return Math.min(room, 2 + randomIndex(MAX_TABLE_SIZE - 1));
-}
+};
 
-function seatCustomers(service: Service, customers: Customer[]): void {
+const seatCustomers = (service: Service, customers: Customer[]): void => {
   service.customers.push(...customers);
   service.customersToCome -= customers.length;
   if (!service.selectedCustomerId) service.selectedCustomerId = customers[0].id;
-}
+};
 
-function letChallengeCustomerIn(service: Service): void {
+const letChallengeCustomerIn = (service: Service): void => {
   const challenge = service.challenge;
   if (!challenge) return;
   const waitingNames = new Set(service.customers.map((customer) => customer.name));
@@ -314,9 +314,9 @@ function letChallengeCustomerIn(service: Service): void {
   service.customersToCome -= 1;
   service.nextArrivalIn = nextChallengeArrival(challenge);
   if (!service.selectedCustomerId) service.selectedCustomerId = service.customers[0].id;
-}
+};
 
-function letCustomersIn(state: GameState, service: Service): void {
+const letCustomersIn = (state: GameState, service: Service): void => {
   if (service.challenge) return letChallengeCustomerIn(service);
   service.nextArrivalIn =
     randomBetween(MIN_SECONDS_BETWEEN_ARRIVALS, MAX_SECONDS_BETWEEN_ARRIVALS) * (service.rush ? RUSH_ARRIVAL_FACTOR : 1);
@@ -351,7 +351,7 @@ function letCustomersIn(state: GameState, service: Service): void {
     service.tables[tableId] = { size: party.length, served: 0, allHappy: true, color };
   }
   seatCustomers(service, party);
-}
+};
 
 export const serviceActions = {
   openRestaurant(state) {

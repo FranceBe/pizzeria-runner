@@ -3,11 +3,11 @@ import { makeState } from "../test/helpers";
 import { createCustomer as tryCreateCustomer, moodForWait, EXTRA_TOPPING_SURCHARGE } from "./customers";
 import type { Customer, GameState } from "./types";
 
-function createCustomer(state: GameState): Customer {
+const createCustomer = (state: GameState): Customer => {
   const customer = tryCreateCustomer(state);
   if (!customer) throw new Error("Expected a customer");
   return customer;
-}
+};
 
 afterEach(() => vi.restoreAllMocks());
 

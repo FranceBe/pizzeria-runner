@@ -18,18 +18,18 @@ const PAIRINGS_PER_PAGE = 10;
 const TOP_PIZZAS = 5;
 const QUESTS_SHOWN = 5;
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+const Stat = ({ label, value }: { label: string; value: string | number }) => {
   return (
     <div className="jstat">
       <div className="jstat-v">{value}</div>
       <div className="hint">{label}</div>
     </div>
   );
-}
+};
 
 // Profit per day as bars around a zero line: green above, red below, day numbers underneath.
 // The zero line sits where gains and losses share the height in proportion.
-function ProfitChart({ days }: { days: readonly DayRecord[] }) {
+const ProfitChart = ({ days }: { days: readonly DayRecord[] }) => {
   const t = useTranslation();
   if (!days.length) return <p className="hint">{t("journal.chartEmpty")}</p>;
   const width = 280;
@@ -64,9 +64,9 @@ function ProfitChart({ days }: { days: readonly DayRecord[] }) {
       })}
     </svg>
   );
-}
+};
 
-function Accounts({ state }: { state: GameState }) {
+const Accounts = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const { lifetime } = state;
   const topPizzas = Object.entries(lifetime.byRecipe)
@@ -94,9 +94,9 @@ function Accounts({ state }: { state: GameState }) {
       <TopPizzaList state={state} topPizzas={topPizzas} mostSold={mostSold} />
     </div>
   );
-}
+};
 
-function TopPizzaList({ state, topPizzas, mostSold }: { state: GameState; topPizzas: [string, RecipeSales][]; mostSold: number }) {
+const TopPizzaList = ({ state, topPizzas, mostSold }: { state: GameState; topPizzas: [string, RecipeSales][]; mostSold: number }) => {
   const t = useTranslation();
   return (
     <>
@@ -109,10 +109,10 @@ function TopPizzaList({ state, topPizzas, mostSold }: { state: GameState; topPiz
       ))}
     </>
   );
-}
+};
 
 // The neighbourhood quests completed lately, and what they brought in altogether.
-function QuestLog({ state }: { state: GameState }) {
+const QuestLog = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const recent = state.questLog.slice(-QUESTS_SHOWN).reverse();
   return (
@@ -136,10 +136,10 @@ function QuestLog({ state }: { state: GameState }) {
       ))}
     </>
   );
-}
+};
 
 // Undiscovered pairings show a hint once the player owns one of the two ingredients.
-function PairingSlot({ state, pairing }: { state: GameState; pairing: Pairing }) {
+const PairingSlot = ({ state, pairing }: { state: GameState; pairing: Pairing }) => {
   const t = useTranslation();
   const [a, b] = pairing;
   if (isDiscovered(state, pairing)) {
@@ -157,10 +157,10 @@ function PairingSlot({ state, pairing }: { state: GameState; pairing: Pairing })
       <span className="hint">{known ? t("journal.pairingHint", { id: known }) : "? + ?"}</span>
     </div>
   );
-}
+};
 
 // A little recipe book, turned page by page.
-function PairingsBook({ state }: { state: GameState }) {
+const PairingsBook = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const [page, setPage] = useState(0);
   const pageCount = Math.ceil(GOOD_PAIRINGS.length / PAIRINGS_PER_PAGE);
@@ -183,9 +183,9 @@ function PairingsBook({ state }: { state: GameState }) {
       </div>
     </div>
   );
-}
+};
 
-function Achievements({ state }: { state: GameState }) {
+const Achievements = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const unlockedCount = ACHIEVEMENT_IDS.filter((id) => isUnlocked(state, id)).length;
   return (
@@ -229,10 +229,10 @@ function Achievements({ state }: { state: GameState }) {
       </div>
     </div>
   );
-}
+};
 
 // One card per regular: their favourite, what they never want, and when their birthday is.
-function RegularsBook({ state }: { state: GameState }) {
+const RegularsBook = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const regulars = regularsOf(state);
   return (
@@ -257,9 +257,9 @@ function RegularsBook({ state }: { state: GameState }) {
       </div>
     </div>
   );
-}
+};
 
-export function JournalView({ state }: { state: GameState }) {
+export const JournalView = ({ state }: { state: GameState }) => {
   return (
     <div className="journal">
       <Accounts state={state} />
@@ -268,4 +268,4 @@ export function JournalView({ state }: { state: GameState }) {
       <Achievements state={state} />
     </div>
   );
-}
+};

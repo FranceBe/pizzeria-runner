@@ -30,50 +30,49 @@ const AS_USUAL_CHANCE = 0.5;
 const CHEF_SPECIAL_BOOST = 1.5;
 
 // Popular, fairly priced, new, seasonal and chef's special recipes get ordered more often.
-export function orderWeight(state: GameState, recipe: Recipe): number {
+export const orderWeight = (state: GameState, recipe: Recipe): number => {
   const priceFactor = Math.pow(priceAttractiveness(recipe.price, fairPrice(recipe.ingredients)), 1.5);
   const newBoost = isNewRecipe(state, recipe) ? 1.4 : 1;
   const specialBoost = recipe.id === state.chefSpecial ? CHEF_SPECIAL_BOOST : 1;
   const seasonBoost = recipe.id === seasonalRecipe(state)?.id ? SEASONAL_RECIPE_BOOST : 1;
   return recipeAppeal(recipe) * priceFactor * newBoost * specialBoost * seasonBoost;
-}
+};
 
-function pickWeighted<T>(items: readonly T[], weights: readonly number[]): T {
+const pickWeighted = <T>(items: readonly T[], weights: readonly number[]): T => {
   let remaining = Math.random() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < items.length; i++) {
     remaining -= weights[i];
     if (remaining <= 0) return items[i];
   }
   return items[0];
-}
+};
 
 // Returning customers often reorder their favourite (always on their birthday); everyone else picks by weight.
-function chooseRecipe(
+const chooseRecipe = (
   state: GameState,
   menu: readonly Recipe[],
   entry: CustomerBookEntry | undefined,
-  isBirthday: boolean,
-): { recipe: Recipe; isFavorite: boolean } {
+  isBirthday: boolean,): { recipe: Recipe; isFavorite: boolean } => {
   const favorite = menu.find((recipe) => recipe.id === favoriteRecipeId(entry));
   if (favorite && (isBirthday || Math.random() < FAVORITE_REORDER_CHANCE)) return { recipe: favorite, isFavorite: true };
   return { recipe: pickWeighted(menu, menu.map((recipe) => orderWeight(state, recipe))), isFavorite: false };
-}
+};
 
 const unlockedIngredients = (state: GameState): IngredientId[] =>
   INGREDIENTS.filter((ingredient) => state.unlocked[ingredient.id]).map((ingredient) => ingredient.id);
 
 // Maybe a diet, if the menu has something for it.
-function rollDiet(state: GameState, menu: readonly Recipe[]): Diet | null {
+const rollDiet = (state: GameState, menu: readonly Recipe[]): Diet | null => {
   if (levelForXp(state.xp) < DIETS_LEVEL || Math.random() >= DIET_CHANCE) return null;
   const diets: Diet[] = ["veggie", "noPork", ...(state.unlocked.pateSG ? (["glutenFree"] as const) : [])];
   const diet = pickRandom(diets);
   return menu.some((recipe) => dietAllows(diet, recipe.ingredients)) ? diet : null;
-}
+};
 
-function rollDrink(state: GameState): DrinkId | null {
+const rollDrink = (state: GameState): DrinkId | null => {
   const available = DRINK_IDS.filter((id) => DRINKS[id].barLevel <= state.upgrades.bar);
   return available.length && Math.random() < DRINK_CHANCE ? pickRandom(available) : null;
-}
+};
 
 export type CustomerKind = "regular" | "critic" | "delivery" | "celebrity";
 
@@ -88,7 +87,7 @@ export interface CustomerOptions {
 
 // Returns null when nothing is on the menu (the player emptied it mid-service).
 // "regular" means anyone at the counter: they go in the customer book and may come back.
-export function createCustomer(state: GameState, kind: CustomerKind = "regular", options: CustomerOptions = {}): Customer | null {
+export const createCustomer = (state: GameState, kind: CustomerKind = "regular", options: CustomerOptions = {}): Customer | null => {
   const fullMenu = activeMenu(state);
   if (!fullMenu.length) return null;
   // A name is a person (see regulars.ts), so the same name never waits at the counter twice.
@@ -166,7 +165,7 @@ export function createCustomer(state: GameState, kind: CustomerKind = "regular",
     birthday: isBirthday,
     forDessert,
   };
-}
+};
 
 export const isRegularCustomer = (state: GameState, customer: Customer): boolean => isRegular(bookEntry(state, customer.name));
 
@@ -183,7 +182,7 @@ const OFFERED_DRINK_TIP_BONUS = 0.25;
 const OFFERED_DRINK_TIP_MULTIPLIER = 1.5;
 const MAX_TIP_CHANCE = 0.95;
 
-export function tipChance(state: GameState, customer: Customer): number {
+export const tipChance = (state: GameState, customer: Customer): number => {
   const mood = moodForWait(customer.waitedSeconds);
   const chance =
     tipChanceForDecor(state.upgrades.deco) +
@@ -195,24 +194,24 @@ export function tipChance(state: GameState, customer: Customer): number {
     (customer.drinkOffered ? OFFERED_DRINK_TIP_BONUS : 0) +
     todaysEvent(state).tipChanceBonus;
   return Math.min(MAX_TIP_CHANCE, chance);
-}
+};
 
 // Rolls the tip for a customer being served: 0, or an amount rounded to 10 cents.
-export function rollTip(state: GameState, customer: Customer): number {
+export const rollTip = (state: GameState, customer: Customer): number => {
   // Charmed by Mamma's secret (through the customer before): the tip is certain, its size as usual.
   if (!customer.charmed && Math.random() >= tipChance(state, customer)) return 0;
   const base = randomBetween(0.5, 1 + 0.8 * state.upgrades.deco);
   const multiplier = MOOD_TIP_MULTIPLIER[moodForWait(customer.waitedSeconds)] * (customer.drinkOffered ? OFFERED_DRINK_TIP_MULTIPLIER : 1);
   return Math.round(base * multiplier * 10) / 10;
-}
+};
 
 export const hasSpecialRequest = (customer: Customer): boolean =>
   Boolean(customer.extraIngredient || customer.removedIngredient || customer.diet);
 
 // Customers never leave; they just get hungrier.
-export function moodForWait(waitedSeconds: number): Mood {
+export const moodForWait = (waitedSeconds: number): Mood => {
   if (waitedSeconds < 25) return 0;
   if (waitedSeconds < 50) return 1;
   if (waitedSeconds < 90) return 2;
   return 3;
-}
+};

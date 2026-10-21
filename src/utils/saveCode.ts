@@ -3,18 +3,18 @@
 /** Parsed JSON object whose shape has not been checked yet. */
 export type JsonObject = Record<string, unknown>;
 
-export function encodeSaveCode(data: unknown): string {
+export const encodeSaveCode = (data: unknown): string => {
   const bytes = new TextEncoder().encode(JSON.stringify(data));
   let binary = "";
   bytes.forEach((byte) => (binary += String.fromCharCode(byte)));
   return btoa(binary);
-}
+};
 
 const isJsonObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 // Throws if the code is not valid base64 JSON or does not look like a game save.
-export function decodeSaveCode(code: string): JsonObject {
+export const decodeSaveCode = (code: string): JsonObject => {
   const binary = atob(code.trim());
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   const data: unknown = JSON.parse(new TextDecoder().decode(bytes));
@@ -22,4 +22,4 @@ export function decodeSaveCode(code: string): JsonObject {
     throw new Error("Not a Forno Lento save");
   }
   return data;
-}
+};

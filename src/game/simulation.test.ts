@@ -15,7 +15,7 @@ afterEach(() => vi.restoreAllMocks());
 
 const DATES = ["2026-10-25", "2026-12-24", "2027-02-14", "2027-05-01"];
 
-function lateGame(): GameState {
+const lateGame = (): GameState => {
   const state = makeState({ money: 20000, xp: 30000, day: 3 });
   INGREDIENTS.filter((ingredient) => !ingredient.festival).forEach(({ id }) => (state.unlocked[id] = true));
   UPGRADE_KEYS.forEach((key) => (state.upgrades[key] = UPGRADES[key].costs.length));
@@ -23,18 +23,18 @@ function lateGame(): GameState {
   state.secretIngredient = true;
   state.secretStock = 5;
   return state;
-}
+};
 
-function checkInvariants(state: GameState): void {
+const checkInvariants = (state: GameState): void => {
   expect(Number.isFinite(state.money)).toBe(true);
   expect(state.money).toBeGreaterThanOrEqual(-1e-9);
   expect(Number.isFinite(state.xp)).toBe(true);
   Object.values(state.stock).forEach((quantity) => expect(quantity).toBeGreaterThanOrEqual(0));
   expect(state.secretStock).toBeGreaterThanOrEqual(0);
-}
+};
 
 // One decision of the robot during service.
-function nextMove(state: GameState): GameAction {
+const nextMove = (state: GameState): GameAction => {
   const service = state.service;
   if (!service) return { type: "tick", seconds: 1 };
   const servable = service.ready.find((pizza) => destinationOf(state, service, pizza.ingredients));
@@ -71,7 +71,7 @@ function nextMove(state: GameState): GameAction {
     if (target.every((id) => service.board.includes(id))) return { type: "bake" };
   }
   return { type: "tick", seconds: 0.5 };
-}
+};
 
 describe("a robot playing many days", () => {
   it("never breaks the game", () => {

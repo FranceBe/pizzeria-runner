@@ -37,7 +37,7 @@ const emptyLifetimeStats = (): LifetimeStats => ({
   batchGolds: 0,
 });
 
-export function createInitialState(language: Language = detectLanguage()): GameState {
+export const createInitialState = (language: Language = detectLanguage()): GameState => {
   const unlocked: Partial<Record<IngredientId, boolean>> = {};
   // Free from the start, except festival ingredients, which follow the calendar (see game/calendar.ts).
   INGREDIENTS.filter((ingredient) => ingredient.supplierFee === 0 && !ingredient.festival).forEach((ingredient) => (unlocked[ingredient.id] = true));
@@ -96,7 +96,7 @@ export function createInitialState(language: Language = detectLanguage()): GameS
     toasts: [],
     pops: [],
   };
-}
+};
 
 /* ---------------------------------------------------------------
    Save migrations. Each step upgrades a save by one version; they run in order.
@@ -109,7 +109,7 @@ const asObject = (value: unknown): JsonObject | undefined =>
 const asObjectList = (value: unknown): JsonObject[] =>
   Array.isArray(value) ? value.map(asObject).filter((item): item is JsonObject => item !== undefined) : [];
 
-function renameKeys(object: JsonObject, renames: Record<string, string>): JsonObject {
+const renameKeys = (object: JsonObject, renames: Record<string, string>): JsonObject => {
   const result = { ...object };
   Object.entries(renames).forEach(([oldKey, newKey]) => {
     if (oldKey in result) {
@@ -118,14 +118,14 @@ function renameKeys(object: JsonObject, renames: Record<string, string>): JsonOb
     }
   });
   return result;
-}
+};
 
 const renameKeysIfObject = (value: unknown, renames: Record<string, string>): unknown => {
   const object = asObject(value);
   return object ? renameKeys(object, renames) : value;
 };
 
-function migrateService(value: unknown): unknown {
+const migrateService = (value: unknown): unknown => {
   const service = asObject(value);
   if (!service) return value;
   const { total, ...rest } = renameKeys(service, {
@@ -149,10 +149,10 @@ function migrateService(value: unknown): unknown {
     ),
     ready: asObjectList(rest.ready).map((pizza) => renameKeys(pizza, { uid: "id", ings: "ingredients" })),
   };
-}
+};
 
 // Version 1: saves written before the code cleanup, with short field names.
-function migrateFromVersion1(saved: JsonObject): JsonObject {
+const migrateFromVersion1 = (saved: JsonObject): JsonObject => {
   const { v, ...rest } = renameKeys(saved, { nonnaDay: "lastNonnaVisitDay" });
   return {
     ...rest,
@@ -161,11 +161,11 @@ function migrateFromVersion1(saved: JsonObject): JsonObject {
     service: migrateService(rest.service),
     summary: renameKeysIfObject(rest.summary, { best: "bestSeller" }),
   };
-}
+};
 
 // Version 2: sales were counted by recipe name, which can't be translated.
 // Old entries keep their name and simply show it as is.
-function migrateFromVersion2(saved: JsonObject): JsonObject {
+const migrateFromVersion2 = (saved: JsonObject): JsonObject => {
   const result = { ...saved };
   const service = asObject(result.service);
   const stats = asObject(service?.stats);
@@ -181,13 +181,13 @@ function migrateFromVersion2(saved: JsonObject): JsonObject {
     result.summary = { ...summary, bestSeller: { recipeId: name, name, count } };
   }
   return result;
-}
+};
 
 const isIngredientId = (value: unknown): value is IngredientId => typeof value === "string" && value in INGREDIENTS_BY_ID;
 
 // Version 3: before the journal. Pairings already used in the player's recipes count as discovered,
 // so the recipe editor keeps showing them; the customer book gives a fair count of pizzas served.
-function migrateFromVersion3(saved: JsonObject): JsonObject {
+const migrateFromVersion3 = (saved: JsonObject): JsonObject => {
   const discovered = new Set<string>();
   asObjectList(saved.recipes).forEach((recipe) => {
     const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients.filter(isIngredientId) : [];
@@ -197,7 +197,7 @@ function migrateFromVersion3(saved: JsonObject): JsonObject {
     .map((entry) => asObject(entry)?.visits)
     .reduce<number>((total, visits) => total + (typeof visits === "number" ? visits : 0), 0);
   return { ...saved, discoveredPairings: [...discovered], lifetime: { ...emptyLifetimeStats(), served } };
-}
+};
 
 // Version 4: before seasons, tables, drinks, quests and the daily challenge. Everything new starts empty,
 // which hydrateState fills in; challenge results from version 4 have no date, so they are dropped.
@@ -210,7 +210,7 @@ const migrateFromVersion5 = (saved: JsonObject): JsonObject => saved;
 const migrateFromVersion6 = (saved: JsonObject): JsonObject => saved;
 
 // Version 7: faces were drawn without looking at names. Feminine names lose any moustache or beard they were given.
-function migrateFromVersion7(saved: JsonObject): JsonObject {
+const migrateFromVersion7 = (saved: JsonObject): JsonObject => {
   const book = asObject(saved.customerBook);
   if (!book) return saved;
   const customerBook = Object.fromEntries(
@@ -222,7 +222,7 @@ function migrateFromVersion7(saved: JsonObject): JsonObject {
     }),
   );
   return { ...saved, customerBook };
-}
+};
 
 // Version 8: before group orders, incidents, streaks, stars, weekly missions, celebrities and festivals.
 // Everything new has a default; a quest already running keeps working as it was.
@@ -244,16 +244,16 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
 const versionOf = (saved: JsonObject): number =>
   typeof saved.version === "number" ? saved.version : typeof saved.v === "number" ? saved.v : 1;
 
-export function migrateSave(saved: JsonObject): JsonObject {
+export const migrateSave = (saved: JsonObject): JsonObject => {
   let migrated = saved;
   for (let version = versionOf(saved); version < SAVE_VERSION; version++) {
     migrated = MIGRATIONS[version - 1](migrated);
   }
   return migrated === saved ? saved : { ...migrated, version: SAVE_VERSION };
-}
+};
 
 // Fills in anything a save from an older version is missing.
-export function hydrateState(saved: JsonObject): GameState {
+export const hydrateState = (saved: JsonObject): GameState => {
   // Past this point the save is trusted to have the current shape: migrations took care of older ones.
   const migrated = migrateSave(saved) as Partial<GameState>;
   const defaults = createInitialState();
@@ -273,15 +273,15 @@ export function hydrateState(saved: JsonObject): GameState {
   // Records, without a toast, what an older save had already earned.
   unlockAchievements(state, { silent: true });
   return state;
-}
+};
 
 // Toasts and pops are transient UI feedback, not worth saving.
-export function toSaveData(state: GameState): SaveData {
+export const toSaveData = (state: GameState): SaveData => {
   const { toasts, pops, ...saveData } = state;
   return saveData;
-}
+};
 
-export function loadState(): GameState {
+export const loadState = (): GameState => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const saved = raw ? asObject(JSON.parse(raw)) : undefined;
@@ -289,11 +289,11 @@ export function loadState(): GameState {
   } catch {
     return createInitialState();
   }
-}
+};
 
 // Starts over after a crash, keeping the broken save aside (under BROKEN_SAVE_KEY) rather than deleting it.
 const BROKEN_SAVE_KEY = "forno-lento-broken-save";
-export function setBrokenSaveAside(): void {
+export const setBrokenSaveAside = (): void => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) localStorage.setItem(BROKEN_SAVE_KEY, raw);
@@ -301,12 +301,12 @@ export function setBrokenSaveAside(): void {
   } catch {
     // Storage blocked: nothing was saved in the first place.
   }
-}
+};
 
-export function saveState(state: GameState): void {
+export const saveState = (state: GameState): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSaveData(state)));
   } catch {
     // Storage full or blocked (private browsing): the game keeps running, it just won't persist.
   }
-}
+};

@@ -20,15 +20,15 @@ import { WEEKLY_BONUS, WEEKLY_REWARD } from "../data/weekly";
 const LOW_STOCK_THRESHOLD = 5;
 
 // Nonna offers help when nothing on the menu can be made and a few margheritas are unaffordable.
-function needsNonna(state: GameState, menu: readonly Recipe[]): boolean {
+const needsNonna = (state: GameState, menu: readonly Recipe[]): boolean => {
   const canMakeSomething = menu.some((recipe) => recipe.ingredients.every((id) => (state.stock[id] || 0) > 0));
   const isBroke = state.money < ingredientCost(MARGHERITA.ingredients) * 3;
   return !canMakeSomething && isBroke && state.lastNonnaVisitDay !== state.day;
-}
+};
 
 const MAX_REGULARS_SHOWN = 5;
 
-function EventBanner({ state }: { state: GameState }) {
+const EventBanner = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   return (
     <>
@@ -45,10 +45,10 @@ function EventBanner({ state }: { state: GameState }) {
       {state.festival && <div className="event-banner ev-fete" role="note">🎉 {t("prep.festival", { festival: state.festival })}</div>}
     </>
   );
-}
+};
 
 // The week's three missions, compact: what, how far, done or not.
-function WeeklyMissions({ state }: { state: GameState }) {
+const WeeklyMissions = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   if (!state.weekly) return null;
   return (
@@ -64,10 +64,10 @@ function WeeklyMissions({ state }: { state: GameState }) {
       <p className="hint">{t("prep.weeklyReward", { reward: WEEKLY_REWARD, bonus: WEEKLY_BONUS })}</p>
     </div>
   );
-}
+};
 
 // The daily challenge: same customers for everyone today; offered once the tutorial is over.
-function ChallengeOffer({ state, dispatch }: ScreenProps) {
+const ChallengeOffer = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   if (!state.settings.tutorialDone) return null;
   const today = localDate();
@@ -86,15 +86,15 @@ function ChallengeOffer({ state, dispatch }: ScreenProps) {
       </button>
     </div>
   );
-}
+};
 
-function SeasonBadge({ day }: { day: number }) {
+const SeasonBadge = ({ day }: { day: number }) => {
   const t = useTranslation();
   const season = seasonOf(day);
   return <span className={`season-badge s-${season}`}>{t("prep.season", { season: t(`seasons.${season}`), days: daysLeftInSeason(day) })}</span>;
-}
+};
 
-function Regulars({ state }: { state: GameState }) {
+const Regulars = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const regulars = regularsOf(state).slice(0, MAX_REGULARS_SHOWN);
   if (!regulars.length) return null;
@@ -119,9 +119,9 @@ function Regulars({ state }: { state: GameState }) {
       ))}
     </div>
   );
-}
+};
 
-export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: (tab: TabId) => void }) {
+export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: (tab: TabId) => void }) => {
   const t = useTranslation();
   const expectedCustomers = forecastCustomers(state);
   const menu = activeMenu(state);
@@ -220,4 +220,4 @@ export function PrepView({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
       </div>
     </div>
   );
-}
+};

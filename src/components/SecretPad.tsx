@@ -1,7 +1,7 @@
 import type { SecretPad as Pad } from "../hooks/useSecretCode";
 
 // Two gamepad buttons, shown on touch screens once the right swipes are in (see hooks/useSecretCode.ts).
-export function SecretPad({ pad }: { pad: Pad }) {
+export const SecretPad = ({ pad }: { pad: Pad }) => {
   if (!pad.isOpen) return null;
   return (
     <div className="secret-pad">
@@ -9,4 +9,4 @@ export function SecretPad({ pad }: { pad: Pad }) {
       <button className="pad-btn pad-a" aria-label="A" onClick={() => pad.press("a")}>A</button>
     </div>
   );
-}
+};

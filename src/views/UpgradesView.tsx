@@ -16,7 +16,7 @@ interface UpgradeCardProps {
   dispatch: Dispatch;
 }
 
-function UpgradeCard({ upgradeKey, upgrade, currentLevel, playerLevel, money, dispatch }: UpgradeCardProps) {
+const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, dispatch }: UpgradeCardProps) => {
   const t = useTranslation();
   const isMaxed = currentLevel >= upgrade.costs.length;
   const requiredLevel = upgrade.requiredLevel[currentLevel];
@@ -51,12 +51,12 @@ function UpgradeCard({ upgradeKey, upgrade, currentLevel, playerLevel, money, di
       {action}
     </div>
   );
-}
+};
 
 // A little preview of each look: a stripe of awning, a lettering style, a patch of wall.
-function LookSwatch({ slot, id }: { slot: CosmeticSlot; id: string }) {
+const LookSwatch = ({ slot, id }: { slot: CosmeticSlot; id: string }) => {
   return <span className={`swatch swatch-${slot} ${slot}-${id}`} aria-hidden="true">{slot === "sign" ? "Aa" : ""}</span>;
-}
+};
 
 interface LookGroupProps<Slot extends CosmeticSlot> {
   slot: Slot;
@@ -66,7 +66,7 @@ interface LookGroupProps<Slot extends CosmeticSlot> {
   dispatch: Dispatch;
 }
 
-function LookGroup<Slot extends CosmeticSlot>({ slot, label, nameOf, state, dispatch }: LookGroupProps<Slot>) {
+const LookGroup = <Slot extends CosmeticSlot>({ slot, label, nameOf, state, dispatch }: LookGroupProps<Slot>) => {
   const t = useTranslation();
   const ids: readonly LookIds[Slot][] = COSMETIC_SLOTS[slot];
   return (
@@ -105,10 +105,10 @@ function LookGroup<Slot extends CosmeticSlot>({ slot, label, nameOf, state, disp
       </div>
     </div>
   );
-}
+};
 
 // Purely visual: the awning, the sign and the walls.
-function LooksShop({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
+const LooksShop = ({ state, dispatch }: { state: GameState; dispatch: Dispatch }) => {
   const t = useTranslation();
   return (
     <div className="card pad looks">
@@ -119,9 +119,9 @@ function LooksShop({ state, dispatch }: { state: GameState; dispatch: Dispatch }
       <LookGroup slot="wall" label={t("upgrades.slots.wall")} nameOf={(id) => t(`upgrades.walls.${id}`)} state={state} dispatch={dispatch} />
     </div>
   );
-}
+};
 
-export function UpgradesView({ state, dispatch }: ScreenProps) {
+export const UpgradesView = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const playerLevel = levelForXp(state.xp);
   return (
@@ -144,4 +144,4 @@ export function UpgradesView({ state, dispatch }: ScreenProps) {
       <LooksShop state={state} dispatch={dispatch} />
     </>
   );
-}
+};

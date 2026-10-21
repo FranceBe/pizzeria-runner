@@ -14,7 +14,7 @@ const addToStock = (state: GameState, id: IngredientId, quantity: number): void 
   state.stock[id] = (state.stock[id] || 0) + quantity;
 };
 
-function chooseLook<Slot extends CosmeticSlot>(state: GameState, slot: Slot, id: LookIds[Slot]): void {
+const chooseLook = <Slot extends CosmeticSlot>(state: GameState, slot: Slot, id: LookIds[Slot]): void => {
   const price: number = COSMETIC_PRICES[slot][id];
   const cosmeticId: CosmeticId = `${slot}:${id}`;
   // Star looks: earned with the days' stars, never bought.
@@ -29,7 +29,7 @@ function chooseLook<Slot extends CosmeticSlot>(state: GameState, slot: Slot, id:
   }
   const looks: LookIds = state.cosmetics;
   looks[slot] = id;
-}
+};
 
 export const SUPPLIER_WELCOME_PORTIONS = 4;
 const NONNA_PORTIONS = 4;

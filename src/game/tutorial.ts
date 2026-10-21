@@ -5,7 +5,7 @@ import type { GameState, TutorialStep } from "./types";
 // The guided first day: one hint at a time, worked out from the current state.
 // Returns null when there is nothing to say. The step's key is under "tutorial." in src/i18n,
 // its target names the UI element to highlight.
-export function tutorialStep(state: GameState): TutorialStep | null {
+export const tutorialStep = (state: GameState): TutorialStep | null => {
   if (state.settings.tutorialDone || state.day !== 1 || state.service?.challenge) return null;
   if (state.phase === "prep") return { key: "open", target: "open" };
   const { service } = state;
@@ -27,4 +27,4 @@ export function tutorialStep(state: GameState): TutorialStep | null {
   const missing = selected.ingredients.filter((id) => !service.board.includes(id));
   if (missing.length) return { key: "toppings", params: { name: selected.name, ingredientIds: missing }, target: "toppings" };
   return { key: "bake", target: "bake" };
-}
+};

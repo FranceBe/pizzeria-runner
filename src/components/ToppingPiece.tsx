@@ -10,7 +10,7 @@ interface ToppingPieceProps {
 }
 
 // One piece of an ingredient (a mushroom slice, an olive ring…) drawn at (x, y), in SVG units.
-export function ToppingPiece({ ingredient, x, y, rotation, scale = 1 }: ToppingPieceProps) {
+export const ToppingPiece = ({ ingredient, x, y, rotation, scale = 1 }: ToppingPieceProps) => {
   const color = ingredient.color;
   const transform = `translate(${x} ${y}) rotate(${rotation}) scale(${scale})`;
   switch (ingredient.shape) {
@@ -95,4 +95,4 @@ export function ToppingPiece({ ingredient, x, y, rotation, scale = 1 }: ToppingP
     default:
       return null;
   }
-}
+};

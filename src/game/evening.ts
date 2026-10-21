@@ -22,16 +22,16 @@ export const RUSH_TIP_FACTOR = 2;
 const QUEST_LOG_SIZE = 30;
 
 // When the restaurant opens: plans the rush and the group order. Mutates the service.
-export function planEvening(state: GameState, service: Service, customerCount: number): void {
+export const planEvening = (state: GameState, service: Service, customerCount: number): void => {
   const isBusy = levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS;
   service.rushAtServed = isBusy ? Math.floor(customerCount * randomBetween(0.3, 0.55)) : null;
   const { quest } = state;
   service.batchArrivesIn = quest?.kind === "batch" && quest.deadlineDay === state.day ? BATCH_ARRIVES_AFTER : null;
   service.elapsed = 0;
-}
+};
 
 // Every tick: the clock of the evening. Mutates state.
-export function advanceEvening(state: GameState, service: Service, seconds: number): void {
+export const advanceEvening = (state: GameState, service: Service, seconds: number): void => {
   service.elapsed = (service.elapsed ?? 0) + seconds;
   service.ready.forEach((pizza) => (pizza.waitingSeconds = (pizza.waitingSeconds ?? 0) + seconds));
 
@@ -56,22 +56,22 @@ export function advanceEvening(state: GameState, service: Service, seconds: numb
     state.stock[state.lateIngredient] = (state.stock[state.lateIngredient] || 0) + LATE_DELIVERY_GIFT;
     pushToast(state, { key: "lateArrived", params: { ingredientId: state.lateIngredient, portions: LATE_DELIVERY_GIFT } }, "gold");
   }
-}
+};
 
 // After a pizza is served: starts the rush when its moment comes. Mutates the service.
-export function maybeStartRush(state: GameState, service: Service): void {
+export const maybeStartRush = (state: GameState, service: Service): void => {
   if (service.rushAtServed == null || service.stats.served < service.rushAtServed) return;
   service.rushAtServed = null;
   service.rush = { secondsLeft: RUSH_SECONDS };
   pushToast(state, { key: "rush" }, "gold");
-}
+};
 
 // The ingredient is still on its way (late delivery day).
 export const isStillComing = (state: GameState, service: Service, id: string): boolean =>
   state.event === "lateDelivery" && state.lateIngredient === id && !service.lateArrived && !service.challenge;
 
 // Puts a baked pizza on the group order's ticket, and pays the order once it is complete. Mutates state.
-export function deliverToBatch(state: GameState, service: Service, pizza: ReadyPizza): void {
+export const deliverToBatch = (state: GameState, service: Service, pizza: ReadyPizza): void => {
   const item = batchItemFor(state, service, pizza.ingredients);
   const quest = openBatch(state, service);
   if (!item || !quest?.items || !service.batch) return;
@@ -98,10 +98,10 @@ export function deliverToBatch(state: GameState, service: Service, pizza: ReadyP
   state.quest = null;
   service.batch = null;
   if (service.selectedCustomerId === "batch") service.selectedCustomerId = service.customers[0]?.id ?? null;
-}
+};
 
 // At closing time: a group order that came in but isn't complete pays for what was delivered. Mutates state.
-export function settleUnfinishedBatch(state: GameState, service: Service): void {
+export const settleUnfinishedBatch = (state: GameState, service: Service): void => {
   const quest = state.quest;
   if (quest?.kind !== "batch" || quest.deadlineDay !== state.day || !quest.items) return;
   const pay = service.batch ? unfinishedPay(state, quest.items) : 0;
@@ -114,11 +114,11 @@ export function settleUnfinishedBatch(state: GameState, service: Service): void 
   state.quest = null;
   service.batch = null;
   service.batchArrivesIn = null;
-}
+};
 
-function logQuest(state: GameState, reward: number, medal: "gold" | "silver" | "bronze"): void {
+const logQuest = (state: GameState, reward: number, medal: "gold" | "silver" | "bronze"): void => {
   const quest = state.quest;
   if (!quest) return;
   const { kind, giver, target, items } = quest;
   state.questLog = [...state.questLog, { day: state.day, kind, giver, target, items, reward, medal }].slice(-QUEST_LOG_SIZE);
-}
+};
