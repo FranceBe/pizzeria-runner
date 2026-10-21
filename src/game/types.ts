@@ -199,6 +199,8 @@ export interface Service {
   secretOnBoard?: boolean;
   /** Mamma's secret is on the pizza being built. */
   mammaOnBoard?: boolean;
+  /** Co-op: what the other player is working on, shown on their ticket in their colour. Only in a player's view. */
+  partner?: { selectedCustomerId: string | null; color: number; name: string };
   /** Happy customers who will come back later tonight for a dessert pizza, and in how many seconds. */
   dessertReturns?: { name: string; inSeconds: number }[];
   /** Customers to charm as soon as they come in (Mamma's secret, served while nobody else was waiting). */
@@ -239,6 +241,10 @@ export interface Service {
 
 /** The daily challenge: the same customers, in the same order, for everyone on a given date. */
 export interface Challenge {
+  /** A match against friends (see src/multiplayer): same customers, no pause, nothing recorded as a daily challenge. */
+  multiplayer?: boolean;
+  /** Two players in one shared kitchen, for a team score. */
+  coop?: boolean;
   secondsLeft: number;
   score: number;
   /** "2026-10-17" */
@@ -250,6 +256,8 @@ export interface Challenge {
 }
 
 export interface ChallengeResult {
+  multiplayer?: boolean;
+  coop?: boolean;
   date: string;
   score: number;
   served: number;
@@ -429,6 +437,8 @@ export interface Settings {
   /** Comfort upgrades can be switched off for free, for those who play better without them. */
   useDrawer: boolean;
   commisFade: boolean;
+  /** The nickname shown to others in multiplayer; empty until chosen. */
+  playerName: string;
 }
 
 export type ToastKind = "" | "gold" | "warn";
@@ -534,7 +544,9 @@ export type GameAction =
   | { type: "servePizza"; pizzaId: string }
   | { type: "trashReadyPizza"; pizzaId: string }
   | { type: "revealUsualOrder"; customerId: string }
-  | { type: "startChallenge"; date: string }
+  /** date: the day's date for the daily challenge, or the room's seed for a multiplayer match. */
+  | { type: "startChallenge"; date: string; multiplayer?: boolean }
+  | { type: "setPlayerName"; name: string }
   | { type: "pourDrink"; drinkId: DrinkId }
   | { type: "serveTrayDrink"; index: number }
   | { type: "binTray" }

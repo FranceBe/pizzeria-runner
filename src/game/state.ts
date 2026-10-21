@@ -66,6 +66,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
       tutorialDone: false,
       useDrawer: true,
       commisFade: true,
+      playerName: "",
     },
     phase: "prep",
     purchasesToday: 0,

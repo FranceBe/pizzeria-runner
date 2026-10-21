@@ -31,7 +31,8 @@ const ReviewStars = ({ state }: { state: ScreenProps["state"] }) => {
   );
 };
 
-export const Header = ({ state, dispatch }: ScreenProps) => {
+// duo: the pizzeria shown is a duo pizzeria, not the player's own (the sign says so).
+export const Header = ({ state, dispatch, isDuo = false }: ScreenProps & { isDuo?: boolean }) => {
   const t = useTranslation();
   const level = levelForXp(state.xp);
   const evening = eveningProgress(state);
@@ -42,7 +43,10 @@ export const Header = ({ state, dispatch }: ScreenProps) => {
     >
       <div className="awning" />
       <div className="wrap top-inner">
-        <h1 className="sign">{state.name}</h1>
+        <h1 className="sign">
+          {state.name}
+          {isDuo && <span className="duo-badge">{`🤝 ${t("multi.duoBadge")}`}</span>}
+        </h1>
         <StorefrontDecor upgrades={state.upgrades} photos={state.celebrityWall.length} />
         <div className="stats">
           <div className="stat">

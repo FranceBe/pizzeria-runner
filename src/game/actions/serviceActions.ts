@@ -152,6 +152,21 @@ const finishChallenge = (state: GameState, service: Service): void => {
   const challenge = service.challenge;
   if (!challenge) return;
   const { score, date, happy } = challenge;
+  if (challenge.multiplayer) {
+    // A match against friends: its result is theirs to compare, it doesn't count as a daily challenge.
+    state.challengeResult = {
+      multiplayer: true,
+      ...(challenge.coop ? { coop: true } : {}),
+      date,
+      score,
+      served: service.stats.served,
+      happy,
+      isNewBest: false,
+    };
+    state.service = null;
+    state.phase = "prep";
+    return;
+  }
   const previousBest = state.dailyChallenge?.date === date ? state.dailyChallenge.best : 0;
   const isNewBest = score > previousBest;
   state.dailyChallenge = { date, best: Math.max(score, previousBest) };
@@ -376,15 +391,17 @@ export const serviceActions = {
   },
 
   // Two minutes for fun, the same for everyone on that date: free ingredients, nothing at stake but the score.
-  startChallenge(state, { date }) {
-    if (state.phase !== "prep" || !state.settings.tutorialDone) return;
-    state.service = { ...createService(CHALLENGE_CUSTOMERS), challenge: createChallenge(date) };
+  startChallenge(state, { date, multiplayer = false }) {
+    // A friend's match doesn't wait for the tutorial: it may be someone's very first game.
+    if (state.phase !== "prep" || (!state.settings.tutorialDone && !multiplayer)) return;
+    state.service = { ...createService(CHALLENGE_CUSTOMERS), challenge: createChallenge(date, multiplayer) };
     state.phase = "service";
     state.challengeResult = null;
   },
 
   togglePause(state) {
-    if (state.service) state.service.paused = !state.service.paused;
+    // A match against friends runs on a shared clock: no pause.
+    if (state.service && !state.service.challenge?.multiplayer) state.service.paused = !state.service.paused;
   },
 
   // Closes for today: whoever is still waiting goes home (no hard feelings), and the day ends as usual.

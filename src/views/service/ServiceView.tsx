@@ -24,6 +24,8 @@ import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
 import { activeMenu } from "../../game/menu";
 import type { CoachTarget, Customer, GameState, Service } from "../../game/types";
 import type { ServiceScreenProps } from "../types";
+import { useMultiplayer } from "../../multiplayer/MultiplayerContext";
+import { ranking } from "../MultiplayerView";
 
 // What the board is compared with: a customer's order, or the group order's next pizza.
 interface BoardTarget {
@@ -148,8 +150,16 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
   const selectedCustomer = findSelectedCustomer(service);
   const { challenge } = service;
   const streak = service.stats.streak ?? 0;
+  const { room, you } = useMultiplayer();
+  // In a match against friends, the message line also shows where everyone stands.
+  const standings =
+    challenge?.multiplayer && !challenge.coop && room
+      ? ranking(room).map((player, index) => `${index + 1}. ${player.id === you ? t("multi.youRanked") : player.name} ${player.score}`).join(" · ")
+      : "";
   const progress = challenge
-    ? t("service.challenge", { clock: formatClock(challenge.secondsLeft), score: challenge.score })
+    ? [t(challenge.coop ? "service.coop" : challenge.multiplayer ? "service.match" : "service.challenge", { clock: formatClock(challenge.secondsLeft), score: challenge.score }), standings]
+        .filter(Boolean)
+        .join(" · ")
     : service.rush
       ? t("service.rush", { clock: formatClock(service.rush.secondsLeft) })
       : [
@@ -185,9 +195,12 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
   return (
     <div className={`svc${challenge ? " in-challenge" : ""}${service.rush ? " in-rush" : ""}`}>
       <div className="a-ticker">
-        <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} onClick={() => dispatch({ type: "togglePause" })}>
-          ⏸
-        </button>
+        {/* A match against friends runs on a shared clock: no pause. */}
+        {!challenge?.multiplayer && (
+          <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} onClick={() => dispatch({ type: "togglePause" })}>
+            ⏸
+          </button>
+        )}
         {isStuck(state, service) ? (
           <div className="stuck" role="alert">
             <strong>{t("service.stuck")}</strong>
@@ -219,6 +232,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
                 table={group.tableId ? service.tables?.[group.tableId] : undefined}
                 pour={customer.id === pouringFor?.id ? Math.min(1, (service.barmanSeconds ?? 0) / BARMAN_SECONDS) : undefined}
                 onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
+                partner={service.partner?.selectedCustomerId === customer.id ? service.partner : undefined}
               />
             ));
             const table = group.tableId ? service.tables?.[group.tableId] : undefined;

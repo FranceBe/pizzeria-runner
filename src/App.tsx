@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { gameReducer } from "./game/reducer";
 import { loadState } from "./game/state";
 import { useGameLoop } from "./hooks/useGameLoop";
@@ -7,7 +7,7 @@ import { useSecretCode } from "./hooks/useSecretCode";
 import { useGameAudio } from "./hooks/useGameAudio";
 import { createTranslator } from "./i18n";
 import { localDate } from "./game/challenge";
-import { I18nProvider } from "./i18n/I18nContext";
+import { I18nProvider, useTranslation } from "./i18n/I18nContext";
 import { Header } from "./views/Header";
 import { PrepView } from "./views/PrepView";
 import { ServiceView } from "./views/service/ServiceView";
@@ -23,10 +23,13 @@ import { TabIcon, type TabId } from "./components/TabIcon";
 import { SecretPad } from "./components/SecretPad";
 import type { ScreenProps } from "./views/types";
 import { shownEvent } from "./game/service";
+import { MultiplayerProvider, useMultiplayer } from "./multiplayer/MultiplayerContext";
+import { MultiplayerView } from "./views/MultiplayerView";
 
-const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "settings"];
+const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "multi", "settings"];
 
-const TabContent = ({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabId; goToTab: (tab: TabId) => void }) => {
+// solo: the player's own game, for the tabs that stay personal (settings, multiplayer) during a duo pizzeria.
+const TabContent = ({ tab, state, dispatch, goToTab, solo }: ScreenProps & { tab: TabId; goToTab: (tab: TabId) => void; solo: ScreenProps }) => {
   switch (tab) {
     case "service":
       return state.phase === "service" && state.service
@@ -40,17 +43,123 @@ const TabContent = ({ tab, state, dispatch, goToTab }: ScreenProps & { tab: TabI
       return <UpgradesView state={state} dispatch={dispatch} />;
     case "journal":
       return <JournalView state={state} />;
+    case "multi":
+      return <MultiplayerView state={solo.state} dispatch={solo.dispatch} goToTab={goToTab} />;
     case "settings":
-      return <SettingsView state={state} dispatch={dispatch} />;
+      return <SettingsView state={solo.state} dispatch={solo.dispatch} />;
   }
+};
+
+// How long the "only the host can do that" note stays up, in a duo pizzeria.
+const REFUSED_NOTE_MS = 3500;
+
+// Inside the multiplayer connection. During a quick co-op, the service screen, the keyboard and the sounds follow the
+// shared kitchen; during a duo pizzeria, so do the header and every tab but the settings and multiplayer ones. The
+// player's own pizzeria waits in its morning prep meanwhile.
+const GameShell = ({ state: soloState, dispatch: soloDispatch, tab, setTab }: ScreenProps & { tab: TabId; setTab: (tab: TabId) => void }) => {
+  const t = useTranslation();
+  const { coopView, coopDispatch, duo, refusedAt, room, you, error, clearError } = useMultiplayer();
+  const secretPad = useSecretCode(soloDispatch);
+  const isCoop = coopView !== null;
+  const isDuo = isCoop && duo !== null;
+  const state = isDuo && coopView ? coopView : soloState;
+  const dispatch = isDuo ? coopDispatch : soloDispatch;
+  const activeState = coopView ?? soloState;
+  const activeDispatch = isCoop ? coopDispatch : soloDispatch;
+  useGameAudio(activeState);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (refusedAt === null) return;
+    setNow(Date.now());
+    const timer = setTimeout(() => setNow(Date.now()), REFUSED_NOTE_MS);
+    return () => clearTimeout(timer);
+  }, [refusedAt]);
+  const isRefusedNoteShown = refusedAt !== null && now - refusedAt < REFUSED_NOTE_MS;
+  const partner = room?.players.find((player) => player.id !== you)?.name ?? "";
+
+  // During service, the service screen fits the window instead of scrolling (see .svc-mode in styles.css).
+  const isServing = tab === "service" && activeState.phase === "service";
+  useEffect(() => {
+    document.documentElement.classList.toggle("svc-mode", isServing);
+  }, [isServing]);
+  useServiceShortcuts(activeState, activeDispatch, isServing);
+
+  const waitingCustomers = state.service ? state.service.customers.length : 0;
+  const startNextDay = () => {
+    dispatch({ type: "startNextDay" });
+    setTab("service");
+  };
+
+  return (
+    <>
+      <Header state={state} dispatch={dispatch} isDuo={isDuo} />
+      <div className="wrap">
+        <nav className="tabs" role="tablist">
+          {TABS.map((id) => (
+            <button key={id} role="tab" aria-selected={tab === id} aria-label={t(`tabs.${id}`)} onClick={() => setTab(id)}>
+              <TabIcon tab={id} />
+              <span className="tab-l">{t(`tabs.${id}`)}</span>
+              {id === "service" && tab !== "service" && waitingCustomers > 0 && <span className="pip">{waitingCustomers}</span>}
+            </button>
+          ))}
+        </nav>
+      </div>
+      <main className="wrap">
+        {isDuo && duo && (
+          <div className="duo-banner" role="status">
+            <span aria-hidden="true">🤝</span>
+            <strong>{duo.name}</strong>
+            <span className="hint">{t("multi.duoWith", { partner })}</span>
+          </div>
+        )}
+        {/* The host left: said on whatever screen the partner is on, since their game just switched back to their own. */}
+        {error === "hostLeft" && tab !== "multi" && (
+          <div className="toast-float on-top">
+            <button className="ticker warn" onClick={clearError}>
+              <span className="ticker-t">{t("multi.errors.hostLeft")}</span>
+              <span className="ticker-x" aria-hidden="true">×</span>
+            </button>
+          </div>
+        )}
+        {isRefusedNoteShown && (
+          <div className="toast-float on-top">
+            <div className="ticker warn">{t("multi.hostOnly")}</div>
+          </div>
+        )}
+        {/* The service screen has its own ticker inside its grid; elsewhere it floats over the page, so nothing jumps. */}
+        {!isServing && (
+          // Over a dialog (the day's receipt, the challenge score), messages go to the top, clear of its buttons.
+          <div className={`toast-float${(state.phase === "summary" && state.summary) || state.challengeResult ? " on-top" : ""}`}>
+            <MessageTicker toasts={state.toasts} dispatch={dispatch} />
+          </div>
+        )}
+        {tab === "service" && isCoop && !isDuo && activeState.service ? (
+          <ServiceView state={activeState} service={activeState.service} dispatch={activeDispatch} />
+        ) : (
+          <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} solo={{ state: soloState, dispatch: soloDispatch }} />
+        )}
+      </main>
+      {state.phase === "summary" && state.summary && (
+        <DaySummary
+          summary={state.summary}
+          pizzeriaName={state.name}
+          shownEventId={state.summary.event ? shownEvent(state, state.summary.event) : undefined}
+          onNextDay={startNextDay}
+        />
+      )}
+      <SecretPad pad={secretPad} />
+      {soloState.challengeResult && (
+        <ChallengeResult result={soloState.challengeResult} best={soloState.dailyChallenge?.best ?? 0} dispatch={soloDispatch} />
+      )}
+      {!isDuo && coopView?.challengeResult && <ChallengeResult result={coopView.challengeResult} best={0} dispatch={coopDispatch} />}
+    </>
+  );
 };
 
 export const App = () => {
   const [state, dispatch] = useReducer(gameReducer, null, loadState);
   const [tab, setTab] = useState<TabId>("service");
   useGameLoop(state, dispatch);
-  const secretPad = useSecretCode(dispatch);
-  useGameAudio(state);
 
   const { language } = state.settings;
   const t = useMemo(() => createTranslator(language), [language]);
@@ -74,51 +183,13 @@ export const App = () => {
     Object.assign(root.dataset, { awning, sign, wall });
   }, [theme, largeText, awning, sign, wall]);
 
-  // During service, the service screen fits the window instead of scrolling (see .svc-mode in styles.css).
-  const isServing = tab === "service" && state.phase === "service";
-  useEffect(() => {
-    document.documentElement.classList.toggle("svc-mode", isServing);
-  }, [isServing]);
-  useServiceShortcuts(state, dispatch, isServing && state.phase === "service");
-
-  const waitingCustomers = state.service ? state.service.customers.length : 0;
-  const startNextDay = () => {
-    dispatch({ type: "startNextDay" });
-    setTab("service");
-  };
+  const showService = useCallback(() => setTab("service"), []);
 
   return (
     <I18nProvider value={t}>
-      <Header state={state} dispatch={dispatch} />
-      <div className="wrap">
-        <nav className="tabs" role="tablist">
-          {TABS.map((id) => (
-            <button key={id} role="tab" aria-selected={tab === id} aria-label={t(`tabs.${id}`)} onClick={() => setTab(id)}>
-              <TabIcon tab={id} />
-              <span className="tab-l">{t(`tabs.${id}`)}</span>
-              {id === "service" && tab !== "service" && waitingCustomers > 0 && <span className="pip">{waitingCustomers}</span>}
-            </button>
-          ))}
-        </nav>
-      </div>
-      <main className="wrap">
-        {/* The service screen has its own ticker inside its grid; elsewhere it floats over the page, so nothing jumps. */}
-        {!isServing && (
-          // Over a dialog (the day's receipt, the challenge score), messages go to the top, clear of its buttons.
-          <div className={`toast-float${(state.phase === "summary" && state.summary) || state.challengeResult ? " on-top" : ""}`}>
-            <MessageTicker toasts={state.toasts} dispatch={dispatch} />
-          </div>
-        )}
-        <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
-      </main>
-      {state.phase === "summary" && state.summary && <DaySummary
-          summary={state.summary}
-          pizzeriaName={state.name}
-          shownEventId={state.summary.event ? shownEvent(state, state.summary.event) : undefined}
-          onNextDay={startNextDay}
-        />}
-      <SecretPad pad={secretPad} />
-      {state.challengeResult && <ChallengeResult result={state.challengeResult} best={state.dailyChallenge?.best ?? 0} dispatch={dispatch} />}
+      <MultiplayerProvider state={state} dispatch={dispatch} onMatchStart={showService}>
+        <GameShell state={state} dispatch={dispatch} tab={tab} setTab={setTab} />
+      </MultiplayerProvider>
     </I18nProvider>
   );
 };

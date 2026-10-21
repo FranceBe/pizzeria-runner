@@ -1151,3 +1151,68 @@ button, .pan { touch-action: manipulation; }
 .receipt-table { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 99px; font-size: 10.5px; font-weight: 700;
   color: var(--tb); border: 1px solid var(--tb); vertical-align: 1px; white-space: nowrap; }
 @media (max-width: 700px) { .press-quote { text-align: left; } }
+
+/* Multiplayer tab (see views/MultiplayerView.tsx) */
+.mp { display: flex; flex-direction: column; gap: 12px; margin: 0 auto; }
+.mp .sub, .mp .hint { margin: 0; }
+.mp-field { display: flex; flex-direction: column; gap: 4px; }
+.mp-join { display: flex; align-items: flex-end; gap: 8px; }
+.mp-code-input { font-family: ui-monospace, Menlo, monospace; font-size: 20px; letter-spacing: .3em; text-transform: uppercase; }
+.mp-code-box { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface2); border: 2px dashed var(--line); }
+.mp-code { flex: 1; font-family: ui-monospace, Menlo, monospace; font-size: 34px; font-weight: 800; letter-spacing: .25em; color: var(--accent); }
+.mp-players, .mp-podium { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mp-player, .mp-podium li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface2);
+  border-left: 4px solid var(--tb); }
+.mp-player.is-you, .mp-podium li.is-you { background: color-mix(in srgb, var(--tb) 12%, var(--surface2)); }
+.mp-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--tb); flex: none; }
+.mp-host { margin-left: 6px; font-size: 11px; }
+.mp-rank { width: 24px; text-align: center; }
+.mp-score { font-weight: 800; white-space: nowrap; }
+.mp-status { margin: 0; font-weight: 800; font-size: 18px; text-align: center; }
+.mp-countdown { margin: 0; font-family: var(--f-display); font-size: 32px; color: var(--accent); text-align: center; }
+.mp-error { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft);
+  border-left: 4px solid var(--accent); font-weight: 600; }
+.mp-error > :first-child { flex: 1; }
+.mp-podium li { font-size: 16px; }
+.mp-podium { margin: 10px 0; text-align: left; }
+.mp-create { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.mp-mode { margin: 0; font-weight: 700; color: var(--muted); }
+.mp-team { margin: 6px 0 10px; font-weight: 800; font-size: 18px; }
+/* Co-op: the order the other player is making wears their colour and name */
+.ticket.partner-pick { outline: 3px dashed var(--tb); outline-offset: -3px; }
+.partner-badge { position: absolute; left: 6px; top: 3px; z-index: 2; padding: 0 8px; border-radius: 99px; font-size: 10.5px; font-weight: 800;
+  color: #fff; background: var(--tb); white-space: nowrap; max-width: calc(100% - 84px); overflow: hidden; text-overflow: ellipsis; }
+/* The three modes, side by side on a wide screen, stacked on a phone */
+.mp { max-width: 980px; }
+.mp-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 10px; align-items: start; }
+.mp-mode-card { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--line); }
+.mp-mode-card .btn { align-self: flex-start; }
+.mp-mode-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; }
+.mp-sub { margin: 4px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.mp-duos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mp-duo { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: var(--surface); }
+.duo-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px 12px; border-radius: 10px;
+  background: var(--gold-soft); border-left: 4px solid var(--gold); font-size: 14px; }
+/* The service screen is sized to the window: the banner stays out of it (the partner's name is on their ticket) */
+html.svc-mode .duo-banner { display: none; }
+.mode-duo .mp-join { flex-direction: column; align-items: stretch; }
+.mode-duo .mp-join .btn { align-self: flex-start; }
+
+/* Dark theme contrast fixes */
+/* Market crates: their buttons are labels on the wood, light in both themes (they used to turn dark, text and all) */
+.crate-btns .btn, .crate-btns .btn:hover:not(:disabled) { background: #fff8ec; color: #2e1d0e; border-color: rgba(46, 29, 14, .25); }
+.crate-btns .btn:disabled { background: rgba(255, 248, 236, .55); color: rgba(46, 29, 14, .6); opacity: 1; }
+/* The neighbourhood festival banner had no dark version: pale text on a pale pink */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ev-fete { --ev-bg: #33202c; --ev-edge: #e28cc0; }
+  /* A disabled main button: grey with readable text, rather than a dark red with dark text */
+  :root:not([data-theme="light"]) .btn.primary:disabled { background: var(--surface2); border-color: var(--line); color: var(--muted); opacity: 1; }
+}
+:root[data-theme="dark"] .ev-fete { --ev-bg: #33202c; --ev-edge: #e28cc0; }
+:root[data-theme="dark"] .btn.primary:disabled { background: var(--surface2); border-color: var(--line); color: var(--muted); opacity: 1; }
+/* A duo pizzeria on the sign, so it is never mistaken for one's own */
+.duo-badge { display: inline-block; margin-left: 10px; padding: 2px 10px; border-radius: 99px; vertical-align: middle;
+  font-family: var(--f-body); font-size: 13px; font-weight: 800; letter-spacing: .02em; background: var(--gold); color: #2a1e05; }
+html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; }
+.mp-duo { flex-wrap: wrap; }
+.mp-duo > .grow { min-width: 180px; }

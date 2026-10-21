@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server:dev": "npm --prefix server run dev",
     "dev:phone": "vite --host",
     "build": "vite build",
     "preview": "vite preview --host",

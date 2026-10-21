@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type TabId = "service" | "market" | "menu" | "upgrades" | "journal" | "settings";
+export type TabId = "service" | "market" | "menu" | "upgrades" | "journal" | "multi" | "settings";
 
 // Line icons for the tabs, drawn with currentColor so they follow the tab's text colour.
 const ICON_PATHS: Record<TabId, ReactNode> = {
@@ -39,6 +39,15 @@ const ICON_PATHS: Record<TabId, ReactNode> = {
     <>
       <path d="M4 20.5h16" />
       <path d="M7.5 17v-4M12 17V7M16.5 17v-6.5" strokeWidth="3" />
+    </>
+  ),
+  // Two people: playing with friends
+  multi: (
+    <>
+      <circle cx="8.5" cy="8" r="3" />
+      <path d="M3 19.5c.4-3.3 2.7-5.5 5.5-5.5s5.1 2.2 5.5 5.5" />
+      <circle cx="16.5" cy="9" r="2.5" />
+      <path d="M15 14.3c.5-.2 1-.3 1.5-.3 2.4 0 4.2 1.9 4.5 4.8" />
     </>
   ),
   // Sliders

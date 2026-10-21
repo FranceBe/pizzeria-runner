@@ -21,6 +21,8 @@ interface OrderTicketProps {
   table?: TableProgress;
   /** How full the barman has poured this customer's drink, from 0 to 1, while he is on it. */
   pour?: number;
+  /** Co-op: the other player is working on this order. */
+  partner?: { name: string; color: number };
   onSelect: () => void;
 }
 
@@ -63,13 +65,20 @@ const ticketClassName = (customer: Customer, table: TableProgress | undefined): 
   return "ticket";
 };
 
-export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, board, table, pour, onSelect }: OrderTicketProps) => {
+export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, board, table, pour, partner, onSelect }: OrderTicketProps) => {
   const t = useTranslation();
   const mood = moodForWait(customer.waitedSeconds);
   const expressSecondsLeft = Math.ceil(DELIVERY_EXPRESS_SECONDS - customer.waitedSeconds);
   const hasExpress = Boolean(customer.delivery) && expressSecondsLeft > 0;
   return (
-    <button className={ticketClassName(customer, table)} aria-pressed={isSelected} onClick={onSelect} title={customer.critic ? t("service.criticTitle") : customer.celebrity ? t("service.celebrityTitle") : undefined}>
+    <button
+      className={`${ticketClassName(customer, table)}${partner ? ` partner-pick tb-${partner.color}` : ""}`}
+      aria-pressed={isSelected}
+      onClick={onSelect}
+      title={customer.critic ? t("service.criticTitle") : customer.celebrity ? t("service.celebrityTitle") : undefined}
+    >
+      {/* Co-op: the other player is on this one, so it isn't made twice. */}
+      {partner && <span className="partner-badge">{t("service.partnerPick", { name: partner.name })}</span>}
       <span className="price">{t.money(customer.price)}</span>
       <div className="who">
         {customer.delivery ? <Scooter /> : <CustomerFace customer={customer} mood={mood} />}

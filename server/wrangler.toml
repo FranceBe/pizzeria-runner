@@ -1,0 +1,16 @@
+# The multiplayer server (see README, "Multiplayer"). Free plan: SQLite-backed Durable Objects.
+name = "forno-lento-rooms"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+# Where the game is served from. For a test on a phone on the same Wi-Fi, see .dev.vars.example.
+ALLOWED_ORIGINS = "https://francebe.github.io,http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173"

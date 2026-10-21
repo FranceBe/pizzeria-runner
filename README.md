@@ -303,6 +303,56 @@ the broken save is kept aside in `localStorage` under `forno-lento-broken-save`.
 If you change the shape of the saved state, bump `SAVE_VERSION` in `game/state.ts` and add the conversion
 to `migrateSave`, so existing games still load.
 
+## Multiplayer
+
+The "Multiplayer" tab: one player creates a room and reads out its four-letter code, the others join with it, and the
+host starts. No accounts: a nickname and a room code. Nothing is at stake for anyone's own pizzeria.
+
+- **Challenge** (2 to 4 players): everyone plays the same customers on the same 2-minute clock, each on their own phone,
+  like the daily challenge, with the others' scores in the message line and a podium at the end.
+- **Co-op** (2 players): one kitchen for two, run on the host's phone and apart from both players' pizzerias (two ovens
+  of two pizzas, the challenge's recipes, endless pans). Each has their own board; the order the other one is making
+  wears their colour and name, so the same pizza isn't made twice. One team score at the end. The host's phone sends
+  the kitchen to the other one a few times a second, and the other one's moves come back to it (`src/multiplayer/coop.ts`).
+- **Duo pizzeria** (2 players): a whole pizzeria run by two, day after day, like Minecraft's worlds. It is kept in the
+  host's browser, apart from the solo game (`src/multiplayer/duoSaves.ts`), and the partner's browser keeps a copy at
+  each new day and when the session ends, so either one can host it next time with the most recent copy. While a duo
+  pizzeria is open, the header (with a "🤝 Duo" badge on the sign) and the service, market, menu, upgrades and journal
+  tabs show it; the settings and multiplayer tabs stay the player's own. Both cook on their own board, serve drinks
+  and restock; the host makes the big decisions (upgrades, the menu, suppliers, opening, the next day), and the
+  partner is told so if they try. There is no clock: it stays open as long as the host keeps it open, and both need
+  to be there to play it (two copies played apart would drift away from each other).
+
+Every move the other phone sends is checked on the host's, its kind and its values (`isCoopMove`, `isPartnerDuoMove`):
+anything a button of the game couldn't send, like buying -1000 mozzarellas, is ignored.
+
+It needs a small server, in `server/`: a Cloudflare Worker with one Durable Object per room. A room code is the name of
+its Durable Object, and Cloudflare runs exactly one per name, handling one request at a time: two rooms can never share
+a code. Rooms close after 10 minutes without activity; a finished room's code stays blocked 10 more minutes, so a late
+player gets "this match is over" rather than strangers' new room. Each player is limited to 10 messages a second, and
+only the game's own addresses may use the server (`ALLOWED_ORIGINS` in `server/wrangler.toml`).
+
+**Try it locally**
+
+```bash
+cd server && npm install && cd ..
+npm run server:dev   # the server, on http://localhost:8787
+npm run dev          # the game, which uses that server in development
+```
+
+Open the game in two windows (or a private one) and play against yourself. For a phone on the same Wi-Fi, run
+`npm run dev -- --host`, copy `server/.dev.vars.example` to `server/.dev.vars` so the server accepts any address, and
+give the game the server's address on your network: `VITE_MULTIPLAYER_URL=http://192.168.x.x:8787 npm run dev -- --host`.
+
+**Put it online** (Cloudflare's free plan: past its daily quota, requests fail until the next day, nothing is billed)
+
+1. `cd server && npx wrangler login`, then `npx wrangler deploy`. It prints the server's address, like
+   `https://forno-lento-rooms.<your-subdomain>.workers.dev`.
+2. Give that address to the game: in GitHub, Settings > Secrets and variables > Actions > Variables, add
+   `VITE_MULTIPLAYER_URL` with it. The deployment (`.github/workflows/deploy.yml`) passes it to the build, which also
+   adds it to the page's Content-Security-Policy. The next push to `main` goes live with multiplayer.
+3. Without that variable, the tab just says multiplayer is coming: the game never depends on the server.
+
 ## Privacy and security
 
 - Nothing about the player leaves the browser: the game and its saves live in `localStorage`, and save codes are only

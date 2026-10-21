@@ -29,8 +29,16 @@ const drawFrom = <T>(challenge: Challenge, list: readonly T[]): T => list[Math.f
 // Savoury classics only: every player gets the same four, whatever they have unlocked.
 const CHALLENGE_RECIPES = CLASSIC_RECIPES.filter((classic) => !classic.signatureLevel && !classic.festival && !isDessert(classic.ingredients));
 
-export const createChallenge = (date: string): Challenge => {
-  const challenge: Challenge = { secondsLeft: CHALLENGE_SECONDS, score: 0, date, seed: hashString(`forno-lento:${date}`), menu: [], happy: 0 };
+export const createChallenge = (date: string, multiplayer = false): Challenge => {
+  const challenge: Challenge = {
+    ...(multiplayer ? { multiplayer } : {}),
+    secondsLeft: CHALLENGE_SECONDS,
+    score: 0,
+    date,
+    seed: hashString(`forno-lento:${date}`),
+    menu: [],
+    happy: 0,
+  };
   const pool = [...CHALLENGE_RECIPES];
   while (challenge.menu.length < MENU_SIZE && pool.length) {
     const [picked] = pool.splice(Math.floor(draw(challenge) * pool.length), 1);

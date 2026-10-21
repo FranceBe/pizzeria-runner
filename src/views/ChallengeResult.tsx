@@ -2,10 +2,54 @@ import { useState } from "react";
 import { Overlay } from "../components/Overlay";
 import type { ChallengeResult as Result, Dispatch } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
+import { useMultiplayer } from "../multiplayer/MultiplayerContext";
+import { ranking } from "./MultiplayerView";
 
 // "2026-10-17" → "17/10" in French, "10/17" in English.
 const shortDate = (date: string, language: string): string =>
   new Date(`${date}T12:00:00`).toLocaleDateString(language, { day: "numeric", month: "numeric" });
+
+// After a match against friends: the podium, filled in as the others' clocks run out too.
+const MatchResult = ({ result, dispatch }: { result: Result; dispatch: Dispatch }) => {
+  const t = useTranslation();
+  const { room, you } = useMultiplayer();
+  const players = room ? ranking(room) : [];
+  const everyoneDone = room?.players.every((player) => player.done) ?? true;
+  // Co-op: one kitchen, one score for the team.
+  if (result.coop) {
+    return (
+      <Overlay label={t("multi.teamScore")} onClose={() => dispatch({ type: "dismissChallengeResult" })}>
+        <div className="card pad challenge-result">
+          <h2 className="h">{t("multi.teamScore")}</h2>
+          <div className="challenge-score">{result.score}</div>
+          <div className="hint">{t("challenge.points")} · {t("challenge.served", { count: result.served })}</div>
+          <p className="mp-team">{(room?.players ?? []).map((player) => player.name).join(" & ")}</p>
+          <button className="btn primary" onClick={() => dispatch({ type: "dismissChallengeResult" })}>{t("challenge.close")}</button>
+        </div>
+      </Overlay>
+    );
+  }
+  return (
+    <Overlay label={t("multi.results")} onClose={() => dispatch({ type: "dismissChallengeResult" })}>
+      <div className="card pad challenge-result">
+        <h2 className="h">{t("multi.results")}</h2>
+        <div className="challenge-score">{result.score}</div>
+        <div className="hint">{t("challenge.points")} · {t("challenge.served", { count: result.served })}</div>
+        <ol className="mp-podium">
+          {players.map((player, index) => (
+            <li key={player.id} className={`tb-${player.color}${player.id === you ? " is-you" : ""}`}>
+              <span>{["🥇", "🥈", "🥉"][index] ?? `${index + 1}.`}</span>
+              <strong className="grow">{player.id === you ? `${player.name} (${t("multi.you")})` : player.name}</strong>
+              <span>{player.done ? t("multi.points", { score: player.score }) : "…"}</span>
+            </li>
+          ))}
+        </ol>
+        {!everyoneDone && <p className="hint">{t("multi.waitingOthers")}</p>}
+        <button className="btn primary" onClick={() => dispatch({ type: "dismissChallengeResult" })}>{t("challenge.close")}</button>
+      </div>
+    </Overlay>
+  );
+};
 
 // Shown when the daily challenge's clock runs out, with a way to brag about it.
 export const ChallengeResult = ({ result, best, dispatch }: { result: Result; best: number; dispatch: Dispatch }) => {
@@ -32,6 +76,7 @@ export const ChallengeResult = ({ result, best, dispatch }: { result: Result; be
     }
   };
 
+  if (result.multiplayer) return <MatchResult result={result} dispatch={dispatch} />;
   return (
     <Overlay label={t("challenge.dialog")} onClose={() => dispatch({ type: "dismissChallengeResult" })}>
       <div className="card pad challenge-result">

@@ -1,0 +1,3 @@
+# Copy to .dev.vars to let any address use the local server (`npm run dev` here), e.g. a phone on the same Wi-Fi
+# opening the game at http://192.168.x.x:5173. Never used in production.
+ALLOWED_ORIGINS="*"

@@ -49,3 +49,35 @@ describe("daily challenge", () => {
     expect(localDate(new Date(2026, 0, 5, 23, 30))).toBe("2026-01-05");
   });
 });
+
+describe("a match against friends", () => {
+  const SEED = "room-seed-1234";
+  const finished = (state: GameState) => play(state, ...Array.from({ length: 125 }, () => ({ type: "tick", seconds: 1 }) as const));
+
+  it("gives every player the same customers from the room's seed, even on their very first game", () => {
+    const newcomer = makeState();
+    expect(newcomer.settings.tutorialDone).toBe(false);
+    const a = play(newcomer, { type: "startChallenge", date: SEED, multiplayer: true });
+    const b = play(makeState({ money: 999, xp: 3000, settings: { ...ready().settings } }), { type: "startChallenge", date: SEED, multiplayer: true });
+    expect(a.phase).toBe("service");
+    expect(serviceOf(a).challenge?.multiplayer).toBe(true);
+    expect(firstOrders(a)).toEqual(firstOrders(b));
+    // The daily challenge still waits for the tutorial.
+    expect(play(makeState(), { type: "startChallenge", date: DATE }).phase).toBe("prep");
+  });
+
+  it("has no pause: everyone shares the clock", () => {
+    const state = play(ready(), { type: "startChallenge", date: SEED, multiplayer: true }, { type: "togglePause" });
+    expect(serviceOf(state).paused).toBeFalsy();
+  });
+
+  it("ends like the daily challenge, without counting as one", () => {
+    const before = ready();
+    const state = finished(play(before, { type: "startChallenge", date: SEED, multiplayer: true }));
+    expect(state.phase).toBe("prep");
+    expect(state.challengeResult).toMatchObject({ multiplayer: true, date: SEED, isNewBest: false });
+    expect(state.dailyChallenge).toEqual(before.dailyChallenge);
+    expect(state.bestChallengeScore).toBe(before.bestChallengeScore);
+    expect(state.lifetime.dailyChallenges).toBe(before.lifetime.dailyChallenges);
+  });
+});

@@ -94,7 +94,7 @@ describe("online reviews", () => {
       </I18nProvider>,
     );
     expect(html).toContain("In the papers");
-    expect(html).toContain("Le Petit Gourmet");
+    expect(html).toContain("La Gazette du Four");
     expect(html).toContain("Day 1 · Food critic");
     expect(html).toContain("— Mme Sato");
   });

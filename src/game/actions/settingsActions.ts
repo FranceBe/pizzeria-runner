@@ -17,6 +17,10 @@ export const settingsActions = {
     state.settings.theme = theme;
   },
 
+  setPlayerName(state, { name }) {
+    state.settings.playerName = name.slice(0, 16);
+  },
+
   // Volumes from 0 to 1. Moving a slider also unmutes.
   setVolume(state, { channel, volume }) {
     const level = Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 0));
