@@ -356,10 +356,13 @@ give the game the server's address on your network: `VITE_MULTIPLAYER_URL=http:/
 ## Privacy and security
 
 - Nothing about the player leaves the browser: the game and its saves live in `localStorage`, and save codes are only
-  copied and pasted by hand.
+  copied and pasted by hand. In multiplayer, only a nickname, a room code and scores (or the shared kitchen) go through
+  the server, and a room is forgotten minutes after it ends.
+- The fonts (Figtree, Shrikhand, Caveat, all under the SIL Open Font License) ship with the game (`src/fonts.ts`, from
+  Fontsource), rather than being loaded from Google: no visitor's address goes to a font service.
 - Visits are counted with Cloudflare Web Analytics (the script at the end of `index.html`): no cookies, no personal
   data, no tracking across sites.
-- Built versions carry a Content-Security-Policy (see `vite.config.ts`): the page may only load its own files, Google
-  Fonts and the analytics script, and only send data to itself and Cloudflare's analytics. It is added at build time,
+- Built versions carry a Content-Security-Policy (see `vite.config.ts`): the page may only load its own files and the
+  analytics script, and only send data to itself, Cloudflare's analytics and the multiplayer server. It is added at build time,
   since the dev server needs an inline script for hot reload. A new third-party resource has to be added there too.
 - The page never inserts HTML from strings: everything shown, the pizzeria's name included, goes through React.

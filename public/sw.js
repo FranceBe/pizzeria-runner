@@ -1,10 +1,10 @@
 // Service worker: makes the game installable and playable offline.
 // The build (see vite.config.ts) stamps a build id and the list of built files below,
-// so each deployment installs a fresh cache and drops the previous one.
+// so each deployment installs a fresh cache and drops the previous one (and the Google Fonts cache of older versions:
+// the fonts now ship with the game, cached with its other files).
 const BUILD_ID = "__BUILD_ID__";
 const BUILT_FILES = JSON.parse('__BUILT_FILES__');
 const CACHE = `forno-lento-${BUILD_ID}`;
-const FONT_CACHE = "forno-lento-fonts";
 const PRECACHE = ["./", "manifest.webmanifest", "icon.svg", "icon-192.png", "apple-touch-icon.png", ...BUILT_FILES];
 
 self.addEventListener("install", (event) => {
@@ -15,12 +15,10 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== FONT_CACHE).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
-
-const isFont = (url) => url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -41,25 +39,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Fonts never change: the cache first.
-  if (isFont(url)) {
-    event.respondWith(
-      caches.open(FONT_CACHE).then((cache) =>
-        cache.match(request).then(
-          (cached) =>
-            cached ||
-            fetch(request).then((response) => {
-              void cache.put(request, response.clone());
-              return response;
-            }),
-        ),
-      ),
-    );
-    return;
-  }
-
   // Built files have a hash in their name: the cache first, the network as a fallback. Files loaded on demand
-  // (the sounds) are kept as they come, so they work offline too without weighing on the first visit.
+  // (the sounds, the fonts) are kept as they come, so they work offline too without weighing on the first visit.
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then(

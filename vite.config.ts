@@ -41,15 +41,16 @@ const serviceWorkerManifest = (): Plugin => {
   };
 };
 
-// What the built page may load: its own files, Google Fonts, and the Cloudflare analytics beacon; nothing else, so an
+// What the built page may load: its own files (fonts included) and the Cloudflare analytics beacon; nothing else, so an
 // injected script or a tampered dependency can't load code or send data anywhere else. GitHub Pages can't send headers,
 // so it goes in a meta tag. Build only: the dev server injects an inline script for hot reload.
 const contentSecurityPolicyFor = (multiplayerUrl: string): string => [
   "default-src 'self'",
   "script-src 'self' https://static.cloudflareinsights.com",
   // React sets style attributes (progress bars, colours).
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  // The fonts ship with the game (src/fonts.ts); the smallest are inlined by the build.
+  "font-src 'self' data:",
   // The day's receipt is drawn on a canvas and shared as an image.
   "img-src 'self' data: blob:",
   // The multiplayer server, when this build has one: its address, and the same for its WebSockets.
