@@ -141,8 +141,8 @@ describe("group orders", () => {
 
 describe("incidents", () => {
   it("power cut: one oven, one pizza at a time", () => {
-    const state = makeState({ event: "powerCut", upgrades: { ...makeState().upgrades, oven: 3, oven2: 2 } });
-    expect(ovensOf(state)).toEqual([{ index: 0, slots: 1, bakeSeconds: 2.2 }]);
+    const state = makeState({ event: "powerCut", upgrades: { ...makeState().upgrades, oven: 2, oven2: 2 } });
+    expect(ovensOf(state)).toEqual([{ index: 0, slots: 1, bakeSeconds: 3, isWoodFired: false }]);
   });
 
   it("late delivery: the ingredient can't be used until it arrives, then comes with free portions", () => {

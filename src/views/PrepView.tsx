@@ -16,6 +16,7 @@ import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
 import { QuestCard } from "./QuestCard";
 import { WEEKLY_BONUS, WEEKLY_REWARD } from "../data/weekly";
+import { shownEvent } from "../game/service";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -30,14 +31,15 @@ const MAX_REGULARS_SHOWN = 5;
 
 const EventBanner = ({ state }: { state: GameState }) => {
   const t = useTranslation();
+  const shownEventId = state.event ? shownEvent(state, state.event) : null;
   return (
     <>
-      {state.event && (
+      {state.event && shownEventId && (
         <div className={`event-banner ev-${state.event}`} role="note">
           <span className="event-label">{t("prep.today")}</span>
-          <strong>{t(`events.${state.event}.name`)}</strong>
+          <strong>{t(`events.${shownEventId}.name`)}</strong>
           <span className="event-d">
-            {t(`events.${state.event}.describe`)}
+            {t(`events.${shownEventId}.describe`)}
             {state.event === "lateDelivery" && state.lateIngredient && ` ${t("prep.lateIngredient", { id: state.lateIngredient })}`}
           </span>
         </div>

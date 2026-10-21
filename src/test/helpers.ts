@@ -1,7 +1,7 @@
 import type { IngredientId } from "../data/ingredients";
 import { gameReducer } from "../game/reducer";
 import { createInitialState } from "../game/state";
-import type { Customer, CustomerBookEntry, GameAction, GameState, Service } from "../game/types";
+import type { Customer, CustomerBookEntry, GameAction, GameState, Recipe, Service } from "../game/types";
 import type { JsonObject } from "../utils/saveCode";
 
 export const MARGHERITA_INGREDIENTS: readonly IngredientId[] = ["pate", "tomate", "mozza", "basilic"];
@@ -53,10 +53,20 @@ export const makeCustomer = (overrides: Partial<Customer> = {}): Customer => {
   };
 };
 
-// Unless told otherwise, every visit was for a margherita: four visits make a regular.
+// Unless told otherwise, every visit was for a margherita, with a choice on the menu; three visits or more make a regular.
 export const makeBookEntry = (overrides: Partial<CustomerBookEntry> = {}): CustomerBookEntry => {
   const visits = overrides.visits ?? 1;
-  return { skin: "#e0ac83", hair: "#5b3a22", hairStyle: 1, visits, orders: { margherita: visits }, ...overrides };
+  const orders = { margherita: visits };
+  return { skin: "#e0ac83", hair: "#5b3a22", hairStyle: 1, visits, orders, choiceOrders: orders, regular: visits >= 3, ...overrides };
+};
+
+// A menu with a real choice (three pizzas) and these names in the neighbourhood: what it takes to become a regular.
+export const withChoiceAndLocals = (state: GameState, ...locals: string[]): GameState => {
+  const custom = (id: `c-${string}`, name: string, ingredients: IngredientId[]): Recipe =>
+    ({ id, name, ingredients, price: 7, classic: false, custom: true, onMenu: true, newUntil: 0 });
+  state.recipes.push(custom("c-rossa", "Rossa", ["pate", "tomate", "basilic"]), custom("c-bianca", "Bianca", ["pate", "mozza", "basilic"]));
+  state.locals = [...state.locals, ...locals];
+  return state;
 };
 
 // Round-trips a value through JSON, the way saves are stored.

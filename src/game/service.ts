@@ -1,5 +1,6 @@
+import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
-import { BAKE_SECONDS, BARMAN_LEVEL, EXTRA_OVEN_KEYS, OVEN_SLOTS } from "../data/progression";
+import { BAKE_SECONDS, BARMAN_LEVEL, EXTRA_OVEN_KEYS, OVEN_SLOTS, WOOD_FIRED_STAGE } from "../data/progression";
 import { BATCH_ID, batchItemFor } from "./batch";
 import { marketPrice } from "./events";
 import { haveSameIngredients } from "./pizza";
@@ -13,18 +14,38 @@ export interface Oven {
   index: number;
   slots: number;
   bakeSeconds: number;
+  isWoodFired: boolean;
 }
 
-// The first oven, then each extra oven built: a new oven starts like the first one did, and improves the same way.
-export const ovensOf = (state: GameState): Oven[] => {
-  const first = { index: 0, slots: OVEN_SLOTS[state.upgrades.oven], bakeSeconds: BAKE_SECONDS[state.upgrades.oven] };
-  // Power cut: the first oven alone, one pizza at a time.
-  if (state.event === "powerCut") return [{ ...first, slots: 1 }];
-  const extras = EXTRA_OVEN_KEYS.map((key) => state.upgrades[key])
+const ovenAt = (index: number, stage: number): Oven => ({
+  index,
+  slots: OVEN_SLOTS[stage],
+  bakeSeconds: BAKE_SECONDS[stage],
+  isWoodFired: stage >= WOOD_FIRED_STAGE,
+});
+
+// Every oven built, before any incident: the first one, then the extra one, which starts like the first one did.
+const builtOvens = (state: GameState): Oven[] => [
+  ovenAt(0, state.upgrades.oven),
+  ...EXTRA_OVEN_KEYS.map((key) => state.upgrades[key])
     .filter((level) => level > 0)
-    .map((level, position) => ({ index: position + 1, slots: OVEN_SLOTS[level - 1], bakeSeconds: BAKE_SECONDS[level - 1] }));
-  return [first, ...extras];
+    .map((level, position) => ovenAt(position + 1, level - 1)),
+];
+
+export const ovensOf = (state: GameState): Oven[] => {
+  const ovens = builtOvens(state);
+  if (state.event !== "powerCut") return ovens;
+  // Power cut (or no wood delivered): one oven, one pizza at a time. A wood-fired one keeps going without power.
+  const working = ovens.find((oven) => oven.isWoodFired) ?? ovens[0];
+  return [{ ...working, slots: 1 }];
 };
+
+// The power cut incident, told as a missing wood delivery when every oven burns wood.
+export const isWoodShortage = (state: GameState): boolean => builtOvens(state).every((oven) => oven.isWoodFired);
+
+// How a day's incident is told to the player.
+export const shownEvent = (state: GameState, event: DayEventId): DayEventId | "woodShortage" =>
+  event === "powerCut" && isWoodShortage(state) ? "woodShortage" : event;
 
 export const ovenSlots = (state: GameState): number => ovensOf(state).reduce((total, oven) => total + oven.slots, 0);
 

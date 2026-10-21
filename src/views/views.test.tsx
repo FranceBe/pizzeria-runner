@@ -67,7 +67,7 @@ const lateKitchen = (): GameState => {
       makeCustomer({ id: "t2", name: "Enzo", tableId: "tab", diet: "veggie", drink: "limonade", drinkServed: true }),
       makeCustomer({ id: "b1", name: "Giulia", birthday: true }),
     ],
-    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, terrasse: 2, livraison: 1, bar: 2, oven2: 2, oven3: 1, annexe: 2 } },
+    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 2, livraison: 1, bar: 2, oven2: 2, annexe: 2 } },
   );
   serviceOf(state).tables = { tab: { size: 2, served: 0, allHappy: true, color: 1 } };
   serviceOf(state).oven = [{ id: "o", ovenIndex: 1, ingredients: MARGHERITA_INGREDIENTS, bakedSeconds: 1, bakeDuration: 3 }];
@@ -104,7 +104,7 @@ describe.each(LANGUAGES)("views in %s", (language) => {
     const late = lateGameState();
     return [
       { name: "Header with pops", element: <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} /> },
-      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } }} dispatch={noop} /> },
+      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } }} dispatch={noop} /> },
       { name: "Prep with regulars", element: <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} /> },
       { name: "Prep when broke", element: <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} /> },
       { name: "Service in progress", element: serviceScreen(serviceInProgress()) },
@@ -214,7 +214,7 @@ describe("views", () => {
 
   it("decorates the storefront as upgrades are bought", () => {
     expect(render(<Header state={makeState()} dispatch={noop} />)).not.toContain("storefront");
-    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } })} dispatch={noop} />);
+    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } })} dispatch={noop} />);
     expect(upgraded.match(/decor table/g)).toHaveLength(2);
     expect(upgraded).toContain("oven-front");
     expect(upgraded).toContain('class="lights"');
@@ -274,7 +274,7 @@ describe("views", () => {
 
   it("shows every oven, the bar, tables, diets and birthdays during service", () => {
     const html = render(serviceScreen(lateKitchen()), "en");
-    expect(html).toContain("Oven 3");
+    expect(html).toContain("Oven 2");
     expect(html).toContain("Table of 2");
     expect(html).toContain("Vegetarian");
     expect(html).toContain("Birthday!");

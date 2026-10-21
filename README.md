@@ -94,10 +94,12 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 
 - **The neighbourhood**: a name is a person, and everyone keeps their look (hair, accessories). About twenty people live
   nearby and come most of the time; everyone else passes by now and then.
-- **Regulars**: someone who has ordered the same pizza three times is a regular: they often reorder it and tip more.
-  Each has a profile in the journal: their favourite, one ingredient they never order, and a birthday. On their
-  birthday they come for their favourite and leave a €5 gift. A regular who stays away more than 10 days is lost from
-  sight, and a regular again as soon as they come back.
+- **Regulars**: someone from the neighbourhood who has ordered the same pizza three times, each time with at least
+  three pizzas on the menu, becomes a regular: they often reorder it and tip more. There are at most eight at a time,
+  so their usual stays something you can remember. Each has a profile in the journal: their favourite, one ingredient
+  they never order, and a birthday. On their birthday they come for their favourite and leave a €5 gift. A regular who
+  stays away more than 10 days is lost from sight, which makes room for someone else; back again, they may become one
+  again.
 - **"The usual"**: a regular ordering their favourite sometimes just says "the usual". The ticket hides the recipe and
   the help is off: remember it for a bonus, or tap "Remind me…" to see it, without the bonus.
 - **Back for dessert**: with a dessert pizza on the menu, a customer served happy sometimes comes back later in the
@@ -126,7 +128,7 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   party (many more customers), sunshine (more customers, many more with a terrace) and the food critic, who comes in
   once that evening: serve them quickly for a glowing review and lots of reputation.
 - **Incidents**, from day 5, each with something in return: a power cut (one oven, one pizza at a time, but bigger
-  tips), a late delivery (one ingredient arrives a minute into the service, with free portions), a health inspection
+  tips; a wood-fired oven keeps going, and when every oven burns wood it is a missing wood delivery instead), a late delivery (one ingredient arrives a minute into the service, with free portions), a health inspection
   (a day without binning anything earns lots of reputation) and a scooter strike (no deliveries, more people eating in).
 - **Neighbourhood quests**, from day 4. **Group orders**: in the morning, someone books a big order for tonight
   (the football club wants 3 Regina and 2 Margherita…). A ticket comes in a little after opening; make the pizzas in any
@@ -143,23 +145,37 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 
 | Upgrade | What it does |
 |---|---|
-| Wood-fired oven | More pizzas at once, faster baking |
+| Oven | Two pizzas at once, then faster baking, then wood-fired: better pizzas, a tip more likely and a little more reputation |
 | Dining room | More customers, one more order at the counter |
 | Decor | More tips (and string lights) |
 | Kitchen assistant | Rolls out fresh dough after each bake, then fades the pans the selected order doesn't need (a little, then more) |
+| Tidy prep line | The pans no pizza on tonight's menu uses go in a drawer at the end of the line: a shorter line, but a request for an ingredient off the menu means opening it |
 | Terrace | More customers, especially on sunny days |
 | Delivery | Scooter orders, with an express bonus when they leave within 45 seconds |
 | Bar | Drinks: lemonade and sparkling water, then chinotto and red wine, then a barman who serves them on his own |
-| Second and third oven | One slow slot when built, then improving like the first oven |
+| Second oven | One slow slot when built, then improving like the first oven, up to wood-fired. Two ovens of two pizzas: four at most, which is already a lot to keep up with |
 | Second address | Brings in money every evening |
+
+Any upgrade can be sold back, one level at a time and outside service, for 75% of what that level cost: for one that
+doesn't suit the way you play. The tidy prep line, a pure comfort, is sold back for its full price. The comfort
+features (the drawer, the assistant fading the pans) can also simply be switched off in Settings, for free.
 
 Once the money piles up, the pizzeria's looks can be bought too: awning colours, a neon or gold-leaf sign, wall tiles.
 
 ### The journal
 
-Accounts (profit chart, best sellers, best day, stars, best streak, completed quests), regulars' profiles, the pairings
+Accounts (profit chart, best sellers, best day, stars, best streak, completed quests), online reviews, regulars'
+profiles, the pairings
 book, and the achievements. 34 of them can be earned by playing (one stays hidden until then); the last one keeps its
 secret.
+
+**Online reviews** (on Gustoscope, a made-up site): every evening, a few customers rate the pizzeria from 1 to 5 stars.
+A quick, hot pizza earns 5; a long wait or a pizza left to cool on the pass costs stars, more or less depending on the
+customer's temper (some forgive a lot, some nothing), and the review talks about the worst of it, in the tone of its
+stars. Unhappy customers write more often than happy ones, and the overall rating counts every review ever written:
+it drops faster than it climbs back. It shows in the header as five stars, filled as far as the rating goes. Food
+critics write in the papers instead (made-up ones too), under "In the papers". Only for show: reviews and articles
+change nothing in the game.
 
 ### Daily challenge
 
@@ -215,6 +231,9 @@ npm run check       # types + lint + tests + build, like the CI
   A failure blocks the commit; `git commit --no-verify` skips it in an emergency.
 - **CI** (`.github/workflows/ci.yml`): types, lint, tests and build on every push and pull request to `main`.
 - **Deployment** (`.github/workflows/deploy.yml`): every push to `main` that passes the same checks goes live on GitHub Pages.
+- **Test game** (`src/dev/`, `npm run dev` only): Settings gets a panel to set up a game at any level, with any
+  suppliers, upgrades and secrets, to try how it plays later on. "Generate the code" gives a save code to paste in the
+  deployed game, on a phone for instance. The panel is left out of the built game.
 
 ## Where things live
 

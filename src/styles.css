@@ -281,19 +281,49 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
 .pair { font-size: 12px; font-weight: 700; color: var(--basil); }
 .clash { font-size: 12px; font-weight: 700; color: var(--accent); }
 /* Desktop and tablet: during service the screen fits the window; orders, oven and pans scroll inside their own areas */
-@media (min-width: 701px) and (min-height: 560px) {
+@media (min-width: 701px) and (min-height: 720px) {
   html.svc-mode, html.svc-mode body { height: 100%; overflow: hidden; }
   html.svc-mode #root { height: 100%; display: flex; flex-direction: column; }
   html.svc-mode main { flex: 1; min-height: 0; padding-block: 12px; }
   html.svc-mode .svc { height: 100%; grid-template-rows: auto minmax(0, 1fr) auto; }
   html.svc-mode .a-tickets, html.svc-mode .a-oven { min-height: 0; align-self: stretch; overflow-y: auto; padding: 2px 4px 4px 2px; }
-  html.svc-mode .a-peel { min-height: 0; align-self: stretch; justify-content: center; }
-  html.svc-mode .peel .pizza, html.svc-mode .peel .empty { width: clamp(110px, 26vh, 220px); }
-  html.svc-mode .a-rail { max-height: 40vh; overflow-y: auto; border-radius: 14px; }
+  html.svc-mode .a-peel { min-height: 0; align-self: stretch; justify-content: center; overflow: hidden; }
+  /* The pizza takes whatever height the board has left once its buttons are placed, never more: it used to be sized on
+     the window, and spilled out of a short board. */
+  html.svc-mode .peel-pz { flex: 1 1 0; min-height: 0; width: 100%; justify-content: center; }
+  html.svc-mode .peel .pizza, html.svc-mode .peel .empty { height: 100%; max-height: 220px; min-height: 0; width: auto; max-width: 100%; aspect-ratio: 1; }
+  html.svc-mode .peel .empty { padding: 8%; font-size: clamp(11px, 1.6vh, 14px); }
+  html.svc-mode .peel-btns, html.svc-mode .kbd-legend { flex: none; }
+  html.svc-mode .a-rail { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; border-radius: 14px; }
 }
-@media (min-width: 701px) and (max-width: 1020px) and (min-height: 560px) {
-  html.svc-mode .svc { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+/* Desktop windows too short to hold everything (under 720px high): the service scrolls like a page, with a board and
+   oven of a fixed height, the orders scrolling beside them, and the whole prep line below. */
+@media (min-width: 1021px) and (max-height: 719px) {
+  html.svc-mode main { overflow-y: auto; overscroll-behavior: contain; }
+  html.svc-mode .svc { grid-template-rows: auto 300px auto; }
+  html.svc-mode .a-tickets, html.svc-mode .a-oven { max-height: 352px; overflow-y: auto; align-self: stretch; padding: 2px 4px 4px 2px; }
+  html.svc-mode .a-peel { height: 300px; min-height: 0; justify-content: center; overflow: hidden; }
+  html.svc-mode .peel-pz { flex: 1 1 0; min-height: 0; width: 100%; justify-content: center; }
+  html.svc-mode .peel .pizza, html.svc-mode .peel .empty { height: 100%; max-height: 200px; min-height: 0; width: auto; max-width: 100%; aspect-ratio: 1; }
+  html.svc-mode .kbd-legend { display: none; }
+}
+/* Tablets and narrow windows (701–1020px): squeezing everything into the window made the rows overlap. Here the
+   service is a page that scrolls: tickets, message line, a board and oven of a fixed height, then the whole prep line. */
+@media (min-width: 701px) and (max-width: 1020px) {
+  html.svc-mode main { overflow-y: auto; overscroll-behavior: contain; }
+  html.svc-mode .svc { height: auto; grid-template-rows: auto auto clamp(240px, 38vh, 340px) auto; }
   html.svc-mode .a-tickets { overflow: visible; }
+  html.svc-mode .a-peel, html.svc-mode .a-oven { height: 100%; min-height: 0; align-self: stretch; }
+  html.svc-mode .a-oven { overflow-y: auto; }
+  html.svc-mode .a-peel { justify-content: center; overflow: hidden; }
+  html.svc-mode .peel-pz { flex: 1 1 0; min-height: 0; width: 100%; justify-content: center; }
+  html.svc-mode .peel .pizza, html.svc-mode .peel .empty { height: 100%; max-height: 220px; min-height: 0; width: auto; max-width: 100%; aspect-ratio: 1; }
+  html.svc-mode .a-rail { max-height: none; overflow: visible; }
+}
+@media (min-width: 1021px) and (max-height: 860px) and (min-height: 720px) {
+  /* Short desktop windows and tablets in landscape: a slightly shorter prep line leaves the board and oven room */
+  html.svc-mode .a-rail { max-height: 34vh; }
+  html.svc-mode .kbd-legend { display: none; }
 }
 
 /* Phone portrait: everything on one screen, only the prep line scrolls */
@@ -330,7 +360,7 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
   .ticket .chip-t { display: none; }
   .ticket-empty { padding: 10px; }
 
-  .peel { padding: 6px; gap: 5px; justify-content: space-between; border-radius: 12px; }
+  .peel { padding: 6px; gap: 6px; justify-content: center; border-radius: 12px; }
   .peel .pizza, .peel .empty { width: min(104px, 28vw); }
   .peel .empty { padding: 10px; font-size: 10.5px; line-height: 1.25; border-width: 1.5px; }
   .match { position: absolute; bottom: -2px; font-size: 11px; padding: 2px 8px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
@@ -547,7 +577,21 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
 /* ---------------------------------------------------------------
    Journal: accounts, pairings, achievements
 ---------------------------------------------------------------- */
-.journal { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 12px; align-items: start; }
+/* Journal. On a phone, one column: accounts, reviews, regulars, pairings, achievements. From a tablet up, two columns,
+   each card at its own height (the money and the pairings book on the left, what people say on the right), and the
+   achievements across the bottom. */
+.journal { display: flex; flex-direction: column; gap: 12px; }
+.journal-col { display: contents; }
+.j-accounts { order: 1; } .j-reviews { order: 2; } .j-regulars { order: 3; } .j-pairings { order: 4; } .j-achievements { order: 5; }
+.journal .regular-cards { max-height: 420px; overflow-y: auto; overscroll-behavior: contain; }
+@media (min-width: 760px) {
+  .journal { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .journal-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .j-achievements { grid-column: 1 / -1; }
+}
+@media (min-width: 1200px) {
+  .journal { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+}
 .journal-card { display: flex; flex-direction: column; gap: 10px; }
 .journal-card h3.h { margin: 6px 0 0; }
 .journal-card .sub, .journal-card .hint { margin: 0; }
@@ -709,19 +753,11 @@ header.top .top-inner { position: relative; }
 }
 /* Tickets are buttons, which centre their content (see .ticket): these keep their natural width */
 .ticket > :is(.mods, .chips, .drink-order) { align-self: flex-start; }
-/* Achievements take the full width of the journal */
-.journal > .journal-card:last-child { grid-column: 1 / -1; }
 
 /* Market: the suppliers scroll inside their card */
 .supplier-list { max-height: max(320px, calc(100vh - 300px)); overflow-y: auto; margin-right: -8px; padding-right: 8px; overscroll-behavior: contain; }
 @media (max-width: 900px) { .supplier-list { max-height: 60vh; } }
 
-/* Journal: accounts, regulars and pairings side by side at the same height (the accounts set it), achievements below */
-@media (min-width: 1000px) {
-  .journal { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
-  .journal-card.fills .fill-body { height: 0; flex-grow: 1; overflow-y: auto; }
-}
-@media (max-width: 999px) { .journal-card.fills .fill-body { max-height: 420px; overflow-y: auto; } }
 .book-page { padding: 10px; border-radius: 10px; background: var(--paper); color: var(--paper-ink);
   background-image: repeating-linear-gradient(transparent 0 27px, rgba(150, 130, 100, .18) 27px 28px); box-shadow: inset 4px 0 0 rgba(150, 100, 60, .25); }
 .book-page .pairing:not(.found) { background: rgba(255, 255, 255, .5); }
@@ -815,7 +851,9 @@ header.top .top-inner { position: relative; }
 @media (max-width: 700px) {
   /* The real visible height on phones, which changes as the address bar shows and hides */
   html.svc-mode, html.svc-mode body { height: 100dvh; }
-  .svc { --ticket-row: 128px; --work-row: clamp(150px, 27dvh, 220px);
+  /* The board needs room for its pizza, its buttons and the bar's four glasses (about 160px): no more, so the prep line
+     below gets the rest */
+  .svc { --ticket-row: 128px; --work-row: clamp(158px, 21dvh, 180px);
     grid-template-rows: var(--ticket-row) auto var(--work-row) minmax(120px, 1fr); }
 
   /* Tickets: all the same height, clipped rather than growing the row */
@@ -1029,4 +1067,81 @@ button, .pan { touch-action: manipulation; }
 }
 @media (max-width: 700px) {
   .tickets > .ticket, .table-tickets > .ticket { width: 150px; }
+}
+
+/* Dev-only test game panel (see src/dev) */
+.dev-panel { display: flex; flex-direction: column; gap: 10px; border: 2px dashed var(--gold); }
+.dev-panel .hint { margin: 0; }
+.dev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.dev-field { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; font-weight: 600; }
+.dev-field input { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
+.dev-toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.dev-code { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+
+/* The drawer (tidy prep line): a pan-sized button at the end of the line; its pans open right after it */
+.drawer-btn { justify-content: center; }
+.drawer-btn .drawer-ic { width: 60px; height: 60px; display: grid; place-items: center; border-radius: 6px; font-size: 22px; font-weight: 800;
+  color: var(--ink); background: repeating-linear-gradient(180deg, var(--surface2) 0 9px, var(--line) 9px 11px); border: 1px solid var(--line); }
+.drawer-btn[aria-expanded="true"] .drawer-ic { background: var(--gold-soft); border-color: var(--gold); }
+.drawer-btn.need .drawer-ic { outline: 3px dashed var(--gold); outline-offset: 1px; }
+.drawer-btn.on .drawer-ic { outline: 4px solid var(--basil); outline-offset: 0; }
+.pan.in-drawer svg { box-shadow: 0 0 0 2px var(--gold-soft); }
+.st-drawer .st-label { color: var(--gold); }
+@media (max-width: 700px) {
+  .a-rail .drawer-btn { overflow: visible; box-shadow: none; }
+  .a-rail .drawer-btn::before { display: none; }
+  .a-rail .drawer-btn .drawer-ic { width: 100%; height: auto; aspect-ratio: 1; }
+  .a-rail .pan.in-drawer { box-shadow: inset 0 3px 0 var(--gold); }
+  .a-rail .pan.in-drawer::before { background: var(--gold); }
+}
+
+/* Selling an upgrade back: discreet, red only on the confirming tap */
+.upgrade-actions { gap: 8px; align-items: center; }
+.sell-btn { color: var(--muted); border-color: var(--line); }
+.btn.sell-btn.danger, .btn.sell-btn.danger:hover, .btn.sell-btn.danger:focus { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.sell-later { font-size: 12px; }
+
+/* Online reviews in the journal */
+.reviews .hint { margin: 0; }
+.review-score { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 4px; }
+.review-average { font-size: 34px; font-weight: 800; line-height: 1; }
+.review-score .stars { font-size: 20px; color: var(--gold); }
+.review-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.review { padding: 8px 10px; border-radius: 10px; background: var(--surface2); }
+.review.bad { background: color-mix(in srgb, var(--accent) 8%, var(--surface2)); }
+.review-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 13.5px; }
+.review-head .stars { color: var(--gold); }
+.review-text { margin: 4px 0 0; font-size: 14px; font-style: italic; }
+
+/* The online rating in the header: five grey stars, filled in gold as far as the rating goes */
+.rating-stars { position: relative; display: inline-block; font-size: 17px; line-height: 1.2; letter-spacing: 1px; color: var(--line); white-space: nowrap; }
+.rating-fill { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: var(--gold); }
+@media (max-width: 700px) {
+  .rating-stars { font-size: 14px; letter-spacing: 0; }
+  html.svc-mode .stat-reviews { display: none; }
+}
+
+/* "In the papers": each article as a cutting from a newspaper, slightly askew */
+.press-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.press-cutting { padding: 10px 14px 12px; background: #f4eedf; color: #1f1d1a; font-family: Georgia, "Times New Roman", serif;
+  border: 1px solid #d9cfb6; box-shadow: 0 3px 8px rgba(40, 30, 10, .18); transform: rotate(-.6deg);
+  background-image: linear-gradient(rgba(255, 255, 255, .25), rgba(0, 0, 0, .03)); }
+.press-cutting:nth-child(even) { transform: rotate(.5deg); }
+.press-masthead { text-align: center; font-weight: 900; font-size: 19px; letter-spacing: .04em; text-transform: uppercase;
+  border-bottom: 3px double #3a352c; padding-bottom: 4px; line-height: 1.1; }
+.press-dateline { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 3px 0; margin-bottom: 6px;
+  border-bottom: 1px solid #3a352c; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #5b5446; }
+.press-dateline .stars { color: #a26f00; font-size: 13px; letter-spacing: 1px; }
+.press-quote { margin: 0; font-size: 16px; line-height: 1.35; font-style: italic; text-align: justify; hyphens: auto; }
+.press-byline { margin: 6px 0 0; text-align: right; font-size: 12.5px; font-variant: small-caps; letter-spacing: .05em; color: #4a4438; }
+
+/* Phone: with two ovens, they sit side by side, so the pass stays in view under them on the short work row */
+@media (max-width: 700px) {
+  .oven.multi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 6px; padding: 8px 6px 6px; border-radius: 28px 28px 10px 10px; }
+  .oven.multi > :is(h3, .oven-fire) { grid-column: 1 / -1; }
+  .oven.multi .oven-group + .oven-group { margin-top: 0; }
+  .oven.multi .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+  .oven.multi .slot { min-height: 34px; padding: 2px; }
+  .oven.multi .slot.idle { font-size: 9.5px; }
+  .oven.multi .oven-label { font-size: 8px; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }

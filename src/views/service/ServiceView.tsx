@@ -20,7 +20,8 @@ import { BarCounter } from "./BarCounter";
 import { OrderTicket } from "./OrderTicket";
 import { OvenAndPass } from "./OvenAndPass";
 import { PrepLine, type SecretJarState } from "./PrepLine";
-import type { IngredientId } from "../../data/ingredients";
+import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
+import { activeMenu } from "../../game/menu";
 import type { CoachTarget, Customer, GameState, Service } from "../../game/types";
 import type { ServiceScreenProps } from "../types";
 
@@ -95,6 +96,13 @@ const WorkBoard = ({ state, service, dispatch, selectedCustomer, target, coachTa
       </p>
     </section>
   );
+};
+
+// With the tidy prep line: the unlocked ingredients no pizza on tonight's menu uses.
+const drawerIngredients = (state: GameState): IngredientId[] => {
+  if (state.upgrades.drawer < 1 || !state.settings.useDrawer) return [];
+  const onMenu = new Set(activeMenu(state).flatMap((recipe) => recipe.ingredients));
+  return INGREDIENTS.map(({ id }) => id).filter((id) => state.unlocked[id] && !onMenu.has(id));
 };
 
 // The secret ingredients shared so far, as jars at the end of the prep line.
@@ -236,7 +244,8 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
           board={service.board}
           neededIngredients={state.settings.showHelp && target ? target.ingredients : []}
           orderIngredients={target?.ingredients ?? []}
-          fadeLevel={challenge ? 0 : Math.max(0, state.upgrades.commis - COMMIS_FADES_PANS + 1)}
+          fadeLevel={challenge || !state.settings.commisFade ? 0 : Math.max(0, state.upgrades.commis - COMMIS_FADES_PANS + 1)}
+          drawerIds={challenge ? [] : drawerIngredients(state)}
           coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}
           secrets={challenge ? [] : secretJars(state, service, dispatch)}

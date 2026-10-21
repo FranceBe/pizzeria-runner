@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { PREP_STATIONS, type IngredientId } from "../../data/ingredients";
 import { useTranslation } from "../../i18n/I18nContext";
 import { IngredientPan } from "../../components/IngredientPan";
@@ -32,6 +33,8 @@ interface PrepLineProps {
   orderIngredients?: readonly IngredientId[];
   /** 0 = no commis help; 1, 2 = the pans that order doesn't need fade more and more. */
   fadeLevel?: number;
+  /** With the tidy prep line: the pans off tonight's menu, kept in a drawer at the end of the line. */
+  drawerIds?: readonly IngredientId[];
   coachTarget: CoachTarget | null;
   onPickIngredient: (id: IngredientId) => void;
   /** Late delivery: this ingredient's pan is waiting for the delivery. */
@@ -80,46 +83,78 @@ const isCoachPan = (coachTarget: CoachTarget | null, id: IngredientId, isOnBoard
 // The row of ingredient pans along the bottom of the service screen.
 // Pans the selected order still needs get a dashed outline.
 export const PrepLine = ({
-  state, isBottomless, extraIngredients = [], board, neededIngredients, orderIngredients = [], fadeLevel = 0, coachTarget,
-  onPickIngredient, secrets = [], stillComing,
+  state, isBottomless, extraIngredients = [], board, neededIngredients, orderIngredients = [], fadeLevel = 0, drawerIds = [],
+  coachTarget, onPickIngredient, secrets = [], stillComing,
 }: PrepLineProps) => {
   const t = useTranslation();
+  const [isDrawerOpen, setDrawerOpen] = useState(false);
+  // The drawer closes once the pizza leaves the board (baked or binned), ready for the next one.
+  const isBoardEmpty = board.length === 0;
+  useEffect(() => {
+    if (isBoardEmpty) setDrawerOpen(false);
+  }, [isBoardEmpty]);
+
+  const isAvailable = (id: IngredientId) => state.unlocked[id] || extraIngredients.includes(id);
+  // Stations keep their order (dough, sauces, cheeses…); the drawer only takes pans out of them.
   const stations = PREP_STATIONS.map((station) => ({
     ...station,
-    ingredientIds: station.ingredientIds.filter((id) => state.unlocked[id] || extraIngredients.includes(id)),
+    ingredientIds: station.ingredientIds.filter((id) => isAvailable(id) && !drawerIds.includes(id)),
   })).filter((station) => station.ingredientIds.length);
+  const drawer = PREP_STATIONS.flatMap((station) => station.ingredientIds).filter((id) => isAvailable(id) && drawerIds.includes(id));
+  const isDrawerNeeded = drawer.some((id) => neededIngredients.includes(id) && !board.includes(id));
+  // Something from the drawer is on the pizza: shown on the closed drawer, so it isn't forgotten there.
+  const isDrawerUsed = drawer.some((id) => board.includes(id));
+
+  const pan = (id: IngredientId, isInDrawer = false) => {
+    const quantity = isBottomless ? FULL_PAN : state.stock[id] || 0;
+    const isComing = id === stillComing;
+    const isOnBoard = board.includes(id);
+    const isNeeded = neededIngredients.includes(id);
+    const isPushedBack = fadeLevel > 0 && orderIngredients.length > 0 && !orderIngredients.includes(id);
+    const className = panClassName({ isOnBoard, isNeeded, isPushedBack, quantity, isCoachTarget: isCoachPan(coachTarget, id, isOnBoard, isNeeded) });
+    return (
+      <button
+        key={id}
+        className={isInDrawer ? `${className} in-drawer` : className}
+        disabled={isComing || (!isOnBoard && quantity === 0)}
+        aria-pressed={isOnBoard}
+        onClick={() => onPickIngredient(id)}
+        title={isBottomless ? t.ingredient(id) : t("service.panTitle", { id, quantity })}
+      >
+        <IngredientPan id={id} quantity={quantity} />
+        <span className="pan-n">{t.ingredient(id)}</span>
+        <span className="pan-q">{isBottomless ? "∞" : quantity}</span>
+        {isComing && <span className="pan-coming">{`🚚 ${t("service.stillComing")}`}</span>}
+      </button>
+    );
+  };
 
   return (
     <section className={`rail${fadeLevel ? ` fade-${fadeLevel}` : ""}`} aria-label={t("service.prepLine")}>
       {stations.map((station) => (
         <div key={station.id} className={`station st-${station.id}`}>
           <div className="st-label">{t(`stations.${station.id}`)}</div>
-          <div className="pans">
-            {station.ingredientIds.map((id) => {
-              const quantity = isBottomless ? FULL_PAN : state.stock[id] || 0;
-              const isComing = id === stillComing;
-              const isOnBoard = board.includes(id);
-              const isNeeded = neededIngredients.includes(id);
-              const isPushedBack = fadeLevel > 0 && orderIngredients.length > 0 && !orderIngredients.includes(id);
-              return (
-                <button
-                  key={id}
-                  className={panClassName({ isOnBoard, isNeeded, isPushedBack, quantity, isCoachTarget: isCoachPan(coachTarget, id, isOnBoard, isNeeded) })}
-                  disabled={isComing || (!isOnBoard && quantity === 0)}
-                  aria-pressed={isOnBoard}
-                  onClick={() => onPickIngredient(id)}
-                  title={isBottomless ? t.ingredient(id) : t("service.panTitle", { id, quantity })}
-                >
-                  <IngredientPan id={id} quantity={quantity} />
-                  <span className="pan-n">{t.ingredient(id)}</span>
-                  <span className="pan-q">{isBottomless ? "∞" : quantity}</span>
-                  {isComing && <span className="pan-coming">{`🚚 ${t("service.stillComing")}`}</span>}
-                </button>
-              );
-            })}
-          </div>
+          <div className="pans">{station.ingredientIds.map((id) => pan(id))}</div>
         </div>
       ))}
+      {drawer.length > 0 && (
+        <div className="station st-drawer">
+          <div className="st-label">{t("service.drawer")}</div>
+          <div className="pans">
+            <button
+              className={`pan drawer-btn${isDrawerUsed && !isDrawerOpen ? " on" : isDrawerNeeded && !isDrawerOpen ? " need" : ""}`}
+              aria-expanded={isDrawerOpen}
+              onClick={() => setDrawerOpen(!isDrawerOpen)}
+              title={t(isDrawerOpen ? "service.drawerClose" : "service.drawerOpen")}
+            >
+              <span className="drawer-ic" aria-hidden="true">{isDrawerOpen ? "▴" : "▾"}</span>
+              <span className="pan-n">{t("service.drawerOthers")}</span>
+              <span className="pan-q">{drawer.length}</span>
+            </button>
+            {isDrawerOpen && drawer.map((id) => pan(id, true))}
+          </div>
+        </div>
+      )}
       {secrets.length > 0 && (
         <div className="station st-secret">
           <div className="st-label">✨</div>

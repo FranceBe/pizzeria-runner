@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { levelForXp, levelProgressPercent, xpForNextLevel } from "../game/progression";
+import { averageRating } from "../game/reviews";
 import { useTranslation } from "../i18n/I18nContext";
 import { MoneyPops } from "../components/MoneyPops";
 import { StorefrontDecor } from "../components/StorefrontDecor";
@@ -11,6 +12,23 @@ const eveningProgress = (state: ScreenProps["state"]): number => {
   if (!service || service.challenge) return 0;
   const total = service.stats.served + service.customers.length + service.customersToCome;
   return total ? service.stats.served / total : 0;
+};
+
+// The online rating, the way review sites show it: five stars, filled in gold as far as the rating goes. Empty before
+// the first review.
+const ReviewStars = ({ state }: { state: ScreenProps["state"] }) => {
+  const t = useTranslation();
+  const average = averageRating(state.reviewScore);
+  const label = average === null ? t("header.noReviews") : t("header.reviewsTitle", { average, count: state.reviewScore.count });
+  return (
+    <div className="stat stat-reviews" title={label} aria-label={label}>
+      <span className="stat-l">{t("header.reviews")}</span>
+      <span className="rating-stars" aria-hidden="true">
+        ★★★★★
+        <span className="rating-fill" style={{ width: `${((average ?? 0) / 5) * 100}%` }}>★★★★★</span>
+      </span>
+    </div>
+  );
 };
 
 export const Header = ({ state, dispatch }: ScreenProps) => {
@@ -37,6 +55,7 @@ export const Header = ({ state, dispatch }: ScreenProps) => {
             {state.debt > 0 && <span className="debt">{t("header.debt", { amount: state.debt })}</span>}
             <MoneyPops pops={state.pops} dispatch={dispatch} />
           </div>
+          <ReviewStars state={state} />
           <div className="stat stat-rep">
             <span className="stat-l">{t("header.reputation", { level })}</span>
             <div className="xpbar" title={t("header.xpTitle", { xp: state.xp, next: xpForNextLevel(state.xp) })}>

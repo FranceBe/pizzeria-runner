@@ -8,7 +8,7 @@ describe("dailyCharges", () => {
   });
 
   it("grows with each upgrade level", () => {
-    const state = makeState({ upgrades: { oven: 1, salle: 2, deco: 0, commis: 1, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } });
+    const state = makeState({ upgrades: { oven: 1, salle: 2, deco: 0, commis: 1, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } });
     expect(dailyCharges(state)).toBe(6 + 2 + 6 + 4);
   });
 });
@@ -26,7 +26,7 @@ describe("forecastCustomers", () => {
 
   it("expects more customers with a bigger room", () => {
     const small = forecastCustomers(makeState());
-    const big = forecastCustomers(makeState({ upgrades: { oven: 0, salle: 2, deco: 0, commis: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } }));
+    const big = forecastCustomers(makeState({ upgrades: { oven: 0, salle: 2, deco: 0, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } }));
     expect(big).toBeGreaterThan(small);
   });
 });

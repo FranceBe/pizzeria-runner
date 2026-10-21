@@ -8,9 +8,12 @@ import { CustomerFace } from "../components/CustomerFace";
 import { batchItemsText, questText } from "./QuestCard";
 
 const MEDAL_ICONS = { gold: "🥇", silver: "🥈", bronze: "🥉" } as const;
-import type { DayRecord, GameState, RecipeSales } from "../game/types";
+import type { DayRecord, GameState, RecipeSales, Review } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { IngredientIcon } from "../components/IngredientIcon";
+import { averageRating, reasonOf, REVIEW_LINES, toneOf } from "../game/reviews";
+import { PRESS_PAPERS } from "../data/press";
+import { StarRow } from "../components/AppealStars";
 
 const CHART_DAYS = 14;
 // Pairings per page of the book.
@@ -74,7 +77,7 @@ const Accounts = ({ state }: { state: GameState }) => {
     .slice(0, TOP_PIZZAS);
   const mostSold = topPizzas[0]?.[1].count ?? 1;
   return (
-    <div className="card pad journal-card">
+    <div className="card pad journal-card j-accounts">
       <h2 className="h">{t("journal.stats")}</h2>
       <div className="jstats">
         <Stat label={t("journal.days")} value={state.history.length} />
@@ -166,10 +169,10 @@ const PairingsBook = ({ state }: { state: GameState }) => {
   const pageCount = Math.ceil(GOOD_PAIRINGS.length / PAIRINGS_PER_PAGE);
   const shown = GOOD_PAIRINGS.slice(page * PAIRINGS_PER_PAGE, (page + 1) * PAIRINGS_PER_PAGE);
   return (
-    <div className="card pad journal-card fills">
+    <div className="card pad journal-card j-pairings">
       <h2 className="h">{t("journal.pairings")}</h2>
       <p className="sub">{t("journal.pairingsIntro", { found: state.discoveredPairings.length, total: GOOD_PAIRINGS.length })}</p>
-      <div className="fill-body book-page">
+      <div className="book-page">
         <div className="pairings">
           {shown.map((pairing) => (
             <PairingSlot key={pairing.join("+")} state={state} pairing={pairing} />
@@ -189,7 +192,7 @@ const Achievements = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const unlockedCount = ACHIEVEMENT_IDS.filter((id) => isUnlocked(state, id)).length;
   return (
-    <div className="card pad journal-card">
+    <div className="card pad journal-card j-achievements">
       <h2 className="h">{t("journal.achievements")}</h2>
       <p className="sub">{t("journal.achievementsIntro", { count: unlockedCount, total: ACHIEVEMENT_IDS.length })}</p>
       <div className="badges">
@@ -236,10 +239,10 @@ const RegularsBook = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const regulars = regularsOf(state);
   return (
-    <div className="card pad journal-card fills">
+    <div className="card pad journal-card j-regulars">
       <h2 className="h">{t("journal.regulars")}</h2>
       {regulars.length === 0 && <p className="hint">{t("journal.noRegulars")}</p>}
-      <div className="regular-cards fill-body">
+      <div className="regular-cards">
         {regulars.map((regular) => {
           const favorite = state.recipes.find((recipe) => recipe.id === regular.favoriteRecipeId);
           return (
@@ -259,12 +262,94 @@ const RegularsBook = ({ state }: { state: GameState }) => {
   );
 };
 
+// The latest reviews shown, newest first.
+const REVIEWS_SHOWN = 8;
+
+// Online reviews: only for show, but a perfectionist's nightmare.
+const Reviews = ({ state }: { state: GameState }) => {
+  const t = useTranslation();
+  const average = averageRating(state.reviewScore);
+  const latest = [...state.reviews].reverse().slice(0, REVIEWS_SHOWN);
+  return (
+    <div className="card pad journal-card j-reviews reviews">
+      <h2 className="h">{t("journal.reviews")}</h2>
+      <p className="hint">{t("journal.reviewsSource")}</p>
+      {average === null ? (
+        <p className="hint">{t("journal.noReviews")}</p>
+      ) : (
+        <div className="review-score">
+          <span className="review-average">{t.number(average)}</span>
+          <StarRow stars={Math.round(average)} />
+          <span className="hint">{t("journal.reviewsCount", { count: state.reviewScore.count })}</span>
+        </div>
+      )}
+      <ul className="review-list">
+        {latest.map((review, index) => (
+          <li key={`${review.day}-${review.name}-${index}`} className={`review${review.stars <= 2 ? " bad" : ""}`}>
+            <div className="review-head">
+              <StarRow stars={review.stars} />
+              <strong>{review.name}</strong>
+              <span className="hint">{`${t("journal.reviewDay", { day: review.day })} · ${t.recipe({ id: review.recipeId, name: review.recipeName })}`}</span>
+            </div>
+            <p className="review-text">{`« ${reviewText(t, review)} »`}</p>
+          </li>
+        ))}
+      </ul>
+      <PressCuttings state={state} />
+    </div>
+  );
+};
+
+// What a review says: praise, or a complaint in the tone of its stars.
+const reviewText = (t: ReturnType<typeof useTranslation>, review: Review): string => {
+  const reason = reasonOf(review);
+  const line = (review.line % REVIEW_LINES) as 0 | 1 | 2;
+  if (reason === "perfect" || reason === "woodFired") return t(`reviewPraise.${reason}.${line}`);
+  return t(`reviewComplaints.${reason}.${toneOf(review.stars)}.${line}`);
+};
+
+const PRESS_TONE = { 5: "rave", 4: "good", 3: "fair" } as const;
+
+// Food critics' articles, newest first.
+const PressCuttings = ({ state }: { state: GameState }) => {
+  const t = useTranslation();
+  if (!state.press.length) return null;
+  return (
+    <>
+      <h3 className="h">{t("journal.press")}</h3>
+      {/* Each article as a cutting from the paper: masthead, dateline, the critic's words, their signature. */}
+      <ul className="press-list">
+        {[...state.press].reverse().map((article, index) => (
+          <li key={`${article.day}-${index}`} className="press-cutting">
+            <div className="press-masthead">{PRESS_PAPERS[article.paper] ?? PRESS_PAPERS[0]}</div>
+            <div className="press-dateline">
+              <span>{t("journal.pressDay", { day: article.day })}</span>
+              <StarRow stars={article.stars} />
+            </div>
+            <p className="press-quote">
+              {`« ${t(`pressLines.${PRESS_TONE[Math.min(5, Math.max(3, article.stars)) as 3 | 4 | 5]}.${(article.line % REVIEW_LINES) as 0 | 1 | 2}`)} »`}
+            </p>
+            <p className="press-byline">{t("journal.pressBy", { critic: article.critic })}</p>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+
 export const JournalView = ({ state }: { state: GameState }) => {
   return (
+    // Two columns from a tablet up: the money and the pairings book, then what people say. On a phone the columns
+    // melt into one list, in the order set in styles.css.
     <div className="journal">
-      <Accounts state={state} />
-      <RegularsBook state={state} />
-      <PairingsBook state={state} />
+      <div className="journal-col">
+        <Accounts state={state} />
+        <PairingsBook state={state} />
+      </div>
+      <div className="journal-col">
+        <Reviews state={state} />
+        <RegularsBook state={state} />
+      </div>
       <Achievements state={state} />
     </div>
   );

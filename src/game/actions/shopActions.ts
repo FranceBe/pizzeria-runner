@@ -1,6 +1,8 @@
 import { INGREDIENTS_BY_ID, type IngredientId } from "../../data/ingredients";
 import { MARGHERITA } from "../../data/recipes";
-import { MAMMA_CRAFT_COST, MAMMA_JAR_PORTIONS, SECRET_CRAFT_COST, SECRET_JAR_PORTIONS, UPGRADES } from "../../data/progression";
+import {
+  MAMMA_CRAFT_COST, MAMMA_JAR_PORTIONS, SECRET_CRAFT_COST, SECRET_JAR_PORTIONS, UPGRADE_RESALE_SHARE, UPGRADES, type UpgradeKey,
+} from "../../data/progression";
 import { canAfford } from "../../utils/math";
 import { canBorrowFromNonna, NONNA_LOAN, restockPlan, spend } from "../economy";
 import { marketPrice } from "../events";
@@ -29,6 +31,12 @@ const chooseLook = <Slot extends CosmeticSlot>(state: GameState, slot: Slot, id:
   }
   const looks: LookIds = state.cosmetics;
   looks[slot] = id;
+};
+
+// What selling back the current level of an upgrade returns.
+export const resaleValue = (upgradeKey: UpgradeKey, level: number): number => {
+  const upgrade = UPGRADES[upgradeKey];
+  return Math.round(upgrade.costs[level - 1] * (upgrade.isComfort ? 1 : UPGRADE_RESALE_SHARE) * 100) / 100;
 };
 
 export const SUPPLIER_WELCOME_PORTIONS = 4;
@@ -92,6 +100,18 @@ export const shopActions = {
     spend(state, cost);
     state.upgrades[upgradeKey] = currentLevel + 1;
     pushToast(state, { key: "upgradeBought", params: { upgradeKey, level: currentLevel + 1 } }, "gold");
+  },
+
+  // Back one level, for part of what it cost: for an upgrade that doesn't suit the way the player plays.
+  // Not during service (an oven might be baking). Achievements already earned stay.
+  sellUpgrade(state, { upgradeKey }) {
+    const level = state.upgrades[upgradeKey];
+    if (level < 1 || state.phase !== "prep") return;
+    const refund = resaleValue(upgradeKey, level);
+    state.upgrades[upgradeKey] = level - 1;
+    state.money += refund;
+    state.purchasesToday = Math.max(0, state.purchasesToday - refund);
+    pushToast(state, { key: "upgradeSold", params: { upgradeKey, refund } });
   },
 
   // One jar of Nonna's secret, made by hand: it never comes with the restock buttons.

@@ -6,6 +6,7 @@ import { profitTarget } from "../game/stars";
 import { useTranslation } from "../i18n/I18nContext";
 import { Pizza } from "../components/Pizza";
 import { drawReceipt, shareOrDownload, type ReceiptRow } from "../utils/receiptImage";
+import type { DayEventId } from "../data/events";
 
 // A line of the receipt: label, dotted leader, amount.
 const ReceiptLine = ({ label, value, className = "" }: { label: string; value: string | number; className?: string }) => {
@@ -64,10 +65,12 @@ const OrderLines = ({ orders }: { orders: readonly OrderRecord[] }) => {
 interface DaySummaryProps {
   summary: Summary;
   pizzeriaName: string;
+  /** The incident as it is told (a power cut reads as missing wood when every oven burns wood). */
+  shownEventId?: DayEventId | "woodShortage";
   onNextDay: () => void;
 }
 
-export const DaySummary = ({ summary, pizzeriaName, onNextDay }: DaySummaryProps) => {
+export const DaySummary = ({ summary, pizzeriaName, shownEventId, onNextDay }: DaySummaryProps) => {
   const t = useTranslation();
   const isProfit = summary.net >= 0;
   const reachedLevel = summary.levelUps.at(-1);
@@ -126,10 +129,18 @@ export const DaySummary = ({ summary, pizzeriaName, onNextDay }: DaySummaryProps
           <ReceiptLine label={t("summary.reputation")} value={`+${summary.xp}`} />
           {summary.debt > 0 && <ReceiptLine className="neg" label={t("summary.debt")} value={t.money(summary.debt)} />}
           {summary.starGoals && <DayStars stars={summary.stars ?? 0} goals={summary.starGoals} charges={summary.charges} />}
+          {summary.reviews && summary.reviews.length > 0 && (
+            <p className="receipt-note">
+              {t("summary.reviews", {
+                count: summary.reviews.length,
+                average: Math.round((summary.reviews.reduce((total, review) => total + review.stars, 0) / summary.reviews.length) * 10) / 10,
+              })}
+            </p>
+          )}
           {summary.inspectionPassed && <p className="receipt-note">✓ {t("summary.inspection", { xp: INSPECTION_XP })}</p>}
           {summary.event && (
             <p className="receipt-note">
-              {t("summary.event")} <strong>{t(`events.${summary.event}.name`)}</strong>
+              {t("summary.event")} <strong>{t(`events.${shownEventId ?? summary.event}.name`)}</strong>
             </p>
           )}
           {bestSeller && (

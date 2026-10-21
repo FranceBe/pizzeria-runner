@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { INGREDIENTS } from "../data/ingredients";
-import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
+import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, withChoiceAndLocals, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { createCustomer } from "./customers";
 import { dietAllows, forDiet } from "./diets";
 import { marketPrice } from "./events";
@@ -88,8 +88,8 @@ describe("tables", () => {
 
 describe("regulars' profiles", () => {
   it("get a dislike and a birthday when they become regulars", () => {
-    const state = makeState({ recipes: [...makeState().recipes] });
-    state.customerBook = { Luca: makeBookEntry({ visits: 2, orders: { margherita: 2 } }) };
+    const state = withChoiceAndLocals(makeState({ recipes: [...makeState().recipes] }), "Luca");
+    state.customerBook = { Luca: makeBookEntry({ visits: 2 }) };
     expect(recordVisit(state, makeCustomer())).toBe(true);
     expect(state.customerBook.Luca.birthday).toBeGreaterThanOrEqual(1);
     expect(state.customerBook.Luca.birthday).toBeLessThanOrEqual(28);

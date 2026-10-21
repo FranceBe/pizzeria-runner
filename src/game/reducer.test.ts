@@ -115,7 +115,7 @@ describe("baking and serving", () => {
     expect(state.phase).toBe("summary");
     expect(state.summary).toMatchObject({ served: 1, revenue: 7, tips: 0, charges: 6, bestSeller: { recipeId: "margherita", count: 1 } });
     expect(state.summary?.orders).toEqual([
-      { customerName: "Luca", recipeId: "margherita", recipeName: null, ingredients: MARGHERITA, price: 7, tip: 0 },
+      { customerName: "Luca", recipeId: "margherita", recipeName: null, ingredients: MARGHERITA, price: 7, tip: 0, stars: 5, reason: "perfect" },
     ]);
     expect(state.pops).toMatchObject([{ amount: 7, kind: "money" }]);
   });
@@ -129,7 +129,7 @@ describe("baking and serving", () => {
   });
 
   it("lets the level-1 commis spread fresh dough after each bake", () => {
-    const state = play(stateInService([], { upgrades: { oven: 0, salle: 0, deco: 0, commis: 1, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 } }), ...addIngredients(["pate"]), { type: "bake" });
+    const state = play(stateInService([], { upgrades: { oven: 0, salle: 0, deco: 0, commis: 1, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } }), ...addIngredients(["pate"]), { type: "bake" });
     expect(serviceOf(state).board).toEqual(["pate"]);
     expect(state.stock.pate).toBe(6);
   });

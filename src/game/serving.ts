@@ -1,5 +1,7 @@
 // What happens when an order is served: payment, tips and bonuses, reputation, and what the game remembers.
-import { DELIVERY_EXPRESS_BONUS, DELIVERY_EXPRESS_SECONDS, DESSERT_QUICK_BONUS, MAMMA_LEVEL, MAMMA_PROFIT_DAYS } from "../data/progression";
+import {
+  DELIVERY_EXPRESS_BONUS, DELIVERY_EXPRESS_SECONDS, DESSERT_QUICK_BONUS, MAMMA_LEVEL, MAMMA_PROFIT_DAYS, WOOD_FIRED_TIP_BONUS,
+} from "../data/progression";
 import { levelForXp } from "./progression";
 import type { Pairing } from "../data/recipes";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
@@ -11,6 +13,7 @@ import { streakMultiplier, warmthTipFactor } from "./streak";
 import { pushPop, pushToast } from "./toasts";
 import { recordWeekly } from "./weekly";
 import type { Customer, GameState, Mood, ReadyPizza, Service } from "./types";
+import { writePressReview } from "./reviews";
 
 // Signed photos shown on the front (the latest ones).
 const CELEBRITY_WALL_SIZE = 4;
@@ -49,7 +52,7 @@ const roundToTenCents = (amount: number): number => Math.round(amount * 10) / 10
 
 // A tip, raised by the streak and the rush, lowered if the pizza cooled on the pass.
 const tipFor = (state: GameState, service: Service, customer: Customer, pizza: ReadyPizza): number => {
-  const base = rollTip(state, customer);
+  const base = rollTip(state, customer, pizza.woodFired ? WOOD_FIRED_TIP_BONUS : 0);
   if (!base) return 0;
   const factor = streakMultiplier(service.stats.streak ?? 0) * warmthTipFactor(pizza.waitingSeconds) * (service.rush ? RUSH_TIP_FACTOR : 1);
   return Math.max(0.1, roundToTenCents(base * factor));
@@ -139,6 +142,7 @@ export const reputationFor = (state: GameState, customer: Customer, newPairings:
   if (customer.critic) {
     xp += CRITIC_XP[mood];
     pushToast(state, { key: "critic", params: { name: customer.name, stars: CRITIC_STARS[mood] } }, "gold");
+    writePressReview(state, customer, CRITIC_STARS[mood]);
   }
   return xp;
 };

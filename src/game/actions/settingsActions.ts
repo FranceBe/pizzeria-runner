@@ -38,6 +38,10 @@ export const settingsActions = {
     state.settings.largeText = !state.settings.largeText;
   },
 
+  toggleComfort(state, { option }) {
+    state.settings[option] = !state.settings[option];
+  },
+
   // The code: Nonna's secret ingredient, and an achievement nothing else unlocks.
   enterSecretCode(state) {
     const isNew = !state.secretIngredient;

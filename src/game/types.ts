@@ -99,6 +99,8 @@ export interface OvenPizza {
   secret?: boolean;
   /** With Mamma's secret: whoever eats it charms the next customer. */
   mamma?: boolean;
+  /** Baked in a wood-fired oven: a better pizza. */
+  woodFired?: boolean;
   /** Which oven it bakes in (see ovensOf); missing on older saves, meaning the first. */
   ovenIndex?: number;
   ingredients: readonly IngredientId[];
@@ -110,6 +112,7 @@ export interface ReadyPizza {
   id: string;
   secret?: boolean;
   mamma?: boolean;
+  woodFired?: boolean;
   /** Seconds on the pass: it cools down, and tips with it. */
   waitingSeconds?: number;
   ingredients: readonly IngredientId[];
@@ -127,6 +130,37 @@ export interface OrderRecord {
   ingredients: readonly IngredientId[];
   price: number;
   tip: number;
+  /** How it went, for a possible review (see reviews.ts); missing for critics, who write their own. */
+  stars?: number;
+  reason?: ReviewReason;
+}
+
+// What a review talks about: the best of evenings, or what went wrong.
+export type ReviewReason = "perfect" | "woodFired" | "wait" | "lukewarm" | "cold";
+
+export interface Review {
+  day: number;
+  name: string;
+  /** 1 to 5. */
+  stars: number;
+  reason: ReviewReason;
+  /** Which of the reason's lines (see src/i18n). */
+  line: number;
+  recipeId: RecipeId;
+  recipeName: string | null;
+}
+
+// A food critic's article about the pizzeria.
+export interface PressReview {
+  day: number;
+  /** Index in PRESS_PAPERS. */
+  paper: number;
+  critic: string;
+  /** 3 to 5, as the critic's toast said. */
+  stars: number;
+  line: number;
+  recipeId: RecipeId;
+  recipeName: string | null;
 }
 
 export interface ServiceStats {
@@ -255,6 +289,8 @@ export interface DaySummary {
   starGoals?: StarGoals;
   /** Inspection day passed. */
   inspectionPassed?: boolean;
+  /** Reviews written tonight. */
+  reviews?: Review[];
 }
 
 export interface StarGoals {
@@ -371,8 +407,10 @@ export interface CustomerBookEntry extends Looks {
   birthday?: number;
   /** The last day they came; missing on older saves until the next day starts. */
   lastVisit?: number;
-  /** A regular who hasn't come for a while: no longer counted as one until they come back. */
-  lapsed?: boolean;
+  /** Like orders, but only the visits when the menu offered a real choice (see regulars.ts). */
+  choiceOrders?: Record<string, number>;
+  /** A regular for now: set when they qualify (see regulars.ts), cleared when they stay away too long. */
+  regular?: boolean;
 }
 
 export interface Settings {
@@ -386,6 +424,9 @@ export interface Settings {
   musicMuted: boolean;
   effectsMuted: boolean;
   tutorialDone: boolean;
+  /** Comfort upgrades can be switched off for free, for those who play better without them. */
+  useDrawer: boolean;
+  commisFade: boolean;
 }
 
 export type ToastKind = "" | "gold" | "warn";
@@ -450,6 +491,11 @@ export interface GameState {
   secretStock: number;
   /** The neighbourhood: names who come often (see regulars.ts). */
   locals: string[];
+  /** The latest online reviews, and the score over every review ever written. Only for show. */
+  reviews: Review[];
+  reviewScore: { count: number; total: number };
+  /** Food critics' articles, latest last. */
+  press: PressReview[];
   /** Mamma's secret ingredient, once she has shared it. */
   mammaSecret: boolean;
   /** Portions of it made at the market and not used yet. */
@@ -523,6 +569,8 @@ export type GameAction =
   | { type: "toggleHelp" }
   | { type: "setTheme"; theme: Theme }
   | { type: "toggleLargeText" }
+  | { type: "toggleComfort"; option: "useDrawer" | "commisFade" }
+  | { type: "sellUpgrade"; upgradeKey: UpgradeKey }
   | { type: "setVolume"; channel: SoundChannel; volume: number }
   | { type: "toggleMute"; channel: SoundChannel }
   | { type: "skipTutorial" }

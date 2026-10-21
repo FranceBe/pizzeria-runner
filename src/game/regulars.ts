@@ -2,13 +2,18 @@
 // and what they ordered. Customers who come back keep their look and often reorder their favourite.
 import type { IngredientId } from "../data/ingredients";
 import { pickRandom, randomIndex } from "../utils/random";
+import { activeMenu } from "./menu";
 import { fillingsOf } from "./pizza";
 import type { Customer, CustomerBookEntry, GameState } from "./types";
 
-// Times the same pizza must be ordered to count as a regular (tagged on tickets, listed on the prep screen, tip a bit
-// more, may ask for "the usual"): a regular is someone with a usual to remember.
+// Who becomes a regular (tagged on tickets, listed on the prep screen, tips a bit more, may ask for "the usual"):
+// someone from the neighbourhood who ordered the same pizza REGULAR_SAME_ORDERS times, each time with at least
+// REGULAR_MIN_CHOICES pizzas on the menu (with one or two, everyone orders the same), while there are fewer than
+// MAX_REGULARS. The point is a small crowd whose usual the player can remember.
 export const REGULAR_SAME_ORDERS = 3;
-// A regular who stays away longer than this is lost from sight, until they come back.
+export const REGULAR_MIN_CHOICES = 3;
+export const MAX_REGULARS = 8;
+// A regular who stays away longer than this is lost from sight; back again, they may become one again.
 export const LAPSE_DAYS = 10;
 // Chance that a returning customer orders their favourite again, when it is on the menu.
 export const FAVORITE_REORDER_CHANCE = 0.6;
@@ -20,13 +25,12 @@ export interface Regular extends CustomerBookEntry {
 
 export const bookEntry = (state: GameState, name: string): CustomerBookEntry | undefined => state.customerBook[name];
 
-// How many times they ordered their favourite.
-const favoriteCount = (entry: CustomerBookEntry): number => Math.max(0, ...Object.values(entry.orders));
+// They ordered the same pizza enough times while they had a choice.
+const hasAUsual = (entry: CustomerBookEntry): boolean => Math.max(0, ...Object.values(entry.choiceOrders ?? {})) >= REGULAR_SAME_ORDERS;
 
-const hasAUsual = (entry: CustomerBookEntry): boolean => favoriteCount(entry) >= REGULAR_SAME_ORDERS;
+export const isRegular = (entry: CustomerBookEntry | undefined): entry is CustomerBookEntry => entry?.regular === true;
 
-export const isRegular = (entry: CustomerBookEntry | undefined): entry is CustomerBookEntry =>
-  entry !== undefined && !entry.lapsed && hasAUsual(entry);
+const regularCount = (state: GameState): number => Object.values(state.customerBook).filter((entry) => entry.regular).length;
 
 // The recipe this customer ordered most, or null.
 export const favoriteRecipeId = (entry: CustomerBookEntry | undefined): string | null => {
@@ -60,8 +64,8 @@ const pickDislike = (state: GameState, entry: CustomerBookEntry): IngredientId |
   return candidates.length ? pickRandom(candidates) : undefined;
 };
 
-// Adds a visit to the book. Returns true when this visit makes them a regular, which gives them a dislike and a
-// birthday. One lost from sight is simply a regular again when they come back. Mutates state.
+// Adds a visit to the book. Returns true when this visit makes them a regular; the first time, that gives them a
+// dislike and a birthday. Mutates state.
 export const recordVisit = (state: GameState, customer: Customer): boolean => {
   const entry: CustomerBookEntry = state.customerBook[customer.name] ?? {
     skin: customer.skin,
@@ -71,10 +75,18 @@ export const recordVisit = (state: GameState, customer: Customer): boolean => {
     visits: 0,
     orders: {},
   };
-  const orders = { ...entry.orders, [customer.recipeId]: (entry.orders[customer.recipeId] ?? 0) + 1 };
-  const { lapsed, ...rest } = entry;
-  const updated: CustomerBookEntry = { ...rest, visits: entry.visits + 1, orders, lastVisit: state.day };
-  const becomesRegular = isRegular(updated) && !isRegular(entry) && !lapsed;
+  const add = (counts: Record<string, number> | undefined) => ({ ...counts, [customer.recipeId]: (counts?.[customer.recipeId] ?? 0) + 1 });
+  const hadChoice = activeMenu(state).length >= REGULAR_MIN_CHOICES;
+  const updated: CustomerBookEntry = {
+    ...entry,
+    visits: entry.visits + 1,
+    orders: add(entry.orders),
+    choiceOrders: hadChoice ? add(entry.choiceOrders) : entry.choiceOrders,
+    lastVisit: state.day,
+  };
+  const becomesRegular =
+    !entry.regular && state.locals.includes(customer.name) && hasAUsual(updated) && regularCount(state) < MAX_REGULARS;
+  if (becomesRegular) updated.regular = true;
   if (becomesRegular && updated.birthday === undefined) {
     updated.dislikes = pickDislike(state, updated);
     updated.birthday = randomIndex(MONTH_DAYS) + 1;
@@ -83,12 +95,13 @@ export const recordVisit = (state: GameState, customer: Customer): boolean => {
   return becomesRegular;
 };
 
-// At the start of each day: regulars who stayed away too long are lost from sight. Mutates state.
+// At the start of each day: regulars who stayed away too long are lost from sight, which makes room for others.
+// Mutates state.
 export const lapseAbsentRegulars = (state: GameState): void => {
   Object.values(state.customerBook).forEach((entry) => {
     // Older saves didn't keep the date: the count starts now.
     if (entry.lastVisit === undefined) entry.lastVisit = state.day;
-    else if (!entry.lapsed && hasAUsual(entry) && state.day - entry.lastVisit > LAPSE_DAYS) entry.lapsed = true;
+    else if (entry.regular && state.day - entry.lastVisit > LAPSE_DAYS) entry.regular = false;
   });
 };
 

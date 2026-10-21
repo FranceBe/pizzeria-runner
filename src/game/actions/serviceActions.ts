@@ -2,7 +2,7 @@ import { DRINKS, TRAY_SIZE, type DrinkId } from "../../data/drinks";
 import { canAfford } from "../../utils/math";
 import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
 import {
-  ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS,
+  ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS, WOOD_FIRED_XP_BONUS,
 } from "../../data/progression";
 import { randomBetween, randomIndex, makeId } from "../../utils/random";
 import { createChallenge, createChallengeCustomer, nextChallengeArrival } from "../challenge";
@@ -29,6 +29,7 @@ import {
 } from "../serving";
 import { pushToast, pushPop } from "../toasts";
 import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, Service } from "../types";
+import { rateOrder, writeReviews } from "../reviews";
 
 const FIRST_ARRIVAL_DELAY = 0.6;
 const MIN_SECONDS_BETWEEN_ARRIVALS = 3.5;
@@ -109,6 +110,7 @@ const endDay = (state: GameState, service: Service): void => {
   const goals = starGoals({ served: stats.served, hungryServed: stats.hungryServed ?? 0, closedEarly: Boolean(service.closedEarly), waste, net, charges });
   const stars = starCount(goals);
   state.lifetime.stars += stars;
+  const reviews = writeReviews(state, stats.orders);
   state.summary = {
     day: state.day,
     served: stats.served,
@@ -130,6 +132,7 @@ const endDay = (state: GameState, service: Service): void => {
     stars,
     starGoals: goals,
     inspectionPassed,
+    reviews,
   };
 
   state.history = [
@@ -424,7 +427,7 @@ export const serviceActions = {
     const isBaked = (pizza: { bakedSeconds: number; bakeDuration: number }) => pizza.bakedSeconds >= pizza.bakeDuration;
     service.oven
       .filter(isBaked)
-      .forEach(({ id, ingredients, secret, mamma }) => service.ready.push({ id, ingredients, secret, mamma, waitingSeconds: 0 }));
+      .forEach(({ id, ingredients, secret, mamma, woodFired }) => service.ready.push({ id, ingredients, secret, mamma, woodFired, waitingSeconds: 0 }));
     service.oven = service.oven.filter((pizza) => !isBaked(pizza));
     if (!service.challenge) advanceEvening(state, service, seconds);
     pourWithBarman(state, service, seconds);
@@ -603,6 +606,7 @@ export const serviceActions = {
       ovenIndex: oven.index,
       secret: service.secretOnBoard,
       mamma: service.mammaOnBoard,
+      woodFired: oven.isWoodFired,
       ingredients: sortByLayer(service.board),
       bakedSeconds: 0,
       bakeDuration: oven.bakeSeconds,
@@ -670,7 +674,7 @@ export const serviceActions = {
     const newPairings = discoverPairings(state, customer.ingredients);
     if (newPairings.length) pushToast(state, { key: "newPairing", params: { pairings: newPairings } }, "gold");
 
-    const xpGained = reputationFor(state, customer, newPairings);
+    const xpGained = reputationFor(state, customer, newPairings) + (pizza.woodFired ? WOOD_FIRED_XP_BONUS : 0);
     state.xp += xpGained;
     advanceQuest(state, customer, isHappy, newPairings.length);
     const levelAfter = levelForXp(state.xp);
@@ -686,7 +690,15 @@ export const serviceActions = {
 
     stats.orders = [
       ...stats.orders,
-      { customerName: customer.name, recipeId: customer.recipeId, recipeName: customer.recipeName, ingredients: customer.ingredients, price: customer.price, tip },
+      {
+        customerName: customer.name,
+        recipeId: customer.recipeId,
+        recipeName: customer.recipeName,
+        ingredients: customer.ingredients,
+        price: customer.price,
+        tip,
+        ...(customer.critic ? {} : rateOrder(customer, pizza)),
+      },
     ];
 
     if (levelAfter > levelBefore) {

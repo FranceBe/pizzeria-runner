@@ -4,14 +4,21 @@ export const REPUTATION_THRESHOLDS: readonly number[] = [
   0, 70, 200, 400, 750, 1200, 1800, 2550, 3450, 4500, 5700, 7100, 8700, 10500, 12500, 14800, 17300, 20000, 23000, 26500,
 ];
 
-// Indexed by oven upgrade level.
-export const OVEN_SLOTS: readonly number[] = [1, 2, 2, 3];
-export const BAKE_SECONDS: readonly number[] = [6, 4.5, 3, 2.2];
+// An oven's stages, as it is improved: one slot, then two, then faster, then wood-fired. The first oven starts at stage 0;
+// the second starts there when built (its level minus one). Two pizzas per oven at most: more can't be kept up with.
+export const OVEN_SLOTS: readonly number[] = [1, 2, 2, 2];
+export const BAKE_SECONDS: readonly number[] = [6, 4.5, 3, 3];
+export const WOOD_FIRED_STAGE = 3;
+// A pizza from a wood-fired oven is better: a tip more likely, and a little more reputation.
+export const WOOD_FIRED_TIP_BONUS = 0.1;
+export const WOOD_FIRED_XP_BONUS = 2;
 
 export const BASE_DAILY_CHARGES = 6;
 
 // The keys are stored in save files: never rename them. Names and descriptions live in src/i18n.
-export const UPGRADE_KEYS = ["oven", "salle", "deco", "commis", "terrasse", "livraison", "bar", "oven2", "oven3", "annexe"] as const;
+export const UPGRADE_KEYS = [
+  "oven", "salle", "deco", "commis", "drawer", "terrasse", "livraison", "bar", "oven2", "annexe",
+] as const;
 export type UpgradeKey = (typeof UPGRADE_KEYS)[number];
 
 export interface Upgrade {
@@ -21,6 +28,8 @@ export interface Upgrade {
   requiredLevel: readonly number[];
   /** Extra evening charges per upgrade level. */
   dailyCharge: number;
+  /** A comfort, not an advantage: sold back for everything it cost. */
+  isComfort?: boolean;
 }
 
 export const UPGRADES: Record<UpgradeKey, Upgrade> = {
@@ -28,18 +37,19 @@ export const UPGRADES: Record<UpgradeKey, Upgrade> = {
   salle: { costs: [50, 130, 280, 550], requiredLevel: [1, 3, 5, 7], dailyCharge: 3 },
   deco: { costs: [40, 120, 300], requiredLevel: [2, 4, 6], dailyCharge: 2 },
   commis: { costs: [150, 350, 600], requiredLevel: [3, 6, 8], dailyCharge: 4 },
+  // Tidy prep line: the pans tonight's menu doesn't use go in a drawer. A comfort, so no evening charges.
+  drawer: { costs: [150], requiredLevel: [4], dailyCharge: 0, isComfort: true },
   terrasse: { costs: [120, 320], requiredLevel: [4, 7], dailyCharge: 3 },
   livraison: { costs: [220], requiredLevel: [5], dailyCharge: 4 },
   bar: { costs: [90, 240, 350], requiredLevel: [3, 5, 7], dailyCharge: 2 },
   // Extra ovens: building one gives a single slow slot, then it improves like the first oven.
   oven2: { costs: [450, 250, 500, 900], requiredLevel: [7, 7, 8, 9], dailyCharge: 3 },
-  oven3: { costs: [1100, 600, 1100, 1800], requiredLevel: [10, 11, 13, 15], dailyCharge: 4 },
   // A second address: brings in money every evening, run by someone else.
   annexe: { costs: [1500, 3000, 6000], requiredLevel: [8, 11, 14], dailyCharge: 0 },
 };
 
 /** Extra ovens, in the order they are built. */
-export const EXTRA_OVEN_KEYS = ["oven2", "oven3"] as const;
+export const EXTRA_OVEN_KEYS = ["oven2"] as const;
 
 // Evening income of the second address, by its level.
 export const ANNEXE_INCOME: readonly number[] = [0, 30, 70, 140];
@@ -73,6 +83,10 @@ export const DESSERT_QUICK_BONUS = 1.5;
 
 // Commis levels that unlock each helper behaviour.
 export const COMMIS_SPREADS_DOUGH = 1;
+// Selling an upgrade back (one level at a time, outside service) returns this share of what that level cost;
+// a comfort upgrade returns all of it.
+export const UPGRADE_RESALE_SHARE = 0.75;
+
 // From level 2, the pans the selected order doesn't need fade a little, then more at level 3.
 export const COMMIS_FADES_PANS = 2;
 

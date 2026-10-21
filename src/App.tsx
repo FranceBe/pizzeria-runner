@@ -22,6 +22,7 @@ import { MessageTicker } from "./components/MessageTicker";
 import { TabIcon, type TabId } from "./components/TabIcon";
 import { SecretPad } from "./components/SecretPad";
 import type { ScreenProps } from "./views/types";
+import { shownEvent } from "./game/service";
 
 const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "settings"];
 
@@ -110,7 +111,12 @@ export const App = () => {
         )}
         <TabContent tab={tab} state={state} dispatch={dispatch} goToTab={setTab} />
       </main>
-      {state.phase === "summary" && state.summary && <DaySummary summary={state.summary} pizzeriaName={state.name} onNextDay={startNextDay} />}
+      {state.phase === "summary" && state.summary && <DaySummary
+          summary={state.summary}
+          pizzeriaName={state.name}
+          shownEventId={state.summary.event ? shownEvent(state, state.summary.event) : undefined}
+          onNextDay={startNextDay}
+        />}
       <SecretPad pad={secretPad} />
       {state.challengeResult && <ChallengeResult result={state.challengeResult} best={state.dailyChallenge?.best ?? 0} dispatch={dispatch} />}
     </I18nProvider>

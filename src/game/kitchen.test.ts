@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { makeState, play, stateInService, makeCustomer, serviceOf, toggle } from "../test/helpers";
+import { WOOD_FIRED_TIP_BONUS, WOOD_FIRED_XP_BONUS } from "../data/progression";
+import { makeState, play, stateInService, makeCustomer, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
+import { rollTip, tipChance } from "./customers";
 import { findRecipeByIngredients } from "./menu";
 import { appealOf, isDessert } from "./pizza";
-import { ovensOf, ovenSlots } from "./service";
+import { ovensOf, ovenSlots, shownEvent } from "./service";
+import { hydrateState } from "./state";
 import { shortcutAction } from "./shortcuts";
 import type { GameState } from "./types";
 
@@ -13,14 +16,14 @@ const withUpgrades = (upgrades: Partial<GameState["upgrades"]>, overrides: Parti
   upgrades: { ...makeState().upgrades, ...upgrades },
 });
 
-describe("extra ovens", () => {
-  it("start with one slow slot, then improve like the first oven", () => {
+describe("ovens", () => {
+  it("are two at most, two pizzas each: the second starts with one slow slot, then improves like the first", () => {
     const state = makeState(withUpgrades({ oven: 3, oven2: 1 }));
     expect(ovensOf(state)).toEqual([
-      { index: 0, slots: 3, bakeSeconds: 2.2 },
-      { index: 1, slots: 1, bakeSeconds: 6 },
+      { index: 0, slots: 2, bakeSeconds: 3, isWoodFired: true },
+      { index: 1, slots: 1, bakeSeconds: 6, isWoodFired: false },
     ]);
-    expect(ovenSlots(makeState(withUpgrades({ oven: 3, oven2: 4, oven3: 2 })))).toBe(3 + 3 + 2);
+    expect(ovenSlots(makeState(withUpgrades({ oven: 3, oven2: 4 })))).toBe(4);
   });
 
   it("take a pizza when the first oven is full, and bake it at their own speed", () => {
@@ -29,6 +32,35 @@ describe("extra ovens", () => {
     expect(serviceOf(state).oven.map((pizza) => [pizza.ovenIndex, pizza.bakeDuration])).toEqual([[0, 6], [1, 6]]);
     state = play(state, ...toggle("pate"), { type: "bake" });
     expect(state.toasts.at(-1)?.key).toBe("ovenFull");
+  });
+
+  it("make better pizzas once wood-fired: more reputation, a tip more likely", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const serve = (ovenLevel: number) => {
+      const baked = play(stateInService([makeCustomer()], withUpgrades({ oven: ovenLevel })), ...toggle(...MARGHERITA), { type: "bake" }, { type: "tick", seconds: 10 });
+      expect(serviceOf(baked).ready[0].woodFired).toBe(ovenLevel === 3);
+      return play(baked, { type: "servePizza", pizzaId: serviceOf(baked).ready[0].id });
+    };
+    expect(serve(3).xp - serve(2).xp).toBe(WOOD_FIRED_XP_BONUS);
+    const customer = makeCustomer();
+    vi.spyOn(Math, "random").mockReturnValue(tipChance(makeState(), customer) + WOOD_FIRED_TIP_BONUS / 2);
+    expect(rollTip(makeState(), customer)).toBe(0);
+    expect(rollTip(makeState(), customer, WOOD_FIRED_TIP_BONUS)).toBeGreaterThan(0);
+  });
+
+  it("go down to one pizza at a time on a power cut, the wood-fired one if there is one, told as missing wood when all burn wood", () => {
+    const cut = (upgrades: Partial<GameState["upgrades"]>) => makeState(withUpgrades(upgrades, { event: "powerCut" }));
+    expect(ovensOf(cut({ oven: 1, oven2: 4 }))).toEqual([{ index: 1, slots: 1, bakeSeconds: 3, isWoodFired: true }]);
+    expect(shownEvent(cut({ oven: 1, oven2: 4 }), "powerCut")).toBe("powerCut");
+    expect(shownEvent(cut({ oven: 3, oven2: 4 }), "powerCut")).toBe("woodShortage");
+    expect(shownEvent(cut({ oven: 3 }), "powerCut")).toBe("woodShortage");
+  });
+
+  it("lose the third oven of older saves, with everything paid for it back in the till", () => {
+    const old = { ...makeState({ money: 100 }), version: 10, upgrades: { ...makeState().upgrades, oven3: 2 } };
+    const state = hydrateState(toJson(old));
+    expect(state.money).toBe(100 + 1100 + 600);
+    expect("oven3" in state.upgrades).toBe(false);
   });
 });
 

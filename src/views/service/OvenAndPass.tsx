@@ -24,13 +24,18 @@ const Ovens = ({ state, service }: { state: GameState; service: Service }) => {
   const ovens = ovensOf(state);
   return (
     <div className={`oven${ovens.length > 1 ? " multi" : ""}`}>
-      <h3 className="h">{t("service.oven")}</h3>
+      {/* A single oven says it burns wood in its heading; several say it on their own label. */}
+      <h3 className="h">{ovens.length === 1 && ovens[0].isWoodFired ? `${t("service.oven")} · ${t("service.woodFired")}` : t("service.oven")}</h3>
       <Fire />
       {ovens.map((oven) => {
         const pizzas = service.oven.filter((pizza) => (pizza.ovenIndex ?? 0) === oven.index);
         return (
           <div key={oven.index} className="oven-group">
-            {ovens.length > 1 && <div className="oven-label">{t("service.ovenNumber", { number: oven.index + 1 })}</div>}
+            {ovens.length > 1 && (
+              <div className="oven-label">
+                {oven.isWoodFired ? `${t("service.ovenNumber", { number: oven.index + 1 })} · ${t("service.woodFired")}` : t("service.ovenNumber", { number: oven.index + 1 })}
+              </div>
+            )}
             <div className="slots">
               {Array.from({ length: oven.slots }, (_, slotIndex) => {
                 const pizza = pizzas[slotIndex];

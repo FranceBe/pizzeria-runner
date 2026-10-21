@@ -1,8 +1,13 @@
-import { OVEN_SLOTS, BAKE_SECONDS, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor } from "../data/progression";
+import { OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor } from "../data/progression";
 import { plural } from "../utils/format";
-import type { Dictionary } from "./types";
+import type { Dictionary, TranslationHelpers } from "./types";
 
 const lower = (text: string): string => text.toLowerCase();
+
+// An oven at a stage of its upgrades (see data/progression.ts).
+const ovenStage = (stage: number, t: TranslationHelpers): string =>
+  `${OVEN_SLOTS[stage]} ${plural(OVEN_SLOTS[stage], "pizza")} at a time · ${t.number(BAKE_SECONDS[stage])}s bake` +
+  (stage >= WOOD_FIRED_STAGE ? " · wood-fired: better pizzas, more tips and reputation" : "");
 
 // Same shape as the French reference (src/i18n/fr.ts); entry functions get their param types from it.
 export const en: Dictionary = {
@@ -31,6 +36,9 @@ export const en: Dictionary = {
     debt: ({ amount }, t) => `Owed: ${t.money(amount)}`,
     reputation: "Reputation · lvl {level}",
     xpTitle: "{xp} / {next} points",
+    reviews: "Reviews",
+    reviewsTitle: ({ average, count }, t) => `${t.number(average)} out of 5 · ${count} online ${count === 1 ? "review" : "reviews"}`,
+    noReviews: "No online reviews yet",
   },
 
   prep: {
@@ -136,6 +144,7 @@ export const en: Dictionary = {
     binTray: "Clear the tray",
     offerShort: "Offer",
     ovenNumber: "Oven {number}",
+    woodFired: "wood-fired",
     pause: "Pause",
     paused: "Paused",
     pausedHint: "Time is stopped: nobody waits, nothing bakes.",
@@ -169,6 +178,10 @@ export const en: Dictionary = {
     stillComing: "On its way",
     secretTitle: "A pinch of Nonna's secret. It changes nothing in the recipe…",
     secretPan: "Nonna",
+    drawer: "Drawer",
+    drawerOthers: "Others",
+    drawerOpen: "Open the drawer: ingredients off the menu",
+    drawerClose: "Close the drawer",
     mammaPan: "Mamma",
     mammaTitle: "A spoon of Mamma's secret: this customer will tell the next one about you.",
     charmed: "Charmed",
@@ -276,12 +289,14 @@ export const en: Dictionary = {
     next: "Next:",
     extraCharges: ({ amount }, t) => `(+${t.money(amount)} in charges)`,
     maxed: "Maxed out",
+    sell: ({ refund }, t) => `Sell back a level · ${t.money(refund)}`,
+    sellConfirm: ({ refund }, t) => `Confirm the sale · ${t.money(refund)}`,
+    sellLater: "Can be sold back outside service",
     levelRequired: "Level {level} required",
     buy: ({ cost }, t) => `Upgrade · ${t.money(cost)}`,
     oven: {
-      name: "Wood-fired oven",
-      describe: ({ level }, t) =>
-        `${OVEN_SLOTS[level]} ${plural(OVEN_SLOTS[level], "pizza")} at a time · ${t.number(BAKE_SECONDS[level])}s bake`,
+      name: "Oven",
+      describe: ({ level }, t) => ovenStage(level, t),
     },
     salle: {
       name: "Dining room",
@@ -300,6 +315,13 @@ export const en: Dictionary = {
           "Pushes back a little the pans the selected order doesn't need",
           "Pushes the unneeded pans back even further",
         ][level],
+    },
+    drawer: {
+      name: "Tidy prep line",
+      describe: ({ level }) =>
+        level === 0
+          ? "Every pan on the line"
+          : "Pans off tonight's menu go in a drawer: a shorter line, but it has to be opened for some requests",
     },
     terrasse: {
       name: "Terrace",
@@ -323,17 +345,7 @@ export const en: Dictionary = {
     },
     oven2: {
       name: "Second oven",
-      describe: ({ level }, t) =>
-        level === 0
-          ? "Not built yet"
-          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} at a time · ${t.number(BAKE_SECONDS[level - 1])}s bake`,
-    },
-    oven3: {
-      name: "Third oven",
-      describe: ({ level }, t) =>
-        level === 0
-          ? "Not built yet"
-          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} at a time · ${t.number(BAKE_SECONDS[level - 1])}s bake`,
+      describe: ({ level }, t) => (level === 0 ? "Not built yet" : ovenStage(level - 1, t)),
     },
     annexe: {
       name: "Second address",
@@ -359,6 +371,8 @@ export const en: Dictionary = {
     theme: "Theme",
     themes: { auto: "Automatic", light: "Light", dark: "Dark" },
     largeText: "Larger text",
+    useDrawer: "Put the pans off the menu in the drawer",
+    commisFade: "The kitchen assistant pushes unneeded pans back",
     sound: "Sound",
     music: "Music",
     effects: "Sound effects",
@@ -407,6 +421,7 @@ export const en: Dictionary = {
     starWaste: "Nothing binned",
     starProfit: ({ target }, t) => `Profit of at least ${t.money(target)}`,
     inspection: ({ xp }) => `Inspection passed: +${xp} reputation`,
+    reviews: ({ count, average }, t) => `${count} new online ${count === 1 ? "review" : "reviews"} · ${t.number(average)} ★`,
     orders: "Orders served",
     order: ({ customer, recipe }) => `${customer} · ${recipe}`,
     noTip: "no tip",
@@ -419,6 +434,14 @@ export const en: Dictionary = {
 
   journal: {
     stats: "Accounts",
+    reviews: "Online reviews",
+    reviewsSource: "on Gustoscope, where everyone has an opinion",
+    reviewsCount: ({ count }) => `${count} ${count === 1 ? "review" : "reviews"}`,
+    noReviews: "No reviews yet. A few customers leave one every evening, mostly the unhappy ones…",
+    reviewDay: "day {day}",
+    press: "In the papers",
+    pressDay: "Day {day} · Food critic",
+    pressBy: "— {critic}",
     days: "Days open",
     served: "Pizzas served",
     revenue: "Sales",
@@ -444,7 +467,7 @@ export const en: Dictionary = {
     achievementsIntro: "{count} / {total} unlocked",
     unlockedOn: "Day {day}",
     regulars: "Regulars",
-    noRegulars: "Your regulars show up here once someone has ordered the same pizza three times.",
+    noRegulars: "Your regulars show up here: people from the neighbourhood who come back for the same pizza, though the menu gives them a choice.",
     visits: "{count} visits",
     quests: "Completed quests",
     questsTotal: ({ count, amount }, t) => `${count} ${plural(count, "quest")} completed · ${t.money(amount)} earned`,
@@ -501,6 +524,10 @@ export const en: Dictionary = {
     festival: { name: "Street party", describe: "The whole street is hungry: many more customers tonight." },
     critic: { name: "Food critic", describe: "A critic is coming tonight. Serve them quickly for a glowing review and lots of reputation." },
     sunny: { name: "Sunshine", describe: "A few more customers, many more with a terrace." },
+    woodShortage: {
+      name: "No wood delivered",
+      describe: "The wood didn't come: one oven, one pizza at a time. But understanding customers tip more.",
+    },
     powerCut: { name: "Power cut", describe: "One oven, one pizza at a time. But understanding customers tip more." },
     lateDelivery: { name: "Late delivery", describe: "One ingredient arrives during the service, with a few free portions by way of apology." },
     inspection: { name: "Health inspection", describe: "A day without binning anything earns lots of reputation." },
@@ -573,6 +600,7 @@ export const en: Dictionary = {
     restocked: ({ cost }, t) => `Stock topped up for ${t.money(cost)}.`,
     supplierSigned: ({ ingredientId, portions }, t) => `New supplier: ${t.ingredient(ingredientId)}. ${portions} free portions.`,
     nonna: "Nonna dropped off enough for 4 margheritas. She won't take anything for it.",
+    upgradeSold: ({ upgradeKey, refund }, t) => `${t.upgradeName(upgradeKey)} sold back: ${t.money(refund)} recovered.`,
     upgradeBought: ({ upgradeKey, level }, t) =>
       `${t.upgradeName(upgradeKey)} upgraded: ${t.upgradeDescription(upgradeKey, level)}.`,
     menuFull: "Your menu is full ({capacity} pizzas at level {level}).",
@@ -611,6 +639,33 @@ export const en: Dictionary = {
     secretFromCode: "Nonna winks at you: her secret ingredient is yours. You can make it at the market.",
     secretCodeAgain: "Nonna smiles. You already know the secret.",
     newPairing: ({ pairings }, t) => `${plural(pairings.length, "New pairing")}: ${pairings.map(t.pairing).join(", ")}!`,
+  },
+
+  reviewPraise: {
+    perfect: ["Perfect, served piping hot. We'll be back!", "Best pizza in the neighbourhood, hands down.", "Quick, friendly, delicious. Nothing to add."],
+    woodFired: ["That wood-fired taste… a treat.", "The crispy crust from the wood oven, pure joy.", "You can tell it's a real wood oven. Bravo!"],
+  },
+  reviewComplaints: {
+    wait: {
+      kind: ["A bit of a wait, but worth it!", "We waited, but what a pizza.", "Service a little slow, pizza delicious."],
+      mixed: ["Good pizza, but what a wait…", "Fine, nothing more: we waited a long time.", "The pizza is good, the service far too slow."],
+      harsh: ["Far too long a wait for a pizza.", "An eternity before being served…", "I nearly left, it took so long."],
+    },
+    lukewarm: {
+      kind: ["A little lukewarm, but excellent.", "Not piping hot, but we loved it.", "A touch lukewarm, no big deal, it was very good."],
+      mixed: ["Good pizza, but it arrived lukewarm.", "Shame, it had already cooled a bit.", "The taste was there, the heat a bit less."],
+      harsh: ["Lukewarm. Pizza is meant to be eaten hot.", "Served lukewarm, pointless.", "Lukewarm and bland, disappointed."],
+    },
+    cold: {
+      kind: ["It had gone cold, but the welcome was lovely.", "Cold when it came, but we'll come back anyway.", "Not hot, but great ingredients."],
+      mixed: ["Cold pizza, a shame, the recipe is good.", "Arrived cold… we'll try another evening.", "Good produce, but served cold."],
+      harsh: ["Cold pizza. Really disappointing.", "Served cold, we won't be back any time soon.", "It must have sat on the counter for ages… cold."],
+    },
+  },
+  pressLines: {
+    rave: ["A place not to miss: the dough is a marvel.", "The best meal of our tour. Run there.", "Simple, perfect, unforgettable. Hats off."],
+    good: ["A good neighbourhood spot, worth the trip.", "Honest, generous pizzas and attentive service.", "We'll be back, no question."],
+    fair: ["Decent, but the wait spoils the fun a little.", "Promising, if the kitchen picks up the pace.", "A friendly pizzeria that still has room to grow."],
   },
 
   customerLines: [

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { toSaveData } from "../game/state";
+import { COMMIS_FADES_PANS } from "../data/progression";
+import { DevPanel } from "../dev/DevPanel";
 import { LANGUAGES, LANGUAGE_NAMES, type Language } from "../i18n";
 import { useTranslation } from "../i18n/I18nContext";
 import type { Dispatch, SoundChannel, Theme } from "../game/types";
@@ -124,6 +126,19 @@ const PizzeriaSettings = ({ state, dispatch }: ScreenProps) => {
         <input id="large-text" type="checkbox" checked={state.settings.largeText} onChange={() => dispatch({ type: "toggleLargeText" })} />
         {t("settings.largeText")}
       </label>
+      {/* Comfort upgrades, once bought, can be switched off for free */}
+      {state.upgrades.drawer > 0 && (
+        <label className="switch">
+          <input type="checkbox" checked={state.settings.useDrawer} onChange={() => dispatch({ type: "toggleComfort", option: "useDrawer" })} />
+          {t("settings.useDrawer")}
+        </label>
+      )}
+      {state.upgrades.commis >= COMMIS_FADES_PANS && (
+        <label className="switch">
+          <input type="checkbox" checked={state.settings.commisFade} onChange={() => dispatch({ type: "toggleComfort", option: "commisFade" })} />
+          {t("settings.commisFade")}
+        </label>
+      )}
       <InstallButton />
     </div>
   );
@@ -211,6 +226,8 @@ export const SettingsView = ({ state, dispatch }: ScreenProps) => {
     <div className="grid2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" }}>
       <PizzeriaSettings state={state} dispatch={dispatch} />
       <SaveTransfer state={state} dispatch={dispatch} />
+      {/* Replaced by false in the built game, so the panel and its code are left out of it. */}
+      {import.meta.env.DEV && <DevPanel state={state} dispatch={dispatch} />}
     </div>
   );
 };

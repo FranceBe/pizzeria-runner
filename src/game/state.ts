@@ -8,10 +8,11 @@ import { fitAccessory } from "./looks";
 import { createClassicRecipe } from "./menu";
 import { goodPairingsIn, pairingKey } from "./pairings";
 import type { GameState, LifetimeStats, SaveData } from "./types";
+import { LOCALS_COUNT, MAX_REGULARS, REGULAR_SAME_ORDERS } from "./regulars";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 11;
 
 const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
@@ -51,7 +52,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     stock: { pate: 8, tomate: 8, mozza: 8, basilic: 8 },
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
-    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, oven3: 0, annexe: 0 },
+    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 },
     settings: {
       showHelp: true,
       language,
@@ -63,6 +64,8 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
       musicMuted: false,
       effectsMuted: false,
       tutorialDone: false,
+      useDrawer: true,
+      commisFade: true,
     },
     phase: "prep",
     purchasesToday: 0,
@@ -85,6 +88,9 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     secretIngredient: false,
     secretStock: 0,
     mammaSecret: false,
+    reviews: [],
+    reviewScore: { count: 0, total: 0 },
+    press: [],
     locals: [],
     mammaStock: 0,
     lateIngredient: null,
@@ -229,6 +235,49 @@ const migrateFromVersion7 = (saved: JsonObject): JsonObject => {
 // Everything new has a default; a quest already running keeps working as it was.
 const migrateFromVersion8 = (saved: JsonObject): JsonObject => saved;
 
+// Version 9: anyone with the same pizza ordered three times was a regular, and there could be dozens. Being a regular
+// is now a status (see regulars.ts), at most MAX_REGULARS at a time: the most frequent visitors among the old ones keep
+// it, and join the neighbourhood if they weren't in it. Everyone's orders so far count as made with a choice.
+const migrateFromVersion9 = (saved: JsonObject): JsonObject => {
+  const book = asObject(saved.customerBook);
+  if (!book) return saved;
+  const entries = Object.entries(book).flatMap(([name, value]) => {
+    const entry = asObject(value);
+    return entry ? [{ name, entry }] : [];
+  });
+  const timesOrdered = (entry: JsonObject) =>
+    Math.max(0, ...Object.values(asObject(entry.orders) ?? {}).filter((count): count is number => typeof count === "number"));
+  const visits = (entry: JsonObject) => (typeof entry.visits === "number" ? entry.visits : 0);
+  const keep = new Set(
+    entries
+      .filter(({ entry }) => timesOrdered(entry) >= REGULAR_SAME_ORDERS && entry.lapsed !== true)
+      .sort((a, b) => visits(b.entry) - visits(a.entry))
+      .slice(0, MAX_REGULARS)
+      .map(({ name }) => name),
+  );
+  const customerBook = Object.fromEntries(
+    entries.map(({ name, entry }) => {
+      const { lapsed, ...rest } = entry;
+      return [name, { ...rest, choiceOrders: rest.orders, ...(keep.has(name) ? { regular: true } : {}) }];
+    }),
+  );
+  const oldLocals = Array.isArray(saved.locals) ? saved.locals.filter((name): name is string => typeof name === "string") : [];
+  const locals = [...new Set([...keep, ...oldLocals])].slice(0, LOCALS_COUNT);
+  return { ...saved, customerBook, locals };
+};
+
+// Version 10: there was a third oven. It is gone (two ovens of two pizzas are plenty): whatever was paid for it comes
+// back to the till, and its evening charges go with it.
+const THIRD_OVEN_COSTS = [1100, 600, 1100, 1800];
+const migrateFromVersion10 = (saved: JsonObject): JsonObject => {
+  const upgrades = asObject(saved.upgrades);
+  if (!upgrades || typeof upgrades.oven3 !== "number") return saved;
+  const { oven3, ...rest } = upgrades;
+  const refund = THIRD_OVEN_COSTS.slice(0, oven3).reduce((total, cost) => total + cost, 0);
+  const money = (typeof saved.money === "number" ? saved.money : 0) + refund;
+  return { ...saved, upgrades: rest, money };
+};
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
 const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion1,
@@ -239,6 +288,8 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion6,
   migrateFromVersion7,
   migrateFromVersion8,
+  migrateFromVersion9,
+  migrateFromVersion10,
 ];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.

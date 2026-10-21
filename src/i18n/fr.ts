@@ -7,13 +7,18 @@ import type { QuestGiver } from "../data/quests";
 import type { SeasonId } from "../data/seasons";
 import type { IngredientId, IngredientKind, StationId } from "../data/ingredients";
 import {
-  OVEN_SLOTS, BAKE_SECONDS, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
+  OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
 } from "../data/progression";
 import type { ClassicRecipeId, Pairing } from "../data/recipes";
 import { plural } from "../utils/format";
 import type { TranslationHelpers as H } from "./types";
 
 const lower = (text: string): string => text.toLowerCase();
+
+// An oven at a stage of its upgrades (see data/progression.ts).
+const ovenStage = (stage: number, t: H): string =>
+  `${OVEN_SLOTS[stage]} ${plural(OVEN_SLOTS[stage], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[stage])} s` +
+  (stage >= WOOD_FIRED_STAGE ? " · au feu de bois : meilleures pizzas, plus de pourboires et de réputation" : "");
 
 // The reference dictionary: its keys, literal strings and function signatures type every translation (see types.ts).
 export const fr = {
@@ -42,6 +47,9 @@ export const fr = {
     debt: ({ amount }: { amount: number }, t: H) => `Ardoise : ${t.money(amount)}`,
     reputation: "Réputation · niv. {level}",
     xpTitle: "{xp} / {next} points",
+    reviews: "Avis",
+    reviewsTitle: ({ average, count }: { average: number; count: number }, t: H) => `${t.number(average)} sur 5 · ${count} avis en ligne`,
+    noReviews: "Pas encore d'avis en ligne",
   },
 
   prep: {
@@ -150,6 +158,7 @@ export const fr = {
     binTray: "Vider le plateau",
     offerShort: "Offrir",
     ovenNumber: "Four {number}",
+    woodFired: "au bois",
     pause: "Pause",
     paused: "Pause",
     pausedHint: "Le temps est arrêté : personne n'attend, rien ne cuit.",
@@ -183,6 +192,10 @@ export const fr = {
     stillComing: "En route",
     secretTitle: "Une pincée du secret de Nonna. Ça ne change rien à la recette…",
     secretPan: "Nonna",
+    drawer: "Tiroir",
+    drawerOthers: "Autres",
+    drawerOpen: "Ouvrir le tiroir : les ingrédients hors carte",
+    drawerClose: "Refermer le tiroir",
     mammaPan: "Mamma",
     mammaTitle: "Une cuillère du secret de Mamma : ce client parlera de toi au suivant.",
     charmed: "Charmé·e",
@@ -293,12 +306,14 @@ export const fr = {
     next: "Ensuite :",
     extraCharges: ({ amount }: { amount: number }, t: H) => `(+${t.money(amount)} de charges)`,
     maxed: "Au maximum",
+    sell: ({ refund }: { refund: number }, t: H) => `Revendre un niveau · ${t.money(refund)}`,
+    sellConfirm: ({ refund }: { refund: number }, t: H) => `Confirmer la revente · ${t.money(refund)}`,
+    sellLater: "Revente possible hors service",
     levelRequired: "Niveau {level} requis",
     buy: ({ cost }: { cost: number }, t: H) => `Améliorer · ${t.money(cost)}`,
     oven: {
-      name: "Four à bois",
-      describe: ({ level }: { level: number }, t: H) =>
-        `${OVEN_SLOTS[level]} ${plural(OVEN_SLOTS[level], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[level])} s`,
+      name: "Four",
+      describe: ({ level }: { level: number }, t: H) => ovenStage(level, t),
     },
     salle: {
       name: "Salle",
@@ -317,6 +332,13 @@ export const fr = {
           "Pousse un peu les bacs dont le ticket choisi n'a pas besoin",
           "Pousse encore plus loin les bacs inutiles",
         ][level],
+    },
+    drawer: {
+      name: "Préparation assidue",
+      describe: ({ level }: { level: number }): string =>
+        level === 0
+          ? "Tous les bacs sur la ligne"
+          : "Les bacs hors carte se rangent dans un tiroir : une ligne plus courte, mais il faut l'ouvrir pour certaines demandes",
     },
     terrasse: {
       name: "Terrasse",
@@ -342,17 +364,7 @@ export const fr = {
     },
     oven2: {
       name: "Deuxième four",
-      describe: ({ level }: { level: number }, t: H): string =>
-        level === 0
-          ? "Pas encore construit"
-          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[level - 1])} s`,
-    },
-    oven3: {
-      name: "Troisième four",
-      describe: ({ level }: { level: number }, t: H): string =>
-        level === 0
-          ? "Pas encore construit"
-          : `${OVEN_SLOTS[level - 1]} ${plural(OVEN_SLOTS[level - 1], "pizza")} à la fois · cuisson ${t.number(BAKE_SECONDS[level - 1])} s`,
+      describe: ({ level }: { level: number }, t: H): string => (level === 0 ? "Pas encore construit" : ovenStage(level - 1, t)),
     },
     annexe: {
       name: "Deuxième adresse",
@@ -379,6 +391,8 @@ export const fr = {
     theme: "Thème",
     themes: { auto: "Automatique", light: "Clair", dark: "Sombre" },
     largeText: "Texte plus grand",
+    useDrawer: "Ranger les bacs hors carte dans le tiroir",
+    commisFade: "Le commis pousse les bacs inutiles",
     sound: "Son",
     music: "Musique",
     effects: "Effets sonores",
@@ -428,6 +442,8 @@ export const fr = {
     starWaste: "Rien jeté",
     starProfit: ({ target }: { target: number }, t: H) => `Bénéfice d'au moins ${t.money(target)}`,
     inspection: ({ xp }: { xp: number }) => `Contrôle sanitaire réussi : +${xp} de réputation`,
+    reviews: ({ count, average }: { count: number; average: number }, t: H) =>
+      `${count} nouvel${count > 1 ? "s" : ""} avis en ligne · ${t.number(average)} ★`,
     orders: "Commandes servies",
     order: ({ customer, recipe }: { customer: string; recipe: string }) => `${customer} · ${recipe}`,
     noTip: "pas de pourboire",
@@ -440,6 +456,14 @@ export const fr = {
 
   journal: {
     stats: "Comptes",
+    reviews: "Avis en ligne",
+    reviewsSource: "sur Gustoscope, le site où tout le monde a un avis",
+    reviewsCount: ({ count }: { count: number }) => `${count} avis`,
+    noReviews: "Pas encore d'avis. Quelques clients en laissent chaque soir, surtout les mécontents…",
+    reviewDay: "jour {day}",
+    press: "On parle de vous",
+    pressDay: "Jour {day} · Critique gastronomique",
+    pressBy: "— {critic}",
     days: "Jours d'ouverture",
     served: "Pizzas servies",
     revenue: "Ventes",
@@ -465,7 +489,7 @@ export const fr = {
     achievementsIntro: "{count} / {total} débloqués",
     unlockedOn: "Jour {day}",
     regulars: "Habitués",
-    noRegulars: "Tes habitués apparaîtront ici dès qu'un client aura commandé trois fois la même pizza.",
+    noRegulars: "Tes habitués apparaîtront ici : des gens du quartier qui reviennent pour la même pizza, alors que la carte leur laisse le choix.",
     visits: "{count} visites",
     quests: "Quêtes réussies",
     questsTotal: ({ count, amount }: { count: number; amount: number }, t: H) =>
@@ -523,11 +547,15 @@ export const fr = {
     festival: { name: "Fête du quartier", describe: "Toute la rue a faim : beaucoup plus de clients ce soir." },
     critic: { name: "Critique gastronomique", describe: "Une critique passera ce soir. Sers-la vite pour une belle note et beaucoup de réputation." },
     sunny: { name: "Grand soleil", describe: "Un peu plus de clients, et bien plus avec une terrasse." },
+    woodShortage: {
+      name: "Pas de livraison de bois",
+      describe: "Le bois n'est pas arrivé : un seul four, une pizza à la fois. Mais les clients, compréhensifs, laissent plus de pourboires.",
+    },
     powerCut: { name: "Panne d'électricité", describe: "Un seul four, une pizza à la fois. Mais les clients, compréhensifs, laissent plus de pourboires." },
     lateDelivery: { name: "Livraison en retard", describe: "Un ingrédient arrivera en cours de service, avec quelques portions offertes pour se faire pardonner." },
     inspection: { name: "Contrôle sanitaire", describe: "Une journée sans rien jeter rapporte beaucoup de réputation." },
     scooterStrike: { name: "Grève des scooters", describe: "Pas de livraisons aujourd'hui, mais plus de monde sur place." },
-  } satisfies Record<DayEventId, { name: string; describe: string }>,
+  } satisfies Record<DayEventId | "woodShortage", { name: string; describe: string }>,
 
   achievements: {
     firstPizza: { name: "Première fournée", describe: "Servir sa première pizza" },
@@ -601,6 +629,8 @@ export const fr = {
     supplierSigned: ({ ingredientId, portions }: { ingredientId: IngredientId; portions: number }, t: H) =>
       `Nouveau fournisseur : ${t.ingredient(ingredientId)}. ${portions} portions offertes.`,
     nonna: "Nonna a déposé de quoi faire 4 margheritas. Elle ne veut rien en retour.",
+    upgradeSold: ({ upgradeKey, refund }: { upgradeKey: UpgradeKey; refund: number }, t: H) =>
+      `${t.upgradeName(upgradeKey)} revendu : ${t.money(refund)} récupérés.`,
     upgradeBought: ({ upgradeKey, level }: { upgradeKey: UpgradeKey; level: number }, t: H) =>
       `${t.upgradeName(upgradeKey)} amélioré : ${t.upgradeDescription(upgradeKey, level)}.`,
     menuFull: "Ta carte est pleine ({capacity} pizzas au niveau {level}).",
@@ -646,6 +676,36 @@ export const fr = {
     secretCodeAgain: "Nonna sourit. Tu connais déjà le secret.",
     newPairing: ({ pairings }: { pairings: readonly Pairing[] }, t: H) =>
       `${plural(pairings.length, "Nouvel accord", "Nouveaux accords")} : ${pairings.map(t.pairing).join(", ")} !`,
+  },
+
+  // Online reviews (see game/reviews.ts): praise for an evening without a fault; otherwise what went wrong, in the tone
+  // of the stars given (kind 4–5, mixed 3, harsh 1–2). Three lines each.
+  reviewPraise: {
+    perfect: ["Parfaite, servie bien chaude. On reviendra !", "Meilleure pizza du quartier, sans hésiter.", "Rapide, souriant, délicieux. Rien à redire."],
+    woodFired: ["Ce goût de feu de bois… un régal.", "La pâte croustillante du four à bois, quel bonheur.", "On sent le vrai four à bois. Bravo !"],
+  },
+  reviewComplaints: {
+    wait: {
+      kind: ["Un peu d'attente, mais ça valait le coup !", "On a patienté, mais quelle pizza.", "Service un peu lent, pizza délicieuse."],
+      mixed: ["Bonne pizza, mais que d'attente…", "Correct, sans plus : on a attendu longtemps.", "La pizza est bonne, le service beaucoup trop lent."],
+      harsh: ["Beaucoup trop d'attente pour une pizza.", "Une éternité avant d'être servi…", "J'ai failli repartir tellement c'était long."],
+    },
+    lukewarm: {
+      kind: ["Arrivée un peu tiède, mais excellente.", "Pas brûlante, mais on s'est régalés.", "Un poil tiède, rien de grave, c'était très bon."],
+      mixed: ["Bonne pizza, mais arrivée tiède.", "Dommage, elle avait déjà un peu refroidi.", "Le goût est là, la chaleur un peu moins."],
+      harsh: ["Tiède. Une pizza, ça se mange chaud.", "Servie tiède, aucun intérêt.", "Pizza tiède et sans saveur, déçu."],
+    },
+    cold: {
+      kind: ["Elle avait refroidi, mais l'accueil était adorable.", "Froide à l'arrivée, mais on reviendra quand même.", "Pas chaude, mais les ingrédients sont top."],
+      mixed: ["Pizza froide, dommage, la recette est bonne.", "Arrivée froide… on retentera un autre soir.", "De bons produits, mais servie froide."],
+      harsh: ["Pizza froide. Vraiment décevant.", "Servie froide, on ne reviendra pas de sitôt.", "Elle a dû attendre longtemps sur le comptoir… froide."],
+    },
+  },
+  // Food critics' articles, by the stars they gave (5, 4, 3).
+  pressLines: {
+    rave: ["Une adresse à ne pas manquer : la pâte est une merveille.", "Le meilleur repas de notre tournée. Courez-y.", "Simple, parfait, inoubliable. Chapeau."],
+    good: ["Une bonne table de quartier, qui mérite le détour.", "Des pizzas honnêtes et généreuses, un service attentionné.", "On y retournera, sans hésiter."],
+    fair: ["Correct, mais l'attente gâche un peu le plaisir.", "Du potentiel, à condition de presser le pas en cuisine.", "Une pizzeria sympathique, qui doit encore progresser."],
   },
 
   customerLines: [

@@ -114,16 +114,15 @@ const SignedPhoto = ({ index }: { index: number }) => {
 };
 
 export const StorefrontDecor = ({ upgrades, photos = 0 }: { upgrades: Record<UpgradeKey, number>; photos?: number }) => {
-  const { deco, salle, oven, terrasse, livraison, bar, oven2, oven3, annexe } = upgrades;
+  const { deco, salle, oven, terrasse, livraison, bar, oven2, annexe } = upgrades;
   if (!deco && !salle && !oven && !terrasse && !livraison && !bar && !annexe && !photos) return null;
-  const extraOvens = (oven2 ? 1 : 0) + (oven3 ? 1 : 0);
   return (
     <div className="storefront" aria-hidden="true">
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} />}
       {Array.from({ length: terrasse }, (_, index) => <Parasol key={index} />)}
       {Array.from({ length: salle }, (_, index) => <BistroTable key={index} />)}
       {oven >= 1 && <WoodOven level={oven} />}
-      {Array.from({ length: extraOvens }, (_, index) => <WoodOven key={index} level={index === 0 ? oven2 : oven3} />)}
+      {oven2 >= 1 && <WoodOven level={oven2} />}
       {bar >= 1 && <BarGlass />}
       {livraison >= 1 && <Scooter />}
       {deco >= 1 && <PottedPlant isFlowering={deco >= 3} isFlipped />}

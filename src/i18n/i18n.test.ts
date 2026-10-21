@@ -8,11 +8,12 @@ import { createTranslator, LANGUAGES } from "./index";
 import { en } from "./en";
 import { fr } from "./fr";
 
-// Flattens a dictionary into "path.to.key" -> "string" | "function" | "array".
+// Flattens a dictionary into "path.to.key" -> "string" | "function" | "array(…)", an array described by its rows
+// (the length of each row of lines, or "string").
 const shapeOf = (node: object, prefix = ""): [string, string][] => {
   return Object.entries(node).flatMap(([key, value]): [string, string][] => {
     const path = prefix ? `${prefix}.${key}` : key;
-    if (Array.isArray(value)) return [[path, `array(${value.map((row: unknown[]) => row.length).join(",")})`]];
+    if (Array.isArray(value)) return [[path, `array(${value.map((row: unknown) => (Array.isArray(row) ? row.length : typeof row)).join(",")})`]];
     if (typeof value === "object" && value !== null) return shapeOf(value, path);
     return [[path, typeof value]];
   });

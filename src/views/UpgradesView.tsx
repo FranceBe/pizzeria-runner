@@ -5,6 +5,8 @@ import { useTranslation } from "../i18n/I18nContext";
 import { COSMETIC_PRICES, COSMETIC_SLOTS, STAR_LOOKS, type CosmeticSlot, type LookIds } from "../data/cosmetics";
 import type { Dispatch, GameState } from "../game/types";
 import { canAfford } from "../utils/math";
+import { useState } from "react";
+import { resaleValue } from "../game/actions/shopActions";
 import type { ScreenProps } from "./types";
 
 interface UpgradeCardProps {
@@ -13,10 +15,34 @@ interface UpgradeCardProps {
   currentLevel: number;
   playerLevel: number;
   money: number;
+  /** Selling back only happens outside service. */
+  canSell: boolean;
   dispatch: Dispatch;
 }
 
-const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, dispatch }: UpgradeCardProps) => {
+// Selling back a level: a second tap confirms, so a stray tap never undoes a purchase.
+const SellButton = ({ upgradeKey, currentLevel, canSell, dispatch }: Pick<UpgradeCardProps, "upgradeKey" | "currentLevel" | "canSell" | "dispatch">) => {
+  const t = useTranslation();
+  const [isConfirming, setConfirming] = useState(false);
+  if (currentLevel < 1) return null;
+  if (!canSell) return <span className="hint sell-later">{t("upgrades.sellLater")}</span>;
+  const refund = resaleValue(upgradeKey, currentLevel);
+  return (
+    <button
+      className={`btn sm ${isConfirming ? "danger" : "ghost"} sell-btn`}
+      onClick={() => {
+        if (!isConfirming) return setConfirming(true);
+        setConfirming(false);
+        dispatch({ type: "sellUpgrade", upgradeKey });
+      }}
+      onBlur={() => setConfirming(false)}
+    >
+      {t(isConfirming ? "upgrades.sellConfirm" : "upgrades.sell", { refund })}
+    </button>
+  );
+};
+
+const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, canSell, dispatch }: UpgradeCardProps) => {
   const t = useTranslation();
   const isMaxed = currentLevel >= upgrade.costs.length;
   const requiredLevel = upgrade.requiredLevel[currentLevel];
@@ -48,7 +74,10 @@ const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, di
           {upgrade.dailyCharge > 0 && <span className="hint">{t("upgrades.extraCharges", { amount: upgrade.dailyCharge })}</span>}
         </div>
       )}
-      {action}
+      <div className="row upgrade-actions">
+        {action}
+        <SellButton upgradeKey={upgradeKey} currentLevel={currentLevel} canSell={canSell} dispatch={dispatch} />
+      </div>
     </div>
   );
 };
@@ -137,6 +166,7 @@ export const UpgradesView = ({ state, dispatch }: ScreenProps) => {
             currentLevel={state.upgrades[key]}
             playerLevel={playerLevel}
             money={state.money}
+            canSell={state.phase === "prep"}
             dispatch={dispatch}
           />
         ))}

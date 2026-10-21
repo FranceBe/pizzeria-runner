@@ -1,9 +1,9 @@
 import { appealToStars } from "../game/pizza";
 import { useTranslation } from "../i18n/I18nContext";
 
-export const AppealStars = ({ appeal }: { appeal: number }) => {
+// Five stars, the first `stars` of them lit.
+export const StarRow = ({ stars }: { stars: number }) => {
   const t = useTranslation();
-  const stars = appealToStars(appeal);
   return (
     <span className="stars" aria-label={t("stars", { count: stars })}>
       {"★".repeat(stars)}
@@ -11,3 +11,5 @@ export const AppealStars = ({ appeal }: { appeal: number }) => {
     </span>
   );
 };
+
+export const AppealStars = ({ appeal }: { appeal: number }) => <StarRow stars={appealToStars(appeal)} />;
