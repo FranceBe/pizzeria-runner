@@ -1,18 +1,23 @@
 // The "Multiplayer" tab: pick a mode (each described), or join a room; then the lobby, the match, and the podium.
 // Challenge and quick co-op are played on the service screen; a duo pizzeria takes over the whole game while it is open.
 import { useEffect, useState, type ReactNode } from "react";
-import { MIN_PLAYERS, maxPlayersIn, type PlayerView, type RoomMode, type RoomView } from "../multiplayer/protocol";
+import { MATCH_LENGTHS, MIN_PLAYERS, isOwnKitchen, maxPlayersIn, type PlayerView, type RoomMode, type RoomView } from "../multiplayer/protocol";
 import { useMultiplayer } from "../multiplayer/MultiplayerContext";
 import { deleteDuo, loadDuos, newDuo, openDuo, type DuoSave } from "../multiplayer/duoSaves";
 import { useTranslation } from "../i18n/I18nContext";
 import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
 
-// Best score first; a player who left keeps their place with what they had.
-export const ranking = (room: RoomView): PlayerView[] => [...room.players].sort((a, b) => b.score - a.score || b.served - a.served);
+// Best score first; a player who left keeps their place with what they had. In a Pizza Royale, those still in come
+// first (on points), then the others, the last one out first.
+const stillInFirst = (player: PlayerView): number => player.out ?? Infinity;
+export const ranking = (room: RoomView): PlayerView[] =>
+  [...room.players].sort(
+    (a, b) => (room.mode === "royale" ? stillInFirst(b) - stillInFirst(a) : 0) || b.score - a.score || b.served - a.served,
+  );
 
 const MEDALS = ["🥇", "🥈", "🥉"];
-const MODE_ICONS: Record<RoomMode, string> = { challenge: "🏁", coop: "🍕", duo: "🤝" };
+const MODE_ICONS: Record<RoomMode, string> = { challenge: "🏁", royale: "👑", coop: "🍕", duo: "🤝" };
 
 const PlayerList = ({ room, you, showScores }: { room: RoomView; you: string | null; showScores: boolean }) => {
   const t = useTranslation();
@@ -27,11 +32,13 @@ const PlayerList = ({ room, you, showScores }: { room: RoomView; you: string | n
             {player.name}
             {player.id === you && <span className="hint">{` (${t("multi.you")})`}</span>}
             {player.isHost && !showScores && <span className="tag mp-host">{t("multi.host")}</span>}
+            {player.away && player.connected && <span className="hint">{` · ${t("multi.away")}`}</span>}
           </strong>
           {showScores ? (
             <span className="mp-score">
               {t("multi.points", { score: player.score })}
-              {!player.connected && <span className="hint">{` · ${t("multi.left")}`}</span>}
+              {player.out !== undefined && <span className="hint">{` · ${t("multi.royale.out")}`}</span>}
+              {!player.connected && player.out === undefined && <span className="hint">{` · ${t("multi.left")}`}</span>}
             </span>
           ) : (
             <span className={player.ready ? "pair" : "hint"}>{player.ready ? `✓ ${t("multi.ready")}` : t("multi.busy")}</span>
@@ -52,6 +59,42 @@ const Countdown = ({ startAt }: { startAt: number }) => {
   }, []);
   const seconds = Math.ceil((startAt - now) / 1000);
   return seconds > 0 ? <p className="mp-countdown">{t("multi.countdown", { seconds })}</p> : null;
+};
+
+// How long the match lasts: the host picks it, the others see it.
+const MatchLength = ({ room, isHost }: { room: RoomView; isHost: boolean }) => {
+  const t = useTranslation();
+  const { setLength } = useMultiplayer();
+  if (room.mode !== "challenge" && room.mode !== "coop") return null;
+  return (
+    <div className="row mp-length">
+      <span className="binlabel">{t("multi.length")}</span>
+      {isHost
+        ? MATCH_LENGTHS.map((seconds) => (
+            <button key={seconds} className={`btn sm${seconds === room.seconds ? " primary" : ""}`} aria-pressed={seconds === room.seconds} onClick={() => setLength(seconds)}>
+              {t(`multi.lengths.s${seconds}`)}
+            </button>
+          ))
+        : <strong>{t(`multi.lengths.s${room.seconds}`)}</strong>}
+    </div>
+  );
+};
+
+// Leaving a match being played: asked twice, since there is no coming back into it.
+const LeaveMatch = () => {
+  const t = useTranslation();
+  const { leave } = useMultiplayer();
+  const [isAsking, setAsking] = useState(false);
+  if (!isAsking) return <button className="btn ghost" onClick={() => setAsking(true)}>{t("multi.leaveMatch")}</button>;
+  return (
+    <div className="mp-leave-confirm" role="alertdialog">
+      <p className="hint">{t("multi.leaveMatchConfirm")}</p>
+      <div className="row">
+        <button className="btn primary" onClick={leave}>{t("multi.leaveMatchYes")}</button>
+        <button className="btn ghost" onClick={() => setAsking(false)}>{t("common.cancel")}</button>
+      </div>
+    </div>
+  );
 };
 
 const Lobby = ({ room, goToTab }: { room: RoomView; goToTab: (tab: TabId) => void }) => {
@@ -75,7 +118,7 @@ const Lobby = ({ room, goToTab }: { room: RoomView; goToTab: (tab: TabId) => voi
     return (
       <>
         <h3 className="h">{t("multi.results")}</h3>
-        <PlayerList room={room} you={you} showScores={room.mode === "challenge"} />
+        <PlayerList room={room} you={you} showScores={isOwnKitchen(room.mode)} />
         {!everyoneDone && <p className="hint">{t("multi.waitingOthers")}</p>}
         <button className="btn primary" onClick={multiplayer.leave}>{t("multi.newRoom")}</button>
       </>
@@ -99,8 +142,9 @@ const Lobby = ({ room, goToTab }: { room: RoomView; goToTab: (tab: TabId) => voi
       <>
         {startAt !== null && <Countdown startAt={startAt} />}
         <p className="mp-status">{t("multi.playing")}</p>
-        <PlayerList room={room} you={you} showScores={room.mode === "challenge"} />
+        <PlayerList room={room} you={you} showScores={isOwnKitchen(room.mode)} />
         <button className="btn primary" onClick={() => goToTab("service")}>{t("multi.backToService")}</button>
+        <LeaveMatch />
       </>
     );
   }
@@ -116,6 +160,7 @@ const Lobby = ({ room, goToTab }: { room: RoomView; goToTab: (tab: TabId) => voi
       <p className="hint">{t("multi.shareCode")}</p>
       <h3 className="h">{t("multi.players", { count: room.players.length, max: maxPlayersIn(room.mode) })}</h3>
       <PlayerList room={room} you={you} showScores={false} />
+      <MatchLength room={room} isHost={isHost} />
       {isHost ? (
         <button className="btn primary big" disabled={!canStart} onClick={multiplayer.start}>{t(`multi.modes.${room.mode}.start`)}</button>
       ) : (
@@ -212,6 +257,11 @@ const JoinOrCreate = ({ state, dispatch }: ScreenProps) => {
         <ModeCard mode="challenge">
           <button className="btn primary" disabled={multiplayer.isConnecting} onClick={() => void multiplayer.create(nickname, "challenge")}>
             {t("multi.modes.challenge.create")}
+          </button>
+        </ModeCard>
+        <ModeCard mode="royale">
+          <button className="btn primary" disabled={multiplayer.isConnecting} onClick={() => void multiplayer.create(nickname, "royale")}>
+            {t("multi.modes.royale.create")}
           </button>
         </ModeCard>
         <ModeCard mode="coop">

@@ -245,6 +245,10 @@ export interface Challenge {
   multiplayer?: boolean;
   /** Two players in one shared kitchen, for a team score. */
   coop?: boolean;
+  /** Pizza Royale: sudden death, customers coming faster and faster. */
+  royale?: boolean;
+  /** Pizza Royale: the mistake that put this player out. */
+  out?: RoyaleMistake;
   secondsLeft: number;
   score: number;
   /** "2026-10-17" */
@@ -255,9 +259,14 @@ export interface Challenge {
   happy: number;
 }
 
+// In Pizza Royale: baking a pizza nobody is waiting for, or throwing anything away.
+export type RoyaleMistake = "unwantedPizza" | "waste";
+
 export interface ChallengeResult {
   multiplayer?: boolean;
   coop?: boolean;
+  royale?: boolean;
+  out?: RoyaleMistake;
   date: string;
   score: number;
   served: number;
@@ -545,7 +554,11 @@ export type GameAction =
   | { type: "trashReadyPizza"; pizzaId: string }
   | { type: "revealUsualOrder"; customerId: string }
   /** date: the day's date for the daily challenge, or the room's seed for a multiplayer match. */
-  | { type: "startChallenge"; date: string; multiplayer?: boolean }
+  | { type: "startChallenge"; date: string; multiplayer?: boolean; seconds?: number; royale?: boolean }
+  // The match ended for everyone (a Pizza Royale with one player left): this one's game stops too.
+  | { type: "endMatch" }
+  // Out of a match against friends before its end: back to the morning prep, nothing recorded.
+  | { type: "leaveMatch" }
   | { type: "setPlayerName"; name: string }
   | { type: "pourDrink"; drinkId: DrinkId }
   | { type: "serveTrayDrink"; index: number }

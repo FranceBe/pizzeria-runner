@@ -306,10 +306,16 @@ to `migrateSave`, so existing games still load.
 ## Multiplayer
 
 The "Multiplayer" tab: one player creates a room and reads out its four-letter code, the others join with it, and the
-host starts. No accounts: a nickname and a room code. Nothing is at stake for anyone's own pizzeria.
+host starts. No accounts: a nickname and a room code. Nothing is at stake for anyone's own pizzeria. For a challenge or a quick
+co-op, the host picks the length in the lobby: a 1-minute sprint, the daily challenge's 2 minutes, or 5 minutes. Anyone
+can leave the room, in the middle of a match too (after a confirmation: there is no coming back into it).
 
-- **Challenge** (2 to 4 players): everyone plays the same customers on the same 2-minute clock, each on their own phone,
+- **Challenge** (2 to 4 players): everyone plays the same customers on the same clock, each on their own phone,
   like the daily challenge, with the others' scores in the message line and a podium at the end.
+- **Pizza Royale** (2 to 4 players): the challenge in sudden death. Baking a pizza nobody is waiting for (counting
+  those already in the oven or on the pass) or throwing anything away puts a player out; customers come faster and
+  faster (up to 2.5 times by the end). The last one in the kitchen wins, with a crown, a rain of slices and a little
+  fanfare played by the browser itself; after 5 minutes, the best score among those still in wins.
 - **Co-op** (2 players): one kitchen for two, run on the host's phone and apart from both players' pizzerias (two ovens
   of two pizzas, the challenge's recipes, endless pans). Each has their own board; the order the other one is making
   wears their colour and name, so the same pizza isn't made twice. One team score at the end. The host's phone sends
@@ -326,11 +332,26 @@ host starts. No accounts: a nickname and a room code. Nothing is at stake for an
 Every move the other phone sends is checked on the host's, its kind and its values (`isCoopMove`, `isPartnerDuoMove`):
 anything a button of the game couldn't send, like buying -1000 mozzarellas, is ignored.
 
+Scores are checked by the server too (`isPlausibleScore` in `src/multiplayer/protocol.ts`): no more pizzas than
+customers could have come by then, no more points than those pizzas could be worth, never going down, nothing before
+the start. A score that can't be true is not taken (the player keeps their last one that could be); the game's tests
+check those limits against the game's own rules. Going out of a Pizza Royale is final. What the server can't check is
+a tampered phone that keeps quiet about its own mistake, or plays perfectly within the limits: that would take the
+server playing every match itself.
+
+A phone drops its connection whenever its player switches apps (to send the room code, to answer a message). That is
+not leaving: the player is shown as away to the others and keeps their place for 3 minutes, and their phone comes back
+on its own, into a match already started too, with a secret the server gave it alone. A phone back on screen checks its
+connection at once (a quick ping the server answers without waking the room) rather than trusting one that died
+silently. Leaving with the button, or staying away longer, is leaving.
+
 It needs a small server, in `server/`: a Cloudflare Worker with one Durable Object per room. A room code is the name of
 its Durable Object, and Cloudflare runs exactly one per name, handling one request at a time: two rooms can never share
 a code. Rooms close after 10 minutes without activity; a finished room's code stays blocked 10 more minutes, so a late
-player gets "this match is over" rather than strangers' new room. Each player is limited to 10 messages a second, and
-only the game's own addresses may use the server (`ALLOWED_ORIGINS` in `server/wrangler.toml`).
+player gets "this match is over" rather than strangers' new room. Each player is limited to 20 messages a second, and
+only the game's own addresses may use the server (`ALLOWED_ORIGINS` in `server/wrangler.toml`). Each address may
+create rooms and open connections at most 30 times a minute (`JOIN_LIMIT`, Cloudflare's rate limiting), and a room's
+creation request is a few bytes at most.
 
 **Try it locally**
 

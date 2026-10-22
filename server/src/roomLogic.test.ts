@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
-  COUNTDOWN_MS, MATCH_SECONDS, MAX_PLAYERS, ROOM_CODE_LETTERS, cleanName, normalizeRoomCode, parseClientMessage, randomRoomCode,
+  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MAX_PLAYERS, ROOM_CODE_LETTERS, cleanName, maxPlayersIn, normalizeRoomCode, parseClientMessage, randomRoomCode,
 } from "../../src/multiplayer/protocol";
 import { CHALLENGE_SECONDS } from "../../src/game/challenge";
 import {
   ACTIVITY_NOTE_MS, COOLDOWN_MS, END_GRACE_MS, IDLE_MS, MAX_MESSAGES_PER_SECOND, addPlayer, allowMessage, canSendKitchen, canSendMove,
-  createRoom, joinError, nextDeadline, noteActivity, recordScore, removePlayer, setReady, startMatch, viewOf,
+  createRoom, dropAway, joinError, markAway, nextDeadline, noteActivity, recordScore, rejoinPlayer, removePlayer, setLength, setReady, startMatch,
+  viewOf,
 } from "./roomLogic";
 
 const roomWith = (count: number) => {
@@ -77,22 +78,34 @@ describe("a match", () => {
     expect(viewOf(room, 1000)).toMatchObject({ status: "playing", seed: "seed-42", startsInMs: COUNTDOWN_MS });
   });
 
-  it("lasts as long as the daily challenge", () => {
+  it("lasts as long as the daily challenge, or as long as the host picked", () => {
     expect(MATCH_SECONDS).toBe(CHALLENGE_SECONDS);
+    const room = roomWith(2);
+    expect(viewOf(room, 0).seconds).toBe(MATCH_SECONDS);
+    setLength(room, "p1", 60, 0);
+    expect(viewOf(room, 0).seconds).toBe(MATCH_SECONDS);
+    setLength(room, "p0", 300, 0);
+    room.players.forEach((player) => setReady(room, player.id, true, 0));
+    startMatch(room, "p0", "seed", 0);
+    expect(nextDeadline(room)).toEqual({ at: COUNTDOWN_MS + 300_000 + END_GRACE_MS, then: "finish" });
+    setLength(room, "p0", 60, 0);
+    expect(viewOf(room, 0).seconds).toBe(300);
+    expect(parseClientMessage('{"type":"length","seconds":61}')).toBeNull();
+    expect(parseClientMessage('{"type":"length","seconds":60}')).toEqual({ type: "length", seconds: 60 });
   });
 
   it("keeps everyone's score, and ends once every player is done", () => {
     const room = roomWith(2);
     room.players.forEach((player) => setReady(room, player.id, true, 0));
     startMatch(room, "p0", "seed", 0);
-    recordScore(room, "p0", 120, 6, false, 10_000);
-    recordScore(room, "p1", 90, 5, true, 20_000);
+    recordScore(room, "p0", 120, 6, "score", 20_000);
+    recordScore(room, "p1", 90, 5, "done", 30_000);
     expect(room.status).toBe("playing");
-    recordScore(room, "p0", 140, 7, true, 30_000);
+    recordScore(room, "p0", 140, 7, "done", 40_000);
     expect(room.status).toBe("finished");
-    expect(viewOf(room, 30_000).players.map((player) => player.score)).toEqual([140, 90]);
+    expect(viewOf(room, 40_000).players.map((player) => player.score)).toEqual([140, 90]);
     // Nothing changes once over.
-    recordScore(room, "p1", 999, 99, true, 40_000);
+    recordScore(room, "p1", 999, 99, "done", 50_000);
     expect(room.players[1].score).toBe(90);
   });
 
@@ -100,7 +113,7 @@ describe("a match", () => {
     const room = roomWith(2);
     room.players.forEach((player) => setReady(room, player.id, true, 0));
     startMatch(room, "p0", "seed", 0);
-    recordScore(room, "p1", 50, 3, false, 5000);
+    recordScore(room, "p1", 50, 3, "score", 5000);
     removePlayer(room, "p1", 6000);
     expect(room.players[1]).toMatchObject({ score: 50, done: true, connected: false });
     expect(room.status).toBe("playing");
@@ -201,3 +214,145 @@ describe("duo rooms", () => {
   });
 });
 
+
+describe("a player whose phone switched apps", () => {
+  const started = (mode: "challenge" | "coop") => {
+    const room = createRoom("PZZA", 0, mode);
+    addPlayer(room, "host", "Léa", 0, "secret-host", "c1");
+    addPlayer(room, "guest", "Tom", 0, "secret-guest", "c2");
+    room.players.forEach((player) => setReady(room, player.id, true, 0));
+    startMatch(room, "host", "seed", 0);
+    return room;
+  };
+
+  it("is away, not gone: the match goes on and nobody else sees their secret", () => {
+    const room = started("coop");
+    markAway(room, "guest", "c2", 10_000);
+    expect(viewOf(room, 10_000).players[1]).toMatchObject({ connected: true, away: true, done: false });
+    expect(room.status).toBe("playing");
+    expect(JSON.stringify(viewOf(room, 10_000))).not.toContain("secret");
+  });
+
+  it("comes back into a started match with their secret, and only with it", () => {
+    const room = started("coop");
+    markAway(room, "guest", "c2", 10_000);
+    expect(joinError(room)).toBe("started");
+    expect(rejoinPlayer(room, "guest", "guessed", "c3", 20_000)).toBe(false);
+    expect(rejoinPlayer(room, "guest", "secret-guest", "c3", 20_000)).toBe(true);
+    expect(viewOf(room, 20_000).players[1].away).toBe(false);
+    // The old connection closing late doesn't mark them away again.
+    markAway(room, "guest", "c2", 21_000);
+    expect(viewOf(room, 21_000).players[1].away).toBe(false);
+  });
+
+  it("is dropped once away too long, as if they had left", () => {
+    const room = started("challenge");
+    markAway(room, "guest", "c2", 10_000);
+    dropAway(room, 10_000 + AWAY_GRACE_MS - 1);
+    expect(room.players[1].connected).toBe(true);
+    dropAway(room, 10_000 + AWAY_GRACE_MS);
+    expect(room.players[1]).toMatchObject({ connected: false, done: true });
+    expect(rejoinPlayer(room, "guest", "secret-guest", "c3", 10_000 + AWAY_GRACE_MS)).toBe(false);
+  });
+
+  it("keeps their place in the lobby, as host too, and the match waits for them", () => {
+    const room = createRoom("PZZA", 0);
+    addPlayer(room, "host", "Léa", 0, "secret-host", "c1");
+    addPlayer(room, "guest", "Tom", 0, "secret-guest", "c2");
+    room.players.forEach((player) => setReady(room, player.id, true, 0));
+    markAway(room, "host", "c1", 5000);
+    expect(viewOf(room, 5000).players[0]).toMatchObject({ isHost: true, away: true });
+    expect(nextDeadline(room)).toEqual({ at: 5000 + AWAY_GRACE_MS, then: "drop" });
+    expect(startMatch(room, "host", "seed", 6000)).toBe("notReady");
+    rejoinPlayer(room, "host", "secret-host", "c3", 7000);
+    expect(startMatch(room, "host", "seed", 8000)).toBeNull();
+  });
+});
+
+describe("scores", () => {
+  const playing = () => {
+    const room = roomWith(2);
+    room.players.forEach((player) => setReady(room, player.id, true, 0));
+    startMatch(room, "p0", "seed", 0);
+    return room;
+  };
+  const secondsIn = (seconds: number) => COUNTDOWN_MS + seconds * 1000;
+
+  it("are taken when they could be true", () => {
+    const room = playing();
+    recordScore(room, "p0", 60, 2, "score", secondsIn(10));
+    expect(room.players[0]).toMatchObject({ score: 60, served: 2 });
+  });
+
+  it("are refused when they can't be: too many pizzas, too many points, going down, before the start", () => {
+    const room = playing();
+    recordScore(room, "p0", 100_000, 99, "score", secondsIn(10));
+    recordScore(room, "p0", 500, 2, "score", secondsIn(10));
+    recordScore(room, "p0", 10, 1, "score", secondsIn(-1));
+    expect(room.players[0]).toMatchObject({ score: 0, served: 0 });
+    recordScore(room, "p0", 60, 2, "score", secondsIn(10));
+    recordScore(room, "p0", 30, 2, "score", secondsIn(12));
+    expect(room.players[0]).toMatchObject({ score: 60, served: 2 });
+    // A false final score still ends their match, with the last true one.
+    recordScore(room, "p0", 99_999, 3, "done", secondsIn(20));
+    expect(room.players[0]).toMatchObject({ score: 60, done: true });
+  });
+
+  it("count no one out outside a Pizza Royale", () => {
+    const room = playing();
+    recordScore(room, "p0", 0, 0, "out", secondsIn(5));
+    expect(room.players[0].out).toBeUndefined();
+    expect(room.players[0].done).toBe(false);
+  });
+});
+
+describe("a Pizza Royale", () => {
+  const royale = (count: number) => {
+    const room = createRoom("PZZA", 0, "royale");
+    for (let index = 0; index < count; index++) addPlayer(room, `p${index}`, `Player ${index}`, 0);
+    room.players.forEach((player) => setReady(room, player.id, true, 0));
+    startMatch(room, "p0", "seed", 0);
+    return room;
+  };
+  const secondsIn = (seconds: number) => COUNTDOWN_MS + seconds * 1000;
+
+  it("lasts five minutes at most, whatever the host picks", () => {
+    const room = createRoom("PZZA", 0, "royale");
+    addPlayer(room, "p0", "Léa", 0);
+    setLength(room, "p0", 60, 0);
+    expect(viewOf(room, 0).seconds).toBe(300);
+    expect(maxPlayersIn("royale")).toBe(4);
+  });
+
+  it("puts players out for good, in order, and ends when one is left", () => {
+    const room = royale(3);
+    recordScore(room, "p1", 30, 1, "out", secondsIn(10));
+    expect(viewOf(room, secondsIn(10)).players[1]).toMatchObject({ out: 1, done: true });
+    // Out is final: nothing more counts.
+    recordScore(room, "p1", 60, 2, "score", secondsIn(12));
+    expect(room.players[1].score).toBe(30);
+    expect(room.status).toBe("playing");
+    recordScore(room, "p2", 40, 1, "out", secondsIn(20));
+    expect(room.status).toBe("finished");
+    expect(room.players.map((player) => player.out)).toEqual([undefined, 1, 2]);
+  });
+
+  it("counts leaving, or staying away too long, as going out", () => {
+    const room = royale(3);
+    removePlayer(room, "p2", secondsIn(5));
+    expect(room.players[2].out).toBe(1);
+    markAway(room, "p1", "", secondsIn(6));
+    dropAway(room, secondsIn(6) + AWAY_GRACE_MS);
+    expect(room.players[1].out).toBe(2);
+    expect(room.status).toBe("finished");
+  });
+
+  it("ends on the clock when several are still in", () => {
+    const room = royale(2);
+    expect(nextDeadline(room)).toEqual({ at: COUNTDOWN_MS + 300_000 + END_GRACE_MS, then: "finish" });
+    recordScore(room, "p0", 100, 5, "done", secondsIn(300));
+    recordScore(room, "p1", 80, 4, "done", secondsIn(300));
+    expect(room.status).toBe("finished");
+    expect(room.players.every((player) => player.out === undefined)).toBe(true);
+  });
+});

@@ -184,6 +184,30 @@ class AudioEngine {
     });
   }
 
+  // The Pizza Royale winner's fanfare: a little rising arpeggio, played by the browser itself (no recording).
+  fanfare(): void {
+    const context = this.context;
+    if (!context || context.state !== "running" || !this.effectsBus || this.effectsLevel === 0) return;
+    const bus = this.effectsBus;
+    const NOTES: readonly [number, number, number][] = [
+      // [frequency in Hz, start, length] in seconds: C, E, G, then a held high C.
+      [523.25, 0, 0.14], [659.25, 0.13, 0.14], [783.99, 0.26, 0.14], [1046.5, 0.4, 0.7],
+    ];
+    const start = context.currentTime + 0.02;
+    NOTES.forEach(([frequency, at, length]) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0, start + at);
+      gain.gain.linearRampToValueAtTime(0.5, start + at + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + at + length);
+      oscillator.connect(gain).connect(bus);
+      oscillator.start(start + at);
+      oscillator.stop(start + at + length + 0.05);
+    });
+  }
+
   // Volumes from 0 to 1, reached smoothly: no click when a slider moves or the game pauses.
   setLevels(music: number, effects: number): void {
     this.musicLevel = music;

@@ -1253,3 +1253,26 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 :root[data-theme="dark"] .crate-btns .btn:disabled { background: rgba(20, 14, 8, .45); color: rgba(255, 248, 236, .55); }
 :root[data-theme="dark"] .pan.need svg { outline-color: #ffd560; outline-width: 3px; }
 :root[data-theme="dark"] .chip.miss { border-color: var(--muted); opacity: 1; }
+
+/* Multiplayer lobby: the match's length; leaving a match, asked twice */
+.mp-length { align-items: center; flex-wrap: wrap; gap: 6px; }
+.mp-length .binlabel { margin: 0; }
+.mp-leave-confirm { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); }
+.mp-leave-confirm .hint { margin: 0; color: var(--ink); }
+
+/* Pizza Royale: the winner's crown, title and a rain of slices */
+.challenge-result.is-winner { position: relative; overflow: hidden; }
+.royale-win { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.royale-crown { font-size: 64px; line-height: 1; animation: crown-in .7s cubic-bezier(.2, .9, .3, 1.4) both; }
+.royale-title { color: var(--gold); text-align: center; animation: crown-in .7s .15s cubic-bezier(.2, .9, .3, 1.4) both; }
+@keyframes crown-in { from { transform: translateY(-30px) scale(.4) rotate(-12deg); opacity: 0; } }
+.royale-rain { position: absolute; inset: -40px 0 auto; height: 0; pointer-events: none; }
+.royale-rain span { position: absolute; top: 0; font-size: 22px; animation: slice-fall 2.6s ease-in infinite; opacity: 0; }
+@keyframes slice-fall {
+  0% { transform: translateY(0) rotate(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(420px) rotate(540deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .royale-rain { display: none; } }
+.royale-win > :not(.royale-rain) { position: relative; z-index: 1; }
+.royale-rain span { filter: opacity(.75); }

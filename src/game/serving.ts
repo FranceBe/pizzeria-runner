@@ -4,6 +4,7 @@ import {
 } from "../data/progression";
 import { levelForXp } from "./progression";
 import type { Pairing } from "../data/recipes";
+import type { IngredientId } from "../data/ingredients";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
 import { receivePayment } from "./economy";
 import { fillingsOf, isDessert } from "./pizza";
@@ -39,11 +40,14 @@ const CHALLENGE_BASE_POINTS = 10;
 const CHALLENGE_FILLING_POINTS = 3;
 const CHALLENGE_MOOD_POINTS: Record<Mood, number> = [10, 6, 3, 0];
 
+// What a challenge pizza is worth (the multiplayer server knows the most it can be: see its tests).
+export const challengePoints = (ingredients: readonly IngredientId[], mood: Mood): number =>
+  CHALLENGE_BASE_POINTS + CHALLENGE_FILLING_POINTS * fillingsOf(ingredients).length + CHALLENGE_MOOD_POINTS[mood];
+
 export const serveForChallenge = (service: Service, customer: Customer): void => {
   if (!service.challenge) return;
   const mood = moodForWait(customer.waitedSeconds);
-  service.challenge.score +=
-    CHALLENGE_BASE_POINTS + CHALLENGE_FILLING_POINTS * fillingsOf(customer.ingredients).length + CHALLENGE_MOOD_POINTS[mood];
+  service.challenge.score += challengePoints(customer.ingredients, mood);
   if (mood === 0) service.challenge.happy += 1;
   service.stats.served += 1;
 };

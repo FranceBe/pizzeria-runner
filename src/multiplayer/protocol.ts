@@ -10,17 +10,55 @@ const BLOCKED_CODES: ReadonlySet<string> = new Set([
   "ANUS", "SEXE", "SEXY", "PENE", "TETA", "CRAP", "DUMB", "SUCK", "FUCC", "HATE", "KKKK",
 ]);
 
-// Three kinds of room: everyone plays the same customers on their own phone (a challenge); two players share one kitchen
-// for a quick match, run on the host's phone (co-op); or two players run a whole pizzeria together, saved on the host's
-// phone with a copy on the partner's (duo), for as long as the host keeps it open.
-export type RoomMode = "challenge" | "coop" | "duo";
+// Four kinds of room: everyone plays the same customers on their own phone (a challenge), or the same in sudden death,
+// the last one standing winning (Pizza Royale); two players share one kitchen for a quick match, run on the host's
+// phone (co-op); or two players run a whole pizzeria together, saved on the host's phone with a copy on the partner's
+// (duo), for as long as the host keeps it open.
+export type RoomMode = "challenge" | "royale" | "coop" | "duo";
+export const ROOM_MODES: readonly RoomMode[] = ["challenge", "royale", "coop", "duo"];
 export const isSharedKitchen = (mode: RoomMode): boolean => mode === "coop" || mode === "duo";
+/** Each player in their own game, with the same customers. */
+export const isOwnKitchen = (mode: RoomMode): boolean => mode === "challenge" || mode === "royale";
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 4;
 export const maxPlayersIn = (mode: RoomMode): number => (isSharedKitchen(mode) ? 2 : MAX_PLAYERS);
-// The match lasts as long as the daily challenge (game/challenge.ts checks it), after a short countdown.
-export const MATCH_SECONDS = 120;
+// How long a challenge or a quick co-op lasts, picked by the host: a sprint, the daily challenge's two minutes (the
+// default, game/challenge.ts checks it), or a long one. After a short countdown.
+export const MATCH_LENGTHS = [60, 120, 300] as const;
+export type MatchSeconds = (typeof MATCH_LENGTHS)[number];
+export const MATCH_SECONDS: MatchSeconds = 120;
+export const isMatchLength = (value: unknown): value is MatchSeconds => MATCH_LENGTHS.includes(value as MatchSeconds);
+// Pizza Royale: at most five minutes, customers coming faster and faster; whoever is still in at the end wins on points.
+export const ROYALE_SECONDS: MatchSeconds = 300;
+
+// What the server accepts as a score, so a tampered phone can't claim the impossible. Customers come one at a time,
+// at least this often apart (game/challenge.ts; faster and faster in Pizza Royale), and a pizza is worth at most
+// MAX_POINTS_PER_PIZZA (game/serving.ts). Both are checked against the game by its tests.
+export const MIN_ARRIVAL_SECONDS = 2;
+export const ROYALE_MIN_ARRIVAL_SECONDS = 0.8;
+export const MAX_POINTS_PER_PIZZA = 40;
+// Phones' clocks and the network are not exact: a little leeway, never enough to matter.
+const SCORE_LEEWAY_SECONDS = 3;
+export const maxServedAfter = (seconds: number, mode: RoomMode): number =>
+  1 + Math.floor((Math.max(0, seconds) + SCORE_LEEWAY_SECONDS) / (mode === "royale" ? ROYALE_MIN_ARRIVAL_SECONDS : MIN_ARRIVAL_SECONDS));
+// A score that could be true this far into the match: no more pizzas than customers came, no more points than they
+// were worth, and never less than already reported.
+export const isPlausibleScore = (
+  report: { score: number; served: number },
+  before: { score: number; served: number },
+  secondsIn: number,
+  mode: RoomMode,
+): boolean =>
+  report.score >= before.score &&
+  report.served >= before.served &&
+  report.served <= maxServedAfter(secondsIn, mode) &&
+  report.score <= report.served * MAX_POINTS_PER_PIZZA;
 export const COUNTDOWN_MS = 3500;
+// A player whose connection drops (a phone switching apps) keeps their place this long, so they can come back.
+export const AWAY_GRACE_MS = 3 * 60_000;
+// Asked by a phone to check its connection still works; answered by the server without waking the room.
+export const PING = "ping";
+export const PONG = "pong";
 // Nicknames: short, plain text.
 export const NAME_MAX_LENGTH = 16;
 
@@ -38,7 +76,12 @@ export interface PlayerView {
   served: number;
   /** Their clock ran out (or they left mid-match). */
   done: boolean;
+  /** Pizza Royale: out of the match, and in which order (1 for the first one out). */
+  out?: number;
+  /** Still in the room (false once they left for good). */
   connected: boolean;
+  /** Lost their connection a moment ago (switched apps): their place is kept while they come back. */
+  away: boolean;
 }
 
 export interface RoomView {
@@ -46,6 +89,8 @@ export interface RoomView {
   mode: RoomMode;
   status: RoomStatus;
   players: PlayerView[];
+  /** How long the match lasts (challenge and co-op). */
+  seconds: MatchSeconds;
   /** Once started: the shared seed, so everyone gets the same customers. */
   seed?: string;
   /** Once started: milliseconds until the match begins (negative once it has). */
@@ -57,15 +102,20 @@ export type RoomError = "notFound" | "full" | "started" | "over" | "notHost" | "
 export type ClientMessage =
   | { type: "ready"; ready: boolean }
   | { type: "start" }
+  // The host picks how long the match lasts, in the lobby.
+  | { type: "length"; seconds: MatchSeconds }
   | { type: "score"; score: number; served: number }
   | { type: "done"; score: number; served: number }
+  // Pizza Royale: this player made a mistake, and is out.
+  | { type: "out"; score: number; served: number }
   | { type: "leave" }
   // Co-op only. The host sends the shared kitchen as it is (as JSON); the other player sends what they do in it.
   | { type: "state"; state: string }
   | { type: "action"; action: unknown };
 
 export type ServerMessage =
-  | { type: "room"; room: RoomView; you: string }
+  // `token`: this player's secret for coming back after losing the connection, sent to them only.
+  | { type: "room"; room: RoomView; you: string; token: string }
   | { type: "error"; reason: RoomError }
   | { type: "state"; state: string }
   | { type: "action"; from: string; action: unknown };
@@ -123,11 +173,14 @@ export const parseClientMessage = (raw: unknown): ClientMessage | null => {
       return typeof message.action === "object" && message.action !== null ? { type: "action", action: message.action } : null;
     case "ready":
       return { type: "ready", ready: message.ready === true };
+    case "length":
+      return isMatchLength(message.seconds) ? { type: "length", seconds: message.seconds } : null;
     case "start":
     case "leave":
       return { type: message.type };
     case "score":
     case "done":
+    case "out":
       return { type: message.type, score: cleanCount(message.score), served: cleanCount(message.served) };
     default:
       return null;

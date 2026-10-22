@@ -154,10 +154,12 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
   // In a match against friends, the message line also shows where everyone stands.
   const standings =
     challenge?.multiplayer && !challenge.coop && room
-      ? ranking(room).map((player, index) => `${index + 1}. ${player.id === you ? t("multi.youRanked") : player.name} ${player.score}`).join(" · ")
+      ? ranking(room)
+          .map((player, index) => `${index + 1}. ${player.id === you ? t("multi.youRanked") : player.name} ${player.out !== undefined ? "✗" : player.score}`)
+          .join(" · ")
       : "";
   const progress = challenge
-    ? [t(challenge.coop ? "service.coop" : challenge.multiplayer ? "service.match" : "service.challenge", { clock: formatClock(challenge.secondsLeft), score: challenge.score }), standings]
+    ? [t(challenge.coop ? "service.coop" : challenge.royale ? "service.royale" : challenge.multiplayer ? "service.match" : "service.challenge", { clock: formatClock(challenge.secondsLeft), score: challenge.score }), standings]
         .filter(Boolean)
         .join(" · ")
     : service.rush

@@ -14,3 +14,10 @@ new_sqlite_classes = ["Room"]
 [vars]
 # Where the game is served from. For a test on a phone on the same Wi-Fi, see .dev.vars.example.
 ALLOWED_ORIGINS = "https://francebe.github.io,http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173"
+
+# A flood guard per address: rooms created and connections opened, at most this many a minute. Generous for players
+# (a reconnecting phone opens a few), short for a script. Requests over it get "429 Too Many Requests".
+[[ratelimits]]
+name = "JOIN_LIMIT"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

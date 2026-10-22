@@ -12,7 +12,10 @@ import {
   type CoopGame,
 } from "./coop";
 import { saveDuo, type DuoInfo } from "./duoSaves";
-import { normalizeRoomCode, parseServerMessage, type ClientMessage, type RoomError, type RoomMode, type RoomView } from "./protocol";
+import {
+  AWAY_GRACE_MS, PING, PONG, isOwnKitchen, isSharedKitchen, normalizeRoomCode, parseServerMessage, type ClientMessage, type MatchSeconds, type RoomError, type RoomMode,
+  type RoomView,
+} from "./protocol";
 
 // Where the server is: set at build time (VITE_MULTIPLAYER_URL), or the local one (`npm run server:dev`) in development.
 // Empty when there is none: the tab then says multiplayer is coming.
@@ -26,6 +29,15 @@ const DUO_SAVE_EVERY_MS = 3000;
 // Messages in the shared kitchen go away after this long, as in the solo game (useGameLoop).
 const TOAST_DURATION_MS = 4000;
 const SEND_EVERY_MS = 250;
+// A lost connection (a phone switching apps drops it) is tried again after these waits, then every last one, for as
+// long as the server keeps the player's place.
+const RECONNECT_WAITS_MS = [500, 1000, 2000, 4000, 8000];
+// The connection is checked when the game comes back on screen, and every so often while it is on: no answer this
+// quickly, and it is dead (a phone coming back from another app often holds one that never says it closed).
+const PING_EVERY_MS = 20_000;
+const PONG_WITHIN_MS = 4000;
+// Closes from the server that mean "don't come back": refused, flooding, or this connection replaced by a newer one.
+const FINAL_CLOSE_CODES: ReadonlySet<number> = new Set([4000, 4001, 4008]);
 
 export type MultiplayerError = RoomError | "network" | "hostLeft";
 
@@ -35,6 +47,8 @@ export interface Multiplayer {
   /** This player's id in the room. */
   you: string | null;
   isConnecting: boolean;
+  /** The connection dropped and is being brought back; the room is kept meanwhile. */
+  isReconnecting: boolean;
   error: MultiplayerError | null;
   /** When the match starts, on this device's clock (ms), once the host has started it. */
   startAt: number | null;
@@ -49,6 +63,9 @@ export interface Multiplayer {
   create: (name: string, mode: RoomMode, duo?: { info: DuoInfo; game: GameState }) => Promise<void>;
   join: (code: string, name: string) => void;
   start: () => void;
+  /** The host picks how long the match lasts, in the lobby. */
+  setLength: (seconds: MatchSeconds) => void;
+  /** Leaves the room, in the middle of a match too (the player's own game goes back to its morning). */
   leave: () => void;
   clearError: () => void;
 }
@@ -61,6 +78,7 @@ const NO_MULTIPLAYER: Multiplayer = {
   room: null,
   you: null,
   isConnecting: false,
+  isReconnecting: false,
   error: null,
   startAt: null,
   coopView: null,
@@ -70,6 +88,7 @@ const NO_MULTIPLAYER: Multiplayer = {
   create: async () => undefined,
   join: noop,
   start: noop,
+  setLength: noop,
   leave: noop,
   clearError: noop,
 };
@@ -78,8 +97,22 @@ const MultiplayerContext = createContext<Multiplayer>(NO_MULTIPLAYER);
 
 export const useMultiplayer = (): Multiplayer => useContext(MultiplayerContext);
 
-const socketUrl = (code: string, name: string): string =>
-  `${MULTIPLAYER_URL.replace(/^http/, "ws")}/rooms/${code}/ws?name=${encodeURIComponent(name)}`;
+// This player's place in a room, to come back to it after losing the connection.
+interface Seat {
+  code: string;
+  name: string;
+  id: string;
+  token: string;
+}
+
+const socketUrl = (code: string, name: string, seat?: Seat | null): string => {
+  const query = new URLSearchParams({ name });
+  if (seat) {
+    query.set("player", seat.id);
+    query.set("token", seat.token);
+  }
+  return `${MULTIPLAYER_URL.replace(/^http/, "ws")}/rooms/${code}/ws?${query.toString()}`;
+};
 
 interface ProviderProps {
   state: GameState;
@@ -93,6 +126,7 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
   const [room, setRoom] = useState<RoomView | null>(null);
   const [you, setYou] = useState<string | null>(null);
   const [isConnecting, setConnecting] = useState(false);
+  const [isReconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState<MultiplayerError | null>(null);
   const [startAt, setStartAt] = useState<number | null>(null);
   const [coop, setCoop] = useState<CoopGame | null>(null);
@@ -100,6 +134,11 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
   // The duo pizzeria the host brought, until the room opens it.
   const hostDuo = useRef<{ info: DuoInfo; game: GameState } | null>(null);
   const socket = useRef<WebSocket | null>(null);
+  const seat = useRef<Seat | null>(null);
+  // Since when the connection is lost (ms), while it is being brought back.
+  const lostAt = useRef<number | null>(null);
+  const retry = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHeard = useRef(0);
   // The seed of the match already started on this device, and whether its final score went out.
   const startedSeed = useRef<string | null>(null);
   const sentDone = useRef(false);
@@ -147,6 +186,11 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
 
   const reset = useCallback(() => {
     socket.current = null;
+    seat.current = null;
+    lostAt.current = null;
+    if (retry.current) clearTimeout(retry.current);
+    retry.current = null;
+    setReconnecting(false);
     hostKitchen.current = null;
     hostDuo.current = null;
     setRoom(null);
@@ -158,19 +202,60 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
     sentDone.current = false;
   }, []);
 
-  const join = useCallback(
-    (typedCode: string, name: string) => {
-      const code = normalizeRoomCode(typedCode);
-      if (!code) return setError("notFound");
-      socket.current?.close();
-      reset();
-      setError(null);
-      setConnecting(true);
-      const ws = new WebSocket(socketUrl(code, name));
+  // What this phone has to say again after coming back: the kitchen (host), its final score, whether it is free to play.
+  const latestResult = useRef<GameState["challengeResult"]>(null);
+  const isReadyRef = useRef(false);
+  const resumeAfterRejoin = useCallback(
+    (ws: WebSocket, view: RoomView) => {
+      const say = (message: ClientMessage) => ws.send(JSON.stringify(message));
+      if (view.status === "lobby") say({ type: "ready", ready: isReadyRef.current });
+      if (hostKitchen.current) say({ type: "state", state: encodeCoop(hostKitchen.current) });
+      const result = latestResult.current;
+      if (result?.multiplayer && sentDone.current) say({ type: result.out ? "out" : "done", score: result.score, served: result.served });
+    },
+    [],
+  );
+
+  const connect = useCallback(
+    (code: string, name: string) => {
+      const returning = seat.current;
+      const ws = new WebSocket(socketUrl(code, name, returning));
       socket.current = ws;
+      lastHeard.current = Date.now();
+
+      // The connection is gone: try again while the server keeps this player's place, else say it is lost.
+      const lose = (isFinal: boolean) => {
+        if (socket.current !== ws) return;
+        socket.current = null;
+        setConnecting(false);
+        const current = roomRef.current;
+        const since = lostAt.current ?? Date.now();
+        if (!isFinal && seat.current && current && current.status !== "finished" && Date.now() - since < AWAY_GRACE_MS) {
+          lostAt.current = since;
+          setReconnecting(true);
+          const attempt = Math.round((Date.now() - since) / 1000);
+          const wait = RECONNECT_WAITS_MS[Math.min(RECONNECT_WAITS_MS.length - 1, Math.floor(Math.log2(attempt + 1)))];
+          retry.current = setTimeout(() => {
+            retry.current = null;
+            if (!socket.current && seat.current) connect(seat.current.code, seat.current.name);
+          }, wait);
+          return;
+        }
+        lostAt.current = null;
+        setReconnecting(false);
+        // A finished match stays on screen; anything else lost means the room is gone.
+        setRoom((room) => {
+          if (room?.status !== "finished") setError((existing) => existing ?? "network");
+          return room?.status === "finished" ? room : null;
+        });
+      };
+      ws.onclose = (event) => lose(FINAL_CLOSE_CODES.has(event.code));
       ws.onmessage = (event) => {
+        if (socket.current !== ws) return;
+        lastHeard.current = Date.now();
+        if (event.data === PONG) return;
         const message = parseServerMessage(event.data);
-        if (!message || socket.current !== ws) return;
+        if (!message) return;
         switch (message.type) {
           case "error":
             setError(message.reason);
@@ -189,15 +274,20 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
             return;
           }
           case "room": {
+            const isBack = lostAt.current !== null && message.you === returning?.id;
             setConnecting(false);
+            setReconnecting(false);
+            lostAt.current = null;
             setRoom(message.room);
             setYou(message.you);
+            seat.current = { code: message.room.code, name, id: message.you, token: message.token };
+            if (isBack) resumeAfterRejoin(ws, message.room);
             // The server says how long until the start; this device's own clock times it.
             const { startsInMs } = message.room;
             if (startsInMs !== undefined) setStartAt((current) => current ?? Date.now() + startsInMs);
-            // Co-op: without its host, the shared kitchen is gone.
+            // Co-op: without its host, the shared kitchen is gone (a host only away keeps it: they are coming back).
             const host = message.room.players[0];
-            if (message.room.mode !== "challenge" && message.room.status === "playing" && host && host.id !== message.you && !host.connected) {
+            if (isSharedKitchen(message.room.mode) && message.room.status === "playing" && host && host.id !== message.you && !host.connected) {
               // The partner keeps their copy of a duo pizzeria as it was last seen, and leaves the room: nothing more
               // happens in it, and they may want to host the pizzeria themselves.
               const last = coopRef.current;
@@ -210,19 +300,69 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
           }
         }
       };
-      ws.onclose = () => {
-        if (socket.current !== ws) return;
-        setConnecting(false);
-        socket.current = null;
-        // A finished match stays on screen; anything else lost means the room is gone.
-        setRoom((current) => {
-          if (current?.status !== "finished") setError((existing) => existing ?? "network");
-          return current?.status === "finished" ? current : null;
-        });
-      };
     },
-    [reset, setHostKitchen],
+    [reset, setHostKitchen, resumeAfterRejoin],
   );
+
+  const join = useCallback(
+    (typedCode: string, name: string) => {
+      const code = normalizeRoomCode(typedCode);
+      if (!code) return setError("notFound");
+      socket.current?.close();
+      reset();
+      setError(null);
+      setConnecting(true);
+      connect(code, name);
+    },
+    [reset, connect],
+  );
+
+  // Back on screen (or every so often): a connection that doesn't answer is dead, and one that is lost is tried again
+  // right away rather than at the next retry.
+  const checkConnection = useCallback(() => {
+    if (!seat.current) return;
+    const ws = socket.current;
+    if (!ws) {
+      if (retry.current) clearTimeout(retry.current);
+      retry.current = null;
+      connect(seat.current.code, seat.current.name);
+      return;
+    }
+    if (ws.readyState === WebSocket.CONNECTING) return;
+    // Dead without saying so (no answer, or stuck closing): dropped here, and brought back.
+    const dropAndReconnect = () => {
+      ws.onclose = null;
+      ws.onmessage = null;
+      ws.close();
+      socket.current = null;
+      lostAt.current = lostAt.current ?? Date.now();
+      setReconnecting(true);
+      if (seat.current) connect(seat.current.code, seat.current.name);
+    };
+    if (ws.readyState !== WebSocket.OPEN) return dropAndReconnect();
+    const askedAt = Date.now();
+    ws.send(PING);
+    setTimeout(() => {
+      if (socket.current === ws && lastHeard.current < askedAt) dropAndReconnect();
+    }, PONG_WITHIN_MS);
+  }, [connect]);
+  const isInRoom = room !== null || isReconnecting;
+  useEffect(() => {
+    if (!isInRoom) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") checkConnection();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", checkConnection);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") checkConnection();
+    }, PING_EVERY_MS);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", checkConnection);
+      clearInterval(timer);
+    };
+  }, [isInRoom, checkConnection]);
 
   const create = useCallback(
     async (name: string, mode: RoomMode, duo?: { info: DuoInfo; game: GameState }) => {
@@ -250,13 +390,16 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
   const leave = useCallback(() => {
     // A duo pizzeria is kept as it is, on either phone.
     keepDuo(hostKitchen.current ?? coopRef.current);
+    // A challenge is played in the player's own game: it stops there, nothing recorded.
+    if (roomRef.current && isOwnKitchen(roomRef.current.mode)) dispatch({ type: "leaveMatch" });
     send({ type: "leave" });
     const ws = socket.current;
     reset();
     ws?.close();
-  }, [send, reset, keepDuo]);
+  }, [send, reset, keepDuo, dispatch]);
 
   const start = useCallback(() => send({ type: "start" }), [send]);
+  const setLength = useCallback((seconds: MatchSeconds) => send({ type: "length", seconds }), [send]);
   const clearError = useCallback(() => setError(null), []);
 
   // Co-op moves: played right here on the host, sent to the host from the other phone.
@@ -283,6 +426,7 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
 
   // Free to play only in the morning prep, not in the middle of a day (the day would go on without them).
   const isReady = state.phase === "prep" && !state.challengeResult;
+  isReadyRef.current = isReady;
   useEffect(() => {
     if (room?.status === "lobby") send({ type: "ready", ready: isReady });
   }, [room?.status, isReady, send]);
@@ -306,10 +450,10 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
         }
       } else if (mode === "coop") {
         if (isHostHere && current) {
-          setHostKitchen(createCoopGame(seed, current.players.map((player) => player.id), state.settings.language));
+          setHostKitchen(createCoopGame(seed, current.players.map((player) => player.id), state.settings.language, current.seconds));
         }
       } else {
-        dispatch({ type: "startChallenge", date: seed, multiplayer: true });
+        dispatch({ type: "startChallenge", date: seed, multiplayer: true, seconds: current?.seconds, royale: mode === "royale" });
       }
       onMatchStart();
     }, Math.max(0, startAt - Date.now()));
@@ -377,14 +521,38 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
 
   // The final score, once, when the clock runs out.
   const result = matchState?.challengeResult;
+  latestResult.current = result ?? null;
   useEffect(() => {
     if (!result?.multiplayer || sentDone.current || !startedSeed.current) return;
     sentDone.current = true;
-    send({ type: "done", score: result.score, served: result.served });
+    // In a Pizza Royale, a mistake ended it: the player is out.
+    send({ type: result.out ? "out" : "done", score: result.score, served: result.served });
   }, [result, send]);
 
+  // A Pizza Royale ends for everyone once one player is left: their game stops there, on the podium.
+  const isMatchOver = room?.status === "finished";
+  const isStillPlaying = Boolean(state.service?.challenge?.multiplayer);
+  useEffect(() => {
+    if (isMatchOver && isStillPlaying && mode === "royale") dispatch({ type: "endMatch" });
+  }, [isMatchOver, isStillPlaying, mode, dispatch]);
+
+  // The other player came back after losing their connection: the host sends them the kitchen as it is now (it may not
+  // change for a while in a duo's morning).
+  const partnerAway = room?.players.find((player) => player.id !== you)?.away;
+  useEffect(() => {
+    if (isHost && partnerAway === false && hostKitchen.current) sendKitchen();
+  }, [isHost, partnerAway, sendKitchen]);
+
   // Closing the page leaves the room cleanly.
-  useEffect(() => () => socket.current?.close(), []);
+  useEffect(
+    () => () => {
+      const ws = socket.current;
+      socket.current = null;
+      if (retry.current) clearTimeout(retry.current);
+      ws?.close();
+    },
+    [],
+  );
 
   const coopView = useMemo(() => {
     if (!coop || !you || !room) return null;
@@ -398,6 +566,7 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
       room,
       you,
       isConnecting,
+      isReconnecting,
       error,
       startAt,
       coopView,
@@ -407,10 +576,11 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
       create,
       join,
       start,
+      setLength,
       leave,
       clearError,
     }),
-    [room, you, isConnecting, error, startAt, coopView, coopDispatch, coop?.duo, refusedAt, create, join, start, leave, clearError],
+    [room, you, isConnecting, isReconnecting, error, startAt, coopView, coopDispatch, coop?.duo, refusedAt, create, join, start, setLength, leave, clearError],
   );
   return <MultiplayerContext.Provider value={value}>{children}</MultiplayerContext.Provider>;
 };

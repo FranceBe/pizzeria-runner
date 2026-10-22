@@ -20,7 +20,7 @@ import { ensureWeek, recordWeekly } from "../weekly";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
-import { hasBase, ingredientCost, isBase, isDessert, isSauce, sortByLayer } from "../pizza";
+import { hasBase, haveSameIngredients, ingredientCost, isBase, isDessert, isSauce, sortByLayer } from "../pizza";
 import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
@@ -28,7 +28,7 @@ import {
   collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable,
 } from "../serving";
 import { pushToast, pushPop } from "../toasts";
-import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, Service } from "../types";
+import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, RoyaleMistake, Service } from "../types";
 import { rateOrder, writeReviews } from "../reviews";
 
 const FIRST_ARRIVAL_DELAY = 0.6;
@@ -157,6 +157,8 @@ const finishChallenge = (state: GameState, service: Service): void => {
     state.challengeResult = {
       multiplayer: true,
       ...(challenge.coop ? { coop: true } : {}),
+      ...(challenge.royale ? { royale: true } : {}),
+      ...(challenge.out ? { out: challenge.out } : {}),
       date,
       score,
       served: service.stats.served,
@@ -175,6 +177,21 @@ const finishChallenge = (state: GameState, service: Service): void => {
   state.challengeResult = { date, score, served: service.stats.served, happy, isNewBest };
   state.service = null;
   state.phase = "prep";
+};
+
+// Pizza Royale: one mistake and the player is out, their match over.
+const isRoyale = (service: Service): boolean => Boolean(service.challenge?.royale);
+const knockOut = (state: GameState, service: Service, mistake: RoyaleMistake): void => {
+  if (!service.challenge) return;
+  service.challenge.out = mistake;
+  finishChallenge(state, service);
+};
+// A pizza nobody is waiting for: as many of it already in the oven or on the pass as there are customers wanting it.
+const isUnwanted = (service: Service, ingredients: readonly IngredientId[]): boolean => {
+  const same = (other: readonly IngredientId[]) => haveSameIngredients(other, ingredients);
+  const wanted = service.customers.filter((customer) => !customer.pizzaServed && same(customer.ingredients)).length;
+  const coming = [...service.oven, ...service.ready].filter((pizza) => same(pizza.ingredients)).length;
+  return coming >= wanted;
 };
 
 const isDayOver = (service: Service): boolean => service.customersToCome === 0 && service.customers.length === 0;
@@ -391,11 +408,24 @@ export const serviceActions = {
   },
 
   // Two minutes for fun, the same for everyone on that date: free ingredients, nothing at stake but the score.
-  startChallenge(state, { date, multiplayer = false }) {
+  startChallenge(state, { date, multiplayer = false, seconds, royale = false }) {
     // A friend's match doesn't wait for the tutorial: it may be someone's very first game.
     if (state.phase !== "prep" || (!state.settings.tutorialDone && !multiplayer)) return;
-    state.service = { ...createService(CHALLENGE_CUSTOMERS), challenge: createChallenge(date, multiplayer) };
+    // Only a match against friends picks its length (one of the room's: a minute to five).
+    const length = multiplayer && seconds !== undefined ? Math.min(300, Math.max(60, Math.round(seconds))) : undefined;
+    state.service = { ...createService(CHALLENGE_CUSTOMERS), challenge: createChallenge(date, multiplayer, length, multiplayer && royale) };
     state.phase = "service";
+    state.challengeResult = null;
+  },
+
+  endMatch(state) {
+    if (state.service?.challenge?.multiplayer) finishChallenge(state, state.service);
+  },
+
+  leaveMatch(state) {
+    if (!state.service?.challenge?.multiplayer) return;
+    state.service = null;
+    state.phase = "prep";
     state.challengeResult = null;
   },
 
@@ -427,6 +457,7 @@ export const serviceActions = {
     const { service } = state;
     if (!service) return;
     const unwanted = service.ready.filter((pizza) => !destinationOf(state, service, pizza.ingredients));
+    if (isRoyale(service) && unwanted.length) return knockOut(state, service, "waste");
     unwanted.forEach((pizza) => addWaste(service, pizza.ingredients));
     service.ready = service.ready.filter((pizza) => !unwanted.includes(pizza));
   },
@@ -604,6 +635,7 @@ export const serviceActions = {
   trashBoard(state) {
     const { service } = state;
     if (!service) return;
+    if (isRoyale(service) && service.board.length) return knockOut(state, service, "waste");
     addWaste(service, service.board);
     service.board = [];
     service.secretOnBoard = false;
@@ -618,6 +650,7 @@ export const serviceActions = {
       pushToast(state, { key: "ovenFull" });
       return;
     }
+    if (isRoyale(service) && isUnwanted(service, service.board)) return knockOut(state, service, "unwantedPizza");
     service.oven.push({
       id: makeId(),
       ovenIndex: oven.index,
@@ -738,6 +771,7 @@ export const serviceActions = {
     if (!service) return;
     const pizza = service.ready.find((p) => p.id === pizzaId);
     if (!pizza) return;
+    if (isRoyale(service)) return knockOut(state, service, "waste");
     addWaste(service, pizza.ingredients);
     service.ready = service.ready.filter((p) => p.id !== pizzaId);
   },

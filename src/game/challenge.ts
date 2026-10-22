@@ -9,7 +9,8 @@ import type { Challenge, Customer } from "./types";
 
 export const CHALLENGE_SECONDS = 120;
 const MENU_SIZE = 4;
-const CHALLENGE_ARRIVALS = { min: 2, max: 4 };
+export const CHALLENGE_ARRIVALS = { min: 2, max: 4 };
+const ROYALE_SECONDS = 300;
 
 // "2026-10-17", in the player's own time zone.
 export const localDate = (date: Date = new Date()): string => {
@@ -29,10 +30,12 @@ const drawFrom = <T>(challenge: Challenge, list: readonly T[]): T => list[Math.f
 // Savoury classics only: every player gets the same four, whatever they have unlocked.
 const CHALLENGE_RECIPES = CLASSIC_RECIPES.filter((classic) => !classic.signatureLevel && !classic.festival && !isDessert(classic.ingredients));
 
-export const createChallenge = (date: string, multiplayer = false): Challenge => {
+// `seconds`: a match against friends may be shorter or longer, as its host picked.
+export const createChallenge = (date: string, multiplayer = false, seconds: number = CHALLENGE_SECONDS, royale = false): Challenge => {
   const challenge: Challenge = {
     ...(multiplayer ? { multiplayer } : {}),
-    secondsLeft: CHALLENGE_SECONDS,
+    ...(royale ? { royale } : {}),
+    secondsLeft: seconds,
     score: 0,
     date,
     seed: hashString(`forno-lento:${date}`),
@@ -49,8 +52,13 @@ export const createChallenge = (date: string, multiplayer = false): Challenge =>
 
 export const challengeRecipe = (id: ClassicRecipeId) => CLASSIC_RECIPES.find((classic) => classic.id === id) ?? CLASSIC_RECIPES[0];
 
+// Pizza Royale speeds up: customers come up to this much faster by the end, so even the careful ones are pushed.
+export const ROYALE_FASTEST_PACE = 0.4;
 export const nextChallengeArrival = (challenge: Challenge): number => {
-  return CHALLENGE_ARRIVALS.min + draw(challenge) * (CHALLENGE_ARRIVALS.max - CHALLENGE_ARRIVALS.min);
+  const wait = CHALLENGE_ARRIVALS.min + draw(challenge) * (CHALLENGE_ARRIVALS.max - CHALLENGE_ARRIVALS.min);
+  if (!challenge.royale) return wait;
+  const remaining = Math.min(1, Math.max(0, challenge.secondsLeft / ROYALE_SECONDS));
+  return wait * (ROYALE_FASTEST_PACE + (1 - ROYALE_FASTEST_PACE) * remaining);
 };
 
 // The next customer of the day's sequence. Mutates the challenge's generator.

@@ -24,6 +24,7 @@ import { SecretPad } from "./components/SecretPad";
 import type { ScreenProps } from "./views/types";
 import { shownEvent } from "./game/service";
 import { MultiplayerProvider, useMultiplayer } from "./multiplayer/MultiplayerContext";
+import { isSharedKitchen } from "./multiplayer/protocol";
 import { MultiplayerView } from "./views/MultiplayerView";
 
 const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "multi", "settings"];
@@ -58,7 +59,7 @@ const REFUSED_NOTE_MS = 3500;
 // player's own pizzeria waits in its morning prep meanwhile.
 const GameShell = ({ state: soloState, dispatch: soloDispatch, tab, setTab }: ScreenProps & { tab: TabId; setTab: (tab: TabId) => void }) => {
   const t = useTranslation();
-  const { coopView, coopDispatch, duo, refusedAt, room, you, error, clearError } = useMultiplayer();
+  const { coopView, coopDispatch, duo, refusedAt, room, you, error, clearError, isReconnecting } = useMultiplayer();
   const secretPad = useSecretCode(soloDispatch);
   const isCoop = coopView !== null;
   const isDuo = isCoop && duo !== null;
@@ -76,6 +77,10 @@ const GameShell = ({ state: soloState, dispatch: soloDispatch, tab, setTab }: Sc
   }, [refusedAt]);
   const isRefusedNoteShown = refusedAt !== null && now - refusedAt < REFUSED_NOTE_MS;
   const partner = room?.players.find((player) => player.id !== you)?.name ?? "";
+  // Someone in the room lost their connection (switched apps): said to the others, whose game goes on meanwhile.
+  const awayPlayer = room && room.status !== "finished" ? room.players.find((player) => player.id !== you && player.away && player.connected) : undefined;
+  // In a shared kitchen, the other player left for good: the host carries on alone, and knows it.
+  const leftPlayer = room?.status === "playing" && isSharedKitchen(room.mode) ? room.players.find((player) => player.id !== you && !player.connected) : undefined;
 
   // During service, the service screen fits the window instead of scrolling (see .svc-mode in styles.css).
   const isServing = tab === "service" && activeState.phase === "service";
@@ -119,6 +124,17 @@ const GameShell = ({ state: soloState, dispatch: soloDispatch, tab, setTab }: Sc
               <span className="ticker-t">{t("multi.errors.hostLeft")}</span>
               <span className="ticker-x" aria-hidden="true">×</span>
             </button>
+          </div>
+        )}
+        {(isReconnecting || awayPlayer || leftPlayer) && (
+          <div className="toast-float on-top">
+            <div className="ticker warn" role="status">
+              {isReconnecting
+                ? t("multi.reconnecting")
+                : awayPlayer
+                  ? t("multi.playerAway", { name: awayPlayer.name })
+                  : t("multi.playerLeft", { name: leftPlayer?.name ?? "" })}
+            </div>
           </div>
         )}
         {isRefusedNoteShown && (

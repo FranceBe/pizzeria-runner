@@ -85,14 +85,14 @@ export const createDuoKitchen = (game: GameState, playerIds: readonly string[], 
   return keepSelectionsValid({ game, boards, duo });
 };
 
-// The shared kitchen: two ovens of two pizzas, the challenge's four recipes with endless pans, the same clock.
-export const createCoopGame = (seed: string, playerIds: readonly string[], language: Language): CoopGame => {
+// The shared kitchen: two ovens of two pizzas, the challenge's four recipes with endless pans, the room's clock.
+export const createCoopGame = (seed: string, playerIds: readonly string[], language: Language, seconds?: number): CoopGame => {
   const base = createInitialState(language);
   base.settings = { ...base.settings, tutorialDone: true, showHelp: true };
   base.upgrades = { ...base.upgrades, oven: 1, oven2: 2 };
   // A kitchen for one match, not a pizzeria: it never announces achievements (nobody would keep them anyway).
   base.achievements = Object.fromEntries(ACHIEVEMENT_IDS.map((id) => [id, 0]));
-  const game = gameReducer(base, { type: "startChallenge", date: seed, multiplayer: true });
+  const game = gameReducer(base, { type: "startChallenge", date: seed, multiplayer: true, seconds });
   if (game.service?.challenge) game.service.challenge.coop = true;
   const boards = Object.fromEntries(playerIds.map((id): [string, CoopBoard] => [id, { board: [], selectedCustomerId: null }]));
   return keepSelectionsValid({ game, boards });
