@@ -1216,3 +1216,40 @@ html.svc-mode .duo-banner { display: none; }
 html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; }
 .mp-duo { flex-wrap: wrap; }
 .mp-duo > .grow { min-width: 180px; }
+
+/* A main button keeps its colour under the finger: the plain button's hover (which a phone keeps after a tap) used to
+   paint the serve button with the page colour, white text and all */
+.btn.go:hover:not(:disabled) { background: var(--basil); filter: brightness(1.07); }
+.passe-count { display: inline-block; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 99px; text-align: center;
+  background: var(--basil); color: var(--surface); font-size: 11px; line-height: 16px; letter-spacing: 0; vertical-align: 1px; }
+.pairing.found { color: var(--ink); }
+
+/* Phone: the pass gets the room under the ovens. The labels say "Oven 1, Oven 2", so the shared heading goes, the
+   flames shrink, and a pizza on the pass is one short row with its serve button */
+@media (max-width: 700px) {
+  .svc { --work-row: clamp(170px, 23dvh, 196px); }
+  .oven.multi > h3 { display: none; }
+  .oven.multi > .oven-fire { width: 36px; height: 12px; margin: -2px auto 2px; }
+  .passe h3 { margin-bottom: 2px; }
+  .ready { padding: 3px 5px; gap: 5px; margin-top: 3px; }
+  .ready svg { width: 28px; height: 28px; }
+  .ready .rn { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ready .rt { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ready .grow { min-width: 0; }
+  .ready-btns .ghost { display: none; }
+  .ready-btns .btn { padding: 5px 8px; font-size: 12.5px; }
+}
+
+/* Dark theme: market buttons stay dark with light text; the hints around the pans an order needs, bright enough to see */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .crate-btns .btn, :root:not([data-theme="light"]) .crate-btns .btn:hover:not(:disabled) {
+    background: rgba(20, 14, 8, .78); color: #fff8ec; border-color: rgba(255, 248, 236, .35); }
+  :root:not([data-theme="light"]) .crate-btns .btn:disabled { background: rgba(20, 14, 8, .45); color: rgba(255, 248, 236, .55); }
+  :root:not([data-theme="light"]) .pan.need svg { outline-color: #ffd560; outline-width: 3px; }
+  :root:not([data-theme="light"]) .chip.miss { border-color: var(--muted); opacity: 1; }
+}
+:root[data-theme="dark"] .crate-btns .btn, :root[data-theme="dark"] .crate-btns .btn:hover:not(:disabled) {
+  background: rgba(20, 14, 8, .78); color: #fff8ec; border-color: rgba(255, 248, 236, .35); }
+:root[data-theme="dark"] .crate-btns .btn:disabled { background: rgba(20, 14, 8, .45); color: rgba(255, 248, 236, .55); }
+:root[data-theme="dark"] .pan.need svg { outline-color: #ffd560; outline-width: 3px; }
+:root[data-theme="dark"] .chip.miss { border-color: var(--muted); opacity: 1; }

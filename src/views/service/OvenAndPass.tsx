@@ -62,7 +62,11 @@ const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
   const unwantedCount = service.ready.filter((pizza) => !destinationOf(state, service, pizza.ingredients)).length;
   return (
     <div className="passe">
-      <h3 className="h">{t("service.pass")}</h3>
+      {/* How many wait, so a pizza out of sight below is not forgotten. */}
+      <h3 className="h">
+        {t("service.pass")}
+        {service.ready.length > 1 && <span className="passe-count">{service.ready.length}</span>}
+      </h3>
       {service.ready.length === 0 && <p className="hint passe-empty">{t("service.passEmpty")}</p>}
       {unwantedCount > 1 && (
         <button className="btn sm ghost bin-all" onClick={() => dispatch({ type: "trashUnwantedPizzas" })}>
