@@ -146,6 +146,15 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   runs): the newlyweds' banquet comes in at 21:00, a group order of 8 to 12 pizzas (more for a bigger pizzeria) paid
   half as much again, with a few fewer customers besides. Every evening, the kitchen is told when the last customer
   comes in.
+- **Regulars with a story** (from level 4): now and then, in the morning, a regular starts a story of four chapters,
+  each a visit a few days after the last: "The sweethearts" (a first date, a proposal, the engagement, back with the
+  baby), "The exams" (revising, the results, the degree with the whole class, the first pay slip) and "The old
+  brigade" (someone from the trade, grumpy, won over little by little). On a chapter's evening the regular comes for
+  sure, sometimes with company as a table; it is announced in the morning, their ticket wears the story and says
+  their line, and serving them turns the page (a little reputation, a reward for the last chapter). A chapter missed
+  comes again later. Two stories at a time at most, each lived once a game; the journal tells each regular's story so
+  far. Regulars expected on an evening (birthdays, stories) always come: their seats are kept, so a table never takes
+  the last ones.
 - **The mystery guest** (from day 7): an inspector from the guide, incognito among the first customers of the
   evening (someone on their own, passing by: never a regular, a table, a critic or a delivery). Nothing gives them away
   during service. The receipt unmasks them: five stars, one less for each mood they had reached when served, one or

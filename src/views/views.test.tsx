@@ -417,6 +417,19 @@ describe("views", () => {
     expect(render(<PrepView state={{ ...state, xp: 0 }} dispatch={noop} goToTab={noop} />, "en")).not.toContain("Rush hour");
   });
 
+  it("tells a regular's story: their chapter's words on the ticket, the chapters lived in the journal", () => {
+    const state = stateInService([makeCustomer({ id: "g", name: "Giulia", story: { id: "sweethearts", chapter: 1 } })]);
+    const ticket = render(serviceScreen(state), "en");
+    expect(ticket).toContain("The sweethearts");
+    expect(ticket).toContain("Tonight I&#x27;m proposing");
+    const journalState = playedState();
+    journalState.customerBook.Giulia = { ...journalState.customerBook.Giulia, regular: true, story: { id: "sweethearts", chapter: 2, dueDay: 9 } };
+    const journal = render(<JournalView state={journalState} />, "en");
+    expect(journal).toContain("The sweethearts · 2/4");
+    expect(journal).toContain("Their first date, here.");
+    expect(journal).not.toContain("They came back with the baby.");
+  });
+
   it("gathers everything on tonight in one list, one line each, however much there is", () => {
     const state = playedState();
     state.event = "match";

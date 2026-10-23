@@ -22,6 +22,7 @@ import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
 import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightServe } from "../tonight";
 import { noteMysteryLeaving, noteMysteryServed, settleMysteryGuest, welcomeMaybeMystery } from "../mystery";
+import { companionsOf, maybeStartStory, storyGuestsToday, turnStoryPage } from "../stories";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
@@ -335,17 +336,56 @@ const nextCustomerKind = (state: GameState, service: Service): CustomerKind => {
 };
 
 // A birthday regular, if one is due now and not already at the counter.
-const nextBirthdayGuest = (service: Service): string | undefined => {
-  const guests = (service.birthdayGuests ?? []).filter((name) => !service.customers.some((customer) => customer.name === name));
-  if (!guests.length || Math.random() >= guests.length / service.customersToCome) return undefined;
-  return guests[0];
+// Regulars expected tonight who haven't come in yet (birthdays, stories): the evening keeps a seat for each, so a
+// table never takes the last ones, and they come in for sure once only their seats are left.
+const expectedGuests = (service: Service): string[] =>
+  [...(service.birthdayGuests ?? []), ...(service.storyGuests ?? [])].filter((name) => !service.customers.some((customer) => customer.name === name));
+
+// One of these guests now, now and then until they all came: at random, or for sure once only their seats are left.
+const nextExpected = (service: Service, list: readonly string[] | undefined): string | undefined => {
+  const guests = (list ?? []).filter((name) => !service.customers.some((customer) => customer.name === name));
+  if (!guests.length) return undefined;
+  const isNow = expectedGuests(service).length >= service.customersToCome || Math.random() < guests.length / service.customersToCome;
+  return isNow ? guests[0] : undefined;
+};
+
+const nextBirthdayGuest = (service: Service): string | undefined => nextExpected(service, service.birthdayGuests);
+
+// A regular here for their story's next chapter.
+const nextStoryGuest = (service: Service): string | undefined => nextExpected(service, service.storyGuests);
+
+// The story guest and whoever comes with them for this chapter (as a table), as far as there is room. Empty when
+// they can't come (nothing on the menu).
+const storyParty = (state: GameState, service: Service, name: string): Customer[] => {
+  const story = state.customerBook[name]?.story;
+  if (!story) return [];
+  // Their company never takes the seats of the other guests expected tonight.
+  const room = Math.min(service.customersToCome - expectedGuests(service).length, maxQueueLength(state) - service.customers.length);
+  const companions = Math.max(0, Math.min(companionsOf(state, name), room - 1));
+  const tableId = companions > 0 ? makeId() : undefined;
+  const guest = createCustomer(state, "regular", { name, story: { id: story.id, chapter: story.chapter }, tableId });
+  if (!guest) return [];
+  const party: Customer[] = [guest];
+  for (let seat = 0; seat < companions; seat++) {
+    const companion = createCustomer({ ...state, service: { ...service, customers: [...service.customers, ...party] } }, "regular", { tableId });
+    if (companion) party.push(companion);
+  }
+  if (tableId !== undefined && party.length > 1) openTable(service, tableId, party.length);
+  return party;
+};
+
+const openTable = (service: Service, tableId: string, size: number): void => {
+  service.tables = service.tables ?? {};
+  const color = Object.keys(service.tables).length % TABLE_COLORS;
+  service.tables[tableId] = { size, served: 0, allHappy: true, color };
 };
 
 // How many people come in together: 1, or a table of 2 to 4 when there is room.
 const partySize = (state: GameState, service: Service): number => {
   if (levelForXp(state.xp) < TABLES_LEVEL || Math.random() >= TABLE_CHANCE) return 1;
-  const room = Math.min(service.customersToCome, maxQueueLength(state) - service.customers.length);
-  return Math.min(room, 2 + randomIndex(MAX_TABLE_SIZE - 1));
+  // Never the seats kept for the regulars expected tonight.
+  const room = Math.min(service.customersToCome - expectedGuests(service).length, maxQueueLength(state) - service.customers.length);
+  return Math.max(1, Math.min(room, 2 + randomIndex(MAX_TABLE_SIZE - 1)));
 };
 
 const seatCustomers = (service: Service, customers: Customer[]): void => {
@@ -379,6 +419,16 @@ const letCustomersIn = (state: GameState, service: Service): void => {
     }
   }
 
+  const storyGuest = nextStoryGuest(service);
+  if (storyGuest) {
+    service.storyGuests = (service.storyGuests ?? []).filter((name) => name !== storyGuest);
+    const party = storyParty(state, service, storyGuest);
+    if (party.length) {
+      welcomeMaybeMystery(state, service, party);
+      return seatCustomers(service, party);
+    }
+  }
+
   const kind = nextCustomerKind(state, service);
   const size = kind === "regular" ? partySize(state, service) : 1;
   const tableId = size > 1 ? makeId() : undefined;
@@ -396,11 +446,7 @@ const letCustomersIn = (state: GameState, service: Service): void => {
   }
   if (kind === "critic") service.criticPending = false;
   if (kind === "celebrity") service.celebrityCame = true;
-  if (tableId !== undefined) {
-    service.tables = service.tables ?? {};
-    const color = Object.keys(service.tables).length % TABLE_COLORS;
-    service.tables[tableId] = { size: party.length, served: 0, allHappy: true, color };
-  }
+  if (tableId !== undefined) openTable(service, tableId, party.length);
   welcomeMaybeMystery(state, service, party);
   seatCustomers(service, party);
 };
@@ -420,6 +466,7 @@ export const serviceActions = {
     state.service = createService(customerCount);
     state.service.criticPending = state.event === "critic";
     state.service.birthdayGuests = birthdaysToday(state);
+    state.service.storyGuests = storyGuestsToday(state);
     planEvening(state, state.service, customerCount);
     state.phase = "service";
   },
@@ -793,6 +840,7 @@ export const serviceActions = {
     }
 
     trackTonightServe(state, service, customer, pizza);
+    turnStoryPage(state, customer);
     if (isDayOver(state, service)) endDay(state, service);
   },
 
@@ -817,6 +865,7 @@ export const serviceActions = {
     ensureTonightGoal(state);
     ensureRushPlan(state);
     lapseAbsentRegulars(state);
+    maybeStartStory(state);
     ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;
     expireQuest(state);

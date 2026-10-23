@@ -22,6 +22,8 @@ describe("a long game", () => {
     expect(end.reviews.length).toBeLessThanOrEqual(REVIEWS_KEPT);
     expect(end.press.length).toBeLessThanOrEqual(PRESS_KEPT);
     expect(end.celebrityWall.length).toBeLessThanOrEqual(CELEBRITY_WALL_SIZE);
+    // Regulars' stories came along, and turned pages.
+    expect(Object.values(end.customerBook).some((entry) => (entry.story?.chapter ?? 0) > 0)).toBe(true);
     // Browsers keep about 5 MB per site: a save stays far below.
     expect(JSON.stringify(toSaveData(end)).length).toBeLessThan(300_000);
   }, 180_000);

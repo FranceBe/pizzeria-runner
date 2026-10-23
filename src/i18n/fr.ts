@@ -6,6 +6,7 @@ import type { DayEventId } from "../data/events";
 import type { QuestGiver } from "../data/quests";
 import type { SeasonId } from "../data/seasons";
 import type { TonightKind } from "../data/tonight";
+import type { StoryId } from "../data/stories";
 import type { IngredientId, IngredientKind, StationId } from "../data/ingredients";
 import {
   OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
@@ -216,6 +217,8 @@ export const fr = {
     festivalShort: ({ until }: { until: string }) => `Jusqu'au ${until} : un ingrédient et une recette de fête, quel que soit le marché du jeu.`,
     questDaysShort: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour" : `${days} j`),
     birthdayTitle: "Anniversaire",
+    storyComing: ({ names }: { names: string }) => `${names} passe ce soir`,
+    storyNext: ({ story, chapter, total }: { story: string; chapter: number; total: number }) => `La suite de son histoire, « ${story} » : chapitre ${chapter}/${total}.`,
     rushTitle: "Coup de feu",
     rushTonight: ({ time }: { time: string }) => `Vers ${time}, les clients arrivent en rafale pendant un moment : pourboires doublés. Le début et la fin de soirée sont plus calmes.`,
     weddingTonight: ({ items }: { items: string }) =>
@@ -608,6 +611,42 @@ export const fr = {
     thanks: "Merci et à demain !",
   },
 
+
+  // Regulars with a story (game/stories.ts): a title, what they say on each chapter's ticket, and how the journal
+  // tells it afterwards.
+  stories: {
+    sweethearts: {
+      title: "Les amoureux",
+      lines: [
+        "« Notre premier rendez-vous… fais-nous rêver ! »",
+        "« Ce soir, je fais ma demande. Croise les doigts pour moi ! »",
+        "« C'est oui ! On fête nos fiançailles ici, évidemment. »",
+        "« On vous présente notre bébé ! Pour ce petit bout, ce sera un biberon. »",
+      ],
+      told: ["Leur premier rendez-vous, ici.", "Une demande en mariage préparée à ta table.", "Leurs fiançailles, fêtées chez toi.", "Le retour, avec le bébé."],
+    },
+    student: {
+      title: "Les examens",
+      lines: [
+        "« Dernière ligne droite avant les examens… une pizza pour tenir ! »",
+        "« Résultats demain. Je stresse, donc je mange. »",
+        "« Diplôme en poche ! J'ai ramené toute la promo ! »",
+        "« Premier salaire : cette fois, c'est moi qui laisse le pourboire. »",
+      ],
+      told: ["Des révisions, une pizza pour tenir.", "L'attente des résultats.", "Le diplôme, fêté avec toute la promo.", "Le premier salaire, et un beau pourboire."],
+    },
+    oldChef: {
+      title: "La vieille brigade",
+      lines: [
+        "« Hmm. De mon temps, la pâte reposait quarante-huit heures. »",
+        "« Pas mal, la cuisson. Pas mal du tout. »",
+        "« Je vous amène ma vieille brigade. Ne me décevez pas. »",
+        "« Tenez, ma vieille pelle à pizza. Elle sera mieux chez vous. »",
+      ],
+      told: ["Un avis ronchon sur ta pâte, de quelqu'un du métier.", "Ta cuisson, enfin approuvée.", "Sa vieille brigade, venue goûter.", "Sa pelle à pizza, offerte."],
+    },
+  } satisfies Record<StoryId, { title: string; lines: readonly string[]; told: readonly string[] }>,
+
   journal: {
     stats: "Comptes",
     reviews: "Avis en ligne",
@@ -655,6 +694,7 @@ export const fr = {
     bestStreak: "Meilleure série",
     medal: ({ medal }: { medal: string }) => `médaille ${medal}`,
     likes: ({ recipe }: { recipe: string }) => `Préfère : ${recipe}`,
+    storySoFar: ({ story, chapter, total }: { story: string; chapter: number; total: number }) => `📖 ${story} · ${chapter}/${total}`,
     favoriteBack: ({ festival }: { festival: FestivalId }, t: H) => `Sa préférée revient avec ${t.festival(festival)}`,
     dislikes: ({ id }: { id: IngredientId }, t: H) => `N'aime pas : ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }: { days: number }) => (days === 0 ? "🎂 Anniversaire aujourd'hui !" : `🎂 Anniversaire dans ${days} ${plural(days, "jour")}`),
@@ -834,6 +874,8 @@ export const fr = {
     weddingDone: ({ medal, reward }: { medal: "gold" | "silver" | "bronze"; reward: number }, t: H) =>
       `💍 Banquet servi : médaille ${t.medal(medal)} ! Les mariés paient ${t.money(reward)}.`,
     weddingUnfinished: ({ reward }: { reward: number }, t: H) => `💍 Le banquet n'est pas complet : les mariés paient ${t.money(reward)} pour ce qui est arrivé.`,
+    storyPage: ({ name, story, chapter, total }: { name: string; story: StoryId; chapter: number; total: number }, t: H) =>
+      `📖 ${name} · ${t.storyTitle(story)} : chapitre ${chapter}/${total}${chapter === total ? ", fin de l'histoire !" : "."}`,
     kickoff: "📺 Coup d'envoi ! Tout le monde regarde le match, c'est plus calme.",
     halftime: "📺 Mi-temps ! Tout le quartier a faim d'un coup, pourboires doublés.",
     lastOrders: "Dernier client de la soirée : on y est presque !",

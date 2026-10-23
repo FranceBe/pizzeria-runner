@@ -1360,3 +1360,16 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .ag-rush { --ev-bg: #fde6d6; --ev-edge: #d2561f; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ag-rush { --ev-bg: #3a2216; --ev-edge: #f08a52; } }
 :root[data-theme="dark"] .ag-rush { --ev-bg: #3a2216; --ev-edge: #f08a52; }
+
+/* Regulars with a story: their tag on the ticket, their line in the morning, the chapters lived in the journal */
+.mod.story-tag { background: #efe6fb; color: #5b3a99; }
+.ag-story { --ev-bg: #f1eafb; --ev-edge: #7a55c0; }
+.story-so-far { margin-top: 4px; }
+.story-so-far .hint { margin: 0; font-weight: 700; }
+.story-so-far ol { margin: 2px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mod.story-tag { background: #2e2342; color: #cdb6f2; }
+  :root:not([data-theme="light"]) .ag-story { --ev-bg: #261f36; --ev-edge: #a98ae0; }
+}
+:root[data-theme="dark"] .mod.story-tag { background: #2e2342; color: #cdb6f2; }
+:root[data-theme="dark"] .ag-story { --ev-bg: #261f36; --ev-edge: #a98ae0; }

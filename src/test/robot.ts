@@ -5,6 +5,7 @@
 import { expect } from "vitest";
 import { INGREDIENTS } from "../data/ingredients";
 import { DRINK_IDS } from "../data/drinks";
+import { STORIES } from "../data/stories";
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import { BATCH_ID, nextBatchRecipe, openBatch } from "../game/batch";
 import { canBorrowFromNonna, forecastCustomers } from "../game/economy";
@@ -63,6 +64,12 @@ export const checkInvariants = (state: GameState, before?: GameState): void => {
     expect(summary.stars ?? 0).toBeLessThanOrEqual(3);
   }
   state.history.forEach((day) => expect(Number.isFinite(day.net), "a day in the history").toBe(true));
+  // Stories never run past their last chapter, and only regulars ever had one.
+  Object.values(state.customerBook).forEach((entry) => {
+    if (!entry.story) return;
+    expect(entry.story.chapter, "a story's chapter").toBeGreaterThanOrEqual(0);
+    expect(entry.story.chapter, "a story's chapter").toBeLessThanOrEqual(STORIES[entry.story.id].length);
+  });
 };
 
 // What a save must give back exactly: the game itself. (Loading may add what the game would have added by then: an

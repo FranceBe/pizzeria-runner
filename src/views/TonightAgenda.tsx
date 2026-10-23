@@ -8,6 +8,8 @@ import { LIGHTNING_SECONDS, TONIGHT_REWARD, TONIGHT_XP } from "../data/tonight";
 import { festivalLastDay } from "../game/calendar";
 import { formatEveningTime } from "../game/clock";
 import { birthdaysToday } from "../game/regulars";
+import { storyGuestsToday } from "../game/stories";
+import { STORIES } from "../data/stories";
 import { forecastCustomers } from "../game/economy";
 import { tonightsRush } from "../game/evening";
 import { shownEvent } from "../game/service";
@@ -97,6 +99,18 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
       more: state.quest.items ? undefined : <QuestDetails quest={state.quest} />,
     });
   }
+  // Regulars coming for the next chapter of their story.
+  storyGuestsToday(state).forEach((name) => {
+    const story = state.customerBook[name]?.story;
+    if (!story) return;
+    items.push({
+      id: `story-${name}`,
+      icon: "📖",
+      title: t("prep.storyComing", { names: name }),
+      text: t("prep.storyNext", { story: t.storyTitle(story.id), chapter: story.chapter + 1, total: STORIES[story.id].length }),
+      tone: "ag-story",
+    });
+  });
   const birthdays = birthdaysToday(state);
   if (birthdays.length) {
     items.push({ id: "birthday", icon: "🎂", title: t("prep.birthdayTitle"), text: t("prep.birthdayToday", { names: birthdays.join(", ") }), tone: "ag-birthday" });

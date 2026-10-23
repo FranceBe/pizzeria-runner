@@ -1,3 +1,4 @@
+import { STORIES, type StoryId } from "../data/stories";
 import { FESTIVALS } from "../data/festivals";
 import { useState } from "react";
 import { ACHIEVEMENT_IDS, HIDDEN_ACHIEVEMENTS } from "../data/achievements";
@@ -235,7 +236,23 @@ const Achievements = ({ state }: { state: GameState }) => {
   );
 };
 
-// One card per regular: their favourite, what they never want, and when their birthday is.
+// A regular's story as far as it has come: its title and progress, then each chapter lived, told in the past.
+const StorySoFar = ({ story }: { story: { id: StoryId; chapter: number } }) => {
+  const t = useTranslation();
+  const total = STORIES[story.id].length;
+  return (
+    <div className="story-so-far">
+      <div className="hint">{t("journal.storySoFar", { story: t.storyTitle(story.id), chapter: Math.min(story.chapter, total), total })}</div>
+      <ol>
+        {Array.from({ length: Math.min(story.chapter, total) }, (_, index) => (
+          <li key={index}>{t(`stories.${story.id}.told.${index as 0 | 1 | 2 | 3}`)}</li>
+        ))}
+      </ol>
+    </div>
+  );
+};
+
+// One card per regular: their favourite, what they never want, when their birthday is, and their story so far.
 const RegularsBook = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const regulars = regularsOf(state);
@@ -257,6 +274,7 @@ const RegularsBook = ({ state }: { state: GameState }) => {
                 )}
                 {regular.dislikes && <div className="hint">{t("journal.dislikes", { id: regular.dislikes })}</div>}
                 {regular.birthday && <div className="hint">{t("journal.birthdayIn", { days: daysUntilBirthday(state, regular.birthday) })}</div>}
+                {regular.story && regular.story.chapter > 0 && <StorySoFar story={regular.story} />}
               </div>
             </div>
           );

@@ -5,6 +5,7 @@ import type { DrinkId } from "../data/drinks";
 import type { FestivalId } from "../data/festivals";
 import type { WeeklyKind } from "../data/weekly";
 import type { TonightKind } from "../data/tonight";
+import type { StoryId } from "../data/stories";
 import type { QuestGiver, QuestKind } from "../data/quests";
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
@@ -81,6 +82,8 @@ export interface Customer extends Looks {
   charmed?: boolean;
   /** A regular on their birthday: their favourite earns a gift. */
   birthday?: boolean;
+  /** A regular here for a chapter of their story (game/stories.ts). */
+  story?: { id: StoryId; chapter: number };
   /** A (made-up) celebrity: not in the customer book, a big tip and a signed photo. */
   celebrity?: boolean;
 }
@@ -254,6 +257,8 @@ export interface Service {
   criticPending?: boolean;
   /** Regulars whose birthday it is, still to come. */
   birthdayGuests?: string[];
+  /** Regulars coming tonight for a chapter of their story. */
+  storyGuests?: string[];
   tables?: Record<string, TableProgress>;
   /** Set for a timed challenge, which uses free ingredients and leaves the game untouched. */
   challenge?: Challenge | null;
@@ -477,6 +482,8 @@ export interface CustomerBookEntry extends Looks {
   choiceOrders?: Record<string, number>;
   /** A regular for now: set when they qualify (see regulars.ts), cleared when they stay away too long. */
   regular?: boolean;
+  /** Their story (game/stories.ts), once they have one: which, and how far it has come. */
+  story?: { id: StoryId; chapter: number; dueDay: number };
 }
 
 export interface Settings {

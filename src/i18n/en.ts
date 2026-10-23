@@ -202,6 +202,8 @@ export const en: Dictionary = {
     festivalShort: ({ until }) => `Until ${until}: a festive ingredient and recipe, whatever the game's market.`,
     questDaysShort: ({ days }) => (days <= 1 ? "Last day" : `${days} days`),
     birthdayTitle: "Birthday",
+    storyComing: ({ names }) => `${names} is coming tonight`,
+    storyNext: ({ story, chapter, total }) => `The next part of their story, “${story}”: chapter ${chapter}/${total}.`,
     rushTitle: "Rush hour",
     rushTonight: ({ time }) => `Around ${time}, customers pour in for a while: tips doubled. The start and the end of the evening are calmer.`,
     weddingTonight: ({ items }) => `The banquet, to deliver all together from 21:00: ${items}. The faster, the better paid; a few fewer customers besides.`,
@@ -582,6 +584,40 @@ export const en: Dictionary = {
     thanks: "Thank you, see you tomorrow!",
   },
 
+
+  stories: {
+    sweethearts: {
+      title: "The sweethearts",
+      lines: [
+        "“Our first date… make it a dream!”",
+        "“Tonight I'm proposing. Fingers crossed for me!”",
+        "“It's a yes! Of course we're celebrating here.”",
+        "“Meet our baby! A bottle for this little one, please.”",
+      ],
+      told: ["Their first date, here.", "A proposal planned at your table.", "Their engagement, celebrated at yours.", "Back, with the baby."],
+    },
+    student: {
+      title: "The exams",
+      lines: [
+        "“Last stretch before exams… a pizza to keep going!”",
+        "“Results tomorrow. I'm stressed, so I'm eating.”",
+        "“Degree in hand! I brought the whole class!”",
+        "“First pay slip: this time, the tip is on me.”",
+      ],
+      told: ["Revising, with a pizza to keep going.", "Waiting for the results.", "The degree, celebrated with the whole class.", "The first pay slip, and a fine tip."],
+    },
+    oldChef: {
+      title: "The old brigade",
+      lines: [
+        "“Hmm. In my day, the dough rested forty-eight hours.”",
+        "“Not bad, the bake. Not bad at all.”",
+        "“I've brought my old brigade. Don't let me down.”",
+        "“Here, my old pizza peel. It'll be better off with you.”",
+      ],
+      told: ["A grumpy word on your dough, from someone in the trade.", "Your bake, approved at last.", "Their old brigade, in for a taste.", "Their pizza peel, a gift."],
+    },
+  },
+
   journal: {
     stats: "Accounts",
     reviews: "Online reviews",
@@ -628,6 +664,7 @@ export const en: Dictionary = {
     bestStreak: "Best streak",
     medal: ({ medal }) => `${medal} medal`,
     likes: ({ recipe }) => `Favourite: ${recipe}`,
+    storySoFar: ({ story, chapter, total }) => `📖 ${story} · ${chapter}/${total}`,
     favoriteBack: ({ festival }, t) => `Their favourite is back with ${t.festival(festival)}`,
     dislikes: ({ id }, t) => `Doesn't like: ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }) => (days === 0 ? "🎂 Birthday today!" : `🎂 Birthday in ${days} ${plural(days, "day")}`),
@@ -795,6 +832,7 @@ export const en: Dictionary = {
     weddingArrived: ({ count }) => `💍 The newlyweds are here: ${count} pizzas for the banquet, the clock is ticking!`,
     weddingDone: ({ medal, reward }, t) => `💍 Banquet served: ${t.medal(medal)} medal! The newlyweds pay ${t.money(reward)}.`,
     weddingUnfinished: ({ reward }, t) => `💍 The banquet isn't complete: the newlyweds pay ${t.money(reward)} for what arrived.`,
+    storyPage: ({ name, story, chapter, total }, t) => `📖 ${name} · ${t.storyTitle(story)}: chapter ${chapter}/${total}${chapter === total ? ", the end of the story!" : "."}`,
     kickoff: "📺 Kick-off! Everyone is watching the match, it's quieter.",
     halftime: "📺 Half-time! The whole street is suddenly hungry, tips doubled.",
     lastOrders: "Last customer of the evening: almost there!",

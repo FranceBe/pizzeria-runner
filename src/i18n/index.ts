@@ -45,6 +45,7 @@ export const createTranslator = (language: Language): Translator => {
     drink: (id) => translate(`drinks.${id}`),
     questGiver: (giver) => translate(`quests.givers.${giver}`),
     festival: (id) => translate(`festivals.${id}`),
+    storyTitle: (id) => translate(`stories.${id}.title`),
     medal: (medal) => translate(`medals.${medal}`),
   };
 

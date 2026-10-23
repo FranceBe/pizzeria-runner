@@ -1,5 +1,6 @@
 import { CUSTOMER_NAMES, LINES_PER_MOOD } from "../data/customers";
 import { CELEBRITY_NAMES, CRITIC_NAMES } from "../data/events";
+import type { StoryId } from "../data/stories";
 import { INGREDIENTS, type IngredientId } from "../data/ingredients";
 import { DRINKS, DRINK_CHANCE, DRINK_IDS, type DrinkId } from "../data/drinks";
 import { DELIVERY_FEE, tipChanceForDecor } from "../data/progression";
@@ -80,6 +81,8 @@ export interface CustomerOptions {
   /** Someone in particular: a regular coming for their birthday, or a table member. */
   name?: string;
   isBirthday?: boolean;
+  /** A regular here for this chapter of their story. */
+  story?: { id: StoryId; chapter: number };
   tableId?: string;
   /** Back later the same evening, for a dessert pizza. */
   forDessert?: boolean;
@@ -101,7 +104,8 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
 
   const isGuest = kind === "critic" || kind === "celebrity";
   const { forDessert = false } = options;
-  const diet = isGuest || isBirthday || forDessert ? null : rollDiet(state, fullMenu);
+  const story = options.story && isRegular(entry) ? options.story : undefined;
+  const diet = isGuest || isBirthday || story || forDessert ? null : rollDiet(state, fullMenu);
   // Diets and dislikes narrow the menu, unless nothing would be left.
   const narrowed = fullMenu.filter(
     (recipe) => dietAllows(diet, recipe.ingredients) && !(entry?.dislikes && recipe.ingredients.includes(entry.dislikes)),
@@ -164,6 +168,7 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
     drink: kind === "regular" && !forDessert ? rollDrink(state) : null,
     drinkServed: false,
     birthday: isBirthday,
+    ...(story ? { story } : {}),
     forDessert,
   };
 };

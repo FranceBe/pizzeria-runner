@@ -93,7 +93,11 @@ export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, 
             )}
           </div>
           <div className="say">
-            {customer.delivery ? t("service.delivery") : t(`customerLines.${mood}.${customer.lineIndex}`)}
+            {customer.delivery
+              ? t("service.delivery")
+              : customer.story
+                ? t(`stories.${customer.story.id}.lines.${customer.story.chapter as 0 | 1 | 2 | 3}`)
+                : t(`customerLines.${mood}.${customer.lineIndex}`)}
           </div>
         </div>
       </div>
@@ -105,11 +109,12 @@ export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, 
             : t.recipe({ id: customer.recipeId, name: customer.recipeName })}
       </div>
       {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
-      {(customer.critic || customer.celebrity || customer.birthday || customer.charmed || customer.forDessert || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
+      {(customer.critic || customer.celebrity || customer.birthday || customer.story || customer.charmed || customer.forDessert || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
           {customer.celebrity && <span className="mod celebrity-tag">{`⭐ ${t("service.celebrity")}`}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
+          {customer.story && <span className="mod story-tag">{`📖 ${t.storyTitle(customer.story.id)}`}</span>}
           {customer.forDessert && <span className="mod dessert-tag" title={t("service.forDessertTitle")}>{`🍰 ${t("service.forDessert")}`}</span>}
           {customer.charmed && <span className="mod charmed-tag" title={t("service.charmedTitle")}>{`💛 ${t("service.charmed")}`}</span>}
           {hasExpress && <span className="mod express">{t("service.express", { seconds: expressSecondsLeft })}</span>}
