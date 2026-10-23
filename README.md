@@ -254,7 +254,7 @@ a result to paste to friends.
 
 ## Running locally
 
-Requires Node 18 or later (`nvm use` picks up the version from `.nvmrc`).
+Requires Node 22.12 or later, for Vite 8 (`nvm use` picks up the version from `.nvmrc`).
 
 ```bash
 npm install
@@ -360,6 +360,11 @@ Entries are either strings with `{placeholders}` or functions, for plurals and a
 
 Game logic never produces text: it stores translation keys (for example, toasts are `{ key, params }`),
 so everything follows a language change immediately.
+
+Each language is a file of its own, loaded on demand (`loadLanguage` in `src/i18n/index.ts`): the game loads the
+saved game's language (or the browser's) before it opens, and another one when it is chosen in Settings, keeping the
+texts on screen until it arrives (offline, a language never loaded stays unavailable, and the current one stays). A
+player downloads only their language. The tests load them all first (`src/test/setup.ts`).
 
 ## Offline and install
 

@@ -2,7 +2,7 @@ import { ensureTonightGoal } from "./tonight";
 import { ensureRushPlan } from "./evening";
 import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { MARGHERITA } from "../data/recipes";
-import { detectLanguage, type Language } from "../i18n/languages";
+import { LANGUAGES, detectLanguage, type Language } from "../i18n/languages";
 import type { JsonObject } from "../utils/saveCode";
 import type { AccessoryId } from "../data/customers";
 import { unlockAchievements } from "./achievements";
@@ -343,6 +343,18 @@ export const hydrateState = (saved: JsonObject): GameState => {
 export const toSaveData = (state: GameState): SaveData => {
   const { toasts, pops, ...saveData } = state;
   return saveData;
+};
+
+// The language the game will open in: the saved game's, or the browser's for a first visit. Read before the game
+// itself, so its texts can be loaded first.
+export const savedLanguage = (): Language => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as { settings?: { language?: unknown } } | null;
+    const language = saved?.settings?.language;
+    return LANGUAGES.find((candidate) => candidate === language) ?? detectLanguage();
+  } catch {
+    return detectLanguage();
+  }
 };
 
 export const loadState = (): GameState => {

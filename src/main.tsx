@@ -1,16 +1,24 @@
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { savedLanguage } from "./game/state";
+import { DEFAULT_LANGUAGE, loadLanguage } from "./i18n";
 import "./fonts";
 import "./styles.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element in index.html");
-ReactDOM.createRoot(root).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>,
-);
+// The game's texts come first, in its language only (another one, should that fail, so the game still opens).
+const start = () =>
+  ReactDOM.createRoot(root).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>,
+  );
+loadLanguage(savedLanguage())
+  .catch(() => loadLanguage(DEFAULT_LANGUAGE))
+  .catch(() => undefined)
+  .finally(start);
 
 // Offline play and installation (see public/sw.js). Only for built versions: in development it would cache stale files.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {

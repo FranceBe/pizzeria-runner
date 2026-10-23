@@ -1,14 +1,27 @@
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { formatMoney, formatNumber } from "../utils/format";
-import { en } from "./en";
-import { fr } from "./fr";
-import { DEFAULT_LANGUAGE, type Language } from "./languages";
+import { LANGUAGES, type Language } from "./languages";
 import type { Dictionary, Translate, TranslationHelpers, Translator } from "./types";
 
 export * from "./languages";
 export type * from "./types";
 
-const DICTIONARIES: Record<Language, Dictionary> = { fr, en };
+// Each language is its own file, loaded when it is needed: a player downloads only theirs (see loadLanguage).
+const LOADERS: Record<Language, () => Promise<Dictionary>> = {
+  fr: () => import("./fr").then((module) => module.fr),
+  en: () => import("./en").then((module) => module.en),
+};
+const loaded = new Map<Language, Dictionary>();
+
+// Loads a language's texts, once. Fails without the network for a language never loaded before (offline).
+export const loadLanguage = async (language: Language): Promise<void> => {
+  if (!loaded.has(language)) loaded.set(language, await LOADERS[language]());
+};
+
+export const isLanguageLoaded = (language: Language): boolean => loaded.has(language);
+
+// For tests and tools: every language at once.
+export const loadAllLanguages = (): Promise<void[]> => Promise.all(LANGUAGES.map(loadLanguage));
 
 const CLASSIC_IDS: ReadonlySet<string> = new Set(CLASSIC_RECIPES.map((recipe) => recipe.id));
 
@@ -22,7 +35,8 @@ const lookup = (dictionary: Dictionary, key: string): unknown =>
 // or functions (params, helpers) => string for plurals and formatted values.
 // Keys and params are checked at compile time (see types.ts); at runtime, a missing key renders as the key itself.
 export const createTranslator = (language: Language): Translator => {
-  const dictionary = DICTIONARIES[language] ?? DICTIONARIES[DEFAULT_LANGUAGE];
+  // A language not loaded yet reads in one that is (or shows keys, before any is: never once the game is up).
+  const dictionary = loaded.get(language) ?? loaded.values().next().value ?? ({} as Dictionary);
 
   const translate = (key: string, params: Params = {}): string => {
     const entry = lookup(dictionary, key);

@@ -281,3 +281,38 @@ describe("settings", () => {
     expect(state.pops).toEqual([]);
   });
 });
+
+describe("what the reducer shares instead of copying", () => {
+  const deepFreeze = <T>(value: T): T => {
+    if (value && typeof value === "object" && !Object.isFrozen(value)) {
+      Object.freeze(value);
+      Object.values(value as object).forEach(deepFreeze);
+    }
+    return value;
+  };
+
+  it("never changes the morning's copy or, on a tick, the customer book in place: whole evenings frozen", () => {
+    // A busy evening with regulars, stories and birthdays, ticked to its end (the last tick ends the day).
+    let state = play(makeState({ day: 12, xp: 6000, upgrades: { ...makeState().upgrades, salle: 3, bar: 2 } }), { type: "openRestaurant" });
+    state.customerBook = {
+      Luca: { skin: "#e0ac83", hair: "#5b3a22", hairStyle: 1, visits: 9, orders: { margherita: 9 }, regular: true, lastVisit: 11, birthday: 12 },
+      Gio: { skin: "#c68b62", hair: "#1b1b1b", hairStyle: 2, visits: 7, orders: { margherita: 7 }, regular: true, lastVisit: 11, story: { id: "student", chapter: 1, dueDay: 12 } },
+    };
+    deepFreeze(state.customerBook);
+    deepFreeze(state.dayStart);
+    for (let step = 0; step < 2000 && state.service; step++) {
+      // Everyone served straight away, out of band, so the evening runs to its end on ticks alone.
+      state = { ...state, service: { ...serviceOf(state), customers: [] } };
+      state = gameReducer(state, { type: "tick", seconds: 0.5 });
+    }
+    expect(state.phase).toBe("summary");
+  });
+
+  it("still copies the customer book for the actions that write it", () => {
+    const state = stateInService([makeCustomer()]);
+    const before = state.customerBook;
+    const served = play({ ...state, service: { ...serviceOf(state), ready: [{ id: "p", ingredients: [...MARGHERITA], waitingSeconds: 0 }] } }, { type: "servePizza", pizzaId: "p" });
+    expect(served.customerBook).not.toBe(before);
+    expect(before).toEqual(state.customerBook);
+  });
+});

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineConfig, loadEnv, type Plugin, type Rollup } from "vite";
@@ -76,5 +77,10 @@ export default defineConfig(({ mode }) => {
   // VITE_MULTIPLAYER_URL: the multiplayer server's address, from the environment or a .env file (see README).
   const { VITE_MULTIPLAYER_URL = "" } = loadEnv(mode, process.cwd());
   const multiplayerUrl = VITE_MULTIPLAYER_URL.replace(/\/+$/, "");
-  return { plugins: [react(), serviceWorkerManifest(), contentSecurityPolicy(multiplayerUrl)], base: "./" };
+  return {
+    plugins: [react(), serviceWorkerManifest(), contentSecurityPolicy(multiplayerUrl)],
+    base: "./",
+    // Tests load every language's texts first (the game loads them one at a time).
+    test: { setupFiles: ["src/test/setup.ts"] },
+  };
 });

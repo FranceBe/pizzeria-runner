@@ -5,7 +5,7 @@ import { useGameLoop } from "./hooks/useGameLoop";
 import { useServiceShortcuts } from "./hooks/useServiceShortcuts";
 import { useSecretCode } from "./hooks/useSecretCode";
 import { useGameAudio } from "./hooks/useGameAudio";
-import { createTranslator } from "./i18n";
+import { createTranslator, isLanguageLoaded, loadLanguage } from "./i18n";
 import { localDate } from "./game/challenge";
 import { I18nProvider, useTranslation } from "./i18n/I18nContext";
 import { Header } from "./views/Header";
@@ -177,11 +177,23 @@ export const App = () => {
   const [tab, setTab] = useState<TabId>("service");
   useGameLoop(state, dispatch);
 
+  // A language chosen in the settings is loaded first; until then (or offline, if it can't be), the texts stay in the
+  // language already shown.
   const { language } = state.settings;
-  const t = useMemo(() => createTranslator(language), [language]);
+  const [shownLanguage, setShownLanguage] = useState(language);
   useEffect(() => {
-    document.documentElement.lang = language;
+    let isCurrent = true;
+    loadLanguage(language)
+      .then(() => isCurrent && setShownLanguage(language))
+      .catch(() => undefined);
+    return () => {
+      isCurrent = false;
+    };
   }, [language]);
+  const t = useMemo(() => createTranslator(isLanguageLoaded(shownLanguage) ? shownLanguage : language), [shownLanguage, language]);
+  useEffect(() => {
+    document.documentElement.lang = shownLanguage;
+  }, [shownLanguage]);
 
   // Calendar festivals follow the real date: checked when the game opens and when a new day starts.
   useEffect(() => {
