@@ -26,6 +26,8 @@ import { activeMenu } from "../../game/menu";
 import type { CoachTarget, Customer, GameState, Service } from "../../game/types";
 import type { ServiceScreenProps } from "../types";
 import { useMultiplayer } from "../../multiplayer/MultiplayerContext";
+import { TRAP_EVERY_SERVED, trapsEarned } from "../../multiplayer/protocol";
+import { commisLevel } from "../../game/commis";
 import { ranking } from "../MultiplayerView";
 
 // What the board is compared with: a customer's order, or the group order's next pizza.
@@ -154,6 +156,29 @@ const tonightMark = (state: GameState): string => {
 
 // Layout (see .svc in styles.css): orders on the left, message line and work board in the middle,
 // oven and pass on the right, prep line along the bottom. Re-flows on tablets and phones.
+// Pizza Royale: a tricky customer for whoever leads among the others still in. Earned by pizzas served, as the server
+// counts them; the server checks again.
+const TrapButton = () => {
+  const t = useTranslation();
+  const { room, you, sendTrap } = useMultiplayer();
+  const me = room?.players.find((player) => player.id === you);
+  if (!room || !me) return null;
+  const left = trapsEarned(me.served) - (me.traps ?? 0);
+  const target = room.players
+    .filter((player) => player.id !== you && player.out === undefined && !player.done && player.connected)
+    .sort((a, b) => b.score - a.score)[0];
+  return (
+    <button
+      className="btn trap-btn"
+      disabled={left <= 0 || !target}
+      title={target ? `${t("service.trapTitle", { name: target.name })} · ${t("service.trapHint", { every: TRAP_EVERY_SERVED })}` : t("service.trapHint", { every: TRAP_EVERY_SERVED })}
+      onClick={() => target && sendTrap(target.id)}
+    >
+      {t("service.trap", { count: Math.max(0, left) })}
+    </button>
+  );
+};
+
 export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) => {
   const t = useTranslation();
   const selectedCustomer = findSelectedCustomer(service);
@@ -206,9 +231,11 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
   const showCoach = tutorial !== null && !state.toasts.length;
   const pouringFor = barmanTarget(state, service);
   return (
-    <div className={`svc${challenge ? " in-challenge" : ""}${service.rush ? " in-rush" : ""}`}>
+    <div className={`svc${challenge ? " in-challenge" : ""}${service.rush ? " in-rush" : ""}${service.role ? ` role-${service.role}` : ""}`}>
       <div className="a-ticker">
         {/* A match against friends runs on a shared clock: no pause. */}
+        {challenge?.royale && <TrapButton />}
+        {service.role && <span className="role-badge">{t(service.role === "cook" ? "service.roleCook" : "service.rolePass")}</span>}
         {!challenge?.multiplayer && (
           <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} onClick={() => dispatch({ type: "togglePause" })}>
             ⏸
@@ -271,7 +298,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
           board={service.board}
           neededIngredients={state.settings.showHelp && target ? target.ingredients : []}
           orderIngredients={target?.ingredients ?? []}
-          fadeLevel={challenge || !state.settings.commisFade ? 0 : Math.max(0, state.upgrades.commis - COMMIS_FADES_PANS + 1)}
+          fadeLevel={challenge || !state.settings.commisFade ? 0 : Math.max(0, commisLevel(state) - COMMIS_FADES_PANS + 1)}
           drawerIds={challenge ? [] : drawerIngredients(state)}
           coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}

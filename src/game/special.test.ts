@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { makeState, play, stateInService, makeCustomer, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { orderWeight } from "./customers";
-import { canChooseSpecial, currentSpecial, SPECIAL_HOMEMADE_XP, SPECIAL_ORDER_BOOST, specialUntil } from "./special";
+import { canChooseSpecial, currentSpecial, SPECIAL_BONUS_SHARE, SPECIAL_HOMEMADE_XP, SPECIAL_ORDER_BOOST, specialUntil } from "./special";
 import { hydrateState, migrateSave } from "./state";
 import type { Customer, GameState, Recipe } from "./types";
 
@@ -72,7 +72,7 @@ describe("the week's special", () => {
   it("pays a fifth of its price on top when it goes out quickly, and is counted", () => {
     const plain = serving({}, null);
     const special = serving({}, "margherita");
-    expect(special.money - plain.money).toBeCloseTo(7 * 0.2);
+    expect(special.money - plain.money).toBeCloseTo(7 * SPECIAL_BONUS_SHARE);
     expect(special.special?.served).toBe(1);
     expect(special.pops.map((pop) => pop.kind)).toContain("special");
   });

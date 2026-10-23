@@ -9,7 +9,7 @@ import {
 } from "../../src/multiplayer/protocol";
 import {
   addPlayer, allowMessage, canSendKitchen, canSendMove, createRoom, dropAway, finish, joinError, markAway, nextDeadline, noteActivity,
-  recordScore, rejoinPlayer, removePlayer, setLength, setReady, startMatch, viewOf, type RoomData,
+  recordScore, rejoinPlayer, removePlayer, sendTrap, setLength, setReady, setRoles, startMatch, viewOf, type RoomData,
 } from "./roomLogic";
 
 interface Env {
@@ -223,6 +223,9 @@ export class Room extends DurableObject<Env> {
       case "length":
         setLength(room, id, message.seconds, now);
         break;
+      case "roles":
+        setRoles(room, id, message.roles, now);
+        break;
       case "start": {
         const error = startMatch(room, id, crypto.randomUUID(), now);
         if (error) this.send(socket, { type: "error", reason: error });
@@ -233,6 +236,11 @@ export class Room extends DurableObject<Env> {
       case "out":
         recordScore(room, id, message.score, message.served, message.type, now);
         break;
+      case "trap": {
+        const target = sendTrap(room, id, message.to, now);
+        if (target) this.sendTo(target, { type: "trap", from: id });
+        break;
+      }
       case "leave":
         removePlayer(room, id, now);
         socket.close(1000, "left");
@@ -240,6 +248,12 @@ export class Room extends DurableObject<Env> {
     }
     await this.save();
     this.broadcast();
+  }
+
+  private sendTo(playerId: string, message: ServerMessage): void {
+    for (const socket of this.ctx.getWebSockets()) {
+      if (attachmentOf(socket).id === playerId) this.send(socket, message);
+    }
   }
 
   private relay(room: RoomData, id: string, message: { type: "state"; state: string } | { type: "action"; action: unknown }): void {

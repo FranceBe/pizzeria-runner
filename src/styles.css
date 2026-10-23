@@ -554,7 +554,7 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
 .price-tag { position: relative; font-weight: 800; font-size: 13px; padding: 2px 10px 2px 14px; background: #fffdf3; color: #2a2620; border-radius: 3px 8px 8px 3px; box-shadow: 0 1px 2px rgba(0,0,0,.25); transform: rotate(-3deg); }
 .price-tag::before { content: ""; position: absolute; left: 4px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; border-radius: 50%; background: var(--wood2); }
 .price-tag s { font-weight: 600; opacity: .55; }
-.crate-btns { display: flex; gap: 4px; margin-top: 4px; }
+.crate-btns { display: flex; gap: 4px; margin-top: auto; padding-top: 4px; }
 .crate-btns .btn.sm { padding: 4px 8px; }
 
 /* ---------------------------------------------------------------
@@ -938,6 +938,8 @@ button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff;
   background: rgba(20, 28, 24, .8); border-radius: 4px; padding: 1px 2px; }
 .mod.celebrity-tag { background: linear-gradient(90deg, #f0a43b, #e26aa6); color: #fff; }
 .mod.family-tag { background: #a2506a; color: #fff; }
+.mod.trap-tag { background: #3b3b3b; color: #ffd54a; }
+.trap-btn { flex: none; white-space: nowrap; font-weight: 800; }
 .ticket.celebrity { background: linear-gradient(180deg, #fff1d6, var(--surface) 55%); border-color: #f0a43b; }
 .ev-fete { --ev-bg: #f3e3f6; --ev-edge: #8a3c99; font-weight: 600; }
 .ev-powerCut, .ev-lateDelivery, .ev-inspection, .ev-scooterStrike { --ev-bg: var(--surface2); --ev-edge: var(--muted); }
@@ -966,6 +968,16 @@ button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff;
 .pop.batch { background: var(--basil-soft); color: var(--basil); }
 .pop.special { background: var(--accent-soft); color: var(--accent); }
 .pop.theme { background: var(--basil-soft); color: var(--basil); }
+/* A perfect pizza: a golden burst in the middle of the screen, sparks flying out, gone in a second and a half. */
+.perfect-bursts { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; pointer-events: none; }
+.perfect-burst { grid-area: 1 / 1; position: relative; padding: 8px 18px; border-radius: 99px; background: linear-gradient(135deg, #ffe08a, #f2b632); color: #5c3b00; font-weight: 800; font-size: 20px; box-shadow: 0 6px 24px -6px rgba(180, 120, 0, .6); animation: perfect-burst 1.5s cubic-bezier(.2, .9, .3, 1.2) forwards; }
+.perfect-sparks { position: absolute; inset: -18px; border-radius: 50%; background: radial-gradient(circle, #ffd54a 0 3px, transparent 4px) 50% 0 / 12px 12px no-repeat, radial-gradient(circle, #ffd54a 0 3px, transparent 4px) 100% 50% / 12px 12px no-repeat, radial-gradient(circle, #f2b632 0 3px, transparent 4px) 50% 100% / 12px 12px no-repeat, radial-gradient(circle, #ffe08a 0 3px, transparent 4px) 0 50% / 12px 12px no-repeat, radial-gradient(circle, #ffd54a 0 2px, transparent 3px) 15% 15% / 10px 10px no-repeat, radial-gradient(circle, #f2b632 0 2px, transparent 3px) 85% 85% / 10px 10px no-repeat, radial-gradient(circle, #ffe08a 0 2px, transparent 3px) 85% 15% / 10px 10px no-repeat, radial-gradient(circle, #ffd54a 0 2px, transparent 3px) 15% 85% / 10px 10px no-repeat; animation: perfect-sparks 1.5s ease-out forwards; }
+@keyframes perfect-burst { 0% { opacity: 0; transform: scale(.4); } 18% { opacity: 1; transform: scale(1.12); } 30% { transform: scale(1); } 75% { opacity: 1; transform: translateY(-6px); } 100% { opacity: 0; transform: translateY(-28px) scale(.96); } }
+@keyframes perfect-sparks { 0% { opacity: 0; transform: scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.9) rotate(25deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .perfect-burst { animation: pop 1.5s ease-out forwards; }
+  .perfect-sparks { display: none; }
+}
 .decor.photo { width: 22px; height: 28px; align-self: center; }
 .awning-golden { --sw: #d39a12; }
 .sign-star { font-family: var(--f-display); color: #d39a12; background: #1d2440; }
@@ -1338,6 +1350,9 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .agenda-more .quest-details { display: flex; flex-direction: column; gap: 4px; }
 .ag-goal { --ev-bg: var(--basil-soft); --ev-edge: var(--basil); }
 .ag-quest { --ev-bg: var(--gold-soft); --ev-edge: var(--gold); }
+.ag-gazette { --ev-bg: var(--paper); --ev-edge: var(--paper-ink); }
+.ag-commis { --ev-bg: var(--surface2); --ev-edge: var(--muted); }
+.upgrade-status { font-size: 13px; font-weight: 700; color: var(--muted); }
 .ag-birthday { --ev-bg: #fde7ef; --ev-edge: #e0708f; }
 .ev-match { --ev-bg: #e1eef6; --ev-edge: #2f6f9f; }
 @media (prefers-color-scheme: dark) {
@@ -1463,3 +1478,43 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
   /* One part on screen: the regulars' list needn't scroll inside the page any more. */
   .journal .regular-cards { max-height: none; }
 }
+
+/* The neighbourhood gazette: a front page on newsprint, whatever the theme. One column on a phone, two from a tablet. */
+.gazette { width: min(680px, 100%); max-height: 100%; overflow-y: auto; padding: 18px 20px 20px; border-radius: 6px; background: var(--paper);
+  color: var(--paper-ink); font-family: Georgia, "Times New Roman", var(--f-cjk, serif); box-shadow: 0 10px 40px -10px rgba(0,0,0,.5); }
+.gazette-head { text-align: center; border-bottom: 3px double var(--paper-ink); padding-bottom: 6px; margin-bottom: 12px; }
+.gazette-masthead { font-family: var(--f-display); font-size: clamp(26px, 7vw, 38px); line-height: 1.05; letter-spacing: .01em; }
+.gazette-issue { margin-top: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; opacity: .75; border-top: 1px solid var(--paper-rule); padding-top: 4px; }
+.gazette-headline { margin: 0 0 8px; font-size: clamp(21px, 5.4vw, 28px); line-height: 1.15; font-weight: 800; text-wrap: balance; }
+.gazette-lede { margin: 0 0 12px; font-size: 15px; font-style: italic; line-height: 1.45; }
+.gazette-cols { display: grid; gap: 12px; }
+@media (min-width: 620px) { .gazette-cols { grid-template-columns: 1fr 1fr; } }
+.gazette-box { border-top: 1px solid var(--paper-rule); padding-top: 8px; font-size: 14px; line-height: 1.45; }
+.gazette-box h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; font-family: var(--f-body); }
+.gazette-box p { margin: 6px 0 0; }
+.gazette-figures { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 0; }
+.gazette-figures dt { margin: 0; } .gazette-figures dd { margin: 0; font-weight: 800; text-align: right; font-family: var(--f-body); }
+.gazette-top { display: flex; align-items: center; gap: 10px; }
+.gazette-top p { margin: 0; }
+.gazette-events { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.gazette-letter { margin: 0; font-style: italic; }
+.gazette-letter footer { margin-top: 4px; font-style: normal; font-size: 13px; opacity: .75; text-align: right; }
+.gazette-close { display: block; margin: 16px auto 0; }
+.gazette-archive { margin: 0 0 8px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.gazette-archive-item { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--paper-ink); text-align: left; cursor: pointer; font-family: Georgia, serif; }
+.gazette-archive-no { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; opacity: .7; font-family: var(--f-body); }
+.gazette-archive-title { font-size: 14px; font-weight: 700; line-height: 1.3; }
+
+/* A supplier's loyalty on its crate: the discount once earned, a thin bar towards the next one. */
+.crate-loyalty { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 0; }
+.crate-loyal { padding: 0 6px; border-radius: 99px; background: rgba(255, 255, 255, .88); color: var(--basil); font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+.crate-loyalty-bar { flex: none; width: 56px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .35); overflow: hidden; }
+.crate-loyalty-bar > span { display: block; height: 100%; background: var(--basil); }
+
+/* A shared kitchen with roles: the other player's side is greyed out (the board and the prep line for the pass, the
+   pass and the bar for the cook). */
+.role-badge { flex: none; align-self: center; padding: 4px 10px; border-radius: 99px; background: var(--surface2); font-size: 12.5px; font-weight: 800; white-space: nowrap; }
+.svc.role-pass .peel-pz, .svc.role-pass .peel-btns, .svc.role-pass .a-rail,
+.svc.role-cook .passe, .svc.role-cook .bar-fridge, .svc.role-cook .bar-tray { opacity: .4; pointer-events: none; filter: grayscale(.6); }
+.mp-roles { display: flex; flex-direction: column; gap: 6px; }

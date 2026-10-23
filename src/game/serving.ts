@@ -126,6 +126,15 @@ export const secretBonus = (state: GameState, customer: Customer, hasSecret: boo
   return customer.price;
 };
 
+// A perfect pizza: straight from the oven (hardly any time on the pass) to someone still happy, served within
+// PERFECT_WAIT_SECONDS of coming in (a slice for the queue gives patience, not time).
+export const PERFECT_PASS_SECONDS = 2;
+export const PERFECT_WAIT_SECONDS = 15;
+export const isPerfectServe = (customer: Customer, pizza: ReadyPizza): boolean =>
+  moodForWait(customer.waitedSeconds) === 0 &&
+  (pizza.waitingSeconds ?? 0) < PERFECT_PASS_SECONDS &&
+  customer.waitedSeconds + (customer.sliceSeconds ?? 0) <= PERFECT_WAIT_SECONDS;
+
 // A pizza of tonight's theme pays a little more. Returns it.
 export const themeBonus = (state: GameState, customer: Customer): number => {
   if (!fitsTonight(state, customer.ingredients)) return 0;

@@ -18,6 +18,8 @@ interface UpgradeCardProps {
   /** Selling back only happens outside service. */
   canSell: boolean;
   dispatch: Dispatch;
+  /** Who works there, for the commis. */
+  status?: string;
 }
 
 // Selling back a level: a second tap confirms, so a stray tap never undoes a purchase.
@@ -42,7 +44,7 @@ const SellButton = ({ upgradeKey, currentLevel, canSell, dispatch }: Pick<Upgrad
   );
 };
 
-const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, canSell, dispatch }: UpgradeCardProps) => {
+const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, canSell, dispatch, status }: UpgradeCardProps) => {
   const t = useTranslation();
   const isMaxed = currentLevel >= upgrade.costs.length;
   const requiredLevel = upgrade.requiredLevel[currentLevel];
@@ -67,6 +69,7 @@ const UpgradeCard = ({ upgradeKey, upgrade, currentLevel, playerLevel, money, ca
         <strong className="grow" style={{ fontSize: 17 }}>{t.upgradeName(upgradeKey)}</strong>
         <span className="tag">{currentLevel} / {upgrade.costs.length}</span>
       </div>
+      {status && <div className="upgrade-status">{status}</div>}
       <div><span className="hint">{t("upgrades.current")}</span> {describe(currentLevel)}</div>
       {!isMaxed && (
         <div>
@@ -168,6 +171,7 @@ export const UpgradesView = ({ state, dispatch }: ScreenProps) => {
             money={state.money}
             canSell={state.phase === "prep"}
             dispatch={dispatch}
+            status={key === "commis" && state.commis && state.upgrades.commis ? t("upgrades.commisStatus", { name: state.commis.name, fatigue: Math.round(state.commis.fatigue) }) : undefined}
           />
         ))}
       </div>

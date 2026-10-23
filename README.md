@@ -142,6 +142,11 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   the drinks on his own, one every 6 seconds, and never gets them wrong; pouring by hand is still quicker.
 - **Celebrities** (from level 5, rare, at most one a day): they order the finest pizza on the menu with an extra
   topping, and leave a €10 tip, lots of reputation, and a signed photo that goes up on the front.
+- **Rare lines**: about one customer in forty says something unexpected (twelve lines) instead of their mood's line,
+  while still in a good mood.
+- **A perfect pizza**: straight from the oven (under 2 seconds on the pass) to someone still happy, served within 15
+  seconds of coming in (a slice for the queue gives patience, not time): a golden "✨ Perfect!" bursts in the middle of
+  the screen, and the receipt counts them.
 - Customers come in many faces: over 120 names, hairstyles and colours (now and then blue or green), and accessories
   (glasses, hats, headphones…). Names only shape the looks; diets and everything else are drawn at random.
 
@@ -233,7 +238,7 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 | Oven | Two pizzas at once, then faster baking, then wood-fired: better pizzas, a tip more likely and a little more reputation |
 | Dining room | More customers, one more order at the counter |
 | Decor | More tips (and string lights) |
-| Kitchen assistant | Rolls out fresh dough after each bake, then fades the pans the selected order doesn't need (a little, then more) |
+| Kitchen assistant | Rolls out fresh dough after each bake, then fades the pans the selected order doesn't need (a little, then more). A person, named when hired, who tires (see below) |
 | Tidy prep line | The pans no pizza on tonight's menu uses go in a drawer at the end of the line: a shorter line, but a request for an ingredient off the menu means opening it |
 | Terrace | More customers, especially on sunny days |
 | Delivery | Scooter orders, with an express bonus when they leave within 45 seconds |
@@ -244,6 +249,15 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 Any upgrade can be sold back, one level at a time and outside service, for 75% of what that level cost: for one that
 doesn't suit the way you play. The tidy prep line, a pure comfort, is sold back for its full price. The comfort
 features (the drawer, the assistant fading the pans) can also simply be switched off in Settings, for free.
+
+**The kitchen assistant** (`game/commis.ts`) gets a name when hired, and a fatigue from 0 to 100: each pizza served adds 1
+(2 during a rush), each night takes 12 off. From 60 in the morning they help as if a level lower; from 85, not at all. In the morning,
+when they need it, a tile of the list offers an evening off: no help that evening, their share of the charges isn't
+paid, and they come back fully rested.
+
+**Loyal suppliers** (`game/loyalty.ts`): portions bought at the market (by hand or restocking, never what is given)
+count towards a supplier's loyalty: 40 portions bring 5% off, 120 bring 10%, 300 bring 15%, on top of the day's prices;
+at the top tier, the supplier sends 5 portions every week. Each crate shows its tier and a thin bar to the next one.
 
 Once the money piles up, the pizzeria's looks can be bought too: awning colours, a neon or gold-leaf sign, wall tiles.
 
@@ -261,6 +275,12 @@ stars. Unhappy customers write more often than happy ones, and the overall ratin
 it drops faster than it climbs back. It shows in the header as five stars, filled as far as the rating goes. Food
 critics write in the papers instead (made-up ones too), under "In the papers". Only for show: reviews and articles
 change nothing in the game.
+
+**The neighbourhood gazette** (`game/gazette.ts`): on the first morning of each week, a front page about the week gone
+by comes out, announced in the morning's list: a headline on what made the week (the competitor giving up, a
+three-star week, a record evening, the wedding, Nonna's family, the street party, a rainy week, the pizza everyone
+ordered, or a quiet week), the figures, the pizza of the week, what happened in the street, and the week's best review
+as a reader's letter. Past issues (the last 12) are kept in the journal's accounts.
 
 ### Daily challenge
 
@@ -432,7 +452,11 @@ can leave the room, in the middle of a match too (after a confirmation: there is
 - **Pizza Royale** (2 to 4 players): the challenge in sudden death. Baking a pizza nobody is waiting for (counting
   those already in the oven or on the pass) or throwing anything away puts a player out; customers come faster and
   faster (up to 2.5 times by the end). The last one in the kitchen wins, with a crown, a rain of slices and a little
-  fanfare played by the browser itself; after 5 minutes, the best score among those still in wins.
+  fanfare played by the browser itself; after 5 minutes, the best score among those still in wins. **Traps**: every 4
+  pizzas served earns one (3 at most a match); the 🪤 button sends a tricky customer to whoever leads among the others
+  still in: a recipe of the match with one more filling and one fewer, already 20 seconds into their wait, drawn apart
+  from the match's own customers. The server checks each trap: earned by the pizzas it took as served, from and to
+  players still in, never to oneself, and a player receives one at most every 8 seconds.
 - **Co-op** (2 players): one kitchen for two, run on the host's phone and apart from both players' pizzerias (two ovens
   of two pizzas, the challenge's recipes, endless pans). Each has their own board; the order the other one is making
   wears their colour and name, so the same pizza isn't made twice. One team score at the end. The host's phone sends
@@ -445,6 +469,11 @@ can leave the room, in the middle of a match too (after a confirmation: there is
   and restock; the host makes the big decisions (upgrades, the menu, suppliers, opening, the next day), and the
   partner is told so if they try. There is no clock: it stays open as long as the host keeps it open, and both need
   to be there to play it (two copies played apart would drift away from each other).
+
+**Roles** (co-op and duo): in the lobby, the host may split the work, picking their own side: one at the board and the
+oven (dough, toppings, secrets, baking), the other at the pass and the bar (serving, binning, slices, drinks); choosing
+an order, the morning and a pause stay everyone's. The other side's controls are greyed out, and a move of the other
+side is ignored on both phones (`isRoleMove`).
 
 Every move the other phone sends is checked on the host's, its kind and its values (`isCoopMove`, `isPartnerDuoMove`):
 anything a button of the game couldn't send, like buying -1000 mozzarellas, is ignored.

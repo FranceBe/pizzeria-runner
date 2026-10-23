@@ -114,6 +114,15 @@ describe("a quick co-op", () => {
     expect(end.game.challengeResult).toMatchObject({ multiplayer: true, coop: true });
     expect(end.game.challengeResult?.score).toBeGreaterThan(0);
   }, 120_000);
+
+  it("two robots with roles still get through it: one at the board, one at the pass, each move on its own side", () => {
+    const random = seededRandom(56);
+    vi.spyOn(Math, "random").mockImplementation(random);
+    const start = createCoopGame("coop-seed", ["host", "guest"], "fr", 120, "hostCooks");
+    expect(start.roles).toEqual({ host: "cook", guest: "pass" });
+    const end = playTogether(start, ["host", "guest"], random, (coop) => Boolean(coop.game.challengeResult));
+    expect(end.game.challengeResult?.score).toBeGreaterThan(0);
+  }, 120_000);
 });
 
 describe("a duo pizzeria", () => {

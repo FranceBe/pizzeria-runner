@@ -12,10 +12,12 @@ import { CustomerFace } from "../components/CustomerFace";
 import { batchItemsText, questText } from "./QuestCard";
 
 const MEDAL_ICONS = { gold: "🥇", silver: "🥈", bronze: "🥉" } as const;
-import type { DayRecord, GameState, RecipeSales, Review } from "../game/types";
+import type { DayRecord, GameState, RecipeSales } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { IngredientIcon } from "../components/IngredientIcon";
-import { averageRating, reasonOf, REVIEW_LINES, toneOf } from "../game/reviews";
+import { averageRating, REVIEW_LINES } from "../game/reviews";
+import { reviewText } from "./reviewText";
+import { GazetteArchive } from "./Gazette";
 import { PRESS_PAPERS } from "../data/press";
 import { StarRow } from "../components/AppealStars";
 
@@ -94,6 +96,7 @@ const Accounts = ({ state }: { state: GameState }) => {
       </div>
       {lifetime.bestDay && <p className="hint">{t("journal.bestDay", lifetime.bestDay)}</p>}
       <QuestLog state={state} />
+      <GazetteArchive state={state} />
       <h3 className="h">{t("journal.chart")}</h3>
       <ProfitChart days={state.history.slice(-CHART_DAYS)} />
       <h3 className="h">{t("journal.topPizzas")}</h3>
@@ -346,14 +349,6 @@ const Reviews = ({ state }: { state: GameState }) => {
       <PressCuttings state={state} />
     </div>
   );
-};
-
-// What a review says: praise, or a complaint in the tone of its stars.
-const reviewText = (t: ReturnType<typeof useTranslation>, review: Review): string => {
-  const reason = reasonOf(review);
-  const line = (review.line % REVIEW_LINES) as 0 | 1 | 2;
-  if (reason === "perfect" || reason === "woodFired") return t(`reviewPraise.${reason}.${line}`);
-  return t(`reviewComplaints.${reason}.${toneOf(review.stars)}.${line}`);
 };
 
 const PRESS_TONE = { 5: "rave", 4: "good", 3: "fair" } as const;

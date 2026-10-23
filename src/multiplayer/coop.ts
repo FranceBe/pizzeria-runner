@@ -6,9 +6,10 @@ import { DRINK_IDS } from "../data/drinks";
 import { INGREDIENTS, type IngredientId } from "../data/ingredients";
 import { gameReducer } from "../game/reducer";
 import { createInitialState } from "../game/state";
-import type { GameAction, GameState } from "../game/types";
+import type { GameAction, GameState, KitchenRole } from "../game/types";
 import type { Language } from "../i18n";
 import type { DuoInfo } from "./duoSaves";
+import type { RolesChoice } from "./protocol";
 
 export interface CoopBoard {
   board: IngredientId[];
@@ -23,7 +24,32 @@ export interface CoopGame {
   boards: Record<string, CoopBoard>;
   /** A duo pizzeria: which one, so the partner can keep a copy of it. */
   duo?: DuoInfo;
+  /** The work split between the players, by player id (none: everyone does everything). */
+  roles?: Record<string, KitchenRole>;
 }
+
+// With roles, the board and the oven are the cook's; the pass and the bar are the other's. Everything else (choosing an
+// order, the morning, a pause) is everyone's.
+const COOK_MOVES: ReadonlySet<string> = new Set(["toggleIngredient", "bake", "trashBoard", "toggleSecret", "toggleMamma"]);
+const PASS_MOVES: ReadonlySet<string> = new Set([
+  "servePizza", "trashReadyPizza", "trashUnwantedPizzas", "offerSlice", "pourDrink", "serveTrayDrink", "binTray", "offerDrink",
+]);
+
+/** Each player's role, from the host's choice in the lobby (the host first in the list). Undefined when free. */
+export const rolesFor = (choice: RolesChoice | undefined, playerIds: readonly string[]): Record<string, KitchenRole> | undefined => {
+  if (!choice || choice === "free" || playerIds.length < 2) return undefined;
+  const [host, partner] = playerIds;
+  return choice === "hostCooks" ? { [host]: "cook", [partner]: "pass" } : { [host]: "pass", [partner]: "cook" };
+};
+
+/** Whether this move is this player's to make, given the roles (any move is, without roles). */
+export const isRoleMove = (roles: Record<string, KitchenRole> | undefined, playerId: string, action: GameAction): boolean => {
+  const role = roles?.[playerId];
+  if (!role) return true;
+  if (COOK_MOVES.has(action.type)) return role === "cook";
+  if (PASS_MOVES.has(action.type)) return role === "pass";
+  return true;
+};
 
 // What a player may do in the shared kitchen. Anything else coming from the other phone is ignored.
 const PLAYER_MOVES: ReadonlySet<string> = new Set([
@@ -81,13 +107,13 @@ export const isAllowedInDuo = (action: GameAction): boolean => !NOT_IN_A_DUO.has
 export const isPartnerDuoMove = (action: unknown): action is GameAction => isMoveIn(PARTNER_DUO_MOVES, action);
 
 // A duo pizzeria in play: its game, a board per player, and which pizzeria it is.
-export const createDuoKitchen = (game: GameState, playerIds: readonly string[], duo: DuoInfo): CoopGame => {
+export const createDuoKitchen = (game: GameState, playerIds: readonly string[], duo: DuoInfo, roles?: RolesChoice): CoopGame => {
   const boards = Object.fromEntries(playerIds.map((id): [string, CoopBoard] => [id, { board: [], selectedCustomerId: null }]));
-  return keepSelectionsValid({ game, boards, duo });
+  return keepSelectionsValid({ game, boards, duo, roles: rolesFor(roles, playerIds) });
 };
 
 // The shared kitchen: two ovens of two pizzas, the challenge's four recipes with endless pans, the room's clock.
-export const createCoopGame = (seed: string, playerIds: readonly string[], language: Language, seconds?: number): CoopGame => {
+export const createCoopGame = (seed: string, playerIds: readonly string[], language: Language, seconds?: number, roles?: RolesChoice): CoopGame => {
   const base = createInitialState(language);
   base.settings = { ...base.settings, tutorialDone: true, showHelp: true };
   base.upgrades = { ...base.upgrades, oven: 1, oven2: 2 };
@@ -96,7 +122,7 @@ export const createCoopGame = (seed: string, playerIds: readonly string[], langu
   const game = gameReducer(base, { type: "startChallenge", date: seed, multiplayer: true, seconds });
   if (game.service?.challenge) game.service.challenge.coop = true;
   const boards = Object.fromEntries(playerIds.map((id): [string, CoopBoard] => [id, { board: [], selectedCustomerId: null }]));
-  return keepSelectionsValid({ game, boards });
+  return keepSelectionsValid({ game, boards, roles: rolesFor(roles, playerIds) });
 };
 
 // Everyone's selected order still exists. A player without one, or with one the game picked that the other player is
@@ -118,8 +144,10 @@ const keepSelectionsValid = (coop: CoopGame): CoopGame => {
   return { ...coop, boards };
 };
 
-// A move by one player: their board goes on the counter, the move is played, their board goes back. Pure.
+// A move by one player: their board goes on the counter, the move is played, their board goes back. A move of the other
+// player's role is not played. Pure.
 export const playCoopMove = (coop: CoopGame, playerId: string, action: GameAction): CoopGame => {
+  if (!isRoleMove(coop.roles, playerId, action)) return coop;
   const service = coop.game.service;
   if (!service) return { ...coop, game: gameReducer(coop.game, action) };
   const mine = coop.boards[playerId] ?? { board: [], selectedCustomerId: null };
@@ -146,6 +174,7 @@ export const coopViewFor = (coop: CoopGame, playerId: string, partner?: { id: st
       ...service,
       board: mine.board,
       selectedCustomerId: mine.selectedCustomerId,
+      ...(coop.roles?.[playerId] ? { role: coop.roles[playerId] } : {}),
       ...(partner ? { partner: { selectedCustomerId: coop.boards[partner.id]?.selectedCustomerId ?? null, color: partner.color, name: partner.name } } : {}),
     },
   };

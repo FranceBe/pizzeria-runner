@@ -1,4 +1,4 @@
-import { CUSTOMER_NAMES, LINES_PER_MOOD } from "../data/customers";
+import { CUSTOMER_NAMES, LINES_PER_MOOD, RARE_LINE_CHANCE, RARE_LINES } from "../data/customers";
 import { CELEBRITY_NAMES, CRITIC_NAMES } from "../data/events";
 import type { StoryId } from "../data/stories";
 import { INGREDIENTS, type IngredientId } from "../data/ingredients";
@@ -171,6 +171,7 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
     price: kind === "delivery" ? price + DELIVERY_FEE : price,
     waitedSeconds: 0,
     lineIndex: randomIndex(LINES_PER_MOOD),
+    ...(Math.random() < RARE_LINE_CHANCE ? { rareLine: randomIndex(RARE_LINES) } : {}),
     asUsual,
     critic: kind === "critic",
     celebrity: kind === "celebrity",

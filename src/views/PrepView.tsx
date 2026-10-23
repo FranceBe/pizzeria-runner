@@ -199,7 +199,7 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
           </div>
           <p className="sub">{t("prep.intro")}</p>
         </div>
-        <TonightAgenda state={state} />
+        <TonightAgenda state={state} dispatch={dispatch} />
         <div className="row" style={{ alignItems: "flex-end", gap: 24 }}>
           <div>
             <div className="forecast">{expectedCustomers}</div>

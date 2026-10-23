@@ -59,6 +59,8 @@ export interface Customer extends Looks {
   waitedSeconds: number;
   /** Which of the mood's lines the customer says. */
   lineIndex: number;
+  /** Now and then, an unexpected line instead (see RARE_LINES), said while still in a good mood. */
+  rareLine?: number;
   /** A regular ordering "the usual": the ticket hides the recipe. Missing on older saves. */
   asUsual?: boolean;
   /** The food critic of a critic day: not in the customer book, rewards reputation. */
@@ -79,6 +81,8 @@ export interface Customer extends Looks {
   pizzaServed?: boolean;
   /** Had a slice of a pizza nobody ordered (game/slice.ts), once an evening: the seconds it took off their wait. */
   sliceSeconds?: number;
+  /** Pizza Royale: a tricky customer sent by this player (game/challenge.ts). */
+  trapFrom?: string;
   /** One of Nonna's family (game/family.ts): on top of the evening's customers, never in the customer book. */
   family?: boolean;
   /** Came back the same evening for a dessert pizza: a bonus if it comes quickly. */
@@ -184,6 +188,10 @@ export interface ServiceStats {
   served: number;
   /** Customers served while still happy (mood 0). */
   happyServed: number;
+  /** Perfect pizzas (see isPerfectServe). */
+  perfect?: number;
+  /** Served during a rush: they tire the commis twice as much. */
+  rushServed?: number;
   revenue: number;
   tips: number;
   waste: number;
@@ -207,6 +215,9 @@ export interface ServiceStats {
   orders: OrderRecord[];
 }
 
+/** A shared kitchen's split of the work: the board and the oven, or the pass and the bar (multiplayer/coop.ts). */
+export type KitchenRole = "cook" | "pass";
+
 /** The evening's pace, from how the latest ones went (game/difficulty.ts). */
 export type Pace = "gentle" | "normal" | "brisk";
 
@@ -215,6 +226,8 @@ export interface Service {
   pace?: Pace;
   /** Nonna's family came in tonight. */
   familyCame?: boolean;
+  /** A shared kitchen with roles: this player's (set for their view only). */
+  role?: KitchenRole;
   customersToCome: number;
   /** Seconds until the next customer may come in. */
   nextArrivalIn: number;
@@ -375,6 +388,8 @@ export interface DaySummary {
   bonuses?: number;
   /** Customers served still happy. */
   happyServed?: number;
+  /** Of them, perfect pizzas: straight from the oven to someone who hardly waited. */
+  perfectServed?: number;
   /** The day's stars (0–3) and which goals earned them. */
   stars?: number;
   starGoals?: StarGoals;
@@ -464,6 +479,34 @@ export interface Weekly {
   week: number;
   missions: WeeklyMission[];
   bonusPaid: boolean;
+  /** Pizzas served this week, by recipe id, for the gazette's pizza of the week. */
+  sales?: Record<string, RecipeSales>;
+}
+
+/** What a week's front page is about (game/gazette.ts). */
+export type GazetteHeadline =
+  | "competitorGone" | "perfectWeek" | "record" | "wedding" | "family" | "festival" | "rainyWeek" | "quietWeek" | "topPizza";
+
+/** The neighbourhood gazette's issue about a week. */
+export interface Gazette {
+  week: number;
+  firstDay: number;
+  lastDay: number;
+  /** The morning it came out. */
+  publishedDay: number;
+  /** Evenings the pizzeria was open that week. */
+  evenings: number;
+  served: number;
+  net: number;
+  /** Share of customers served happy, in percent (null when the week's days don't say). */
+  happyShare: number | null;
+  stars: number;
+  bestDay: { day: number; net: number };
+  top: { recipeId: string; recipeName: string | null; count: number } | null;
+  events: DayEventId[];
+  /** The best review of the week, for the readers' letters. */
+  review: Review | null;
+  headline: GazetteHeadline;
 }
 
 /** A completed neighbourhood quest, for the journal. */
@@ -540,7 +583,7 @@ export type ToastKind = "" | "gold" | "warn";
 export type ToastInput = MessageInput<"toasts", ToastKey>;
 export type Toast = ToastInput & { id: string; kind: ToastKind };
 
-export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret" | "batch" | "special" | "theme";
+export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret" | "batch" | "special" | "theme" | "perfect";
 
 export interface WeeklySpecial {
   recipeId: RecipeId;
@@ -632,6 +675,12 @@ export interface GameState {
   competitor: Competitor | null;
   /** Postcards received (game/postcards.ts), with the day each came. */
   postcards: Partial<Record<PostcardId, number>>;
+  /** The kitchen help, once hired (game/commis.ts). */
+  commis?: { name: string; fatigue: number; offDay?: number };
+  /** Portions of each ingredient bought at the market, ever: loyal suppliers (game/loyalty.ts). */
+  bought?: Partial<Record<IngredientId, number>>;
+  /** The neighbourhood gazette's issues, latest last (game/gazette.ts). */
+  gazettes: Gazette[];
   /** Signed photos of the celebrities who came, shown on the front. */
   celebrityWall: string[];
   /** Someone typed the code. */
@@ -684,6 +733,8 @@ export type GameAction =
   | { type: "restartDay" }
   | { type: "trashUnwantedPizzas" }
   | { type: "offerSlice"; pizzaId: string }
+  | { type: "toggleCommisOff" }
+  | { type: "receiveTrap"; from: string }
   // Shop
   | { type: "buyIngredient"; ingredientId: IngredientId; quantity: number }
   | { type: "restock"; targetQuantity: number }

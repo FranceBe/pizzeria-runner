@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
-  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MAX_PLAYERS, ROOM_CODE_LETTERS, cleanName, maxPlayersIn, normalizeRoomCode, parseClientMessage, randomRoomCode, roomModeOf,
+  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MAX_PLAYERS, MAX_TRAPS, ROOM_CODE_LETTERS, TRAP_COOLDOWN_MS, TRAP_EVERY_SERVED, trapsEarned, cleanName, maxPlayersIn, normalizeRoomCode, parseClientMessage, randomRoomCode, roomModeOf,
 } from "../../src/multiplayer/protocol";
 import { CHALLENGE_SECONDS } from "../../src/game/challenge";
 import {
   ACTIVITY_NOTE_MS, COOLDOWN_MS, END_GRACE_MS, IDLE_MS, MAX_MESSAGES_PER_SECOND, addPlayer, allowMessage, canSendKitchen, canSendMove,
-  createRoom, dropAway, joinError, markAway, nextDeadline, noteActivity, recordScore, rejoinPlayer, removePlayer, setLength, setReady, startMatch,
+  createRoom, dropAway, joinError, markAway, nextDeadline, noteActivity, recordScore, rejoinPlayer, removePlayer, sendTrap, setLength, setReady, setRoles, startMatch,
   viewOf,
 } from "./roomLogic";
 
@@ -363,5 +363,100 @@ describe("a Pizza Royale", () => {
     recordScore(room, "p1", 80, 4, "done", secondsIn(300));
     expect(room.status).toBe("finished");
     expect(room.players.every((player) => player.out === undefined)).toBe(true);
+  });
+});
+
+describe("Pizza Royale traps", () => {
+  // A royale under way, three players in, the first having served enough for `earned` traps by now.
+  const royale = (served: number) => {
+    const room = createRoom("TRAP", 0, "royale");
+    ["a", "b", "c"].forEach((id) => addPlayer(room, id, id.toUpperCase(), 0));
+    room.players.forEach((player) => setReady(room, player.id, true, 0));
+    startMatch(room, "a", "seed", 0);
+    const now = COUNTDOWN_MS + 60_000;
+    recordScore(room, "a", served * 20, served, "score", now);
+    return { room, now };
+  };
+
+  it("are earned by pizzas served, as the server took them, and capped for the match", () => {
+    const { room, now } = royale(TRAP_EVERY_SERVED * 2);
+    expect(sendTrap(room, "a", "b", now)).toBe("b");
+    expect(sendTrap(room, "a", "c", now)).toBe("c");
+    expect(sendTrap(room, "a", "b", now + TRAP_COOLDOWN_MS)).toBeNull();
+    expect(viewOf(room, now).players[0].traps).toBe(2);
+    expect(trapsEarned(1000)).toBe(MAX_TRAPS);
+  });
+
+  it("are refused when not earned, to oneself, to or from a player out, or before the start", () => {
+    const { room, now } = royale(TRAP_EVERY_SERVED - 1);
+    expect(sendTrap(room, "a", "b", now)).toBeNull();
+    const ready = royale(TRAP_EVERY_SERVED * 3);
+    expect(sendTrap(ready.room, "a", "a", ready.now)).toBeNull();
+    expect(sendTrap(ready.room, "a", "nobody", ready.now)).toBeNull();
+    recordScore(ready.room, "b", 0, 0, "out", ready.now);
+    expect(sendTrap(ready.room, "a", "b", ready.now)).toBeNull();
+    expect(sendTrap(ready.room, "b", "c", ready.now)).toBeNull();
+    expect(sendTrap(ready.room, "a", "c", COUNTDOWN_MS - 1)).toBeNull();
+  });
+
+  it("aren't sent to a player away from the game (they couldn't get it)", () => {
+    const { room, now } = royale(TRAP_EVERY_SERVED);
+    markAway(room, "b", "", now);
+    expect(sendTrap(room, "a", "b", now)).toBeNull();
+    expect(room.players[0].traps).toBeUndefined();
+  });
+
+  it("give a player a breather between two, and only exist in a Pizza Royale", () => {
+    const { room, now } = royale(TRAP_EVERY_SERVED * 3);
+    addPlayer(room, "d", "D", 0);
+    expect(sendTrap(room, "a", "c", now)).toBe("c");
+    expect(sendTrap(room, "b", "c", now + 1000)).toBeNull();
+    const challenge = roomWith(2);
+    challenge.players.forEach((player) => setReady(challenge, player.id, true, 0));
+    startMatch(challenge, "p0", "seed", 0);
+    recordScore(challenge, "p0", 200, 10, "score", COUNTDOWN_MS + 60_000);
+    expect(sendTrap(challenge, "p0", "p1", COUNTDOWN_MS + 60_000)).toBeNull();
+  });
+
+  it("are read from a phone as a player's id, and nothing else", () => {
+    expect(parseClientMessage(JSON.stringify({ type: "trap", to: "b" }))).toEqual({ type: "trap", to: "b" });
+    expect(parseClientMessage(JSON.stringify({ type: "trap", to: 3 }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ type: "trap", to: "x".repeat(65) }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ type: "trap" }))).toBeNull();
+  });
+
+  it("start again from nothing with each match", () => {
+    const { room, now } = royale(TRAP_EVERY_SERVED);
+    sendTrap(room, "a", "b", now);
+    room.status = "lobby";
+    room.players.forEach((player) => setReady(room, player.id, true, now));
+    startMatch(room, "a", "seed2", now);
+    expect(room.players[0].traps).toBeUndefined();
+    expect(room.players[1].trappedAt).toBeUndefined();
+  });
+});
+
+describe("roles in a shared kitchen", () => {
+  it("are the host's to pick, in the lobby, for co-op and duo rooms only", () => {
+    const coop = createRoom("COOP", 0, "coop");
+    addPlayer(coop, "h", "H", 0);
+    addPlayer(coop, "g", "G", 0);
+    expect(viewOf(coop, 0).roles).toBe("free");
+    setRoles(coop, "g", "hostServes", 1);
+    expect(viewOf(coop, 1).roles).toBe("free");
+    setRoles(coop, "h", "hostCooks", 1);
+    expect(viewOf(coop, 1).roles).toBe("hostCooks");
+    coop.players.forEach((player) => setReady(coop, player.id, true, 2));
+    startMatch(coop, "h", "seed", 2);
+    setRoles(coop, "h", "free", 3);
+    expect(viewOf(coop, 3).roles).toBe("hostCooks");
+    const challenge = roomWith(2);
+    setRoles(challenge, "p0", "hostCooks", 1);
+    expect(viewOf(challenge, 1).roles).toBe("free");
+  });
+
+  it("are read from a phone as one of the three choices only", () => {
+    expect(parseClientMessage(JSON.stringify({ type: "roles", roles: "hostServes" }))).toEqual({ type: "roles", roles: "hostServes" });
+    expect(parseClientMessage(JSON.stringify({ type: "roles", roles: "everyone" }))).toBeNull();
   });
 });

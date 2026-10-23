@@ -9,6 +9,7 @@ import { STORIES } from "../data/stories";
 import { COMPETITOR_DAYS } from "../data/competitor";
 import { weekOf } from "../game/weekly";
 import { canOfferSlice } from "../game/slice";
+import { commisMood, MAX_FATIGUE } from "../game/commis";
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import { BATCH_ID, nextBatchRecipe, openBatch } from "../game/batch";
 import { canBorrowFromNonna, forecastCustomers } from "../game/economy";
@@ -75,6 +76,11 @@ export const checkInvariants = (state: GameState, before?: GameState): void => {
     expect(state.competitor.stars, "the stars against the competitor").toBeGreaterThanOrEqual(0);
     if (state.competitor.outcome) expect(state.day, "the competitor's days").toBeGreaterThan(state.competitor.firstDay + COMPETITOR_DAYS - 1);
   }
+  // The commis: named once hired, their fatigue within bounds.
+  if (state.upgrades.commis > 0) expect(state.commis?.name, "a hired commis has a name").toBeTruthy();
+  if (state.commis) expect(state.commis.fatigue >= 0 && state.commis.fatigue <= MAX_FATIGUE, "the commis's fatigue").toBe(true);
+  // Loyalty only counts what was bought.
+  Object.values(state.bought ?? {}).forEach((portions) => expect(isCount(portions), "portions bought").toBe(true));
   // The week's special is a pizza of the menu, of this week or an earlier one (until the next morning tells it).
   if (state.special) {
     expect(state.special.week, "the special's week").toBeLessThanOrEqual(weekOf(state.day));
@@ -119,8 +125,13 @@ export const nextMove = (state: GameState, style: RobotStyle, random: () => numb
     if (roll < 0.006 && recipe) return { type: "changePrice", recipeId: recipe.id, delta: random() < 0.5 ? -5 : 5 };
     if (roll < 0.007 && recipe && state.recipes.length > 3) return { type: "deleteRecipe", recipeId: recipe.id };
     if (roll < 0.009) return { type: "buyUpgrade", upgradeKey: pick(UPGRADE_KEYS, random) };
-    if (roll < 0.010 && recipe) return { type: "setSpecial", recipeId: recipe.id };
-    if (roll < 0.010) return { type: "sellUpgrade", upgradeKey: pick(UPGRADE_KEYS, random) };
+    if (roll < 0.010) {
+      // Selling an upgrade back, the week's special changed, the commis sent home: each now and then.
+      const which = random();
+      if (which < 0.5) return { type: "sellUpgrade", upgradeKey: pick(UPGRADE_KEYS, random) };
+      if (which < 0.75 && recipe) return { type: "setSpecial", recipeId: recipe.id };
+      return { type: "toggleCommisOff" };
+    }
     if (roll < 0.012) return { type: "setLanguage", language: random() < 0.5 ? "en" : "fr" };
     if (roll < 0.014) return { type: "offerDrink" };
     if (roll < 0.016) return { type: "craftSecret" };
@@ -207,6 +218,9 @@ export const runMorning = (state: GameState, random: () => number = Math.random)
     .slice(0, Math.max(0, capacity - activeMenu(next).length))
     .forEach((recipe) => act({ type: "toggleOnMenu", recipeId: recipe.id }));
   if (random() < 0.5 && activeMenu(next).length) act({ type: "setSpecial", recipeId: pick(activeMenu(next), random).id });
+  // A tired commis gets the evening off, most of the time.
+  const commis = commisMood(next);
+  if ((commis === "tired" || commis === "exhausted") && random() < 0.7) act({ type: "toggleCommisOff" });
   for (const target of [20, 12, 6, 3]) {
     const money = next.money;
     act({ type: "restock", targetQuantity: target });

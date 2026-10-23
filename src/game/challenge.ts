@@ -2,9 +2,9 @@
 // who plays on that date, so friends can compare scores. Everything random comes from a generator seeded by the date.
 import { CUSTOMER_NAMES, LINES_PER_MOOD } from "../data/customers";
 import { CLASSIC_RECIPES, type ClassicRecipeId } from "../data/recipes";
-import { hashString, makeId, seededStep } from "../utils/random";
+import { hashString, makeId, pickRandom, randomIndex, seededStep } from "../utils/random";
 import { rollLooks } from "./looks";
-import { fairPrice, isDessert } from "./pizza";
+import { fairPrice, fillingsOf, isDessert, sortByLayer } from "./pizza";
 import type { Challenge, Customer } from "./types";
 
 export const CHALLENGE_SECONDS = 120;
@@ -78,5 +78,33 @@ export const createChallengeCustomer = (challenge: Challenge, waitingNames: Read
     price: fairPrice(recipe.ingredients),
     waitedSeconds: 0,
     lineIndex: Math.floor(draw(challenge) * LINES_PER_MOOD),
+  };
+};
+
+// Pizza Royale: a tricky customer sent by another player. A recipe of the match's menu with one more filling (from
+// another of its recipes, so its pan is on the line) and one fewer: easy to get wrong. Already a little impatient.
+// Drawn outside the match's sequence, so the player's next customers stay everyone's.
+export const TRAP_HEAD_START_SECONDS = 20;
+export const createTrapCustomer = (challenge: Challenge, from: string, waitingNames: ReadonlySet<string>): Customer => {
+  const recipe = challengeRecipe(pickRandom(challenge.menu));
+  const fillings = fillingsOf(recipe.ingredients);
+  const others = [...new Set(challenge.menu.flatMap((id) => fillingsOf(challengeRecipe(id).ingredients)))].filter((id) => !recipe.ingredients.includes(id));
+  const extraIngredient = others.length ? pickRandom(others) : null;
+  const removedIngredient = fillings.length >= 2 ? pickRandom(fillings) : null;
+  const ingredients = sortByLayer([...recipe.ingredients.filter((id) => id !== removedIngredient), ...(extraIngredient ? [extraIngredient] : [])]);
+  const name = pickRandom(CUSTOMER_NAMES.filter((candidate) => !waitingNames.has(candidate)));
+  return {
+    id: makeId(),
+    name,
+    ...rollLooks(name),
+    recipeId: recipe.id,
+    recipeName: null,
+    ingredients,
+    extraIngredient,
+    removedIngredient,
+    price: fairPrice(ingredients),
+    waitedSeconds: TRAP_HEAD_START_SECONDS,
+    lineIndex: randomIndex(LINES_PER_MOOD),
+    trapFrom: from,
   };
 };

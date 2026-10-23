@@ -10,6 +10,8 @@ import { discoverClassics } from "../menu";
 import { levelForXp } from "../progression";
 import { pushToast } from "../toasts";
 import { COSMETIC_PRICES, STAR_LOOKS, isLookOf, type CosmeticId, type CosmeticSlot, type LookIds } from "../../data/cosmetics";
+import { recordPurchase } from "../loyalty";
+import { hireCommis } from "../commis";
 import type { ActionHandlers, GameState } from "../types";
 
 const addToStock = (state: GameState, id: IngredientId, quantity: number): void => {
@@ -51,6 +53,7 @@ export const shopActions = {
     }
     spend(state, cost);
     addToStock(state, ingredientId, quantity);
+    recordPurchase(state, ingredientId, quantity);
   },
 
   restock(state, { targetQuantity }) {
@@ -61,6 +64,7 @@ export const shopActions = {
     }
     plan.items.forEach(({ id, quantity }) => addToStock(state, id, quantity));
     spend(state, plan.cost);
+    plan.items.forEach(({ id, quantity }) => recordPurchase(state, id, quantity));
     pushToast(state, { key: "restocked", params: { cost: plan.cost } });
   },
 
@@ -99,6 +103,7 @@ export const shopActions = {
     if (levelForXp(state.xp) < upgrade.requiredLevel[currentLevel] || state.money < cost) return;
     spend(state, cost);
     state.upgrades[upgradeKey] = currentLevel + 1;
+    if (upgradeKey === "commis") hireCommis(state);
     pushToast(state, { key: "upgradeBought", params: { upgradeKey, level: currentLevel + 1 } }, "gold");
   },
 

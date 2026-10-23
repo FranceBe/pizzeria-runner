@@ -1,7 +1,7 @@
 // The morning's "on tonight" list: the day's event, a real-calendar festival, tonight's goal, the neighbourhood quest and
 // birthdays, as small tiles side by side instead of a stack of banners. A tile shows its icon, its name and a time or a
 // deadline; tapping it opens it across the whole width, with what it says.
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FESTIVALS } from "../data/festivals";
 import { FAMILY_TIME, MATCH_KICKOFF, WEDDING_TIME, type DayEventId } from "../data/events";
 import { LIGHTNING_SECONDS, TONIGHT_REWARD, TONIGHT_XP } from "../data/tonight";
@@ -17,15 +17,14 @@ import { forecastCustomers } from "../game/economy";
 import { tonightsRush } from "../game/evening";
 import { shownEvent } from "../game/service";
 import { isThemeNight, THEME_MENU_TARGET, themeOnMenu } from "../game/themes";
-import type { GameState } from "../game/types";
+import type { Dispatch, GameState } from "../game/types";
+import { commisMood } from "../game/commis";
 import { useTranslation } from "../i18n/I18nContext";
 import { QuestDetails, batchItemsText, questText } from "./QuestCard";
+import { EVENT_ICONS } from "./eventIcons";
+import { GazettePage } from "./Gazette";
+import { todaysGazette } from "../game/gazette";
 
-export const EVENT_ICONS: Record<string, string> = {
-  market: "🧺", rain: "🌧️", festival: "🎉", critic: "🧐", sunny: "☀️", powerCut: "🔌", woodShortage: "🪵", lateDelivery: "🚚",
-  inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍", mysteryGuest: "🕵️", veggieNight: "🥦", biancaNight: "🧀",
-  fridgeFailure: "🧊", heatwave: "🥵", waterCut: "🚱", nonnaFamily: "👵",
-};
 
 // Events that happen at a time on the evening's clock, shown on their tile.
 const EVENT_TIMES: Partial<Record<DayEventId, number>> = { match: MATCH_KICKOFF, wedding: WEDDING_TIME, nonnaFamily: FAMILY_TIME };
@@ -47,9 +46,42 @@ interface AgendaItem {
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
-export const TonightAgenda = ({ state }: { state: GameState }) => {
+export const TonightAgenda = ({ state, dispatch }: { state: GameState; dispatch: Dispatch }) => {
   const t = useTranslation();
+  const [isReading, setIsReading] = useState(false);
   const items: AgendaItem[] = [];
+  // The commis, when they need a rest (or have the evening off): an evening off is given from here.
+  const mood = commisMood(state);
+  if (state.commis && (mood === "tired" || mood === "exhausted" || mood === "off")) {
+    const { name, fatigue } = state.commis;
+    items.push({
+      id: "commis",
+      icon: mood === "off" ? "😴" : "😮‍💨",
+      title: t(`prep.commis.${mood}`, { name }),
+      text: t(`prep.commis.${mood}Text`, { name, fatigue: Math.round(fatigue) }),
+      tone: "ag-commis",
+      more: (
+        <button className="btn sm" onClick={() => dispatch({ type: "toggleCommisOff" })}>
+          {mood === "off" ? t("prep.commis.cancelOff") : t("prep.commis.giveOff", { name })}
+        </button>
+      ),
+    });
+  }
+  // The week's gazette, the morning it comes out.
+  const gazette = todaysGazette(state);
+  if (gazette) {
+    items.push({
+      id: "gazette",
+      icon: "📰",
+      title: t("gazette.outTitle"),
+      text: t(`gazette.headlines.${gazette.headline}`, {
+        name: state.name,
+        recipe: gazette.top ? t.recipe({ id: gazette.top.recipeId, name: gazette.top.recipeName }) : "",
+      }),
+      tone: "ag-gazette",
+      more: <button className="btn sm" onClick={() => setIsReading(true)}>{t("gazette.read")}</button>,
+    });
+  }
 
   const eventId = state.event ? shownEvent(state, state.event) : null;
   if (state.event && eventId) {
@@ -153,6 +185,7 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
   }
 
   if (!items.length) return null;
+  const reading = isReading && gazette ? <GazettePage issue={gazette} state={state} onClose={() => setIsReading(false)} /> : null;
   return (
     <section className="agenda" aria-label={t("prep.agenda")}>
       <h3 className="agenda-h">{t("prep.agenda")}</h3>
@@ -172,6 +205,7 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
           </div>
         </details>
       ))}
+      {reading}
     </section>
   );
 };

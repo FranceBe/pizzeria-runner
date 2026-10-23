@@ -25,6 +25,7 @@ import type { ScreenProps } from "./views/types";
 import { shownEvent } from "./game/service";
 import { MultiplayerProvider, useMultiplayer } from "./multiplayer/MultiplayerContext";
 import { isSharedKitchen } from "./multiplayer/protocol";
+import { PerfectBurst } from "./views/service/PerfectBurst";
 import { MultiplayerView } from "./views/MultiplayerView";
 
 const TABS: readonly TabId[] = ["service", "market", "menu", "upgrades", "journal", "multi", "settings"];
@@ -98,6 +99,8 @@ const GameShell = ({ state: soloState, dispatch: soloDispatch, tab, setTab }: Sc
   return (
     <>
       <Header state={state} dispatch={dispatch} isDuo={isDuo} />
+      {/* A perfect pizza's burst, over everything, wherever the evening ends up (views/service/PerfectBurst.tsx). */}
+      <PerfectBurst pops={state.pops} dispatch={dispatch} />
       <div className="wrap">
         <nav className="tabs" role="tablist">
           {TABS.map((id) => (

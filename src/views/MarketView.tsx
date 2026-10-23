@@ -12,6 +12,9 @@ import { levelForXp } from "../game/progression";
 import { useTranslation } from "../i18n/I18nContext";
 import { canAfford } from "../utils/math";
 import { IngredientIcon } from "../components/IngredientIcon";
+import type { IngredientId } from "../data/ingredients";
+import type { GameState } from "../game/types";
+import { LOYALTY_GIFT_PORTIONS, LOYALTY_TIERS, loyaltyDiscount, loyaltyProgress, loyaltyTier } from "../game/loyalty";
 import type { ScreenProps } from "./types";
 
 const BUY_QUANTITIES = [1, 5, 10];
@@ -57,6 +60,7 @@ const Fridge = ({ state, dispatch }: ScreenProps) => {
                 isInSeason(state, ingredient.id) && <span className="crate-season">{t("market.inSeason")}</span>
               )}
               <div className="crate-n">{t.ingredient(ingredient.id)}</div>
+              <LoyaltyMeter state={state} id={ingredient.id} />
               <div className="price-tag">
                 {price < ingredient.cost && <s>{t.money(ingredient.cost)}</s>} {t.money(price)}
               </div>
@@ -76,6 +80,25 @@ const Fridge = ({ state, dispatch }: ScreenProps) => {
           );
         })}
       </div>
+    </div>
+  );
+};
+
+// Where things stand with a supplier: the tier's discount, and a thin bar towards the next one (once something was bought).
+const LoyaltyMeter = ({ state, id }: { state: GameState; id: IngredientId }) => {
+  const t = useTranslation();
+  const tier = loyaltyTier(state, id);
+  const { bought, next } = loyaltyProgress(state, id);
+  const previous = tier ? LOYALTY_TIERS[tier - 1].portions : 0;
+  const label = next === null ? t("market.loyaltyTop", { portions: LOYALTY_GIFT_PORTIONS }) : t("market.loyaltyProgress", { bought, next });
+  return (
+    <div className="crate-loyalty" title={label} aria-label={label}>
+      {tier > 0 && <span className="crate-loyal">{t("market.loyal", { discount: Math.round(loyaltyDiscount(state, id) * 100) })}</span>}
+      {next !== null && bought > 0 && (
+        <span className="crate-loyalty-bar" aria-hidden="true">
+          <span style={{ width: `${Math.round(((bought - previous) / (next - previous)) * 100)}%` }} />
+        </span>
+      )}
     </div>
   );
 };

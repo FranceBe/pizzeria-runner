@@ -59,6 +59,18 @@ export const isPlausibleScore = (
   report.served >= before.served &&
   report.served <= maxServedAfter(secondsIn, mode) &&
   report.score <= report.served * MAX_POINTS_PER_PIZZA;
+// Shared kitchens (co-op, duo): the host may split the work, one at the board and the oven, the other at the pass and
+// the bar, picking their own side; or leave everyone free to do everything.
+export const ROLES_CHOICES = ["free", "hostCooks", "hostServes"] as const;
+export type RolesChoice = (typeof ROLES_CHOICES)[number];
+export const isRolesChoice = (value: unknown): value is RolesChoice => ROLES_CHOICES.includes(value as RolesChoice);
+
+// Pizza Royale traps: a tricky customer sent to another player. One is earned every TRAP_EVERY_SERVED pizzas served
+// (as the server counts them), MAX_TRAPS at most a match; a player receives one at most every TRAP_COOLDOWN_MS.
+export const TRAP_EVERY_SERVED = 4;
+export const MAX_TRAPS = 3;
+export const TRAP_COOLDOWN_MS = 8000;
+export const trapsEarned = (served: number): number => Math.min(MAX_TRAPS, Math.floor(Math.max(0, served) / TRAP_EVERY_SERVED));
 export const COUNTDOWN_MS = 3500;
 // A player whose connection drops (a phone switching apps) keeps their place this long, so they can come back.
 export const AWAY_GRACE_MS = 3 * 60_000;
@@ -84,6 +96,8 @@ export interface PlayerView {
   done: boolean;
   /** Pizza Royale: out of the match, and in which order (1 for the first one out). */
   out?: number;
+  /** Pizza Royale: traps sent so far. */
+  traps?: number;
   /** Still in the room (false once they left for good). */
   connected: boolean;
   /** Lost their connection a moment ago (switched apps): their place is kept while they come back. */
@@ -97,6 +111,8 @@ export interface RoomView {
   players: PlayerView[];
   /** How long the match lasts (challenge and co-op). */
   seconds: MatchSeconds;
+  /** Shared kitchens: how the work is split. */
+  roles: RolesChoice;
   /** Once started: the shared seed, so everyone gets the same customers. */
   seed?: string;
   /** Once started: milliseconds until the match begins (negative once it has). */
@@ -110,10 +126,14 @@ export type ClientMessage =
   | { type: "start" }
   // The host picks how long the match lasts, in the lobby.
   | { type: "length"; seconds: MatchSeconds }
+  // The host splits the work of a shared kitchen, in the lobby.
+  | { type: "roles"; roles: RolesChoice }
   | { type: "score"; score: number; served: number }
   | { type: "done"; score: number; served: number }
   // Pizza Royale: this player made a mistake, and is out.
   | { type: "out"; score: number; served: number }
+  // Pizza Royale: a tricky customer for that player.
+  | { type: "trap"; to: string }
   | { type: "leave" }
   // Co-op only. The host sends the shared kitchen as it is (as JSON); the other player sends what they do in it.
   | { type: "state"; state: string }
@@ -124,7 +144,9 @@ export type ServerMessage =
   | { type: "room"; room: RoomView; you: string; token: string }
   | { type: "error"; reason: RoomError }
   | { type: "state"; state: string }
-  | { type: "action"; from: string; action: unknown };
+  | { type: "action"; from: string; action: unknown }
+  // Pizza Royale: a tricky customer, sent by that player.
+  | { type: "trap"; from: string };
 
 // How big a message may be: the shared kitchen is the big one.
 const MAX_MESSAGE_LENGTH = 500;
@@ -181,6 +203,8 @@ export const parseClientMessage = (raw: unknown): ClientMessage | null => {
       return { type: "ready", ready: message.ready === true };
     case "length":
       return isMatchLength(message.seconds) ? { type: "length", seconds: message.seconds } : null;
+    case "roles":
+      return isRolesChoice(message.roles) ? { type: "roles", roles: message.roles } : null;
     case "start":
     case "leave":
       return { type: message.type };
@@ -188,6 +212,8 @@ export const parseClientMessage = (raw: unknown): ClientMessage | null => {
     case "done":
     case "out":
       return { type: message.type, score: cleanCount(message.score), served: cleanCount(message.served) };
+    case "trap":
+      return typeof message.to === "string" && message.to.length > 0 && message.to.length <= 64 ? { type: "trap", to: message.to } : null;
     default:
       return null;
   }
@@ -197,7 +223,7 @@ export const parseServerMessage = (raw: unknown): ServerMessage | null => {
   if (typeof raw !== "string") return null;
   try {
     const data = JSON.parse(raw) as ServerMessage;
-    return data && ["room", "error", "state", "action"].includes(data.type) ? data : null;
+    return data && ["room", "error", "state", "action", "trap"].includes(data.type) ? data : null;
   } catch {
     return null;
   }

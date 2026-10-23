@@ -1,7 +1,7 @@
 // The "Multiplayer" tab: pick a mode (each described), or join a room; then the lobby, the match, and the podium.
 // Challenge and quick co-op are played on the service screen; a duo pizzeria takes over the whole game while it is open.
 import { useEffect, useState, type ReactNode } from "react";
-import { MATCH_LENGTHS, MIN_PLAYERS, isOwnKitchen, maxPlayersIn, type PlayerView, type RoomMode, type RoomView } from "../multiplayer/protocol";
+import { MATCH_LENGTHS, MIN_PLAYERS, ROLES_CHOICES, isOwnKitchen, isSharedKitchen, maxPlayersIn, type PlayerView, type RoomMode, type RoomView } from "../multiplayer/protocol";
 import { useMultiplayer } from "../multiplayer/MultiplayerContext";
 import { deleteDuo, loadDuos, newDuo, openDuo, type DuoSave } from "../multiplayer/duoSaves";
 import { useTranslation } from "../i18n/I18nContext";
@@ -76,6 +76,32 @@ const MatchLength = ({ room, isHost }: { room: RoomView; isHost: boolean }) => {
             </button>
           ))
         : <strong>{t(`multi.lengths.s${room.seconds}`)}</strong>}
+    </div>
+  );
+};
+
+// How the work of a shared kitchen is split: the host picks (and their own side), the other player sees it.
+const KitchenRoles = ({ room, isHost }: { room: RoomView; isHost: boolean }) => {
+  const t = useTranslation();
+  const { setRoles } = useMultiplayer();
+  if (!isSharedKitchen(room.mode)) return null;
+  const host = room.players[0]?.name ?? "";
+  // A server from before roles doesn't say: everyone free.
+  const roles = room.roles ?? "free";
+  return (
+    <div className="mp-roles">
+      <span className="binlabel">{t("multi.roles")}</span>
+      {isHost ? (
+        <div className="row">
+          {ROLES_CHOICES.map((choice) => (
+            <button key={choice} className={`btn sm${choice === roles ? " primary" : ""}`} aria-pressed={choice === roles} onClick={() => setRoles(choice)}>
+              {t(`multi.rolesHost.${choice}`)}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <strong>{t(`multi.rolesSeen.${roles}`, { host })}</strong>
+      )}
     </div>
   );
 };
@@ -161,6 +187,7 @@ const Lobby = ({ room, goToTab }: { room: RoomView; goToTab: (tab: TabId) => voi
       <h3 className="h">{t("multi.players", { count: room.players.length, max: maxPlayersIn(room.mode) })}</h3>
       <PlayerList room={room} you={you} showScores={false} />
       <MatchLength room={room} isHost={isHost} />
+      <KitchenRoles room={room} isHost={isHost} />
       {isHost ? (
         <button className="btn primary big" disabled={!canStart} onClick={multiplayer.start}>{t(`multi.modes.${room.mode}.start`)}</button>
       ) : (

@@ -97,7 +97,9 @@ export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, 
               ? t("service.delivery")
               : customer.story
                 ? t(`stories.${customer.story.id}.lines.${customer.story.chapter as 0 | 1 | 2 | 3}`)
-                : t(`customerLines.${mood}.${customer.lineIndex}`)}
+                : customer.rareLine !== undefined && mood <= 1
+                  ? t(`rareCustomerLines.${customer.rareLine}`)
+                  : t(`customerLines.${mood}.${customer.lineIndex}`)}
           </div>
         </div>
       </div>
@@ -109,10 +111,11 @@ export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, 
             : t.recipe({ id: customer.recipeId, name: customer.recipeName })}
       </div>
       {/* Every tag of the order on one line: who they are, what they asked for, and their drink. */}
-      {(customer.critic || customer.celebrity || customer.family || customer.birthday || customer.story || customer.charmed || customer.forDessert || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
+      {(customer.critic || customer.celebrity || customer.family || customer.trapFrom || customer.birthday || customer.story || customer.charmed || customer.forDessert || hasExpress || hasSpecialRequest(customer) || customer.drink) && (
         <div className="mods">
           {customer.critic && <span className="mod critic-tag">★ {t("service.critic")}</span>}
           {customer.celebrity && <span className="mod celebrity-tag">{`⭐ ${t("service.celebrity")}`}</span>}
+          {customer.trapFrom && <span className="mod trap-tag">{t("service.trapFrom", { name: customer.trapFrom })}</span>}
           {customer.family && <span className="mod family-tag" title={t("service.familyTitle")}>{`👵 ${t("service.family")}`}</span>}
           {customer.birthday && <span className="mod birthday-tag">🎂 {t("service.birthday")}</span>}
           {customer.story && <span className="mod story-tag">{`📖 ${t.storyTitle(customer.story.id)}`}</span>}

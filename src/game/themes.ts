@@ -7,7 +7,7 @@ import { activeMenu } from "./menu";
 import { isDessert } from "./pizza";
 import type { GameState } from "./types";
 
-export type ThemeNightId = Extract<DayEventId, "veggieNight" | "biancaNight">;
+type ThemeNightId = Extract<DayEventId, "veggieNight" | "biancaNight">;
 
 const FITS: Record<ThemeNightId, (ingredients: readonly IngredientId[]) => boolean> = {
   veggieNight: (ingredients) => !isDessert(ingredients) && dietAllows("veggie", ingredients),
@@ -20,11 +20,11 @@ export const THEME_BONUS_SHARE = 0.15;
 // With this many pizzas of the theme on the menu, more people come; with none, fewer.
 export const THEME_MENU_TARGET = 2;
 export const THEME_CROWD_FACTOR = 1.2;
-export const THEME_EMPTY_FACTOR = 0.9;
+const THEME_EMPTY_FACTOR = 0.9;
 
 export const isThemeNight = (id: DayEventId | null | undefined): id is ThemeNightId => id === "veggieNight" || id === "biancaNight";
 
-export const fitsTheme = (id: ThemeNightId, ingredients: readonly IngredientId[]): boolean => FITS[id](ingredients);
+const fitsTheme = (id: ThemeNightId, ingredients: readonly IngredientId[]): boolean => FITS[id](ingredients);
 
 /** Whether this pizza fits tonight's theme (false on any other night). */
 export const fitsTonight = (state: GameState, ingredients: readonly IngredientId[]): boolean =>

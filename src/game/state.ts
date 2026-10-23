@@ -1,6 +1,7 @@
 import { ensureTonightGoal } from "./tonight";
 import { ensureRushPlan } from "./evening";
 import { weekOf } from "./weekly";
+import { nameOldCommis } from "./commis";
 import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { MARGHERITA } from "../data/recipes";
 import { LANGUAGES, detectLanguage, type Language } from "../i18n/languages";
@@ -105,6 +106,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     rushPlan: null,
     competitor: null,
     postcards: {},
+    gazettes: [],
     celebrityWall: [],
     secretCodeFound: false,
     service: null,
@@ -340,6 +342,7 @@ export const hydrateState = (saved: JsonObject): GameState => {
   };
   // Records, without a toast, what an older save had already earned.
   unlockAchievements(state, { silent: true });
+  nameOldCommis(state);
   // A morning without tonight's goal yet (a save from before goals, or a new game set up): it gets one now.
   if (state.phase === "prep") {
     ensureTonightGoal(state);

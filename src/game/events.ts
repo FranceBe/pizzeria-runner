@@ -7,6 +7,7 @@ import { seasonalPriceFactor } from "./seasons";
 import { canHaveTheme, isThemeNight } from "./themes";
 import { canHaveHeatwave, canSpoil } from "./incidents";
 import { FAMILY_LEVEL } from "./family";
+import { loyaltyDiscount } from "./loyalty";
 import { levelForXp } from "./progression";
 import type { GameState } from "./types";
 
@@ -53,6 +54,6 @@ export const rollDayEvent = (state: GameState, yesterday: DayEventId | null): Da
   return candidates[0];
 };
 
-// What a portion costs at the market today (market day, in-season discount), rounded to the cent.
+// What a portion costs at the market today (market day, in-season discount, a loyal supplier's), rounded to the cent.
 export const marketPrice = (state: GameState, id: IngredientId): number =>
-  Math.round(INGREDIENTS_BY_ID[id].cost * todaysEvent(state).marketPriceFactor * seasonalPriceFactor(state, id) * 100) / 100;
+  Math.round(INGREDIENTS_BY_ID[id].cost * todaysEvent(state).marketPriceFactor * seasonalPriceFactor(state, id) * (1 - loyaltyDiscount(state, id)) * 100) / 100;

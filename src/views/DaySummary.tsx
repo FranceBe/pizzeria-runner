@@ -10,7 +10,7 @@ import { useTranslation } from "../i18n/I18nContext";
 import { Pizza } from "../components/Pizza";
 import { drawReceipt, shareOrDownload, type ReceiptRow } from "../utils/receiptImage";
 import type { DayEventId } from "../data/events";
-import { EVENT_ICONS } from "./TonightAgenda";
+import { EVENT_ICONS } from "./eventIcons";
 
 // The end of the day as a till receipt, in three parts under its header (the day's event and stars): the service
 // (what was served, the orders folded away), the till (money in, money out, the profit), and the round-up (the
@@ -177,6 +177,7 @@ export const DaySummary = ({ summary, pizzeriaName, shownEventId, onNextDay }: D
           <Section caption={t("summary.sectionService")}>
             <ReceiptLine label={t("summary.served")} value={summary.served} />
             {summary.happyServed !== undefined && summary.served > 0 && <ReceiptLine className="sub" label={t("summary.happyServed")} value={summary.happyServed} />}
+            {Boolean(summary.perfectServed) && <ReceiptLine className="sub" label={`✨ ${t("summary.perfectServed")}`} value={summary.perfectServed} />}
             {bestSeller && <ReceiptLine className="text" label={t("summary.bestSeller")} value={`${t.recipe({ id: bestSeller.recipeId, name: bestSeller.name })} ×${bestSeller.count}`} />}
             {summary.reviews && summary.reviews.length > 0 && (
               <ReceiptLine

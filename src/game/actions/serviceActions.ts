@@ -5,7 +5,7 @@ import {
   ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS, WOOD_FIRED_XP_BONUS,
 } from "../../data/progression";
 import { randomBetween, randomIndex, makeId, pickSome } from "../../utils/random";
-import { createChallenge, createChallengeCustomer, nextChallengeArrival } from "../challenge";
+import { createChallenge, createChallengeCustomer, createTrapCustomer, nextChallengeArrival } from "../challenge";
 import { createCustomer, isRegularCustomer, moodForWait, type CustomerKind } from "../customers";
 import { birthdaysToday, ensureLocals, lapseAbsentRegulars, recordVisit } from "../regulars";
 import { CUSTOMER_NAMES } from "../../data/customers";
@@ -22,6 +22,9 @@ import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
 import { ensureSpecialWeek, serveSpecial, specialReputation } from "../special";
 import { offerSlice } from "../slice";
+import { commisLevel, restCommisOvernight, tireCommis, toggleCommisOff } from "../commis";
+import { countWeeklySale, isNewWeek, publishGazette } from "../gazette";
+import { deliverLoyaltyGifts } from "../loyalty";
 import { isFamilyDue, isFamilyExpected } from "../family";
 import { pickSpoilingIngredient, spoilAtClosing, weatherWaiting } from "../incidents";
 import { FAMILY_NAMES, FAMILY_SIZE } from "../../data/events";
@@ -40,7 +43,7 @@ import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest, prepareWedding } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
 import {
-  collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable, themeBonus,
+  collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable, themeBonus, isPerfectServe,
 } from "../serving";
 import { pushToast, pushPop } from "../toasts";
 import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, RoyaleMistake, Service } from "../types";
@@ -122,6 +125,7 @@ const endDay = (state: GameState, service: Service): void => {
   const net = stats.revenue + stats.tips + annexeIncome + questRewards + bonuses - charges - state.purchasesToday;
   const inspectionPassed = state.event === "inspection" && waste === 0 && stats.served >= INSPECTION_MIN_SERVED;
   const spoiled = spoilAtClosing(state);
+  tireCommis(state, service);
   if (inspectionPassed) {
     state.xp += INSPECTION_XP;
     stats.xp += INSPECTION_XP;
@@ -155,6 +159,7 @@ const endDay = (state: GameState, service: Service): void => {
     questRewards,
     bonuses,
     happyServed: stats.happyServed,
+    perfectServed: stats.perfect ?? 0,
     stars,
     starGoals: goals,
     inspectionPassed,
@@ -496,6 +501,9 @@ export const serviceActions = {
     }
     // The first day, or an older save: the neighbourhood is set up before anyone comes in.
     ensureLocals(state, CUSTOMER_NAMES);
+    // The very first day has no week yet: its sales count for the first gazette too. Set before the copy below, so
+    // starting the day over keeps the same missions.
+    ensureWeek(state);
     // Kept to start the day over. Copied, so later changes to the game never reach it.
     const { toasts, pops, dayStart, ...beforeOpening } = state;
     state.dayStart = structuredClone(beforeOpening);
@@ -555,6 +563,21 @@ export const serviceActions = {
   },
 
   // Bins every baked pizza nobody is waiting for, in one go.
+  // Pizza Royale: another player sent a tricky customer. Comes in at once, on top of the match's customers.
+  receiveTrap(state, { from }) {
+    const service = state.service;
+    if (!service?.challenge?.royale || service.challenge.out) return;
+    const waitingNames = new Set(service.customers.map((customer) => customer.name));
+    const customer = createTrapCustomer(service.challenge, from, waitingNames);
+    service.customers.push(customer);
+    if (!service.selectedCustomerId) service.selectedCustomerId = customer.id;
+    pushToast(state, { key: "trapReceived", params: { name: from } }, "warn");
+  },
+
+  toggleCommisOff(state) {
+    toggleCommisOff(state);
+  },
+
   offerSlice(state, { pizzaId }) {
     if (state.service) offerSlice(state, state.service, pizzaId);
   },
@@ -783,7 +806,7 @@ export const serviceActions = {
     service.mammaOnBoard = false;
     // The commis rolls out the dough the selected order needs (gluten-free when asked).
     const dough = selectedCustomer(service)?.ingredients.find(isBase) ?? DOUGH;
-    if (state.upgrades.commis >= COMMIS_SPREADS_DOUGH && inStock(state, dough) > 0) {
+    if (commisLevel(state) >= COMMIS_SPREADS_DOUGH && inStock(state, dough) > 0) {
       service.board = [dough];
       takeFromStock(state, dough);
     }
@@ -837,6 +860,10 @@ export const serviceActions = {
       serveSpecial(state, customer, mood) +
       themeBonus(state, customer);
     if (pizza.mamma) charmNextCustomer(service, customer);
+    if (isPerfectServe(customer, pizza)) {
+      service.stats.perfect = (service.stats.perfect ?? 0) + 1;
+      pushPop(state, 0, "perfect");
+    }
     // Critics, deliveries, celebrities and Nonna's family are passing through: they never join the customer book.
     const isPerson = !customer.critic && !customer.delivery && !customer.celebrity && !customer.mystery && !customer.family;
     // Back for dessert, they already counted as a visit tonight.
@@ -861,6 +888,8 @@ export const serviceActions = {
     stats.revenue += customer.price;
     stats.tips += tip;
     stats.xp += xpGained;
+    countWeeklySale(state, customer.recipeId, customer.recipeName);
+    if (service.rush) service.stats.rushServed = (service.stats.rushServed ?? 0) + 1;
     const sales = stats.byRecipe[customer.recipeId] ?? { name: customer.recipeName, count: 0 };
     stats.byRecipe[customer.recipeId] = { ...sales, count: sales.count + 1 };
 
@@ -906,6 +935,7 @@ export const serviceActions = {
     state.phase = "prep";
     state.summary = null;
     state.purchasesToday = 0;
+    restCommisOvernight(state);
     // What today already holds: the quest still running, the regulars' birthdays and story chapters, the competitor.
     lapseAbsentRegulars(state);
     expireQuest(state);
@@ -920,6 +950,10 @@ export const serviceActions = {
     if (!isDayFull(state)) maybeOpenCompetitor(state);
     if (!isDayFull(state)) maybeStartStory(state);
     if (!isDayFull(state)) maybeOfferQuest(state);
+    if (isNewWeek(state)) {
+      publishGazette(state);
+      deliverLoyaltyGifts(state);
+    }
     ensureWeek(state);
     ensureSpecialWeek(state);
     ensureTonightGoal(state);

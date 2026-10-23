@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { coopViewFor, createCoopGame, decodeCoop, encodeCoop, isCoopMove, playCoopMove, tickCoop, type CoopGame } from "./coop";
+import { coopViewFor, createCoopGame, decodeCoop, encodeCoop, isCoopMove, isRoleMove, playCoopMove, rolesFor, tickCoop, type CoopGame } from "./coop";
 import { ovenSlots } from "../game/service";
 
 const HOST = "host";
@@ -75,5 +75,42 @@ describe("a co-op kitchen", () => {
     expect(decodeCoop("nonsense")).toBeNull();
     for (let second = 0; second < 125; second++) coop = tickCoop(coop, 1);
     expect(coop.game.challengeResult).toMatchObject({ multiplayer: true, coop: true });
+  });
+});
+
+describe("roles in a shared kitchen", () => {
+  it("follow the host's choice: free, the host at the board, or the host at the pass", () => {
+    expect(rolesFor("free", [HOST, GUEST])).toBeUndefined();
+    expect(rolesFor(undefined, [HOST, GUEST])).toBeUndefined();
+    expect(rolesFor("hostCooks", [HOST, GUEST])).toEqual({ [HOST]: "cook", [GUEST]: "pass" });
+    expect(rolesFor("hostServes", [HOST, GUEST])).toEqual({ [HOST]: "pass", [GUEST]: "cook" });
+    expect(rolesFor("hostCooks", [HOST])).toBeUndefined();
+  });
+
+  it("keep the board and the oven for the cook, the pass and the bar for the other; the rest is everyone's", () => {
+    const roles = rolesFor("hostCooks", [HOST, GUEST]);
+    expect(isRoleMove(roles, HOST, { type: "toggleIngredient", ingredientId: "pate" })).toBe(true);
+    expect(isRoleMove(roles, GUEST, { type: "toggleIngredient", ingredientId: "pate" })).toBe(false);
+    expect(isRoleMove(roles, GUEST, { type: "bake" })).toBe(false);
+    expect(isRoleMove(roles, HOST, { type: "servePizza", pizzaId: "p" })).toBe(false);
+    expect(isRoleMove(roles, GUEST, { type: "servePizza", pizzaId: "p" })).toBe(true);
+    expect(isRoleMove(roles, HOST, { type: "pourDrink", drinkId: "eau" })).toBe(false);
+    expect(isRoleMove(roles, GUEST, { type: "selectCustomer", customerId: "c" })).toBe(true);
+    expect(isRoleMove(roles, HOST, { type: "selectCustomer", customerId: "c" })).toBe(true);
+    // The group order is chosen like any order: the cook makes its pizzas.
+    expect(isRoleMove(roles, HOST, { type: "selectBatch" })).toBe(true);
+    expect(isRoleMove(undefined, GUEST, { type: "bake" })).toBe(true);
+  });
+
+  it("leave the kitchen as it was for a move of the other side, and tell each player their role", () => {
+    let coop = createCoopGame("coop-seed", [HOST, GUEST], "en", 120, "hostServes");
+    for (let second = 0; second < 8; second++) coop = tickCoop(coop, 1);
+    expect(playCoopMove(coop, HOST, { type: "toggleIngredient", ingredientId: "pate" })).toBe(coop);
+    expect(playCoopMove(coop, GUEST, { type: "toggleIngredient", ingredientId: "pate" }).boards[GUEST].board).toEqual(["pate"]);
+    expect(coopViewFor(coop, HOST).service?.role).toBe("pass");
+    expect(coopViewFor(coop, GUEST).service?.role).toBe("cook");
+    expect(coopViewFor(createCoopGame("coop-seed", [HOST, GUEST], "en"), HOST).service?.role).toBeUndefined();
+    // The roles travel with the kitchen to the other phone.
+    expect(decodeCoop(encodeCoop(coop))?.roles).toEqual(coop.roles);
   });
 });

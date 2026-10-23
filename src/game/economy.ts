@@ -10,11 +10,15 @@ import { activeMenu, recipeAppeal } from "./menu";
 import { levelForXp } from "./progression";
 import { themeCrowdFactor } from "./themes";
 import { isSunnyEvening } from "./incidents";
+import { isCommisOff } from "./commis";
 import type { GameState } from "./types";
 
-// Rent, oven, staff: paid every evening, grows with each upgrade.
+// The evening's charges: rent, and each upgrade's upkeep (not the commis's on their evening off).
 export const dailyCharges = (state: GameState): number => {
-  return UPGRADE_KEYS.reduce((total, key) => total + UPGRADES[key].dailyCharge * state.upgrades[key], BASE_DAILY_CHARGES);
+  return UPGRADE_KEYS.reduce(
+    (total, key) => total + (key === "commis" && isCommisOff(state) ? 0 : UPGRADES[key].dailyCharge * state.upgrades[key]),
+    BASE_DAILY_CHARGES,
+  );
 };
 
 // Number of orders expected tonight, from room size, reputation, menu quality and variety,

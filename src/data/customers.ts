@@ -63,3 +63,6 @@ export const ACCESSORY_CHANCE = 0.5;
 
 // Each customer picks one of this many lines per mood (the lines themselves live in src/i18n).
 export const LINES_PER_MOOD = 3;
+// Now and then, someone says something unexpected instead, while still in a good mood (lines in src/i18n).
+export const RARE_LINES = 12;
+export const RARE_LINE_CHANCE = 0.025;

@@ -1,8 +1,9 @@
 // One multiplayer room, as plain data and functions: no Cloudflare in here, so it is tested like the game.
 // The Durable Object (index.ts) keeps one of these per room code, saves it, and talks to the players.
 import {
-  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MIN_PLAYERS, ROYALE_SECONDS, cleanName, isPlausibleScore, isSharedKitchen, maxPlayersIn,
-  type MatchSeconds, type PlayerView, type RoomError, type RoomMode, type RoomStatus, type RoomView,
+  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MIN_PLAYERS, ROYALE_SECONDS, TRAP_COOLDOWN_MS, cleanName, isPlausibleScore, isSharedKitchen,
+  maxPlayersIn, trapsEarned,
+  type MatchSeconds, type RolesChoice, type PlayerView, type RoomError, type RoomMode, type RoomStatus, type RoomView,
 } from "../../src/multiplayer/protocol";
 
 // A room nobody uses closes after this long; a finished room keeps its code blocked this long, so a late player
@@ -30,6 +31,9 @@ export interface PlayerData {
   awaySince?: number;
   /** Pizza Royale: out of the match, in this order (1 for the first one out). Final. */
   out?: number;
+  /** Pizza Royale: traps sent, and when they last received one. */
+  traps?: number;
+  trappedAt?: number;
 }
 
 export interface RoomData {
@@ -39,6 +43,8 @@ export interface RoomData {
   players: PlayerData[];
   /** How long the match lasts (rooms from before the choice have none: the default). */
   seconds?: MatchSeconds;
+  /** Shared kitchens: how the work is split (none: everyone free). */
+  roles?: RolesChoice;
   /** The first player in the list is the host. */
   lastActivity: number;
   seed?: string;
@@ -154,6 +160,13 @@ export const setLength = (room: RoomData, id: string, seconds: MatchSeconds, now
   room.lastActivity = now;
 };
 
+// The host splits a shared kitchen's work, before it opens.
+export const setRoles = (room: RoomData, id: string, roles: RolesChoice, now: number): void => {
+  if (room.status !== "lobby" || !isSharedKitchen(room.mode) || room.players[0]?.id !== id) return;
+  room.roles = roles;
+  room.lastActivity = now;
+};
+
 export const setReady = (room: RoomData, id: string, ready: boolean, now: number): void => {
   const player = room.players.find((candidate) => candidate.id === id);
   if (!player || room.status !== "lobby") return;
@@ -171,7 +184,11 @@ export const startMatch = (room: RoomData, id: string, seed: string, now: number
   room.seed = seed;
   room.startAt = now + COUNTDOWN_MS;
   room.lastActivity = now;
-  room.players.forEach((player) => Object.assign(player, { score: 0, served: 0, done: false }));
+  room.players.forEach((player) => {
+    Object.assign(player, { score: 0, served: 0, done: false });
+    delete player.traps;
+    delete player.trappedAt;
+  });
   return null;
 };
 
@@ -199,6 +216,24 @@ export const recordScore = (
   if (kind === "done") player.done = true;
   room.lastActivity = now;
   finishIfOver(room, now);
+};
+
+// A Pizza Royale trap: from a player still in, who earned it (by the pizzas the server took as served), to another
+// one still in and not trapped a moment ago. Returns whom it goes to, or null when it can't be sent.
+export const sendTrap = (room: RoomData, fromId: string, toId: string, now: number): string | null => {
+  if (room.mode !== "royale" || room.status !== "playing" || room.startAt === undefined || now < room.startAt) return null;
+  const isIn = (player: PlayerData | undefined): player is PlayerData =>
+    player !== undefined && player.connected && !player.done && player.out === undefined;
+  const from = room.players.find((player) => player.id === fromId);
+  const to = room.players.find((player) => player.id === toId);
+  // Someone away (their phone on another app) couldn't receive it: it would be spent for nothing.
+  if (!isIn(from) || !isIn(to) || from === to || to.awaySince !== undefined) return null;
+  if ((from.traps ?? 0) >= trapsEarned(from.served)) return null;
+  if (to.trappedAt !== undefined && now - to.trappedAt < TRAP_COOLDOWN_MS) return null;
+  from.traps = (from.traps ?? 0) + 1;
+  to.trappedAt = now;
+  room.lastActivity = now;
+  return to.id;
 };
 
 export const finish = (room: RoomData, now: number): void => {
@@ -229,6 +264,7 @@ export const viewOf = (room: RoomData, now: number): RoomView => ({
   mode: room.mode,
   status: room.status,
   seconds: room.seconds ?? MATCH_SECONDS,
+  roles: room.roles ?? "free",
   players: room.players.map(
     (player, index): PlayerView => ({
       id: player.id,
@@ -240,6 +276,7 @@ export const viewOf = (room: RoomData, now: number): RoomView => ({
       served: player.served,
       done: player.done,
       ...(player.out !== undefined ? { out: player.out } : {}),
+      ...(player.traps ? { traps: player.traps } : {}),
       connected: player.connected,
       away: player.awaySince !== undefined,
     }),

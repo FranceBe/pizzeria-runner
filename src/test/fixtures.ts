@@ -15,6 +15,7 @@ export const lateGame = (): GameState => {
   state.settings.tutorialDone = true;
   state.secretIngredient = true;
   state.secretStock = 5;
+  state.commis = { name: "Sasha", fatigue: 0 };
   return state;
 };
 
@@ -23,6 +24,7 @@ export const middling = (): GameState => {
   const state = makeState({ day: 6, money: 900, xp: 5000 });
   INGREDIENTS.filter((ingredient) => !ingredient.festival && ingredient.requiredLevel <= 4).forEach(({ id }) => (state.unlocked[id] = true));
   state.upgrades = { ...state.upgrades, oven: 2, salle: 2, bar: 1, commis: 1, livraison: 1, oven2: 1 };
+  state.commis = { name: "Noa", fatigue: 0 };
   state.settings.tutorialDone = true;
   return state;
 };

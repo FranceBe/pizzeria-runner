@@ -122,6 +122,13 @@ export const fr = {
     },
     length: "Durée",
     lengths: { s60: "Éclair · 1 min", s120: "Normal · 2 min", s300: "Allongé · 5 min" },
+    roles: "Le travail",
+    rolesHost: { free: "Chacun fait tout", hostCooks: "Je fais les pizzas", hostServes: "Je fais la passe et le bar" },
+    rolesSeen: {
+      free: "Chacun fait tout",
+      hostCooks: "{host} fait les pizzas, toi la passe et le bar",
+      hostServes: "{host} fait la passe et le bar, toi les pizzas",
+    },
     leaveMatch: "Quitter la partie",
     leaveMatchConfirm: "Quitter pour de bon ? Tu ne pourras pas revenir dans cette partie.",
     leaveMatchYes: "Oui, quitter",
@@ -216,6 +223,17 @@ export const fr = {
           ? `Sur ta carte : ${count}. Il y aura du monde !`
           : `Sur ta carte : ${count}. Encore ${target - count} pour attirer plus de monde.`,
     spoiling: ({ id }: { id: IngredientId }, t: H) => `Ce qui risque de s'abîmer : ${t.ingredient(id)}.`,
+    commis: {
+      tired: "Repos pour {name} ?",
+      exhausted: "{name} n'en peut plus",
+      off: "{name} est de repos ce soir",
+      tiredText: ({ name, fatigue }: { name: string; fatigue: number }) =>
+        `Fatigue : ${fatigue} %. Après tant de soirées chargées, ${name} aide moins bien (comme un niveau de moins). Une soirée de repos remet tout à zéro : pas d'aide ce soir, mais pas de salaire non plus.`,
+      exhaustedText: ({ name, fatigue }: { name: string; fatigue: number }) => `Fatigue : ${fatigue} %. ${name} n'aide plus du tout tant qu'une soirée de repos n'est pas passée.`,
+      offText: ({ name }: { name: string; fatigue: number }) => `Pas d'aide ce soir, et sa part des charges en moins. Demain, ${name} revient en pleine forme.`,
+      giveOff: "Donner sa soirée à {name}",
+      cancelOff: "Annuler le repos",
+    },
     tipsTitle: "Astuces du jour",
     tipsLabel: ({ count }: { count: number }) => `${count} ${plural(count, "astuce")} du jour`,
     tips: {
@@ -361,6 +379,12 @@ export const fr = {
     trashUnwantedShort: "🗑 Tout jeter ({count})",
     offerSlice: "🍕 En parts",
     offerSliceHint: "Coupée en parts pour la file : rien n'est jeté, et chacun patiente un peu mieux.",
+    roleCook: "🧑‍🍳 Toi : les pizzas et le four",
+    rolePass: "🛎️ Toi : la passe et le bar",
+    trap: ({ count }: { count: number }) => `🪤 Piège (${count})`,
+    trapTitle: ({ name }: { name: string }) => `Envoyer un client difficile à ${name}, en tête`,
+    trapHint: ({ every }: { every: number }) => `Un piège toutes les ${every} pizzas servies.`,
+    trapFrom: "🪤 de {name}",
     family: "Famille de Nonna",
     familyTitle: "La famille de Nonna : toute la table servie à temps, et c'est un beau bonus.",
     batchLine: "{done} / {count}",
@@ -389,7 +413,10 @@ export const fr = {
   },
 
   market: {
-    fridgeIntro: "Les ingrédients ne s'abîment pas. Achète au rythme de ta caisse.",
+    fridgeIntro: "Les ingrédients se gardent (sauf si le frigo tombe en panne). Achète au rythme de ta caisse : plus tu achètes chez un fournisseur, moins il te fait payer.",
+    loyal: ({ discount }: { discount: number }) => `Fidèle −${discount} %`,
+    loyaltyProgress: ({ bought, next }: { bought: number; next: number }) => `${bought}/${next} portions achetées pour la prochaine remise`,
+    loyaltyTop: ({ portions }: { portions: number }) => `Fournisseur fidèle : ${portions} portions offertes chaque semaine`,
     restockMenu: ({ target, cost }: { target: number; cost: number }, t: H) => `Compléter la carte à ${target} · ${t.money(cost)}`,
     restockMore: ({ target, cost }: { target: number; cost: number }, t: H) => `à ${target} · ${t.money(cost)}`,
     perPortion: ({ price }: { price: number }, t: H) => `${t.money(price)} la portion`,
@@ -484,6 +511,7 @@ export const fr = {
     batch: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} commande`,
     special: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} spéciale`,
     theme: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} thème`,
+    perfect: "✨ Parfaite !",
   },
 
   upgrades: {
@@ -559,6 +587,7 @@ export const fr = {
       describe: ({ level }: { level: number }, t: H): string =>
         level === 0 ? "Une seule pizzeria" : `Rapporte ${t.money(ANNEXE_INCOME[level])} chaque soir`,
     },
+    commisStatus: ({ name, fatigue }: { name: string; fatigue: number }) => `${name} · fatigue ${fatigue} %`,
     looks: "La pizzeria à ton goût",
     looksIntro: "Pour le plaisir des yeux : ça ne change rien au jeu.",
     choose: "Choisir",
@@ -628,6 +657,7 @@ export const fr = {
     sectionTill: "La caisse",
     sectionRoundUp: "Le bilan",
     happyServed: "dont servis tout sourire",
+    perfectServed: "dont pizzas parfaites",
     reviewsLabel: ({ count }: { count: number }) => `${count} nouvel${count > 1 ? "s" : ""} avis en ligne`,
     ordersToggle: ({ count }: { count: number }) => `Détail des ${count} commande${count > 1 ? "s" : ""}`,
     inspectionShort: "Contrôle sanitaire réussi",
@@ -709,6 +739,40 @@ export const fr = {
     christmas: { title: "Noël", caption: "Des marrons et de la neige sur la vitrine.", hint: "Une fête en hiver…" },
     valentine: { title: "La Saint-Valentin", caption: "Des framboises et des cœurs partout.", hint: "Une fête pleine de cœurs…" },
   } satisfies Record<PostcardId, { title: string; caption: string; hint: string }>,
+  gazette: {
+    masthead: "La Gazette du quartier",
+    issue: ({ number, first, last }: { number: number; first: number; last: number }) => `N° ${number} · du jour ${first} au jour ${last}`,
+    read: "Lire la Gazette",
+    close: "Refermer le journal",
+    outTitle: "La Gazette est sortie",
+    headlines: {
+      competitorGone: ({ name }: { name: string; recipe: string }) => `Guerre des pizzas : ${name} tient bon, le concurrent baisse le rideau`,
+      perfectWeek: ({ name }: { name: string; recipe: string }) => `Sans faute ! Une semaine à trois étoiles chez ${name}`,
+      record: ({ name }: { name: string; recipe: string }) => `Record battu : ${name} signe la meilleure soirée de son histoire`,
+      wedding: ({ name }: { name: string; recipe: string }) => `Noces au feu de bois : les mariés ont choisi ${name}`,
+      family: ({ name }: { name: string; recipe: string }) => `La famille de Nonna en visite chez ${name}`,
+      festival: ({ name }: { name: string; recipe: string }) => `La rue a fait la fête jusqu'au bout de la nuit, ${name} en tête`,
+      rainyWeek: ({ name }: { name: string; recipe: string }) => `Il a plu toute la semaine, mais les fours de ${name} ont tenu chaud`,
+      quietWeek: ({ name }: { name: string; recipe: string }) => `Semaine tranquille dans le quartier, ${name} fourbit ses pelles`,
+      topPizza: ({ recipe }: { name: string; recipe: string }) => `« ${recipe} » fait fureur dans le quartier`,
+    },
+    lede: ({ name, served, days }: { name: string; served: number; days: number }) =>
+      `Cette semaine, ${name} a servi ${served} ${plural(served, "pizza")} en ${days} ${plural(days, "soirée")}.`,
+    numbersTitle: "Les chiffres",
+    served: "Pizzas servies",
+    net: "Bénéfice",
+    happy: "Clients ravis",
+    stars: "Étoiles",
+    bestDay: ({ day, net }: { day: number; net: number }, t: H) => `Meilleure soirée : le jour ${day} (${net >= 0 ? "+" : ""}${t.money(net)}).`,
+    topTitle: "La pizza de la semaine",
+    topText: ({ recipe, count }: { recipe: string; count: number }) => `« ${recipe} », commandée ${count} fois. Les habitués en redemandent.`,
+    eventsTitle: "Vu dans le quartier",
+    noEvents: "Rien à signaler… le calme avant la tempête ?",
+    lettersTitle: "Le courrier des lecteurs",
+    noLetters: "Pas de courrier cette semaine : les lecteurs étaient trop occupés à manger.",
+    archive: "La Gazette, anciens numéros",
+  },
+
   journal: {
     tabs: { accounts: "Comptes", reviews: "Avis", regulars: "Habitués", pairings: "Accords", postcards: "Cartes", achievements: "Succès" },
     stats: "Comptes",
@@ -1000,6 +1064,13 @@ export const fr = {
     familyDisappointed: "👵 La famille de Nonna a trouvé le temps long. Nonna en entendra parler…",
     specialWeek: ({ recipeId, recipeName, served }: { recipeId: string; recipeName: string | null; served: number }, t: H) =>
       `★ Spéciale de la semaine : ${t.recipe({ id: recipeId, name: recipeName })}, ${served} ${plural(served, "servie")}. À toi de choisir la prochaine !`,
+    trapReceived: "🪤 {name} t'envoie un client difficile : lis bien sa commande !",
+    commisHired: "👋 {name} rejoint ta cuisine comme commis !",
+    loyaltyTier: ({ ingredientId, discount }: { ingredientId: IngredientId; discount: number }, t: H) =>
+      `🤝 Le fournisseur de ${t.ingredient(ingredientId)} te fait désormais −${discount} % : merci pour ta fidélité !`,
+    loyaltyGifts: ({ ingredientIds, portions }: { ingredientIds: readonly IngredientId[]; portions: number }, t: H) =>
+      `🎁 Tes fournisseurs fidèles t'offrent ${portions} portions : ${t.ingredientList(ingredientIds)}.`,
+    gazetteOut: "📰 La Gazette du quartier est sortie : elle t'attend au programme du jour.",
     newPairing: ({ pairings }: { pairings: readonly Pairing[] }, t: H) =>
       `${plural(pairings.length, "Nouvel accord", "Nouveaux accords")} : ${pairings.map(t.pairing).join(", ")} !`,
   },
@@ -1039,6 +1110,20 @@ export const fr = {
     ["Je patiente…", "Ça mijote ?", "Joli four."],
     ["Ça arrive bientôt ?", "Mon ventre gargouille.", "Hmm…"],
     ["J'ai une faim de loup !", "Je pourrais manger le four.", "Toujours là, hein."],
+  ],
+  rareCustomerLines: [
+    "Je viens pour la pizza, pas pour la conversation.",
+    "Ma grand-mère la faisait mieux… mais de peu.",
+    "Vous livrez sur la Lune ? C'est pour un ami.",
+    "J'ai rêvé de cette pizza cette nuit. Ne me décevez pas.",
+    "Si un ananas passe la porte, je m'en vais.",
+    "Je compte les olives. Toutes.",
+    "C'est mon chat qui m'a recommandé l'adresse.",
+    "Une pizza, c'est un câlin qui se mange.",
+    "J'ai mis mon plus beau pantalon pour l'occasion.",
+    "Le four me fait de l'œil.",
+    "Pas de pression, mais c'est mon anniversaire. Ou pas.",
+    "Je peux voir la pâte ? Je ne dirai rien à personne.",
   ],
 
   kinds: { base: "base", sauce: "sauce", cheese: "fromage", topping: "garniture" } satisfies Record<IngredientKind, string>,

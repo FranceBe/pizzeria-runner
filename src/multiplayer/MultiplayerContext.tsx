@@ -7,14 +7,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Dispatch, GameAction, GameState } from "../game/types";
 import {
-  coopViewFor, createCoopGame, createDuoKitchen, decodeCoop, encodeCoop, isAllowedInDuo, isCoopMove, isPartnerDuoMove, playCoopMove,
+  coopViewFor, createCoopGame, createDuoKitchen, decodeCoop, encodeCoop, isAllowedInDuo, isCoopMove, isPartnerDuoMove, isRoleMove, playCoopMove,
   tickCoop,
   type CoopGame,
 } from "./coop";
 import { saveDuo, type DuoInfo } from "./duoSaves";
 import {
   AWAY_GRACE_MS, PING, PONG, isOwnKitchen, isSharedKitchen, normalizeRoomCode, parseServerMessage, type ClientMessage, type MatchSeconds, type RoomError, type RoomMode,
-  type RoomView,
+  type RolesChoice, type RoomView,
 } from "./protocol";
 
 // Where the server is: set at build time (VITE_MULTIPLAYER_URL), or the local one (`npm run server:dev`) in development.
@@ -65,6 +65,10 @@ export interface Multiplayer {
   start: () => void;
   /** The host picks how long the match lasts, in the lobby. */
   setLength: (seconds: MatchSeconds) => void;
+  /** Shared kitchens: the host splits the work, in the lobby. */
+  setRoles: (roles: RolesChoice) => void;
+  /** Pizza Royale: sends a tricky customer to that player (the server checks it was earned). */
+  sendTrap: (to: string) => void;
   /** Leaves the room, in the middle of a match too (the player's own game goes back to its morning). */
   leave: () => void;
   clearError: () => void;
@@ -89,6 +93,8 @@ const NO_MULTIPLAYER: Multiplayer = {
   join: noop,
   start: noop,
   setLength: noop,
+  sendTrap: noop,
+  setRoles: noop,
   leave: noop,
   clearError: noop,
 };
@@ -145,6 +151,7 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
   // The co-op kitchen on the host, always current (the timer and incoming moves change it between renders).
   const hostKitchen = useRef<CoopGame | null>(null);
   const youRef = useRef<string | null>(null);
+  const [pendingTraps, setPendingTraps] = useState<string[]>([]);
   const roomRef = useRef<RoomView | null>(null);
   const coopRef = useRef<CoopGame | null>(null);
   roomRef.current = room;
@@ -196,6 +203,7 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
     setRoom(null);
     setYou(null);
     setStartAt(null);
+    setPendingTraps([]);
     setConnecting(false);
     setCoop(null);
     startedSeed.current = null;
@@ -271,6 +279,13 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
             const kitchen = hostKitchen.current;
             const isAllowed = kitchen?.duo ? isPartnerDuoMove(message.action) : isCoopMove(message.action);
             if (kitchen && isAllowed) setHostKitchen(playCoopMove(kitchen, message.from, message.action as GameAction));
+            return;
+          }
+          case "trap": {
+            // Pizza Royale: a tricky customer from another player, into this player's own game (held a moment if
+            // this phone hasn't started the match yet: clocks are never exactly in step).
+            const sender = roomRef.current?.players.find((player) => player.id === message.from);
+            if (sender) setPendingTraps((traps) => [...traps, sender.name]);
             return;
           }
           case "room": {
@@ -400,6 +415,8 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
 
   const start = useCallback(() => send({ type: "start" }), [send]);
   const setLength = useCallback((seconds: MatchSeconds) => send({ type: "length", seconds }), [send]);
+  const sendTrap = useCallback((to: string) => send({ type: "trap", to }), [send]);
+  const setRoles = useCallback((roles: RolesChoice) => send({ type: "roles", roles }), [send]);
   const clearError = useCallback(() => setError(null), []);
 
   // Co-op moves: played right here on the host, sent to the host from the other phone.
@@ -414,6 +431,9 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
         setHostKitchen(next.duo || next.game.service || next.game.challengeResult ? next : null);
       } else if (action.type === "dismissChallengeResult" && !coopRef.current?.duo) {
         setCoop(null);
+      } else if (me && !isRoleMove(coopRef.current?.roles, me, action)) {
+        // The other player's side of the kitchen: their controls are greyed out, keys do nothing either.
+        return;
       } else if (coopRef.current?.duo ? isPartnerDuoMove(action) : isCoopMove(action)) {
         send({ type: "action", action });
       } else if (coopRef.current?.duo) {
@@ -446,11 +466,11 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
         const duo = hostDuo.current;
         if (isHostHere && current && duo) {
           const members = current.players.map((player) => player.name);
-          setHostKitchen(createDuoKitchen(duo.game, current.players.map((player) => player.id), { ...duo.info, members }));
+          setHostKitchen(createDuoKitchen(duo.game, current.players.map((player) => player.id), { ...duo.info, members }, current.roles));
         }
       } else if (mode === "coop") {
         if (isHostHere && current) {
-          setHostKitchen(createCoopGame(seed, current.players.map((player) => player.id), state.settings.language, current.seconds));
+          setHostKitchen(createCoopGame(seed, current.players.map((player) => player.id), state.settings.language, current.seconds, current.roles));
         }
       } else {
         dispatch({ type: "startChallenge", date: seed, multiplayer: true, seconds: current?.seconds, royale: mode === "royale" });
@@ -529,6 +549,14 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
     send({ type: result.out ? "out" : "done", score: result.score, served: result.served });
   }, [result, send]);
 
+  // Traps received, played into the match as soon as this phone is in it.
+  const isInRoyale = Boolean(state.service?.challenge?.royale);
+  useEffect(() => {
+    if (!isInRoyale || !pendingTraps.length) return;
+    pendingTraps.forEach((from) => dispatch({ type: "receiveTrap", from }));
+    setPendingTraps([]);
+  }, [isInRoyale, pendingTraps, dispatch]);
+
   // A Pizza Royale ends for everyone once one player is left: their game stops there, on the podium.
   const isMatchOver = room?.status === "finished";
   const isStillPlaying = Boolean(state.service?.challenge?.multiplayer);
@@ -577,10 +605,12 @@ export const MultiplayerProvider = ({ state, dispatch, onMatchStart, children }:
       join,
       start,
       setLength,
+      sendTrap,
+      setRoles,
       leave,
       clearError,
     }),
-    [room, you, isConnecting, isReconnecting, error, startAt, coopView, coopDispatch, coop?.duo, refusedAt, create, join, start, setLength, leave, clearError],
+    [room, you, isConnecting, isReconnecting, error, startAt, coopView, coopDispatch, coop?.duo, refusedAt, create, join, start, setLength, sendTrap, setRoles, leave, clearError],
   );
   return <MultiplayerContext.Provider value={value}>{children}</MultiplayerContext.Provider>;
 };

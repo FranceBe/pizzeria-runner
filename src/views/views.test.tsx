@@ -17,6 +17,8 @@ import { UpgradesView } from "./UpgradesView";
 import { SettingsView } from "./SettingsView";
 import { DaySummary } from "./DaySummary";
 import { JournalView } from "./JournalView";
+import { PerfectBurst } from "./service/PerfectBurst";
+import { MoneyPops } from "../components/MoneyPops";
 import { ChallengeResult } from "./ChallengeResult";
 
 // Smoke tests: every screen renders in every language, without crashing or showing a raw translation key.
@@ -254,6 +256,13 @@ describe("views", () => {
     expect(html).toContain("★ Special<");
     expect(html).toContain("2 served this week · until day 7");
     expect(html).not.toContain("special-star-btn");
+  });
+
+  it("bursts a perfect pizza on its own, never among the money pops", () => {
+    const pops = [{ id: "a", amount: 7, kind: "money" as const }, { id: "b", amount: 0, kind: "perfect" as const }];
+    expect(render(<PerfectBurst pops={pops} dispatch={noop} />, "en")).toContain("Perfect!");
+    expect(render(<MoneyPops pops={pops} dispatch={noop} />, "en")).not.toContain("Perfect!");
+    expect(render(<PerfectBurst pops={[pops[0]]} dispatch={noop} />, "en")).toBe("");
   });
 
   it("puts the bar away on a water cut, and tags Nonna's family on their tickets", () => {
