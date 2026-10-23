@@ -1,6 +1,7 @@
 import { menuCapacity } from "../game/progression";
 import { Overlay } from "../components/Overlay";
-import type { DaySummary as Summary, OrderRecord, StarGoals } from "../game/types";
+import type { DaySummary as Summary, OrderRecord, StarGoals, TonightGoal } from "../game/types";
+import { LIGHTNING_SECONDS, TONIGHT_REWARD } from "../data/tonight";
 import { INSPECTION_XP } from "../data/events";
 import { profitTarget } from "../game/stars";
 import { useTranslation } from "../i18n/I18nContext";
@@ -38,6 +39,18 @@ const DayStars = ({ stars, goals, charges }: { stars: number; goals: StarGoals; 
           <li key={label} className={isReached ? "on" : ""}>{`${isReached ? "✓" : "·"} ${label}`}</li>
         ))}
       </ul>
+    </div>
+  );
+};
+
+// Tonight's goal on the receipt: what it was, and whether it was reached.
+const TonightLine = ({ goal }: { goal: TonightGoal }) => {
+  const t = useTranslation();
+  const isDone = goal.status === "done";
+  return (
+    <div className={`tonight-line${isDone ? " on" : ""}`}>
+      <span>{`🎯 ${t(`tonight.kinds.${goal.kind}`, { target: goal.target, seconds: LIGHTNING_SECONDS })}`}</span>
+      <strong>{isDone ? `${t("tonight.done")} · +${t.money(TONIGHT_REWARD)}` : t("tonight.missed")}</strong>
     </div>
   );
 };
@@ -131,6 +144,7 @@ export const DaySummary = ({ summary, pizzeriaName, shownEventId, onNextDay }: D
           <ReceiptLine label={t("summary.reputation")} value={`+${summary.xp}`} />
           {summary.debt > 0 && <ReceiptLine className="neg" label={t("summary.debt")} value={t.money(summary.debt)} />}
           {summary.starGoals && <DayStars stars={summary.stars ?? 0} goals={summary.starGoals} charges={summary.charges} />}
+          {summary.tonightGoal && <TonightLine goal={summary.tonightGoal} />}
           {summary.reviews && summary.reviews.length > 0 && (
             <p className="receipt-note">
               {t("summary.reviews", {

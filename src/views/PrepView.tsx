@@ -18,6 +18,7 @@ import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
 import { QuestCard } from "./QuestCard";
 import { WEEKLY_BONUS, WEEKLY_REWARD } from "../data/weekly";
+import { LIGHTNING_SECONDS, TONIGHT_REWARD, TONIGHT_XP } from "../data/tonight";
 import { shownEvent } from "../game/service";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -30,6 +31,23 @@ const needsNonna = (state: GameState, menu: readonly Recipe[]): boolean => {
 };
 
 const MAX_REGULARS_SHOWN = 5;
+
+// Tonight's optional goal, said in the morning with what it brings.
+const TonightGoalCard = ({ state }: { state: GameState }) => {
+  const t = useTranslation();
+  const goal = state.tonightGoal;
+  if (!goal || goal.day !== state.day) return null;
+  return (
+    <div className="tonight-goal" role="note">
+      <span className="tonight-title">
+        {`🎯 ${t("tonight.title")}`}
+        <span className="tag">{t("tonight.optional")}</span>
+      </span>
+      <span>{t(`tonight.kinds.${goal.kind}`, { target: goal.target, seconds: LIGHTNING_SECONDS })}</span>
+      <span className="hint">{t("tonight.reward", { reward: TONIGHT_REWARD, xp: TONIGHT_XP })}</span>
+    </div>
+  );
+};
 
 const EventBanner = ({ state }: { state: GameState }) => {
   const t = useTranslation();
@@ -146,6 +164,7 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
       <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {tutorial && <CoachTip step={tutorial} dispatch={dispatch} />}
         <EventBanner state={state} />
+        <TonightGoalCard state={state} />
         {birthdays.length > 0 && <div className="birthday-note" role="note">{t("prep.birthdayToday", { names: birthdays.join(", ") })}</div>}
         {state.quest && <QuestCard quest={state.quest} day={state.day} />}
         <div>

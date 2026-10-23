@@ -140,6 +140,11 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   the day's receipt, and completed quests are listed in the journal.
 - **Weekly missions**: three goals each week (serve whole tables, reach a streak, earn tips…), €25 each from Nonna and
   €50 more for all three. They show on the morning screen.
+- **Tonight's goal** (from day 2): one optional goal a day about how the evening is played, apart from the day's
+  stars (hungry customers, waste, profit) and the week's missions (how much): every pizza served hot, the last customer
+  served before 23:00, so many different pizzas, or customers served within 15 seconds of coming in. €12 and 15
+  reputation when reached; nothing lost when missed. It shows in the morning, as 🎯 in the message line during
+  service (how far it is, ✓ or ✗), and on the receipt.
 - **Festivals** follow the real date: Halloween, Christmas and Valentine's Day each bring a festive ingredient (with
   free portions) and a recipe, for a few days. They say so ("For real, it's Halloween, until November 3"), and their
   ingredient and recipe wear the festival's emoji, so a Zucca at the summer market makes sense.
@@ -267,6 +272,7 @@ src/
 - `game/batch.ts` + `game/evening.ts`: group orders, rush hour and late deliveries over an evening
 - `game/streak.ts`, `game/stars.ts`, `game/weekly.ts`, `game/calendar.ts`: streaks and cooling pizzas, the day's stars,
   weekly missions, calendar festivals
+- `data/tonight.ts` + `game/tonight.ts`, `game/clock.ts`: tonight's goal, the evening's clock
 - `game/simulation.test.ts`: a robot plays many full days with everything on, to catch what only shows when it all mixes
 - `data/customers.ts` + `game/looks.ts`: names, hair, hairstyles and accessories
 - `assets/sounds/`: the music and sound effects; `audio/engine.ts` plays them (Web Audio, seamless loops, live fades),

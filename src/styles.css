@@ -1290,3 +1290,13 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 /* The day's title keeps its line; the market badge goes under it when both don't fit */
 .prep-head { flex-wrap: wrap; row-gap: 4px; }
 .prep-head > .h { flex: 1 1 auto; min-width: min(100%, 14ch); }
+
+/* Tonight's goal: a dashed card in the morning (optional, so lighter than the day's events), a line on the receipt */
+.tonight-goal { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 12px;
+  border: 1.5px dashed var(--basil); background: var(--surface); }
+.tonight-goal .hint { margin: 0; }
+.tonight-title { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+.tonight-title .tag { font-weight: 700; }
+.tonight-line { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; font-size: 13px; opacity: .65; }
+.tonight-line.on { opacity: 1; }
+.tonight-line strong { white-space: nowrap; }

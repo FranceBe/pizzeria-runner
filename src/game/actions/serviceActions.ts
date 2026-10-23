@@ -17,6 +17,7 @@ import { BATCH_ID } from "../batch";
 import { starCount, starGoals } from "../stars";
 import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
+import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightServe } from "../tonight";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
@@ -87,6 +88,7 @@ const bestSellerOf = (byRecipe: Record<string, RecipeSales>): BestSeller | null 
 
 const endDay = (state: GameState, service: Service): void => {
   settleUnfinishedBatch(state, service);
+  settleTonightGoal(state, service);
   const unservedPizzas = [...service.ready, ...service.oven];
   const waste = service.stats.waste + unservedPizzas.reduce((total, pizza) => total + ingredientCost(pizza.ingredients), 0);
   // Whatever is still on the board goes back in the fridge, and the secrets back on their shelf.
@@ -133,6 +135,7 @@ const endDay = (state: GameState, service: Service): void => {
     starGoals: goals,
     inspectionPassed,
     reviews,
+    ...(state.tonightGoal?.day === state.day ? { tonightGoal: { ...state.tonightGoal } } : {}),
   };
 
   state.history = [
@@ -477,7 +480,10 @@ export const serviceActions = {
       .filter(isBaked)
       .forEach(({ id, ingredients, secret, mamma, woodFired }) => service.ready.push({ id, ingredients, secret, mamma, woodFired, waitingSeconds: 0 }));
     service.oven = service.oven.filter((pizza) => !isBaked(pizza));
-    if (!service.challenge) advanceEvening(state, service, seconds);
+    if (!service.challenge) {
+      advanceEvening(state, service, seconds);
+      trackTonightClock(state, service);
+    }
     pourWithBarman(state, service, seconds);
     if (state.phase !== "service") return;
 
@@ -762,6 +768,7 @@ export const serviceActions = {
       discoverClassics(state);
     }
 
+    trackTonightServe(state, service, customer, pizza);
     maybeStartRush(state, service);
     if (isDayOver(service)) endDay(state, service);
   },
@@ -784,6 +791,7 @@ export const serviceActions = {
     state.event = rollDayEvent(state, state.event);
     state.lateIngredient = state.event === "lateDelivery" ? pickLateIngredient(state) : null;
     ensureWeek(state);
+    ensureTonightGoal(state);
     lapseAbsentRegulars(state);
     ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;

@@ -143,6 +143,14 @@ const groupByTable = (customers: readonly Customer[]): { tableId: string | null;
   return groups;
 };
 
+// Tonight's goal in the message line, in a few characters: how far it is, or how it ended.
+const tonightMark = (state: GameState): string => {
+  const goal = state.tonightGoal;
+  if (!goal || goal.day !== state.day) return "";
+  if (goal.status !== "open") return `🎯 ${goal.status === "done" ? "✓" : "✗"}`;
+  return goal.kind === "onTime" ? "🎯 23:00" : `🎯 ${goal.progress}/${goal.target}`;
+};
+
 // Layout (see .svc in styles.css): orders on the left, message line and work board in the middle,
 // oven and pass on the right, prep line along the bottom. Re-flows on tablets and phones.
 export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) => {
@@ -167,6 +175,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
       : [
           t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length }),
           streak >= STREAK_SHOWN_FROM ? t("service.streak", { count: streak, multiplier: t.number(streakMultiplier(streak)) }) : "",
+          tonightMark(state),
         ]
           .filter(Boolean)
           .join(" · ");

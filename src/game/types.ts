@@ -4,6 +4,7 @@ import type { AwningId, CosmeticId, CosmeticSlot, SignId, WallId } from "../data
 import type { DrinkId } from "../data/drinks";
 import type { FestivalId } from "../data/festivals";
 import type { WeeklyKind } from "../data/weekly";
+import type { TonightKind } from "../data/tonight";
 import type { QuestGiver, QuestKind } from "../data/quests";
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
@@ -264,6 +265,14 @@ export interface Challenge {
 // In Pizza Royale: baking a pizza nobody is waiting for, or throwing anything away.
 export type RoyaleMistake = "unwantedPizza" | "waste";
 
+export interface TonightGoal {
+  day: number;
+  kind: TonightKind;
+  target: number;
+  progress: number;
+  status: "open" | "done" | "missed";
+}
+
 export interface ChallengeResult {
   multiplayer?: boolean;
   coop?: boolean;
@@ -310,6 +319,8 @@ export interface DaySummary {
   starGoals?: StarGoals;
   /** Inspection day passed. */
   inspectionPassed?: boolean;
+  /** Tonight's goal, as it ended. */
+  tonightGoal?: TonightGoal;
   /** Reviews written tonight. */
   reviews?: Review[];
 }
@@ -528,6 +539,8 @@ export interface GameState {
   /** The calendar festival going on, if any. */
   festival: FestivalId | null;
   weekly: Weekly | null;
+  /** Tonight's optional goal (game/tonight.ts), for the day it was drawn. */
+  tonightGoal: TonightGoal | null;
   /** Signed photos of the celebrities who came, shown on the front. */
   celebrityWall: string[];
   /** Someone typed the code. */

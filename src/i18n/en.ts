@@ -154,6 +154,21 @@ export const en: Dictionary = {
     noReviews: "No online reviews yet",
   },
 
+  tonight: {
+    title: "Tonight's goal",
+    optional: "optional",
+    reward: ({ reward, xp }, t) => `+${t.money(reward)} · +${xp} reputation`,
+    kinds: {
+      allHot: ({ target }) => `Every pizza served piping hot, at least ${target}.`,
+      onTime: () => "Serve the last customer before 23:00.",
+      variety: ({ target }) => `Serve ${target} different pizzas.`,
+      lightning: ({ target, seconds }) => `Serve ${target} customers less than ${seconds} seconds after they come in.`,
+    },
+    done: "reached",
+    missed: "missed",
+    open: "on",
+  },
+
   prep: {
     title: "Day {day} · prep",
     intro: "Stock the fridge, tweak the menu, then open whenever you're ready. Nobody leaves angry: take your time.",
@@ -737,6 +752,8 @@ export const en: Dictionary = {
     birthday: "Happy birthday {name}! A lovely gift for you.",
     happyTable: "Table of {size} delighted: a bonus from the whole table!",
     festivalStarts: ({ festival }, t) => `For real, it's ${t.festival(festival)}! A festive ingredient awaits at the market, with a few free portions.`,
+    tonightDone: ({ reward }, t) => `🎯 Tonight's goal reached! ${t.money(reward)} more in the till.`,
+    tonightMissed: "🎯 Tonight's goal missed. There's always tomorrow!",
     weeklyDone: ({ reward }, t) => `Weekly mission done! Nonna sends you ${t.money(reward)}.`,
     weeklyAllDone: ({ reward }, t) => `All three weekly missions! A ${t.money(reward)} bonus.`,
     batchArrived: ({ giver }, t) => `${t.questGiver(giver)} placed their group order: the clock is ticking!`,

@@ -5,6 +5,7 @@ import type { WeeklyKind } from "../data/weekly";
 import type { DayEventId } from "../data/events";
 import type { QuestGiver } from "../data/quests";
 import type { SeasonId } from "../data/seasons";
+import type { TonightKind } from "../data/tonight";
 import type { IngredientId, IngredientKind, StationId } from "../data/ingredients";
 import {
   OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
@@ -163,6 +164,23 @@ export const fr = {
     reviews: "Avis",
     reviewsTitle: ({ average, count }: { average: number; count: number }, t: H) => `${t.number(average)} sur 5 · ${count} avis en ligne`,
     noReviews: "Pas encore d'avis en ligne",
+  },
+
+  // Tonight's optional goal (game/tonight.ts). Every kind takes the same values, used or not.
+  tonight: {
+    title: "Objectif du soir",
+    optional: "facultatif",
+    reward: ({ reward, xp }: { reward: number; xp: number }, t: H) => `+${t.money(reward)} · +${xp} réputation`,
+    kinds: {
+      allHot: ({ target }: { target: number; seconds: number }) => `Toutes les pizzas servies bien chaudes, au moins ${target}.`,
+      onTime: () => "Servir le dernier client avant 23:00.",
+      variety: ({ target }: { target: number; seconds: number }) => `Servir ${target} pizzas différentes.`,
+      lightning: ({ target, seconds }: { target: number; seconds: number }) =>
+        `Servir ${target} clients moins de ${seconds} secondes après leur arrivée.`,
+    } satisfies Record<TonightKind, unknown>,
+    done: "réussi",
+    missed: "manqué",
+    open: "en cours",
   },
 
   prep: {
@@ -770,6 +788,8 @@ export const fr = {
     happyTable: "Table de {size} ravie : bonus pour toute la tablée !",
     festivalStarts: ({ festival }: { festival: FestivalId }, t: H) =>
       `Pour de vrai, c'est ${t.festival(festival)} ! Un ingrédient de fête t'attend au marché, avec quelques portions offertes.`,
+    tonightDone: ({ reward }: { reward: number }, t: H) => `🎯 Objectif du soir réussi ! ${t.money(reward)} de plus dans la caisse.`,
+    tonightMissed: "🎯 Objectif du soir manqué. Ce sera pour demain !",
     weeklyDone: ({ reward }: { reward: number }, t: H) => `Mission de la semaine réussie ! Nonna t'envoie ${t.money(reward)}.`,
     weeklyAllDone: ({ reward }: { reward: number }, t: H) => `Les trois missions de la semaine ! Bonus de ${t.money(reward)}.`,
     batchArrived: ({ giver }: { giver: QuestGiver }, t: H) => `${t.questGiver(giver)} a passé sa commande groupée : le chrono tourne !`,
