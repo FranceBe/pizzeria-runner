@@ -205,9 +205,12 @@ a result to paste to friends.
 
 ### Everything else
 
-- **Music and sound effects**: background music, the oven's sizzle while a pizza bakes, a bell for each new order and a
-  till for each payment. Music and effects each have their own volume and mute button in Settings; the music softens
-  during a pause. Sound starts with the first tap or click, as browsers require.
+- **Music and sound effects**: background music, the oven's sizzle (hiss, crackle and cheese bubbling) from the first
+  pizza in until the last one comes out, a bell for each new order, a till for each payment, and fanfares for wins:
+  small for a quest completed, a weekly mission or tonight's goal reached; medium for a new reputation level or an
+  achievement; big for a new best in the daily challenge or a win against friends. Music and effects each have their
+  own volume and mute button in Settings; the music softens during a pause. Sound starts with the first tap or click,
+  as browsers require. Where it all comes from: [CREDITS.md](CREDITS.md).
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
 - The game installs as an app and plays offline.
 - Have you tried every combination of keys (or of swipes)? Nonna has. And she doesn't share her secrets with just anyone: perhaps
@@ -294,9 +297,15 @@ src/
   day ends with its receipt, every save loads back the same, nothing grows without end, and an honest score always
   passes the multiplayer server's checks
 - `data/customers.ts` + `game/looks.ts`: names, hair, hairstyles and accessories
-- `assets/sounds/`: the music and sound effects; `audio/engine.ts` plays them (Web Audio, seamless loops, live fades),
+- `assets/sounds/`: the music; `audio/engine.ts` plays it and the effects (Web Audio, seamless loops, live fades),
   `audio/cues.ts` decides what plays when. The music comes as Ogg and as AAC (`music.m4a`, for older iPhones); after
   replacing `music.ogg`, rebuild the AAC copy with `afconvert music.ogg -o music.m4a -f m4af -d aac -b 128000` (macOS)
+- `audio/synth.ts`: the sound effects, synthesised in code (no recordings). Every pitch, length and filter is in its
+  `SOUND` object. The one-shot effects are rendered once into buffers in the background after the first tap
+  (OfflineAudioContext) and played live until theirs is ready; the sizzle is one loop for every oven. The chime, the
+  till and the sizzle follow what the game's first recorded sounds were made of (pitches, lengths, textures). To listen and
+  tweak: the dev panel in Settings (`npm run dev`) has a sound section, and `window.fornoAudio` is the engine in the
+  browser console
 - `data/achievements.ts` + `game/achievements.ts`: achievements and their progress
 - `game/pairings.ts`: pairing discovery
 

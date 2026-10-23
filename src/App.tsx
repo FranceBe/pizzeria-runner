@@ -67,7 +67,7 @@ const GameShell = ({ state: soloState, dispatch: soloDispatch, tab, setTab }: Sc
   const dispatch = isDuo ? coopDispatch : soloDispatch;
   const activeState = coopView ?? soloState;
   const activeDispatch = isCoop ? coopDispatch : soloDispatch;
-  useGameAudio(activeState);
+  useGameAudio(activeState, duo ? `duo:${duo.id}` : isCoop ? "coop" : "solo");
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (refusedAt === null) return;

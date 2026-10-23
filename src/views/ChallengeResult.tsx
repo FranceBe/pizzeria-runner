@@ -25,9 +25,6 @@ const Confetti = () => (
 // The end of a Pizza Royale, as this player sees it: the crown, out (and why), or time up.
 const RoyaleHeadline = ({ result, place, count, hasWon, isOver }: { result: Result; place: number; count: number; hasWon: boolean; isOver: boolean }) => {
   const t = useTranslation();
-  useEffect(() => {
-    if (hasWon) audio.fanfare();
-  }, [hasWon]);
   if (hasWon) {
     return (
       <div className="royale-win">
@@ -61,6 +58,15 @@ const MatchResult = ({ result, dispatch }: { result: Result; dispatch: Dispatch 
   const { room, you } = useMultiplayer();
   const players = room ? ranking(room) : [];
   const everyoneDone = room?.players.every((player) => player.done) ?? true;
+  const isRoyale = result.royale === true;
+  const isOver = room?.status === "finished";
+  const place = players.findIndex((player) => player.id === you) + 1;
+  const hasWon = isRoyale && isOver && place === 1;
+  // First against friends, in a challenge as in a Pizza Royale: the biggest fanfare (played once, with the podium).
+  const hasWonMatch = !result.coop && isOver && place === 1 && players.length > 1;
+  useEffect(() => {
+    if (hasWonMatch) audio.play("fanfareBig");
+  }, [hasWonMatch]);
   // Co-op: one kitchen, one score for the team.
   if (result.coop) {
     return (
@@ -75,10 +81,6 @@ const MatchResult = ({ result, dispatch }: { result: Result; dispatch: Dispatch 
       </Overlay>
     );
   }
-  const isRoyale = result.royale === true;
-  const isOver = room?.status === "finished";
-  const place = players.findIndex((player) => player.id === you) + 1;
-  const hasWon = isRoyale && isOver && place === 1;
   // While a Pizza Royale goes on, those still in have no final score yet.
   const scoreOf = (player: (typeof players)[number]) =>
     isRoyale && player.out === undefined && !isOver ? t("multi.royale.stillIn") : player.done || isOver ? t("multi.points", { score: player.score }) : "…";

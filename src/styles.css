@@ -1324,3 +1324,5 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .ev-wedding { --ev-bg: #fbf3e4; --ev-edge: #c79a3e; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ev-wedding { --ev-bg: #33291a; --ev-edge: #e2bf72; } }
 :root[data-theme="dark"] .ev-wedding { --ev-bg: #33291a; --ev-edge: #e2bf72; }
+.dev-sounds { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.dev-sounds .h { margin: 0; }

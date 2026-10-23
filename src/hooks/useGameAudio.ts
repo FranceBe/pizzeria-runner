@@ -3,9 +3,11 @@ import { cuesBetween, effectsLevel, isSizzling, musicLevel, snapshotOf } from ".
 import { audio } from "../audio/engine";
 import type { GameState } from "../game/types";
 
-// Plays the music and the sound effects that follow the game (see audio/cues.ts for what plays when).
-export const useGameAudio = (state: GameState): void => {
+// Plays the music and the sound effects that follow the game (see audio/cues.ts for what plays when). `gameKey` names
+// the game on screen (the player's own, a quick co-op, a duo pizzeria): switching from one to another plays nothing.
+export const useGameAudio = (state: GameState, gameKey = "solo"): void => {
   const previous = useRef(snapshotOf(state));
+  const previousKey = useRef(gameKey);
 
   // Browsers only allow sound after the player touches the page.
   useEffect(() => {
@@ -35,9 +37,13 @@ export const useGameAudio = (state: GameState): void => {
 
   useEffect(() => {
     const current = snapshotOf(state);
+    const isSameGame = previousKey.current === gameKey;
     const cues = cuesBetween(previous.current, current);
     previous.current = current;
+    previousKey.current = gameKey;
+    if (!isSameGame) return;
     if (cues.newOrder) audio.play("newOrder");
     if (cues.payment) audio.play("payment");
-  }, [state]);
+    if (cues.fanfare) audio.play(cues.fanfare);
+  }, [state, gameKey]);
 };

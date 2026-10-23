@@ -1,29 +1,24 @@
-// Sound, with the Web Audio API: loops (music, the oven's sizzle) loop without the gap <audio loop> leaves,
-// and fades happen live (the sizzle stops when the oven empties, the music softens on pause).
+// Sound, with the Web Audio API: the music loops without the gap <audio loop> leaves, and fades happen live (the
+// sizzle stops when the oven empties, the music softens on pause). The effects are synthesised (synth.ts): the
+// one-shot ones are rendered once into buffers in the background, and played live until theirs is ready.
 // Browsers keep the AudioContext suspended until the player touches the page: unlock() is called on the first input.
 import musicOgg from "../assets/sounds/music.ogg";
 import musicM4a from "../assets/sounds/music.m4a";
-import newOrderWav from "../assets/sounds/new-order.wav";
-import paymentWav from "../assets/sounds/payment.wav";
-import sizzleWav from "../assets/sounds/sizzle-loop.wav";
+import { EFFECT_IDS, createSizzle, drawEffect, effectSeconds, type EffectId, type Sizzle } from "./synth";
 
-export type EffectId = "newOrder" | "payment";
+export type { EffectId } from "./synth";
 
 // Safari on older iPhones can't decode Ogg Vorbis: it gets the AAC copy.
 const canPlayOgg = (): boolean =>
   typeof Audio === "function" && new Audio().canPlayType('audio/ogg; codecs="vorbis"') !== "";
 
-const EFFECT_URLS: Record<EffectId, string> = { newOrder: newOrderWav, payment: paymentWav };
-
 // The music's own length: an AAC copy can carry a little padding, which must not end up in the loop.
 const MUSIC_SECONDS = 141.816;
-// The sizzle sits under the music, a little quieter than the other effects.
-const SIZZLE_LEVEL = 0.45;
 // Fades, in seconds (time constants of an exponential approach).
 const QUICK_FADE = 0.08;
 const SOFT_FADE = 0.4;
 
-type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext; webkitOfflineAudioContext?: typeof OfflineAudioContext };
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
 interface Loop {
@@ -36,10 +31,13 @@ class AudioEngine {
   private musicBus: GainNode | null = null;
   private effectsBus: GainNode | null = null;
   private buffers = new Map<string, Promise<AudioBuffer | null>>();
+  // The one-shot effects, rendered ahead; an effect without one yet is played live.
+  private effects = new Map<EffectId, AudioBuffer>();
+  private isRendering = false;
   private music: Loop | null = null;
-  private sizzle: Loop | null = null;
-  private wantsMusic = false;
+  private sizzle: Sizzle | null = null;
   private wantsSizzle = false;
+  private wantsMusic = false;
   private musicLevel = 0;
   private effectsLevel = 0;
   private hasRun = false;
@@ -84,11 +82,8 @@ class AudioEngine {
   private onRunning(): void {
     this.hasRun = true;
     void this.refreshMusic();
-    if (this.wantsSizzle && !this.sizzle) {
-      this.wantsSizzle = false;
-      this.setSizzle(true);
-    }
-    this.preloadEffects();
+    this.refreshSizzle();
+    this.renderEffects();
   }
 
   // When the page is hidden (another tab, the phone locked), sound stops; it comes back with the page.
@@ -134,6 +129,10 @@ class AudioEngine {
     if (!context) return;
     loop.gain.gain.cancelScheduledValues(context.currentTime);
     loop.gain.gain.setTargetAtTime(0, context.currentTime, fade);
+    loop.source.onended = () => {
+      loop.source.disconnect();
+      loop.gain.disconnect();
+    };
     loop.source.stop(context.currentTime + fade * 6);
   }
 
@@ -156,56 +155,76 @@ class AudioEngine {
     }
   }
 
-  // The oven's sizzle while something bakes; it fades out quickly when the last pizza comes out.
+  // The oven's sizzle, one loop for every oven: on from the first pizza in until the last one comes out, then faded out.
   setSizzle(isOn: boolean): void {
-    if (isOn === this.wantsSizzle) return;
     this.wantsSizzle = isOn;
-    if (!this.context || this.context.state !== "running" || !this.effectsBus) return;
-    if (!isOn && this.sizzle) {
-      this.stopLoop(this.sizzle, QUICK_FADE);
+    this.refreshSizzle();
+  }
+
+  private refreshSizzle(): void {
+    const context = this.context;
+    if (!context || context.state !== "running" || !this.effectsBus) return;
+    if (this.wantsSizzle && !this.sizzle) this.sizzle = createSizzle(context, this.effectsBus);
+    if (!this.wantsSizzle && this.sizzle) {
+      this.sizzle.stop();
       this.sizzle = null;
+    }
+  }
+
+  // A one-shot effect: its rendered buffer if ready, else drawn live (same sound). `live` always draws it live (the
+  // dev sound lab, to hear a change at once).
+  play(id: EffectId, { live = false }: { live?: boolean } = {}): void {
+    const context = this.context;
+    const bus = this.effectsBus;
+    if (!context || context.state !== "running" || !bus || this.effectsLevel === 0) return;
+    const buffer = live ? undefined : this.effects.get(id);
+    if (!buffer) {
+      drawEffect(context, bus, id, context.currentTime + 0.01);
       return;
     }
-    void this.load(sizzleWav).then((buffer) => {
-      if (buffer && this.wantsSizzle && !this.sizzle && this.effectsBus) this.sizzle = this.startLoop(buffer, this.effectsBus, SIZZLE_LEVEL);
-    });
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(bus);
+    source.onended = () => source.disconnect();
+    source.start();
   }
 
-  // A one-shot effect: the fade is already in the file.
-  play(id: EffectId): void {
-    if (!this.context || this.context.state !== "running" || !this.effectsBus || this.effectsLevel === 0) return;
-    const bus = this.effectsBus;
-    void this.load(EFFECT_URLS[id]).then((buffer) => {
-      if (!buffer || !this.context) return;
-      const source = this.context.createBufferSource();
-      source.buffer = buffer;
-      source.connect(bus);
-      source.start();
-    });
+  // Forgets the rendered effects and renders them again (the dev sound lab, after a change in synth.ts).
+  rerenderEffects(): void {
+    this.effects.clear();
+    this.isRendering = false;
+    this.renderEffects();
   }
 
-  // The Pizza Royale winner's fanfare: a little rising arpeggio, played by the browser itself (no recording).
-  fanfare(): void {
+  // Renders the one-shot effects into buffers, one after the other while the browser is idle, never in the way of
+  // the first screen. Once, after sound first runs.
+  private renderEffects(): void {
     const context = this.context;
-    if (!context || context.state !== "running" || !this.effectsBus || this.effectsLevel === 0) return;
-    const bus = this.effectsBus;
-    const NOTES: readonly [number, number, number][] = [
-      // [frequency in Hz, start, length] in seconds: C, E, G, then a held high C.
-      [523.25, 0, 0.14], [659.25, 0.13, 0.14], [783.99, 0.26, 0.14], [1046.5, 0.4, 0.7],
-    ];
-    const start = context.currentTime + 0.02;
-    NOTES.forEach(([frequency, at, length]) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = "triangle";
-      oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(0, start + at);
-      gain.gain.linearRampToValueAtTime(0.5, start + at + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + at + length);
-      oscillator.connect(gain).connect(bus);
-      oscillator.start(start + at);
-      oscillator.stop(start + at + length + 0.05);
-    });
+    const Offline = typeof window === "undefined" ? undefined : (window.OfflineAudioContext ?? (window as WebkitWindow).webkitOfflineAudioContext);
+    if (!context || !Offline || this.isRendering) return;
+    this.isRendering = true;
+    const pending = EFFECT_IDS.filter((id) => !this.effects.has(id));
+    // Safari has no requestIdleCallback: a short timeout instead.
+    const whenIdle = (next: () => void) => {
+      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(next, { timeout: 2000 });
+      else window.setTimeout(next, 50);
+    };
+    const renderNext = () => {
+      const id = pending.shift();
+      if (!id) return;
+      const rate = context.sampleRate;
+      const offline = new Offline(1, Math.ceil(effectSeconds(id) * rate), rate);
+      drawEffect(offline, offline.destination, id, 0);
+      // Older Safari renders through an event rather than a promise.
+      new Promise<AudioBuffer>((resolve, reject) => {
+        offline.oncomplete = (event) => resolve(event.renderedBuffer);
+        offline.startRendering()?.then(resolve, reject);
+      })
+        .then((buffer) => this.effects.set(id, buffer))
+        .catch(() => undefined)
+        .finally(() => whenIdle(renderNext));
+    };
+    whenIdle(renderNext);
   }
 
   // Volumes from 0 to 1, reached smoothly: no click when a slider moves or the game pauses.
@@ -217,12 +236,9 @@ class AudioEngine {
     this.musicBus.gain.setTargetAtTime(music, context.currentTime, QUICK_FADE);
     this.effectsBus.gain.setTargetAtTime(effects, context.currentTime, QUICK_FADE);
   }
-
-  // Loads the short sounds ahead, so the first order and payment play on time.
-  preloadEffects(): void {
-    if (!this.context) return;
-    [...Object.values(EFFECT_URLS), sizzleWav].forEach((url) => void this.load(url));
-  }
 }
 
 export const audio = new AudioEngine();
+
+// Dev only: the engine at hand in the browser console (window.fornoAudio), to try sounds while tweaking synth.ts.
+if (import.meta.env.DEV && typeof window !== "undefined") (window as Window & { fornoAudio?: AudioEngine }).fornoAudio = audio;

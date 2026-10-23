@@ -7,6 +7,7 @@ import { toSaveData } from "../game/state";
 import { useTranslation } from "../i18n/I18nContext";
 import { encodeSaveCode, type JsonObject } from "../utils/saveCode";
 import type { ScreenProps } from "../views/types";
+import { SoundLab } from "./SoundLab";
 import { buildDevGame, DEFAULT_DEV_SETUP, maxUpgrades, noUpgrades, type DevSetup } from "./devSave";
 
 const NumberField = ({ label, value, min, max, onChange }: { label: string; value: number; min: number; max?: number; onChange: (value: number) => void }) => (
@@ -66,6 +67,7 @@ export const DevPanel = ({ state, dispatch }: ScreenProps) => {
         <button className="btn" onClick={() => setCode(encodeSaveCode(saveData()))}>Générer le code</button>
       </div>
       {code && <textarea className="dev-code" readOnly value={code} rows={3} onFocus={(event) => event.target.select()} />}
+      <SoundLab />
     </div>
   );
 };

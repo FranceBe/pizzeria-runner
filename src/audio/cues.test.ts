@@ -6,10 +6,10 @@ describe("sound cues", () => {
   it("ring for a new customer and for a payment", () => {
     const before = stateInService([makeCustomer()]);
     const arrived = { ...before, service: { ...serviceOf(before), customers: [...serviceOf(before).customers, makeCustomer({ id: "c2", name: "Zoé" })] } };
-    expect(cuesBetween(snapshotOf(before), snapshotOf(arrived))).toEqual({ newOrder: true, payment: false });
+    expect(cuesBetween(snapshotOf(before), snapshotOf(arrived))).toEqual({ newOrder: true, payment: false, fanfare: null });
     const paid = { ...before, service: { ...serviceOf(before), stats: { ...serviceOf(before).stats, served: 1 } } };
-    expect(cuesBetween(snapshotOf(before), snapshotOf(paid))).toEqual({ newOrder: false, payment: true });
-    expect(cuesBetween(snapshotOf(before), snapshotOf(before))).toEqual({ newOrder: false, payment: false });
+    expect(cuesBetween(snapshotOf(before), snapshotOf(paid))).toEqual({ newOrder: false, payment: true, fanfare: null });
+    expect(cuesBetween(snapshotOf(before), snapshotOf(before))).toEqual({ newOrder: false, payment: false, fanfare: null });
   });
 
   it("ring when the group order comes in and when it is paid", () => {
@@ -18,6 +18,32 @@ describe("sound cues", () => {
     expect(cuesBetween(snapshotOf(state), snapshotOf(withBatch)).newOrder).toBe(true);
     const delivered = { ...state, service: { ...serviceOf(state), stats: { ...serviceOf(state).stats, questRewards: 20 } } };
     expect(cuesBetween(snapshotOf(state), snapshotOf(delivered)).payment).toBe(true);
+  });
+
+  it("celebrate wins with a fanfare: small for a quest, a mission or tonight's goal, medium for a level or an achievement, big for a best score", () => {
+    const state = stateInService([makeCustomer()], { xp: 0 });
+    const fanfare = (after: typeof state) => cuesBetween(snapshotOf(state), snapshotOf(after)).fanfare;
+    expect(fanfare({ ...state, lifetime: { ...state.lifetime, questsDone: state.lifetime.questsDone + 1 } })).toBe("fanfareSmall");
+    expect(fanfare({ ...state, tonightGoal: { day: state.day, kind: "allHot", target: 5, progress: 5, status: "done" } })).toBe("fanfareSmall");
+    expect(fanfare({ ...state, weekly: { week: 0, bonusPaid: false, missions: [{ kind: "served", target: 1, progress: 1, done: true }] } })).toBe("fanfareSmall");
+    expect(fanfare({ ...state, xp: 100_000 })).toBe("fanfareMedium");
+    expect(fanfare({ ...state, achievements: { ...state.achievements, firstPizza: 1 } })).toBe("fanfareMedium");
+    expect(fanfare({ ...state, challengeResult: { date: "2026-10-23", score: 99, served: 5, happy: 3, isNewBest: true } })).toBe("fanfareBig");
+    // Only the biggest plays.
+    expect(fanfare({ ...state, xp: 100_000, lifetime: { ...state.lifetime, questsDone: 9 } })).toBe("fanfareMedium");
+    // A friends' match's best isn't the daily challenge's (its podium plays the fanfare), and a new morning, or another
+    // save loaded, celebrates nothing.
+    expect(fanfare({ ...state, challengeResult: { date: "x", score: 99, served: 5, happy: 3, isNewBest: true, multiplayer: true } })).toBeNull();
+    expect(fanfare({ ...state, day: state.day + 1, xp: 100_000 })).toBeNull();
+  });
+
+  it("sizzle until the last pizza is out, at one level however many bake", () => {
+    const state = stateInService([makeCustomer()]);
+    const baking = (id: string, bakedSeconds: number) => ({ id, ingredients: [...MARGHERITA], bakedSeconds, bakeDuration: 6 });
+    const two = { ...state, service: { ...serviceOf(state), oven: [baking("a", 5), baking("b", 0)] } };
+    // The first one out, the second still in: the oven keeps sizzling.
+    expect(isSizzling(play(two, { type: "tick", seconds: 2 }))).toBe(true);
+    expect(isSizzling(play(two, { type: "tick", seconds: 7 }))).toBe(false);
   });
 
   it("sizzle while something bakes, but not during a pause", () => {
