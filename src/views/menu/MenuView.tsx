@@ -3,6 +3,7 @@ import { INGREDIENTS_BY_ID } from "../../data/ingredients";
 import { CLASSIC_RECIPES } from "../../data/recipes";
 import { activeMenu, canCook, isNewRecipe, knowsRecipe, recipeAppeal, signatureLevel } from "../../game/menu";
 import { seasonalRecipe } from "../../game/seasons";
+import { canChooseSpecial, isSpecial } from "../../game/special";
 import { FESTIVALS } from "../../data/festivals";
 import { festivalOfRecipe } from "../../game/calendar";
 import { fairPrice, ingredientCost, PRICE_STEP } from "../../game/pizza";
@@ -25,12 +26,13 @@ interface RecipeCardProps extends ScreenProps {
 const RecipeCard = ({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, onCancelDelete }: RecipeCardProps) => {
   const t = useTranslation();
   const name = t.recipe(recipe);
-  const isSpecial = state.chefSpecial === recipe.id;
+  const isTheSpecial = isSpecial(state, recipe.id);
+  const canChoose = canChooseSpecial(state);
   const festive = festivalOfRecipe(recipe.id);
   const changePrice = (delta: number) => dispatch({ type: "changePrice", recipeId: recipe.id, delta });
   return (
-    <div className={`card recipe${isSpecial ? " special" : ""}${recipe.onMenu ? "" : " off-menu"}`}>
-      {isSpecial && <span className="special-ribbon">{t("menu.chefSpecial")}</span>}
+    <div className={`card recipe${isTheSpecial ? " special" : ""}${recipe.onMenu ? "" : " off-menu"}`}>
+      {isTheSpecial && <span className="special-ribbon">{t("menu.special")}</span>}
       <Pizza ingredients={recipe.ingredients} baked className="pz" />
       <div className="grow" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div className="row" style={{ gap: 6 }}>
@@ -65,14 +67,16 @@ const RecipeCard = ({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
             />
             {t("menu.onMenu")}
           </label>
-          {recipe.onMenu && (
+          {/* One special a week: once chosen (and the day is over), the others can't take its place. */}
+          {recipe.onMenu && (isTheSpecial || canChoose) && (
             <button
-              className={`btn sm ${isSpecial ? "special-on" : "ghost"}`}
-              aria-pressed={isSpecial}
+              className={`btn sm ${isTheSpecial ? "special-on" : "ghost"}`}
+              aria-pressed={isTheSpecial}
               title={t("menu.specialHint")}
-              onClick={() => dispatch({ type: "setChefSpecial", recipeId: recipe.id })}
+              disabled={!canChoose}
+              onClick={() => dispatch({ type: "setSpecial", recipeId: isTheSpecial ? null : recipe.id })}
             >
-              {isSpecial ? `★ ${t("menu.chefSpecial")}` : `☆ ${t("menu.makeSpecial")}`}
+              {isTheSpecial ? `★ ${t("menu.special")}` : `☆ ${t("menu.makeSpecial")}`}
             </button>
           )}
           {recipe.custom &&
@@ -142,7 +146,7 @@ export const MenuView = ({ state, dispatch }: ScreenProps) => {
         <ul className="chalk-list">
           {activeMenu(state).map((recipe) => (
             <li key={recipe.id}>
-              <span>{recipe.id === state.chefSpecial && "★ "}{t.recipe(recipe)}</span>
+              <span>{isSpecial(state, recipe.id) && "★ "}{t.recipe(recipe)}</span>
               <span className="chalk-dots" />
               <span>{t.money(recipe.price)}</span>
             </li>

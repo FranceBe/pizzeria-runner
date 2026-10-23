@@ -20,6 +20,9 @@ import { BATCH_ID } from "../batch";
 import { starCount, starGoals } from "../stars";
 import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
+import { ensureSpecialWeek, serveSpecial, specialReputation } from "../special";
+import { offerSlice } from "../slice";
+import { PACE_ARRIVALS, PACE_WAITING, paceFor } from "../difficulty";
 import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightServe } from "../tonight";
 import { noteMysteryLeaving, noteMysteryServed, settleMysteryGuest, welcomeMaybeMystery } from "../mystery";
 import { companionsOf, maybeStartStory, storyGuestsToday, turnStoryPage } from "../stories";
@@ -33,7 +36,7 @@ import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest, prepareWedding } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
 import {
-  collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable,
+  collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable, themeBonus,
 } from "../serving";
 import { pushToast, pushPop } from "../toasts";
 import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, RoyaleMistake, Service } from "../types";
@@ -158,7 +161,7 @@ const endDay = (state: GameState, service: Service): void => {
 
   state.history = [
     ...state.history,
-    { day: state.day, served: stats.served, revenue: stats.revenue, tips: stats.tips, net, xp: stats.xp, event: state.event, stars },
+    { day: state.day, served: stats.served, revenue: stats.revenue, tips: stats.tips, net, xp: stats.xp, event: state.event, stars, happyServed: stats.happyServed },
   ].slice(-MAX_HISTORY_DAYS);
   maybeShareMammasSecret(state);
   const { lifetime } = state;
@@ -415,7 +418,8 @@ const letChallengeCustomerIn = (service: Service): void => {
 const letCustomersIn = (state: GameState, service: Service): void => {
   if (service.challenge) return letChallengeCustomerIn(service);
   service.nextArrivalIn =
-    randomBetween(MIN_SECONDS_BETWEEN_ARRIVALS, MAX_SECONDS_BETWEEN_ARRIVALS) * (service.rush ? RUSH_ARRIVAL_FACTOR : 1) * arrivalPace(state, service);
+    randomBetween(MIN_SECONDS_BETWEEN_ARRIVALS, MAX_SECONDS_BETWEEN_ARRIVALS) * (service.rush ? RUSH_ARRIVAL_FACTOR : 1) * arrivalPace(state, service) *
+    PACE_ARRIVALS[service.pace ?? "normal"];
 
   const birthdayGuest = nextBirthdayGuest(service);
   if (birthdayGuest) {
@@ -472,6 +476,7 @@ export const serviceActions = {
     const { toasts, pops, dayStart, ...beforeOpening } = state;
     state.dayStart = structuredClone(beforeOpening);
     state.service = createService(customerCount);
+    state.service.pace = paceFor(state);
     state.service.criticPending = state.event === "critic";
     state.service.birthdayGuests = birthdaysToday(state);
     state.service.storyGuests = storyGuestsToday(state);
@@ -526,6 +531,10 @@ export const serviceActions = {
   },
 
   // Bins every baked pizza nobody is waiting for, in one go.
+  offerSlice(state, { pizzaId }) {
+    if (state.service) offerSlice(state, state.service, pizzaId);
+  },
+
   trashUnwantedPizzas(state) {
     const { service } = state;
     if (!service) return;
@@ -542,7 +551,8 @@ export const serviceActions = {
   tick(state, { seconds }) {
     const { service } = state;
     if (!service) return;
-    service.customers.forEach((customer) => (customer.waitedSeconds += seconds));
+    const waiting = seconds * PACE_WAITING[service.pace ?? "normal"];
+    service.customers.forEach((customer) => (customer.waitedSeconds += waiting));
     service.oven.forEach((pizza) => (pizza.bakedSeconds += seconds));
 
     const isBaked = (pizza: { bakedSeconds: number; bakeDuration: number }) => pizza.bakedSeconds >= pizza.bakeDuration;
@@ -796,7 +806,11 @@ export const serviceActions = {
     // Read before settling: the table is forgotten once its last guest is served.
     const table = customer.tableId ? service.tables?.[customer.tableId] : undefined;
     const tip =
-      collectPayment(state, service, customer, pizza) + settleTable(state, service, customer) + secretBonus(state, customer, pizza.secret);
+      collectPayment(state, service, customer, pizza) +
+      settleTable(state, service, customer) +
+      secretBonus(state, customer, pizza.secret) +
+      serveSpecial(state, customer, mood) +
+      themeBonus(state, customer);
     if (pizza.mamma) charmNextCustomer(service, customer);
     // Critics, deliveries and celebrities are passing through: they never join the customer book.
     const isPerson = !customer.critic && !customer.delivery && !customer.celebrity && !customer.mystery;
@@ -811,7 +825,7 @@ export const serviceActions = {
     const newPairings = discoverPairings(state, customer.ingredients);
     if (newPairings.length) pushToast(state, { key: "newPairing", params: { pairings: newPairings } }, "gold");
 
-    const xpGained = reputationFor(state, customer, newPairings) + (pizza.woodFired ? WOOD_FIRED_XP_BONUS : 0);
+    const xpGained = reputationFor(state, customer, newPairings) + (pizza.woodFired ? WOOD_FIRED_XP_BONUS : 0) + specialReputation(state, customer);
     state.xp += xpGained;
     advanceQuest(state, customer, isHappy, newPairings.length);
     const levelAfter = levelForXp(state.xp);
@@ -870,6 +884,7 @@ export const serviceActions = {
     state.event = rollDayEvent(state, state.event);
     state.lateIngredient = state.event === "lateDelivery" ? pickLateIngredient(state) : null;
     ensureWeek(state);
+    ensureSpecialWeek(state);
     ensureTonightGoal(state);
     ensureRushPlan(state);
     lapseAbsentRegulars(state);

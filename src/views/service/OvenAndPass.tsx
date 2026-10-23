@@ -5,6 +5,7 @@ import { useTranslation } from "../../i18n/I18nContext";
 import { Pizza } from "../../components/Pizza";
 import type { CoachTarget, GameState, Service } from "../../game/types";
 import type { ServiceScreenProps } from "../types";
+import { canOfferSlice } from "../../game/slice";
 
 type WithCoach = ServiceScreenProps & { coachTarget: CoachTarget | null };
 
@@ -92,7 +93,7 @@ const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
                 {destination && warmth !== "hot" && <span className={`warmth ${warmth}`}>{` · ${t(`service.${warmth}`)}`}</span>}
               </div>
             </div>
-            {/* Nobody waiting for it: binning it is the only thing to do, so that is the button. */}
+            {/* Nobody waiting for it: sliced for the queue (when someone would enjoy it) or binned. */}
             <div className="ready-btns">
               {destination ? (
                 <>
@@ -107,9 +108,16 @@ const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
                   </button>
                 </>
               ) : (
-                <button className="btn sm bin" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
-                  {t("common.trash")}
-                </button>
+                <>
+                  {canOfferSlice(state, service, pizza.id) && (
+                    <button className="btn sm slice" title={t("service.offerSliceHint")} onClick={() => dispatch({ type: "offerSlice", pizzaId: pizza.id })}>
+                      {t("service.offerSlice")}
+                    </button>
+                  )}
+                  <button className="btn sm bin" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
+                    {t("common.trash")}
+                  </button>
+                </>
               )}
             </div>
           </div>

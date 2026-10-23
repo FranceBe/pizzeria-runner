@@ -184,7 +184,30 @@ export const zh: Dictionary = {
     regulars: "你的常客",
     regularLine: ({ recipe, visits }) => `${recipe} · 来过 ${visits} 次`,
     today: "今天",
-    chefSpecial: "主厨推荐",
+    special: "本周特选",
+    specialTag: "特选",
+    specialPick: "从菜单里选一个披萨，作为整整一周的特选：点的人会更多，上得快还有小奖励；如果是你的自创配方，还能多得声望。",
+    specialLine: ({ served, until }) => `${served ? `本周已上 ${served} 个 · ` : ""}到第 ${until} 天为止`,
+    specialChange: "更换",
+    themeOnMenu: ({ count, target }) =>
+      count === 0
+        ? "你的菜单上还没有：如果一直这样，客人会少一些。"
+        : count >= target
+          ? `你的菜单上有 ${count} 个。今晚会很热闹！`
+          : `你的菜单上有 ${count} 个。再加 ${target - count} 个，能吸引更多客人。`,
+    tipsTitle: "今日小贴士",
+    tipsLabel: ({ count }) => `今日小贴士 ${count} 条`,
+    tips: {
+      stockForTonight: ({ id, need, have }, t) => `${t.ingredient(id)}：今晚大约需要 ${need} 份（你有 ${have} 份）。`,
+      overpriced: ({ recipeId, recipeName, fair }, t) =>
+        `${t.recipe({ id: recipeId, name: recipeName })}有点贵：定在 ${t.money(fair)} 左右会更好卖。`,
+      underpriced: ({ recipeId, recipeName, fair }, t) =>
+        `${t.recipe({ id: recipeId, name: recipeName })}可以卖得更贵：建议价格是 ${t.money(fair)}。`,
+      neverOrdered: ({ recipeId, recipeName }, t) =>
+        `还没有人点过${t.recipe({ id: recipeId, name: recipeName })}：降降价，或者换一个上菜单。`,
+      menuRoom: ({ count }) => `你的菜单还能再放 ${count} 种披萨：选择越多，客人越多。`,
+      upgrade: ({ upgradeKey }, t) => `你买得起一项升级了：${t.upgradeName(upgradeKey)}。`,
+    },
     challengeTitle: "每日挑战",
     challengeIntro: ({ seconds }) => `${seconds / 60} 分钟，今天每个人遇到的客人都一样：和朋友比比分数吧。食材免费，不影响你的店。`,
     challengeBest: "你今天的最佳：{score} 分",
@@ -309,6 +332,8 @@ export const zh: Dictionary = {
     pizzaDone: "披萨已上 ✓",
     waitingDrink: "在等饮料",
     trashUnwantedShort: "🗑 全部扔掉（{count}）",
+    offerSlice: "🍕 切块请客",
+    offerSliceHint: "切成小块请排队的客人吃：什么都不浪费，大家也更有耐心。",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }) => `${medal}，还剩 ${clock}`,
     batchSlow: "铜牌",
@@ -375,9 +400,9 @@ export const zh: Dictionary = {
     toDiscover: "待发现的经典披萨",
     missing: ({ items }) => `缺少：${items}`,
     missingItem: ({ id, level }, t) => `${t.ingredient(id)}（${level} 级）`,
-    chefSpecial: "主厨推荐",
-    makeSpecial: "设为主厨推荐",
-    specialHint: "主厨推荐会被点得更多。",
+    special: "本周特选",
+    makeSpecial: "设为本周特选",
+    specialHint: "每周一个：点的人更多，上得快还有奖励。",
     seasonal: "当季披萨",
     festive: ({ festival }, t) => `节日 · ${t.festival(festival)}`,
     nonna: "奶奶的配方",
@@ -426,6 +451,8 @@ export const zh: Dictionary = {
     drink: ({ amount }, t) => `+${t.money(amount)} 饮料`,
     secret: ({ amount }, t) => `+${t.money(amount)} ✨`,
     batch: ({ amount }, t) => `+${t.money(amount)} 订单`,
+    special: ({ amount }, t) => `+${t.money(amount)} 特选`,
+    theme: ({ amount }, t) => `+${t.money(amount)} 主题`,
   },
 
   upgrades: {
@@ -719,6 +746,8 @@ export const zh: Dictionary = {
     wedding: { name: "婚礼", describe: "新人在 21:00 等着他们的婚宴：一个大订单，一次性送出，报酬丰厚。其他客人会少一些。" },
     match: { name: "电视球赛", describe: "21:00 开球：街上会安静一阵……然后大约 21:45 中场休息时，所有人一起涌进来。高峰期间小费翻倍。" },
     mysteryGuest: { name: "神秘客人", describe: "指南的一位检查员混在今晚的客人中，微服私访。不知道是谁：每位客人都很重要。结果会在小票上揭晓。" },
+    veggieNight: { name: "素食之夜", describe: "街坊们想吃蔬菜：今晚素食披萨会被点得多得多，而且多赚 15%。" },
+    biancaNight: { name: "白披萨之夜", describe: "今晚大家都想吃不放番茄酱的白披萨：点的人多得多，而且多赚 15%。" },
   },
 
   achievements: {
@@ -835,6 +864,8 @@ export const zh: Dictionary = {
     secretFromNonna: "奶奶在你店里尝了她的配方。她很感动，把秘方告诉了你：你可以在市场上做了。",
     secretFromCode: "奶奶对你眨眨眼：她的秘方是你的了。你可以在市场上做了。",
     secretCodeAgain: "奶奶笑了。你已经知道这个秘密了。",
+    sliceOffered: ({ count }) => `🍕 一个披萨切成小块请排队的客人吃：${count} 位客人笑着继续等。`,
+    specialWeek: ({ recipeId, recipeName, served }, t) => `★ 本周特选：${t.recipe({ id: recipeId, name: recipeName })}，上了 ${served} 个。来选下一个吧！`,
     newPairing: ({ pairings }, t) => `新搭配：${pairings.map(t.pairing).join("、")}！`,
   },
 

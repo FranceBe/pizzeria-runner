@@ -187,7 +187,30 @@ export const en: Dictionary = {
     regulars: "Your regulars",
     regularLine: ({ recipe, visits }) => `${recipe} · ${visits} visits`,
     today: "Today",
-    chefSpecial: "Chef's special",
+    special: "Special of the week",
+    specialTag: "Special",
+    specialPick: "Pick a pizza from your menu for the whole week: it gets ordered more, pays a little bonus when it goes out quickly, and brings extra reputation if it is one of your own recipes.",
+    specialLine: ({ served, until }) => `${served ? `${served} served this week · ` : ""}until day ${until}`,
+    specialChange: "Change",
+    themeOnMenu: ({ count, target }) =>
+      count === 0
+        ? "None on your menu yet: fewer people will come if it stays that way."
+        : count >= target
+          ? `On your menu: ${count}. Expect a crowd!`
+          : `On your menu: ${count}. ${target - count} more to draw a bigger crowd.`,
+    tipsTitle: "Today's tips",
+    tipsLabel: ({ count }) => `${count} ${plural(count, "tip")} for today`,
+    tips: {
+      stockForTonight: ({ id, need, have }, t) => `${t.ingredient(id)}: count on about ${need} portions tonight (you have ${have}).`,
+      overpriced: ({ recipeId, recipeName, fair }, t) =>
+        `${t.recipe({ id: recipeId, name: recipeName })} is pricey for what it is: around ${t.money(fair)}, it would sell better.`,
+      underpriced: ({ recipeId, recipeName, fair }, t) =>
+        `${t.recipe({ id: recipeId, name: recipeName })} could sell for more: the suggested price is ${t.money(fair)}.`,
+      neverOrdered: ({ recipeId, recipeName }, t) =>
+        `Nobody has ordered ${t.recipe({ id: recipeId, name: recipeName })} yet: lower its price, or make room for another one.`,
+      menuRoom: ({ count }) => `Your menu has room for ${count} more ${plural(count, "pizza")}: more choice, more customers.`,
+      upgrade: ({ upgradeKey }, t) => `You can afford an upgrade: ${t.upgradeName(upgradeKey)}.`,
+    },
     challengeTitle: "Daily challenge",
     challengeIntro: ({ seconds }) =>
       `${seconds / 60} minutes, the same customers for everyone today: compare your score with friends. Free ingredients, nothing else at stake.`,
@@ -313,6 +336,8 @@ export const en: Dictionary = {
     pizzaDone: "Pizza served ✓",
     waitingDrink: "waiting for their drink",
     trashUnwantedShort: "🗑 Bin all ({count})",
+    offerSlice: "🍕 Slice it",
+    offerSliceHint: "Cut into slices for the queue: nothing is thrown away, and everyone waits a little more patiently.",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }) => `${medal} for ${clock}`,
     batchSlow: "Bronze medal",
@@ -379,9 +404,9 @@ export const en: Dictionary = {
     toDiscover: "Classics to discover",
     missing: ({ items }) => `Missing: ${items}`,
     missingItem: ({ id, level }, t) => `${t.ingredient(id)} (lvl ${level})`,
-    chefSpecial: "Chef's special",
+    special: "Special of the week",
     makeSpecial: "Make it the special",
-    specialHint: "The chef's special gets ordered more often.",
+    specialHint: "One a week: ordered more often, a bonus when it goes out quickly.",
     seasonal: "Recipe of the season",
     festive: ({ festival }, t) => `Festive · ${t.festival(festival)}`,
     nonna: "Nonna's recipe",
@@ -430,6 +455,8 @@ export const en: Dictionary = {
     drink: ({ amount }, t) => `+${t.money(amount)} drink`,
     secret: ({ amount }, t) => `+${t.money(amount)} ✨`,
     batch: ({ amount }, t) => `+${t.money(amount)} order`,
+    special: ({ amount }, t) => `+${t.money(amount)} special`,
+    theme: ({ amount }, t) => `+${t.money(amount)} theme`,
   },
 
   upgrades: {
@@ -766,6 +793,14 @@ export const en: Dictionary = {
       name: "Mystery guest",
       describe: "An inspector from the guide slips in among tonight's customers, incognito. No telling who: every customer counts. The verdict comes with the receipt.",
     },
+    veggieNight: {
+      name: "Veggie night",
+      describe: "The neighbourhood is in the mood for vegetables: vegetarian pizzas are ordered far more tonight and pay 15% more.",
+    },
+    biancaNight: {
+      name: "White pizza night",
+      describe: "Tonight everyone wants white pizzas, without tomato sauce: they are ordered far more and pay 15% more.",
+    },
   },
 
   achievements: {
@@ -886,6 +921,9 @@ export const en: Dictionary = {
     secretFromNonna: "Nonna tasted her recipes at your place. Moved, she shares her secret ingredient: you can make it at the market.",
     secretFromCode: "Nonna winks at you: her secret ingredient is yours. You can make it at the market.",
     secretCodeAgain: "Nonna smiles. You already know the secret.",
+    sliceOffered: ({ count }) => `🍕 A pizza cut into slices for the queue: ${count} ${plural(count, "customer waits", "customers wait")} with a smile.`,
+    specialWeek: ({ recipeId, recipeName, served }, t) =>
+      `★ Special of the week: ${t.recipe({ id: recipeId, name: recipeName })}, ${served} served. Time to pick the next one!`,
     newPairing: ({ pairings }, t) => `${plural(pairings.length, "New pairing")}: ${pairings.map(t.pairing).join(", ")}!`,
   },
 

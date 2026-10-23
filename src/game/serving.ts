@@ -14,6 +14,7 @@ import { streakMultiplier, warmthTipFactor } from "./streak";
 import { pushPop, pushToast } from "./toasts";
 import { sendPostcard } from "./postcards";
 import { recordWeekly } from "./weekly";
+import { fitsTonight, THEME_BONUS_SHARE } from "./themes";
 import type { Customer, GameState, Mood, ReadyPizza, Service } from "./types";
 import { writePressReview } from "./reviews";
 
@@ -112,6 +113,15 @@ export const secretBonus = (state: GameState, customer: Customer, hasSecret: boo
   pushPop(state, customer.price, "secret");
   pushToast(state, { key: "secretTip", params: { name: customer.name } }, "gold");
   return customer.price;
+};
+
+// A pizza of tonight's theme pays a little more. Returns it.
+export const themeBonus = (state: GameState, customer: Customer): number => {
+  if (!fitsTonight(state, customer.ingredients)) return 0;
+  const bonus = roundToTenCents(customer.price * THEME_BONUS_SHARE);
+  receivePayment(state, bonus);
+  pushPop(state, bonus, "theme");
+  return bonus;
 };
 
 // After enough profitable days in a row, Mamma shares her own secret. Mutates state.

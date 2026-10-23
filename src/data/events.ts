@@ -8,6 +8,8 @@ export const DAY_EVENT_IDS = [
   "match", "wedding",
   // Someone among tonight's customers is an inspector from the guide, incognito.
   "mysteryGuest",
+  // Themed nights: the neighbourhood fancies one kind of pizza (game/themes.ts).
+  "veggieNight", "biancaNight",
 ] as const;
 export type DayEventId = (typeof DAY_EVENT_IDS)[number];
 
@@ -49,6 +51,10 @@ export const DAY_EVENTS: Record<DayEventId, DayEvent> = {
   wedding: { weight: 1, customerFactor: 0.85, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 6 },
   // The mystery guest: nothing gives them away; how they were served shows on the receipt (see MYSTERY_*).
   mysteryGuest: { weight: 2, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 7 },
+  // Vegetarian pizzas (or white ones, without tomato) are ordered much more and pay a little more; the crowd depends
+  // on how many are on the menu (see game/themes.ts).
+  veggieNight: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
+  biancaNight: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
 };
 
 // The mystery guest is among the first customers of the evening, up to this share of them: someone on their own,

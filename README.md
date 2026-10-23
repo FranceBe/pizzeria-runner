@@ -94,7 +94,23 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   banana, strawberries, hazelnuts) need neither cheese nor sauce, but don't mix with meat or fish.
 - **Price**: the suggested price covers the ingredients with a fair margin. Cheaper brings more orders, too expensive
   drives customers away.
-- **Chef's special**: one recipe on the menu, ordered 1.5 times as often.
+- **A slice for the queue**: a pizza nobody ordered can be cut into slices for the customers waiting instead of
+  going in the bin. Nothing counts as waste, and everyone waiting gets 20 seconds of patience back, once each per evening
+  (not in challenges, where ingredients are free; `game/slice.ts`).
+- **Themed nights** (events): a veggie night or a white pizza night, when the recipe book has something for it. Those
+  pizzas are ordered 2.5 times as often and pay 15% more; with two of them on the menu, 20% more people come, with none,
+  10% fewer (`game/themes.ts`).
+- **The evening's pace** adapts, discreetly: after three hard evenings (fewer than half the customers leaving happy),
+  customers come 20% more slowly and wait 15% more patiently; after three easy ones (three stars and 90% happy), they
+  come 10% faster. Never in challenges (`game/difficulty.ts`).
+- **Morning tips**, behind a 💡 bubble with their count on the prep screen: what tonight will need from the fridge
+  (beyond the low stock list), prices far from the suggested one, pizzas nobody ever orders, room left on the menu, an
+  upgrade within reach (`game/tips.ts`).
+- **Special of the week**: one pizza of the menu, picked in the morning (with the stars of tonight's menu, or from the
+  Menu tab) for the whole week. It is ordered twice as often, pays a fifth of its price on top when served before the
+  customer gets impatient, and brings 3 more reputation when it is a homemade recipe. It can be changed on the morning it
+  was picked only, or once it leaves the menu. When the week ends, a toast tells how many went out, and a new one is to be
+  picked (`game/special.ts`).
 - **Pairings**: good pairings stay secret until you serve a pizza that has them; the recipe editor then shows them by
   name, and the journal collects them.
 
@@ -177,8 +193,8 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   nobody else left, it comes in at once. One that can no longer be completed (a recipe of it deleted) holds nothing,
   and closing early always gives up on it, paid for what arrived.
 - **The morning's list**, "On tonight": the day's event, a real-calendar festival, tonight's goal, the neighbourhood
-  quest and birthdays, one line each (icon, name, the start of what it says, a time or a deadline on the right),
-  tapped open for the rest, rather than a stack of banners.
+  quest and birthdays, as small tiles side by side (two on a phone, more on a wider screen: icon, name, a time or a
+  deadline), each tapped open across the whole width for what it says, rather than a stack of banners.
 - **Neighbourhood quests**, from day 4. **Group orders**: in the morning, someone books a big order for tonight
   (the football club wants 3 Regina and 2 Margherita…). A ticket comes in a little after opening; make the pizzas in any
   order, between customers. The faster the whole order is delivered, the better the medal and the pay (gold, silver,
@@ -315,6 +331,9 @@ src/
 - `data/progression.ts`: `REPUTATION_THRESHOLDS` (XP per level), `UPGRADES`, `OVEN_SLOTS`, `BAKE_SECONDS`
 - `game/pizza.ts`: `fairPrice`, `appealOf`, `priceAttractiveness`
 - `game/economy.ts`: `forecastCustomers`, `dailyCharges`, debt handling
+- `game/special.ts`: the special of the week
+- `game/slice.ts`, `game/themes.ts`, `game/difficulty.ts`, `game/tips.ts`: slices for the queue, themed nights, the
+  evening's pace, the morning's tips
 - `game/customers.ts`: what customers order, special requests, critics, deliveries, "the usual"
 - `game/actions/serviceActions.ts` + `game/serving.ts`: the service, and what happens when an order is served (payment, tips, bonuses, reputation)
 - `data/events.ts` + `game/events.ts`: daily events and market prices

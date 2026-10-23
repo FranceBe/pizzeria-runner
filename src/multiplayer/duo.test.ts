@@ -65,7 +65,8 @@ describe("playing a duo pizzeria", () => {
     expect(isPartnerDuoMove({ type: "buyIngredient", ingredientId: "mozza", quantity: 5 })).toBe(true);
     expect(isPartnerDuoMove({ type: "pourDrink", drinkId: "eau" })).toBe(true);
     expect(isPartnerDuoMove({ type: "toggleIngredient", ingredientId: "pate" })).toBe(true);
-    ["buyUpgrade", "sellUpgrade", "openRestaurant", "startNextDay", "addRecipe", "signSupplier", "resetGame"].forEach((type) =>
+    expect(isPartnerDuoMove({ type: "offerSlice", pizzaId: "p-1" })).toBe(true);
+    ["buyUpgrade", "setSpecial", "sellUpgrade", "openRestaurant", "startNextDay", "addRecipe", "signSupplier", "resetGame"].forEach((type) =>
       expect(isPartnerDuoMove({ type })).toBe(false),
     );
   });
@@ -78,6 +79,7 @@ describe("playing a duo pizzeria", () => {
     expect(isPartnerDuoMove({ type: "toggleIngredient", ingredientId: { evil: true } })).toBe(false);
     expect(isPartnerDuoMove({ type: "pourDrink", drinkId: "champagne" })).toBe(false);
     expect(isPartnerDuoMove({ type: "serveTrayDrink", index: -1 })).toBe(false);
+    expect(isPartnerDuoMove({ type: "offerSlice", pizzaId: { evil: true } })).toBe(false);
     expect(isPartnerDuoMove({ type: "selectCustomer", customerId: "x".repeat(500) })).toBe(false);
   });
 

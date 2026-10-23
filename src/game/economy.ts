@@ -8,6 +8,7 @@ import { fairPrice, priceAttractiveness } from "./pizza";
 import { marketPrice, todaysEvent } from "./events";
 import { activeMenu, recipeAppeal } from "./menu";
 import { levelForXp } from "./progression";
+import { themeCrowdFactor } from "./themes";
 import type { GameState } from "./types";
 
 // Rent, oven, staff: paid every evening, grows with each upgrade.
@@ -35,7 +36,7 @@ export const forecastCustomers = (state: GameState): number => {
   const { terrasse, livraison } = state.upgrades;
   const terrace = terrasse * (TERRACE_CUSTOMERS + (state.event === "sunny" ? TERRACE_SUNNY_CUSTOMERS : 0));
   const deliveries = livraison ? DELIVERY_EXTRA_ORDERS : 0;
-  return Math.max(3, Math.round(atTheCounter * todaysEvent(state).customerFactor)) + terrace + deliveries;
+  return Math.max(3, Math.round(atTheCounter * todaysEvent(state).customerFactor * themeCrowdFactor(state))) + terrace + deliveries;
 };
 
 export interface RestockPlan {

@@ -53,7 +53,7 @@ const playedState = (): GameState => {
   state.lifetime = { ...state.lifetime, served: 8, revenue: 56, tips: 2, bestDay: { day: 1, net: 12 }, byRecipe: { margherita: { name: null, count: 8 } } };
   state.discoveredPairings = ["tomate+basilic"];
   state.achievements = { firstPizza: 1 };
-  state.chefSpecial = "margherita";
+  state.special = { recipeId: "margherita", week: 0, chosenDay: state.day, served: 2 };
   state.quest = { kind: "serveRecipe", giver: "football", target: 5, progress: 2, recipeId: "margherita", recipeName: null, deadlineDay: 5, reward: 35, xp: 40 };
   state.customerBook = { Giulia: makeBookEntry({ visits: 5, orders: { margherita: 5 }, dislikes: "basilic", birthday: 4 }) };
   return state;
@@ -245,10 +245,33 @@ describe("views", () => {
     expect(html).toContain(">∞<");
   });
 
-  it("announces the day's event and the chef's special", () => {
-    const html = render(<PrepView state={playedState()} dispatch={noop} goToTab={noop} />, "en");
+  it("announces the day's event and the week's special", () => {
+    const state = playedState();
+    state.settings.tutorialDone = true;
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
     expect(html).toContain("Food critic");
-    expect(html).toContain("★ Chef&#x27;s special");
+    expect(html).toContain("Special of the week");
+    expect(html).toContain("★ Special<");
+    expect(html).toContain("2 served this week · until day 7");
+    expect(html).not.toContain("special-star-btn");
+  });
+
+  it("folds the morning's tips into a bubble with their count", () => {
+    const state = playedState();
+    state.settings.tutorialDone = true;
+    state.money = 1000;
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
+    expect(html).toMatch(/class="tips-bubble".*aria-label="\d+ tips? for today"/s);
+    expect(html).toContain("You can afford an upgrade");
+  });
+
+  it("offers a star on each pizza of tonight's menu while the week has no special", () => {
+    const state = playedState();
+    state.settings.tutorialDone = true;
+    state.special = null;
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
+    expect(html).toContain("Pick a pizza from your menu for the whole week");
+    expect(html.match(/special-star-btn/g)).toHaveLength(state.recipes.filter((recipe) => recipe.onMenu).length);
   });
 
   it("strikes through regular prices on market day", () => {

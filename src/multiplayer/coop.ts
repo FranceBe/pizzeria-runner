@@ -54,6 +54,7 @@ const hasValidValues = (move: Record<string, unknown>): boolean => {
       return isId(move.customerId);
     case "servePizza":
     case "trashReadyPizza":
+    case "offerSlice":
       return isId(move.pizzaId);
     case "dismissToast":
       return isId(move.toastId);
@@ -70,7 +71,7 @@ export const isCoopMove = (action: unknown): action is GameAction => isMoveIn(PL
 // (upgrades, the menu, suppliers, opening, the next day).
 const PARTNER_DUO_MOVES: ReadonlySet<string> = new Set([
   ...PLAYER_MOVES, "buyIngredient", "restock", "pourDrink", "serveTrayDrink", "binTray", "offerDrink", "toggleSecret", "toggleMamma",
-  "revealUsualOrder", "selectBatch", "togglePause",
+  "revealUsualOrder", "selectBatch", "togglePause", "offerSlice",
 ]);
 
 // Not even the host does these in a duo pizzeria: they belong to the player's own game.

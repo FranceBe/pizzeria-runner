@@ -98,11 +98,15 @@ export type Translator = Translate & TranslationHelpers & { language: Language }
  * A message kept in the game state and translated when shown (toasts, tutorial steps):
  * each key comes with exactly the params its entry needs.
  */
-export type MessageInput<Section extends "toasts" | "tutorial", Key extends string> = Key extends unknown
+/** Sections whose messages are built by the game and translated later (toasts, tutorial steps, tips). */
+export type MessageSection = "toasts" | "tutorial" | "prep.tips";
+export type MessageInput<Section extends MessageSection, Key extends string> = Key extends unknown
   ? [TranslationParams<`${Section}.${Key}`>] extends [undefined]
     ? { key: Key; params?: undefined }
     : { key: Key; params: TranslationParams<`${Section}.${Key}`> }
   : never;
 
 export type ToastKey = keyof Reference["toasts"];
+/** The morning's tips (game/tips.ts). */
+export type TipKey = keyof Reference["prep"]["tips"];
 export type TutorialKey = Exclude<keyof Reference["tutorial"], "label" | "skip">;

@@ -12,6 +12,8 @@ import { fairPrice, priceAttractiveness, isDessert, isFilling, fillingsOf, sortB
 import { activeMenu, isNewRecipe, recipeAppeal } from "./menu";
 import { fitAccessory, rollLooks } from "./looks";
 import { seasonalRecipe } from "./seasons";
+import { isSpecial, SPECIAL_ORDER_BOOST } from "./special";
+import { fitsTonight, THEME_ORDER_BOOST } from "./themes";
 import { levelForXp } from "./progression";
 import { bookEntry, favoriteRecipeId, FAVORITE_REORDER_CHANCE, isRegular, isTheirUsual, pickCustomerName } from "./regulars";
 import type { Customer, CustomerBookEntry, Diet, GameState, Mood, Recipe } from "./types";
@@ -28,15 +30,15 @@ const DIET_CHANCE = 0.15;
 
 // A regular ordering their favourite says "the usual" this often, hiding the recipe on the ticket.
 const AS_USUAL_CHANCE = 0.5;
-const CHEF_SPECIAL_BOOST = 1.5;
 
-// Popular, fairly priced, new, seasonal and chef's special recipes get ordered more often.
+// Popular, fairly priced, new, seasonal recipes, the week's special and tonight's theme get ordered more often.
 export const orderWeight = (state: GameState, recipe: Recipe): number => {
   const priceFactor = Math.pow(priceAttractiveness(recipe.price, fairPrice(recipe.ingredients)), 1.5);
   const newBoost = isNewRecipe(state, recipe) ? 1.4 : 1;
-  const specialBoost = recipe.id === state.chefSpecial ? CHEF_SPECIAL_BOOST : 1;
+  const specialBoost = isSpecial(state, recipe.id) ? SPECIAL_ORDER_BOOST : 1;
   const seasonBoost = recipe.id === seasonalRecipe(state)?.id ? SEASONAL_RECIPE_BOOST : 1;
-  return recipeAppeal(recipe) * priceFactor * newBoost * specialBoost * seasonBoost;
+  const themeBoost = fitsTonight(state, recipe.ingredients) ? THEME_ORDER_BOOST : 1;
+  return recipeAppeal(recipe) * priceFactor * newBoost * specialBoost * seasonBoost * themeBoost;
 };
 
 const pickWeighted = <T>(items: readonly T[], weights: readonly number[]): T => {

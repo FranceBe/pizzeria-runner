@@ -1,7 +1,7 @@
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { formatMoney, formatNumber } from "../utils/format";
 import { LANGUAGES, LIST_SEPARATORS, WORD_GAPS, type Language } from "./languages";
-import type { Dictionary, Translate, TranslationHelpers, Translator } from "./types";
+import type { Dictionary, MessageSection, Translate, TranslationHelpers, Translator } from "./types";
 
 export * from "./languages";
 export type * from "./types";
@@ -77,7 +77,7 @@ export const createTranslator = (language: Language): Translator => {
  * pairs a key with its own params (see MessageInput), which TypeScript can't follow through the union,
  * hence the untyped call.
  */
-export const translateMessage = (t: Translator, section: "toasts" | "tutorial", message: { key: string; params?: object }): string => {
+export const translateMessage = (t: Translator, section: MessageSection, message: { key: string; params?: object }): string => {
   const untyped = t as unknown as (key: string, params?: object) => string;
   return untyped(`${section}.${message.key}`, message.params);
 };

@@ -1,5 +1,6 @@
 import { ensureTonightGoal } from "./tonight";
 import { ensureRushPlan } from "./evening";
+import { weekOf } from "./weekly";
 import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { MARGHERITA } from "../data/recipes";
 import { LANGUAGES, detectLanguage, type Language } from "../i18n/languages";
@@ -14,7 +15,7 @@ import { LOCALS_COUNT, MAX_REGULARS, REGULAR_SAME_ORDERS } from "./regulars";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
@@ -77,7 +78,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     dayStart: null,
     customerBook: {},
     event: null,
-    chefSpecial: null,
+    special: null,
     discoveredPairings: [],
     achievements: {},
     history: [],
@@ -285,6 +286,12 @@ const migrateFromVersion10 = (saved: JsonObject): JsonObject => {
   return { ...saved, upgrades: rest, money };
 };
 
+// Version 11: the chef's special, kept until changed, became the week's special. The one in place becomes this week's.
+const migrateFromVersion11 = ({ chefSpecial, ...saved }: JsonObject): JsonObject => {
+  if (typeof chefSpecial !== "string" || typeof saved.day !== "number") return saved;
+  return { ...saved, special: { recipeId: chefSpecial, week: weekOf(saved.day), chosenDay: saved.day, served: 0 } };
+};
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
 const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion1,
@@ -297,6 +304,7 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion8,
   migrateFromVersion9,
   migrateFromVersion10,
+  migrateFromVersion11,
 ];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.

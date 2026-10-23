@@ -3,7 +3,7 @@ import type { IngredientId } from "../data/ingredients";
 import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
 import { achievementProgress, unlockAchievements } from "./achievements";
 import { CHALLENGE_SECONDS } from "./challenge";
-import { createCustomer, orderWeight } from "./customers";
+import { createCustomer } from "./customers";
 import { forecastCustomers, restockPlan } from "./economy";
 import { marketPrice, rollDayEvent } from "./events";
 import { discoverPairings, pairingKey, visiblePairings } from "./pairings";
@@ -158,21 +158,11 @@ describe("pairings", () => {
   });
 });
 
-describe("chef's special", () => {
-  it("is ordered more often, and cleared with its recipe", () => {
-    const state = makeState();
-    const before = orderWeight(state, state.recipes[0]);
-    const special = play(state, { type: "setChefSpecial", recipeId: "margherita" });
-    expect(orderWeight(special, special.recipes[0])).toBeCloseTo(before * 1.5);
-    expect(play(special, { type: "setChefSpecial", recipeId: "margherita" }).chefSpecial).toBeNull();
-  });
-});
-
 describe("journal", () => {
   it("keeps every day and lifetime totals", () => {
     vi.spyOn(Math, "random").mockReturnValue(NO_TIP);
     const state = serveFirst(stateInService([makeCustomer()]));
-    expect(state.history).toEqual([{ day: 1, served: 1, revenue: 7, tips: 0, net: 1, xp: expect.any(Number), event: null, stars: 1 }]);
+    expect(state.history).toEqual([{ day: 1, served: 1, revenue: 7, tips: 0, net: 1, xp: expect.any(Number), event: null, stars: 1, happyServed: 1 }]);
     expect(state.lifetime).toMatchObject({ served: 1, revenue: 7, happyServed: 1, bestDay: { day: 1, net: 1 } });
     expect(state.lifetime.byRecipe).toEqual({ margherita: { name: null, count: 1 } });
   });

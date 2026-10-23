@@ -1,12 +1,11 @@
 import { makeId } from "../../utils/random";
 import { adjustPrice, sortByLayer } from "../pizza";
-import { menuIsFull, NEW_RECIPE_DAYS } from "../menu";
+import { findRecipe, menuIsFull, NEW_RECIPE_DAYS } from "../menu";
+import { chooseSpecial, dropSpecialIfOffMenu } from "../special";
 import { levelForXp, menuCapacity } from "../progression";
 import { pushToast } from "../toasts";
-import type { ActionHandlers, GameState, Recipe, RecipeId } from "../types";
+import type { ActionHandlers } from "../types";
 
-const findRecipe = (state: GameState, recipeId: RecipeId): Recipe | undefined =>
-  state.recipes.find((recipe) => recipe.id === recipeId);
 
 export const menuActions = {
   changePrice(state, { recipeId, delta }) {
@@ -23,6 +22,7 @@ export const menuActions = {
       return;
     }
     recipe.onMenu = !recipe.onMenu;
+    dropSpecialIfOffMenu(state);
   },
 
   addRecipe(state, { name, ingredients, price }) {
@@ -42,11 +42,11 @@ export const menuActions = {
 
   deleteRecipe(state, { recipeId }) {
     state.recipes = state.recipes.filter((recipe) => recipe.id !== recipeId);
-    if (state.chefSpecial === recipeId) state.chefSpecial = null;
+    dropSpecialIfOffMenu(state);
   },
 
-  // One recipe at most; choosing the current one again clears it.
-  setChefSpecial(state, { recipeId }) {
-    state.chefSpecial = recipeId === state.chefSpecial ? null : recipeId;
+  // One recipe for the week (see game/special.ts).
+  setSpecial(state, { recipeId }) {
+    chooseSpecial(state, recipeId);
   },
 } satisfies Partial<ActionHandlers>;

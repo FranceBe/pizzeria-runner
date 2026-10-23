@@ -203,7 +203,32 @@ export const fr = {
     regulars: "Tes habitués",
     regularLine: ({ recipe, visits }: { recipe: string; visits: number }) => `${recipe} · ${visits} visites`,
     today: "Aujourd'hui",
-    chefSpecial: "Suggestion du chef",
+    special: "Spéciale de la semaine",
+    specialTag: "Spéciale",
+    specialPick: "Choisis une pizza de ta carte pour toute la semaine : elle sera plus commandée, rapportera un petit bonus quand elle part vite, et de la réputation en plus si c'est une recette maison.",
+    specialLine: ({ served, until }: { served: number; until: number }) =>
+      `${served ? `${served} ${plural(served, "servie")} cette semaine · ` : ""}jusqu'au jour ${until}`,
+    specialChange: "Changer",
+    themeOnMenu: ({ count, target }: { count: number; target: number }) =>
+      count === 0
+        ? "Aucune sur ta carte pour l'instant : il y aura moins de monde si ça reste comme ça."
+        : count >= target
+          ? `Sur ta carte : ${count}. Il y aura du monde !`
+          : `Sur ta carte : ${count}. Encore ${target - count} pour attirer plus de monde.`,
+    tipsTitle: "Astuces du jour",
+    tipsLabel: ({ count }: { count: number }) => `${count} ${plural(count, "astuce")} du jour`,
+    tips: {
+      stockForTonight: ({ id, need, have }: { id: IngredientId; need: number; have: number }, t: H) =>
+        `${t.ingredient(id)} : compte environ ${need} portions pour ce soir (tu en as ${have}).`,
+      overpriced: ({ recipeId, recipeName, fair }: { recipeId: string; recipeName: string | null; fair: number }, t: H) =>
+        `${t.recipe({ id: recipeId, name: recipeName })} est chère pour ce qu'elle est : autour de ${t.money(fair)}, elle partirait mieux.`,
+      underpriced: ({ recipeId, recipeName, fair }: { recipeId: string; recipeName: string | null; fair: number }, t: H) =>
+        `${t.recipe({ id: recipeId, name: recipeName })} pourrait se vendre plus cher : le prix conseillé est ${t.money(fair)}.`,
+      neverOrdered: ({ recipeId, recipeName }: { recipeId: string; recipeName: string | null }, t: H) =>
+        `${t.recipe({ id: recipeId, name: recipeName })} n'a encore jamais été commandée : baisse son prix, ou laisse sa place à une autre.`,
+      menuRoom: ({ count }: { count: number }) => `Ta carte a encore ${count} ${plural(count, "place libre", "places libres")} : plus de choix, plus de clients.`,
+      upgrade: ({ upgradeKey }: { upgradeKey: UpgradeKey }, t: H) => `Tu as de quoi t'offrir une amélioration : ${t.upgradeName(upgradeKey)}.`,
+    },
     challengeTitle: "Défi du jour",
     challengeIntro: ({ seconds }: { seconds: number }) =>
       `${seconds / 60} minutes, les mêmes clients pour tout le monde aujourd'hui : compare ton score avec tes amis. Ingrédients offerts, rien d'autre en jeu.`,
@@ -333,6 +358,8 @@ export const fr = {
     pizzaDone: "Pizza servie ✓",
     waitingDrink: "attend sa boisson",
     trashUnwantedShort: "🗑 Tout jeter ({count})",
+    offerSlice: "🍕 En parts",
+    offerSliceHint: "Coupée en parts pour la file : rien n'est jeté, et chacun patiente un peu mieux.",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }: { medal: string; clock: string }) => `${medal} encore ${clock}`,
     batchSlow: "Médaille de bronze",
@@ -399,9 +426,9 @@ export const fr = {
     toDiscover: "Classiques à découvrir",
     missing: ({ items }: { items: string }) => `Il manque : ${items}`,
     missingItem: ({ id, level }: { id: IngredientId; level: number }, t: H) => `${t.ingredient(id)} (niv. ${level})`,
-    chefSpecial: "Suggestion du chef",
-    makeSpecial: "Mettre en suggestion",
-    specialHint: "La suggestion du chef est commandée plus souvent.",
+    special: "Spéciale de la semaine",
+    makeSpecial: "En faire la spéciale",
+    specialHint: "Une par semaine : commandée plus souvent, un bonus quand elle part vite.",
     seasonal: "Recette de saison",
     festive: ({ festival }: { festival: FestivalId }, t: H) => `De fête · ${t.festival(festival)}`,
     nonna: "Recette de Nonna",
@@ -452,6 +479,8 @@ export const fr = {
     drink: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} boisson`,
     secret: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} ✨`,
     batch: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} commande`,
+    special: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} spéciale`,
+    theme: ({ amount }: { amount: number }, t: H) => `+${t.money(amount)} thème`,
   },
 
   upgrades: {
@@ -799,6 +828,14 @@ export const fr = {
       name: "Client mystère",
       describe: "Un inspecteur du Guide se glisse incognito parmi les clients de ce soir. Impossible de savoir qui : chaque client compte. Verdict sur le ticket de caisse.",
     },
+    veggieNight: {
+      name: "Soirée végé",
+      describe: "Le quartier a envie de légumes : les pizzas végétariennes sont bien plus commandées ce soir et rapportent 15 % de plus.",
+    },
+    biancaNight: {
+      name: "Soirée pizzas blanches",
+      describe: "Ce soir, on veut des pizzas blanches, sans sauce tomate : elles sont bien plus commandées et rapportent 15 % de plus.",
+    },
   } satisfies Record<DayEventId | "woodShortage", { name: string; describe: string }>,
 
   achievements: {
@@ -935,6 +972,10 @@ export const fr = {
     secretFromNonna: "Nonna a goûté ses recettes chez toi. Émue, elle te confie son ingrédient secret : tu peux le fabriquer au marché.",
     secretFromCode: "Nonna te fait un clin d'œil : son ingrédient secret est à toi. Tu peux le fabriquer au marché.",
     secretCodeAgain: "Nonna sourit. Tu connais déjà le secret.",
+    sliceOffered: ({ count }: { count: number }) =>
+      `🍕 Une pizza coupée en parts pour la file : ${count} ${plural(count, "client patiente", "clients patientent")} avec le sourire.`,
+    specialWeek: ({ recipeId, recipeName, served }: { recipeId: string; recipeName: string | null; served: number }, t: H) =>
+      `★ Spéciale de la semaine : ${t.recipe({ id: recipeId, name: recipeName })}, ${served} ${plural(served, "servie")}. À toi de choisir la prochaine !`,
     newPairing: ({ pairings }: { pairings: readonly Pairing[] }, t: H) =>
       `${plural(pairings.length, "Nouvel accord", "Nouveaux accords")} : ${pairings.map(t.pairing).join(", ")} !`,
   },

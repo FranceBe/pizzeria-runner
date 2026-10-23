@@ -1,6 +1,6 @@
 // The morning's "on tonight" list: the day's event, a real-calendar festival, tonight's goal, the neighbourhood quest and
-// birthdays, one line each instead of a stack of banners. A line shows its icon, its name and the start of what it says
-// (a time or a deadline on the right); tapping it shows the rest.
+// birthdays, as small tiles side by side instead of a stack of banners. A tile shows its icon, its name and a time or a
+// deadline; tapping it opens it across the whole width, with what it says.
 import type { ReactNode } from "react";
 import { FESTIVALS } from "../data/festivals";
 import { MATCH_KICKOFF, WEDDING_TIME } from "../data/events";
@@ -16,13 +16,14 @@ import { STORIES } from "../data/stories";
 import { forecastCustomers } from "../game/economy";
 import { tonightsRush } from "../game/evening";
 import { shownEvent } from "../game/service";
+import { isThemeNight, THEME_MENU_TARGET, themeOnMenu } from "../game/themes";
 import type { GameState } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { QuestDetails, batchItemsText, questText } from "./QuestCard";
 
 export const EVENT_ICONS: Record<string, string> = {
   market: "🧺", rain: "🌧️", festival: "🎉", critic: "🧐", sunny: "☀️", powerCut: "🔌", woodShortage: "🪵", lateDelivery: "🚚",
-  inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍", mysteryGuest: "🕵️",
+  inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍", mysteryGuest: "🕵️", veggieNight: "🥦", biancaNight: "🧀",
 };
 
 interface AgendaItem {
@@ -49,11 +50,12 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
   const eventId = state.event ? shownEvent(state, state.event) : null;
   if (state.event && eventId) {
     const late = state.event === "lateDelivery" && state.lateIngredient ? ` ${t("prep.lateIngredient", { id: state.lateIngredient })}` : "";
+    const theme = isThemeNight(state.event) ? ` ${t("prep.themeOnMenu", { count: themeOnMenu(state), target: THEME_MENU_TARGET })}` : "";
     items.push({
       id: "event",
       icon: EVENT_ICONS[eventId] ?? "📣",
       title: t(`events.${eventId}.name`),
-      text: `${t(`events.${eventId}.describe`)}${late}`,
+      text: `${t(`events.${eventId}.describe`)}${late}${theme}`,
       aside: state.event === "match" ? formatEveningTime(MATCH_KICKOFF) : state.event === "wedding" ? formatEveningTime(WEDDING_TIME) : undefined,
       tone: `ev-${state.event}`,
     });
@@ -153,16 +155,16 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
         <details key={item.id} className={`agenda-row ${item.tone}`}>
           <summary>
             <span className="agenda-ic" aria-hidden="true">{item.icon}</span>
-            <span className="agenda-main">
-              <span className="agenda-title">
-                <strong>{item.title}</strong>
-                {item.tag && <span className="tag">{item.tag}</span>}
-              </span>
-              <span className="agenda-text">{item.text}</span>
+            <span className="agenda-title">
+              <strong>{item.title}</strong>
+              {item.tag && <span className="tag">{item.tag}</span>}
             </span>
             {item.aside && <span className="agenda-aside">{item.aside}</span>}
           </summary>
-          {item.more && <div className="agenda-more">{item.more}</div>}
+          <div className="agenda-more">
+            <p className="agenda-text">{item.text}</p>
+            {item.more}
+          </div>
         </details>
       ))}
     </section>

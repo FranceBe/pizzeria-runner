@@ -80,5 +80,8 @@ export const validateRecipe = (
 // The recipe a pizza is, whatever its dough (a gluten-free Margherita is still a Margherita).
 const withRegularDough = (ingredients: readonly IngredientId[]): IngredientId[] =>
   ingredients.map((id) => (isBase(id) ? "pate" : id));
+export const findRecipe = (state: GameState, recipeId: string): Recipe | undefined =>
+  state.recipes.find((recipe) => recipe.id === recipeId);
+
 export const findRecipeByIngredients = (state: GameState, ingredients: readonly IngredientId[]): Recipe | undefined =>
   state.recipes.find((recipe) => haveSameIngredients(recipe.ingredients, withRegularDough(ingredients)));

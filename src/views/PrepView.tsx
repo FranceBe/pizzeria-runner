@@ -1,7 +1,10 @@
+import { useEffect, useRef, useState } from "react";
 import { MARGHERITA } from "../data/recipes";
 import { CHALLENGE_SECONDS, createChallenge, localDate } from "../game/challenge";
 import { canBorrowFromNonna, dailyCharges, forecastCustomers, NONNA_LOAN } from "../game/economy";
-import { activeMenu, isNewRecipe } from "../game/menu";
+import { activeMenu, findRecipe, isNewRecipe } from "../game/menu";
+import { canChooseSpecial, currentSpecial, isSpecial, specialUntil } from "../game/special";
+import { LOW_STOCK_THRESHOLD, morningTips } from "../game/tips";
 import { ingredientCost } from "../game/pizza";
 import { levelForXp, menuCapacity } from "../game/progression";
 import { regularsOf, type Regular } from "../game/regulars";
@@ -9,6 +12,7 @@ import { FESTIVALS } from "../data/festivals";
 import { daysLeftInSeason, seasonalRecipe, seasonOf } from "../game/seasons";
 import { tutorialStep } from "../game/tutorial";
 import { useTranslation } from "../i18n/I18nContext";
+import { translateMessage } from "../i18n";
 import { CoachTip } from "../components/CoachTip";
 import { CustomerFace } from "../components/CustomerFace";
 import { Pizza } from "../components/Pizza";
@@ -17,8 +21,6 @@ import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
 import { TonightAgenda } from "./TonightAgenda";
 import { WEEKLY_BONUS, WEEKLY_REWARD } from "../data/weekly";
-
-const LOW_STOCK_THRESHOLD = 5;
 
 // Nonna offers help when nothing on the menu can be made and a few margheritas are unaffordable.
 const needsNonna = (state: GameState, menu: readonly Recipe[]): boolean => {
@@ -45,6 +47,69 @@ const WeeklyMissions = ({ state }: { state: GameState }) => {
       ))}
       <p className="hint">{t("prep.weeklyReward", { reward: WEEKLY_REWARD, bonus: WEEKLY_BONUS })}</p>
     </div>
+  );
+};
+
+// The week's special: picked with the stars of tonight's menu, then shown with how the week is going.
+const SpecialOfTheWeek = ({ state, dispatch }: ScreenProps) => {
+  const t = useTranslation();
+  const special = currentSpecial(state);
+  const recipe = special && findRecipe(state, special.recipeId);
+  if (!special || !recipe) return <p className="special-pick">{`☆ ${t("prep.specialPick")}`}</p>;
+  return (
+    <div className="special-banner">
+      <span className="special-banner-star" aria-hidden="true">★</span>
+      <div className="grow">
+        <div className="special-banner-label">{t("prep.special")}</div>
+        <strong>{t.recipe(recipe)}</strong>
+        <div className="hint">{t("prep.specialLine", { served: special.served, until: specialUntil(state.day) })}</div>
+      </div>
+      {canChooseSpecial(state) && (
+        <button className="btn sm ghost" onClick={() => dispatch({ type: "setSpecial", recipeId: null })}>{t("prep.specialChange")}</button>
+      )}
+    </div>
+  );
+};
+
+// The morning's tips, folded into a little bubble: a count, and the tips once tapped. The card lies over the agenda,
+// so a tap anywhere else (or Escape) folds it back.
+const MorningTips = ({ state }: { state: GameState }) => {
+  const t = useTranslation();
+  const tips = morningTips(state);
+  const bubble = useRef<HTMLDetailsElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = () => bubble.current?.removeAttribute("open");
+    const onPointerDown = (event: PointerEvent) => {
+      if (!bubble.current?.contains(event.target as Node)) close();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isOpen]);
+  if (!tips.length) return null;
+  return (
+    <details ref={bubble} className="tips-bubble" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
+      <summary aria-label={t("prep.tipsLabel", { count: tips.length })} title={t("prep.tipsTitle")}>
+        <span aria-hidden="true">💡</span>
+        <span className="tips-count">{tips.length}</span>
+      </summary>
+      <div className="tips-panel">
+        <strong>{t("prep.tipsTitle")}</strong>
+        <ul>
+          {tips.map((tip) => (
+            <li key={`${tip.key}-${JSON.stringify(tip.params)}`}>{translateMessage(t, "prep.tips", tip)}</li>
+          ))}
+        </ul>
+      </div>
+    </details>
   );
 };
 
@@ -119,6 +184,8 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
   const lowStock = usedIngredients.filter((id) => (state.stock[id] || 0) < LOW_STOCK_THRESHOLD);
   const tutorial = tutorialStep(state);
   const seasonal = seasonalRecipe(state);
+  // No special yet this week: each pizza of tonight's menu gets a star to pick it.
+  const isPicking = state.settings.tutorialDone && !currentSpecial(state) && canChooseSpecial(state);
 
   return (
     <div className="prep">
@@ -128,6 +195,7 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
           <div className="row prep-head">
             <h2 className="h grow">{t("prep.title", { day: state.day })}</h2>
             <SeasonBadge day={state.day} />
+            <MorningTips state={state} />
           </div>
           <p className="sub">{t("prep.intro")}</p>
         </div>
@@ -187,16 +255,27 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
       <div className="card pad">
         <h3 className="h">{t("prep.tonightsMenu")}</h3>
         {menu.length === 0 && <p className="sub">{t("prep.emptyMenu")}</p>}
+        {menu.length > 0 && state.settings.tutorialDone && <SpecialOfTheWeek state={state} dispatch={dispatch} />}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {menu.map((recipe) => (
             <div key={recipe.id} className="row" style={{ flexWrap: "nowrap" }}>
               <Pizza ingredients={recipe.ingredients} baked size={44} />
               <div className="grow">
                 <strong>{t.recipe(recipe)}</strong> {isNewRecipe(state, recipe) && <span className="tag">{t("common.new")}</span>}
-                {recipe.id === state.chefSpecial && <span className="tag special">{`★ ${t("prep.chefSpecial")}`}</span>}
+                {isSpecial(state, recipe.id) && <span className="tag special">{`★ ${t("prep.specialTag")}`}</span>}
                 {recipe.id === seasonal?.id && <span className="tag seasonal">{t("prep.seasonal")}</span>}
                 <div className="hint">{t.toppings(recipe.ingredients)}</div>
               </div>
+              {isPicking && (
+                <button
+                  className="special-star-btn"
+                  aria-label={`${t("menu.makeSpecial")} · ${t.recipe(recipe)}`}
+                  title={t("menu.specialHint")}
+                  onClick={() => dispatch({ type: "setSpecial", recipeId: recipe.id })}
+                >
+                  ☆
+                </button>
+              )}
               <strong>{t.money(recipe.price)}</strong>
             </div>
           ))}

@@ -63,7 +63,8 @@ export const trackTonightServe = (state: GameState, service: Service, customer: 
       goal.progress = Math.min(goal.target, goal.progress + 1);
       return;
     case "lightning":
-      if (customer.waitedSeconds > LIGHTNING_SECONDS) return;
+      // Since they came in: a slice gave them patience, not time.
+      if (customer.waitedSeconds + (customer.sliceSeconds ?? 0) > LIGHTNING_SECONDS) return;
       goal.progress += 1;
       if (goal.progress >= goal.target) reach(state, goal);
       return;

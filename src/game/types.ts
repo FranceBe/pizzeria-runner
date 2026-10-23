@@ -77,6 +77,8 @@ export interface Customer extends Looks {
   drinkOffered?: boolean;
   /** Pizza served, drink not yet: they stay at the counter until it comes. */
   pizzaServed?: boolean;
+  /** Had a slice of a pizza nobody ordered (game/slice.ts), once an evening: the seconds it took off their wait. */
+  sliceSeconds?: number;
   /** Came back the same evening for a dessert pizza: a bonus if it comes quickly. */
   forDessert?: boolean;
   /** Heard good things from the customer before (Mamma's secret): patience back to full, and a tip for sure. */
@@ -194,12 +196,19 @@ export interface ServiceStats {
   bestStreak?: number;
   /** Customers served once already hungry or starving: none means a star for the day. */
   hungryServed?: number;
+  /** Pizzas nobody ordered, sliced for the queue instead of binned. */
+  slices?: number;
   /** Keyed by recipe id, or by recipe name for sales migrated from old saves. */
   byRecipe: Record<string, RecipeSales>;
   orders: OrderRecord[];
 }
 
+/** The evening's pace, from how the latest ones went (game/difficulty.ts). */
+export type Pace = "gentle" | "normal" | "brisk";
+
 export interface Service {
+  /** Unset in challenges and older saves: normal. */
+  pace?: Pace;
   customersToCome: number;
   /** Seconds until the next customer may come in. */
   nextArrivalIn: number;
@@ -394,6 +403,8 @@ export interface DayRecord {
   xp: number;
   event: DayEventId | null;
   stars?: number;
+  /** Served before getting impatient (not in older saves). */
+  happyServed?: number;
 }
 
 export interface LifetimeStats {
@@ -521,7 +532,17 @@ export type ToastKind = "" | "gold" | "warn";
 export type ToastInput = MessageInput<"toasts", ToastKey>;
 export type Toast = ToastInput & { id: string; kind: ToastKind };
 
-export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret" | "batch";
+export type PopKind = "money" | "tip" | "express" | "table" | "gift" | "drink" | "secret" | "batch" | "special" | "theme";
+
+export interface WeeklySpecial {
+  recipeId: RecipeId;
+  /** weekOf() the day it was chosen: it is this week's special only. */
+  week: number;
+  /** It can be changed on the morning it was chosen. */
+  chosenDay: number;
+  /** Served this week. */
+  served: number;
+}
 export interface Pop {
   id: string;
   amount: number;
@@ -557,8 +578,8 @@ export interface GameState {
   customerBook: Record<string, CustomerBookEntry>;
   /** Today's event, picked when the day starts. */
   event: DayEventId | null;
-  /** Ordered more often, highlighted on the menu. */
-  chefSpecial: RecipeId | null;
+  /** The week's special (game/special.ts): ordered more often, a bonus when it goes out quickly. */
+  special: WeeklySpecial | null;
   /** Flavour pairings found by serving them, as pairingKey() strings. */
   discoveredPairings: string[];
   /** Unlocked achievements, with the day they were unlocked. */
@@ -652,6 +673,7 @@ export type GameAction =
   | { type: "closeEarly" }
   | { type: "restartDay" }
   | { type: "trashUnwantedPizzas" }
+  | { type: "offerSlice"; pizzaId: string }
   // Shop
   | { type: "buyIngredient"; ingredientId: IngredientId; quantity: number }
   | { type: "restock"; targetQuantity: number }
@@ -665,7 +687,7 @@ export type GameAction =
   | { type: "toggleOnMenu"; recipeId: RecipeId }
   | { type: "addRecipe"; name: string; ingredients: readonly IngredientId[]; price: number }
   | { type: "deleteRecipe"; recipeId: RecipeId }
-  | { type: "setChefSpecial"; recipeId: RecipeId | null }
+  | { type: "setSpecial"; recipeId: RecipeId | null }
   // Settings
   | { type: "renamePizzeria"; name: string }
   | { type: "toggleHelp" }
