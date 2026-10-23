@@ -98,6 +98,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     locals: [],
     mammaStock: 0,
     lateIngredient: null,
+    spoilingIngredient: null,
     festival: null,
     weekly: null,
     tonightGoal: null,

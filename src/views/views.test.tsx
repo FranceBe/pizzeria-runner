@@ -256,6 +256,17 @@ describe("views", () => {
     expect(html).not.toContain("special-star-btn");
   });
 
+  it("puts the bar away on a water cut, and tags Nonna's family on their tickets", () => {
+    const withBar = (event: GameState["event"]) => {
+      const state = stateInService([makeCustomer({ family: true, tableId: "fam" })], { event });
+      state.upgrades.bar = 2;
+      return render(serviceScreen(state), "en");
+    };
+    expect(withBar(null)).toContain("bar-fridge");
+    expect(withBar("waterCut")).not.toContain("bar-fridge");
+    expect(withBar(null)).toContain("👵 Nonna&#x27;s family");
+  });
+
   it("folds the morning's tips into a bubble with their count", () => {
     const state = playedState();
     state.settings.tutorialDone = true;

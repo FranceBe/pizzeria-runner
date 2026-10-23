@@ -6,9 +6,9 @@ import { levelForXp } from "./progression";
 import type { Pairing } from "../data/recipes";
 import type { IngredientId } from "../data/ingredients";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
-import { receivePayment } from "./economy";
+import { payBonus, receivePayment } from "./economy";
 import { fillingsOf, isDessert } from "./pizza";
-import { CELEBRITY_TIP, CELEBRITY_XP } from "../data/events";
+import { CELEBRITY_TIP, CELEBRITY_XP, FAMILY_BONUS, FAMILY_XP } from "../data/events";
 import { RUSH_TIP_FACTOR } from "./evening";
 import { streakMultiplier, warmthTipFactor } from "./streak";
 import { pushPop, pushToast } from "./toasts";
@@ -88,6 +88,16 @@ export const collectPayment = (state: GameState, service: Service, customer: Cus
   return extra + gift;
 };
 
+// Nonna's family, once all served: a generous bonus and reputation if nobody had to wait long, a word if they did.
+const thankFromFamily = (state: GameState, service: Service, allHappy: boolean): void => {
+  if (!allHappy) return pushToast(state, { key: "familyDisappointed" });
+  payBonus(state, FAMILY_BONUS);
+  pushPop(state, FAMILY_BONUS, "gift");
+  state.xp += FAMILY_XP;
+  service.stats.xp += FAMILY_XP;
+  pushToast(state, { key: "familyHappy", params: { reward: FAMILY_BONUS } }, "gold");
+};
+
 // The table bonus, once the last member of a table is served. Returns it.
 export const settleTable = (state: GameState, service: Service, customer: Customer): number => {
   const table = customer.tableId ? service.tables?.[customer.tableId] : undefined;
@@ -97,11 +107,12 @@ export const settleTable = (state: GameState, service: Service, customer: Custom
   if (table.served < table.size) return 0;
   delete service.tables?.[customer.tableId];
   recordWeekly(state, "tables", 1);
+  if (table.family) thankFromFamily(state, service, table.allHappy);
   if (!table.allHappy) return 0;
   const bonus = TABLE_BONUS_PER_PERSON * table.size;
   receivePayment(state, bonus);
   pushPop(state, bonus, "table");
-  pushToast(state, { key: "happyTable", params: { size: table.size } }, "gold");
+  if (!table.family) pushToast(state, { key: "happyTable", params: { size: table.size } }, "gold");
   state.lifetime.happyTables += 1;
   return bonus;
 };

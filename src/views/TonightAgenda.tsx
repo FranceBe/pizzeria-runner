@@ -3,7 +3,7 @@
 // deadline; tapping it opens it across the whole width, with what it says.
 import type { ReactNode } from "react";
 import { FESTIVALS } from "../data/festivals";
-import { MATCH_KICKOFF, WEDDING_TIME } from "../data/events";
+import { FAMILY_TIME, MATCH_KICKOFF, WEDDING_TIME, type DayEventId } from "../data/events";
 import { LIGHTNING_SECONDS, TONIGHT_REWARD, TONIGHT_XP } from "../data/tonight";
 import { festivalLastDay } from "../game/calendar";
 import { formatEveningTime } from "../game/clock";
@@ -24,7 +24,11 @@ import { QuestDetails, batchItemsText, questText } from "./QuestCard";
 export const EVENT_ICONS: Record<string, string> = {
   market: "🧺", rain: "🌧️", festival: "🎉", critic: "🧐", sunny: "☀️", powerCut: "🔌", woodShortage: "🪵", lateDelivery: "🚚",
   inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍", mysteryGuest: "🕵️", veggieNight: "🥦", biancaNight: "🧀",
+  fridgeFailure: "🧊", heatwave: "🥵", waterCut: "🚱", nonnaFamily: "👵",
 };
+
+// Events that happen at a time on the evening's clock, shown on their tile.
+const EVENT_TIMES: Partial<Record<DayEventId, number>> = { match: MATCH_KICKOFF, wedding: WEDDING_TIME, nonnaFamily: FAMILY_TIME };
 
 interface AgendaItem {
   id: string;
@@ -51,12 +55,13 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
   if (state.event && eventId) {
     const late = state.event === "lateDelivery" && state.lateIngredient ? ` ${t("prep.lateIngredient", { id: state.lateIngredient })}` : "";
     const theme = isThemeNight(state.event) ? ` ${t("prep.themeOnMenu", { count: themeOnMenu(state), target: THEME_MENU_TARGET })}` : "";
+    const spoiling = state.event === "fridgeFailure" && state.spoilingIngredient ? ` ${t("prep.spoiling", { id: state.spoilingIngredient })}` : "";
     items.push({
       id: "event",
       icon: EVENT_ICONS[eventId] ?? "📣",
       title: t(`events.${eventId}.name`),
-      text: `${t(`events.${eventId}.describe`)}${late}${theme}`,
-      aside: state.event === "match" ? formatEveningTime(MATCH_KICKOFF) : state.event === "wedding" ? formatEveningTime(WEDDING_TIME) : undefined,
+      text: `${t(`events.${eventId}.describe`)}${late}${theme}${spoiling}`,
+      aside: EVENT_TIMES[state.event] !== undefined ? formatEveningTime(EVENT_TIMES[state.event] ?? 0) : undefined,
       tone: `ev-${state.event}`,
     });
   }

@@ -35,20 +35,29 @@ export const competitorFactor = (state: GameState): number => {
 // A new morning (state.day is the new day): once its days are over, it gives up or stays; maybe a new one opens.
 // Mutates state.
 export const followCompetitor = (state: GameState): void => {
+  if (!endCompetitorRun(state)) maybeOpenCompetitor(state);
+};
+
+// Once its days are over, it gives up or stays. Returns whether that happened this morning. Mutates state.
+export const endCompetitorRun = (state: GameState): boolean => {
   const competitor = state.competitor;
-  if (competitor && !competitor.outcome && state.day > competitor.firstDay + COMPETITOR_DAYS - 1) {
-    if (competitor.stars >= COMPETITOR_STARS_TO_WIN) {
-      competitor.outcome = "gaveUp";
-      competitor.boostUntil = state.day + COMPETITOR_BOOST_DAYS - 1;
-      state.xp += COMPETITOR_WIN_XP;
-      pushToast(state, { key: "competitorGaveUp", params: { name: competitor.name, xp: COMPETITOR_WIN_XP } }, "gold");
-      sendPostcard(state, "competitorGone");
-    } else {
-      competitor.outcome = "stayed";
-      pushToast(state, { key: "competitorStayed", params: { name: competitor.name } });
-    }
-    return;
+  if (!competitor || competitor.outcome || state.day <= competitor.firstDay + COMPETITOR_DAYS - 1) return false;
+  if (competitor.stars >= COMPETITOR_STARS_TO_WIN) {
+    competitor.outcome = "gaveUp";
+    competitor.boostUntil = state.day + COMPETITOR_BOOST_DAYS - 1;
+    state.xp += COMPETITOR_WIN_XP;
+    pushToast(state, { key: "competitorGaveUp", params: { name: competitor.name, xp: COMPETITOR_WIN_XP } }, "gold");
+    sendPostcard(state, "competitorGone");
+  } else {
+    competitor.outcome = "stayed";
+    pushToast(state, { key: "competitorStayed", params: { name: competitor.name } });
   }
+  return true;
+};
+
+// Maybe a new one opens across the street, long enough after the last one. Mutates state.
+export const maybeOpenCompetitor = (state: GameState): void => {
+  const competitor = state.competitor;
   const isDue = !competitor || state.day >= competitor.firstDay + COMPETITOR_GAP_DAYS;
   if (!isDue || competitorDay(state) !== null || levelForXp(state.xp) < COMPETITOR_LEVEL || state.day < COMPETITOR_FIRST_DAY) return;
   if (Math.random() >= COMPETITOR_CHANCE) return;

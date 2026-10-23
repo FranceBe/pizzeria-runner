@@ -9,6 +9,7 @@ import { marketPrice, todaysEvent } from "./events";
 import { activeMenu, recipeAppeal } from "./menu";
 import { levelForXp } from "./progression";
 import { themeCrowdFactor } from "./themes";
+import { isSunnyEvening } from "./incidents";
 import type { GameState } from "./types";
 
 // Rent, oven, staff: paid every evening, grows with each upgrade.
@@ -34,7 +35,7 @@ export const forecastCustomers = (state: GameState): number => {
   // The competitor across the street takes some of them (or sends a few once it gave up).
   const atTheCounter = Math.max(3, Math.round((Math.round(baseCount * qualityFactor) + varietyBonus) * competitorFactor(state)));
   const { terrasse, livraison } = state.upgrades;
-  const terrace = terrasse * (TERRACE_CUSTOMERS + (state.event === "sunny" ? TERRACE_SUNNY_CUSTOMERS : 0));
+  const terrace = terrasse * (TERRACE_CUSTOMERS + (isSunnyEvening(state) ? TERRACE_SUNNY_CUSTOMERS : 0));
   const deliveries = livraison ? DELIVERY_EXTRA_ORDERS : 0;
   return Math.max(3, Math.round(atTheCounter * todaysEvent(state).customerFactor * themeCrowdFactor(state))) + terrace + deliveries;
 };

@@ -4,7 +4,7 @@ import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
 import {
   ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS, WOOD_FIRED_XP_BONUS,
 } from "../../data/progression";
-import { randomBetween, randomIndex, makeId } from "../../utils/random";
+import { randomBetween, randomIndex, makeId, pickSome } from "../../utils/random";
 import { createChallenge, createChallengeCustomer, nextChallengeArrival } from "../challenge";
 import { createCustomer, isRegularCustomer, moodForWait, type CustomerKind } from "../customers";
 import { birthdaysToday, ensureLocals, lapseAbsentRegulars, recordVisit } from "../regulars";
@@ -22,11 +22,15 @@ import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
 import { ensureSpecialWeek, serveSpecial, specialReputation } from "../special";
 import { offerSlice } from "../slice";
+import { isFamilyDue, isFamilyExpected } from "../family";
+import { pickSpoilingIngredient, spoilAtClosing, weatherWaiting } from "../incidents";
+import { FAMILY_NAMES, FAMILY_SIZE } from "../../data/events";
 import { PACE_ARRIVALS, PACE_WAITING, paceFor } from "../difficulty";
 import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightServe } from "../tonight";
 import { noteMysteryLeaving, noteMysteryServed, settleMysteryGuest, welcomeMaybeMystery } from "../mystery";
 import { companionsOf, maybeStartStory, storyGuestsToday, turnStoryPage } from "../stories";
-import { competitorDay, countStarsAgainstCompetitor, followCompetitor } from "../competitor";
+import { competitorDay, countStarsAgainstCompetitor, endCompetitorRun, maybeOpenCompetitor } from "../competitor";
+import { isDayFull } from "../dayLoad";
 import { sendPostcard } from "../postcards";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
@@ -117,6 +121,7 @@ const endDay = (state: GameState, service: Service): void => {
   const bonuses = stats.bonuses ?? 0;
   const net = stats.revenue + stats.tips + annexeIncome + questRewards + bonuses - charges - state.purchasesToday;
   const inspectionPassed = state.event === "inspection" && waste === 0 && stats.served >= INSPECTION_MIN_SERVED;
+  const spoiled = spoilAtClosing(state);
   if (inspectionPassed) {
     state.xp += INSPECTION_XP;
     stats.xp += INSPECTION_XP;
@@ -153,6 +158,7 @@ const endDay = (state: GameState, service: Service): void => {
     stars,
     starGoals: goals,
     inspectionPassed,
+    ...(spoiled ? { spoiled } : {}),
     reviews,
     ...(state.tonightGoal?.day === state.day ? { tonightGoal: { ...state.tonightGoal } } : {}),
     ...(state.event === "mysteryGuest" ? { mystery } : {}),
@@ -219,7 +225,7 @@ const isUnwanted = (service: Service, ingredients: readonly IngredientId[]): boo
 };
 
 const isDayOver = (state: GameState, service: Service): boolean =>
-  service.customersToCome === 0 && service.customers.length === 0 && !isGroupOrderPending(state, service);
+  service.customersToCome === 0 && service.customers.length === 0 && !isGroupOrderPending(state, service) && !isFamilyExpected(state, service);
 
 // A happy customer may come back later tonight for a dessert pizza, if the menu has one and the evening goes on.
 const maybePlanDessertReturn = (state: GameState, service: Service, customer: Customer, mood: number): void => {
@@ -399,6 +405,24 @@ const partySize = (state: GameState, service: Service): number => {
   return Math.max(1, Math.min(room, 2 + randomIndex(MAX_TABLE_SIZE - 1)));
 };
 
+// Nonna's family, all at once at one table, on top of the evening's customers. Mutates the service.
+const seatFamily = (state: GameState, service: Service): void => {
+  service.familyCame = true;
+  const tableId = makeId();
+  const names = pickSome(FAMILY_NAMES, FAMILY_SIZE);
+  const family: Customer[] = [];
+  for (const name of names) {
+    const member = createCustomer({ ...state, service: { ...service, customers: [...service.customers, ...family] } }, "regular", { name, tableId, family: true });
+    if (member) family.push(member);
+  }
+  if (!family.length) return;
+  openTable(service, tableId, family.length);
+  if (service.tables?.[tableId]) service.tables[tableId].family = true;
+  service.customers.push(...family);
+  if (!service.selectedCustomerId) service.selectedCustomerId = family[0].id;
+  pushToast(state, { key: "familyArrived", params: { count: family.length } }, "gold");
+};
+
 const seatCustomers = (service: Service, customers: Customer[]): void => {
   service.customers.push(...customers);
   service.customersToCome -= customers.length;
@@ -551,7 +575,7 @@ export const serviceActions = {
   tick(state, { seconds }) {
     const { service } = state;
     if (!service) return;
-    const waiting = seconds * PACE_WAITING[service.pace ?? "normal"];
+    const waiting = seconds * PACE_WAITING[service.pace ?? "normal"] * weatherWaiting(state);
     service.customers.forEach((customer) => (customer.waitedSeconds += waiting));
     service.oven.forEach((pizza) => (pizza.bakedSeconds += seconds));
 
@@ -580,6 +604,7 @@ export const serviceActions = {
       letCustomersIn(state, service);
       announceLastOrders(state, service);
     }
+    if (isFamilyDue(state, service)) seatFamily(state, service);
     if (service.charmsPending) charmWaitingCustomers(service);
     if (!service.challenge) bringBackForDessert(state, service, seconds);
     // Nobody left and nothing more to wait for (a group order that can no longer be completed, say): the day is over.
@@ -812,8 +837,8 @@ export const serviceActions = {
       serveSpecial(state, customer, mood) +
       themeBonus(state, customer);
     if (pizza.mamma) charmNextCustomer(service, customer);
-    // Critics, deliveries and celebrities are passing through: they never join the customer book.
-    const isPerson = !customer.critic && !customer.delivery && !customer.celebrity && !customer.mystery;
+    // Critics, deliveries, celebrities and Nonna's family are passing through: they never join the customer book.
+    const isPerson = !customer.critic && !customer.delivery && !customer.celebrity && !customer.mystery && !customer.family;
     // Back for dessert, they already counted as a visit tonight.
     if (isPerson && !customer.forDessert && recordVisit(state, customer)) pushToast(state, { key: "newRegular", params: { name: customer.name } }, "gold");
     // The first pizza served completes the tutorial.
@@ -881,19 +906,24 @@ export const serviceActions = {
     state.phase = "prep";
     state.summary = null;
     state.purchasesToday = 0;
-    state.event = rollDayEvent(state, state.event);
+    // What today already holds: the quest still running, the regulars' birthdays and story chapters, the competitor.
+    lapseAbsentRegulars(state);
+    expireQuest(state);
+    endCompetitorRun(state);
+    ensureLocals(state, CUSTOMER_NAMES);
+    // Then what may come, as long as the day has room (see game/dayLoad.ts): the day's event first.
+    const yesterday = state.event;
+    state.event = isDayFull(state) ? null : rollDayEvent(state, yesterday);
     state.lateIngredient = state.event === "lateDelivery" ? pickLateIngredient(state) : null;
+    state.spoilingIngredient = state.event === "fridgeFailure" ? pickSpoilingIngredient(state) : null;
+    prepareWedding(state);
+    if (!isDayFull(state)) maybeOpenCompetitor(state);
+    if (!isDayFull(state)) maybeStartStory(state);
+    if (!isDayFull(state)) maybeOfferQuest(state);
     ensureWeek(state);
     ensureSpecialWeek(state);
     ensureTonightGoal(state);
     ensureRushPlan(state);
-    lapseAbsentRegulars(state);
-    maybeStartStory(state);
-    followCompetitor(state);
-    ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;
-    expireQuest(state);
-    prepareWedding(state);
-    maybeOfferQuest(state);
   },
 } satisfies Partial<ActionHandlers>;

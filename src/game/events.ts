@@ -5,6 +5,9 @@ import { isDessert } from "./pizza";
 import { INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { seasonalPriceFactor } from "./seasons";
 import { canHaveTheme, isThemeNight } from "./themes";
+import { canHaveHeatwave, canSpoil } from "./incidents";
+import { FAMILY_LEVEL } from "./family";
+import { levelForXp } from "./progression";
 import type { GameState } from "./types";
 
 // What an ordinary day looks like, so callers never have to check for "no event".
@@ -18,6 +21,10 @@ export const canHappen = (state: GameState, id: DayEventId): boolean => {
   if (id === "scooterStrike") return state.upgrades.livraison > 0;
   if (id === "lateDelivery") return lateCandidates(state).length > 0;
   if (isThemeNight(id)) return canHaveTheme(state, id);
+  if (id === "fridgeFailure") return canSpoil(state);
+  if (id === "heatwave") return canHaveHeatwave(state);
+  if (id === "waterCut") return state.upgrades.bar > 0;
+  if (id === "nonnaFamily") return levelForXp(state.xp) >= FAMILY_LEVEL;
   // The banquet is a group order: not while a quest is running, and only with something savoury to serve.
   if (id === "wedding") return !state.quest && activeMenu(state).some((recipe) => !isDessert(recipe.ingredients));
   return true;

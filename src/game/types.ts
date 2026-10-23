@@ -79,6 +79,8 @@ export interface Customer extends Looks {
   pizzaServed?: boolean;
   /** Had a slice of a pizza nobody ordered (game/slice.ts), once an evening: the seconds it took off their wait. */
   sliceSeconds?: number;
+  /** One of Nonna's family (game/family.ts): on top of the evening's customers, never in the customer book. */
+  family?: boolean;
   /** Came back the same evening for a dessert pizza: a bonus if it comes quickly. */
   forDessert?: boolean;
   /** Heard good things from the customer before (Mamma's secret): patience back to full, and a tip for sure. */
@@ -100,6 +102,8 @@ export interface TableProgress {
   allHappy: boolean;
   /** Colour index of the table badge. */
   color: number;
+  /** Nonna's family's table. */
+  family?: boolean;
 }
 
 export interface OvenPizza {
@@ -209,6 +213,8 @@ export type Pace = "gentle" | "normal" | "brisk";
 export interface Service {
   /** Unset in challenges and older saves: normal. */
   pace?: Pace;
+  /** Nonna's family came in tonight. */
+  familyCame?: boolean;
   customersToCome: number;
   /** Seconds until the next customer may come in. */
   nextArrivalIn: number;
@@ -374,6 +380,8 @@ export interface DaySummary {
   starGoals?: StarGoals;
   /** Inspection day passed. */
   inspectionPassed?: boolean;
+  /** Fridge breakdown day: what spoiled at closing. */
+  spoiled?: { id: IngredientId; portions: number };
   /** Tonight's goal, as it ended. */
   tonightGoal?: TonightGoal;
   /** A mystery guest's evening: who it was and their stars, or null if they never came in. */
@@ -611,6 +619,8 @@ export interface GameState {
   mammaStock: number;
   /** Late delivery day: the ingredient that comes late. */
   lateIngredient: IngredientId | null;
+  /** Fridge breakdown day: the ingredient that spoils (game/incidents.ts). */
+  spoilingIngredient: IngredientId | null;
   /** The calendar festival going on, if any. */
   festival: FestivalId | null;
   weekly: Weekly | null;

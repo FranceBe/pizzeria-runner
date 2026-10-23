@@ -11,7 +11,8 @@ import type { ServiceScreenProps } from "../types";
 export const BarCounter = ({ state, service, dispatch }: ServiceScreenProps) => {
   const t = useTranslation();
   const drinks = DRINK_IDS.filter((id) => DRINKS[id].barLevel <= state.upgrades.bar);
-  if (!drinks.length || service.challenge) return null;
+  // No water tonight: nobody orders a drink, so the bar stays out of the way.
+  if (!drinks.length || service.challenge || state.event === "waterCut") return null;
   const tray = service.tray ?? [];
   const selected = selectedCustomer(service);
   const canOffer = selected?.drink && !selected.drinkServed && !selected.pizzaServed && isRegularCustomer(state, selected);

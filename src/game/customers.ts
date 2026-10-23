@@ -2,7 +2,7 @@ import { CUSTOMER_NAMES, LINES_PER_MOOD } from "../data/customers";
 import { CELEBRITY_NAMES, CRITIC_NAMES } from "../data/events";
 import type { StoryId } from "../data/stories";
 import { INGREDIENTS, type IngredientId } from "../data/ingredients";
-import { DRINKS, DRINK_CHANCE, DRINK_IDS, type DrinkId } from "../data/drinks";
+import { DRINKS, DRINK_IDS, type DrinkId } from "../data/drinks";
 import { DELIVERY_FEE, tipChanceForDecor } from "../data/progression";
 import { SEASONAL_RECIPE_BOOST } from "../data/seasons";
 import { pickRandom, randomIndex, randomBetween, makeId } from "../utils/random";
@@ -14,6 +14,8 @@ import { fitAccessory, rollLooks } from "./looks";
 import { seasonalRecipe } from "./seasons";
 import { isSpecial, SPECIAL_ORDER_BOOST } from "./special";
 import { fitsTonight, THEME_ORDER_BOOST } from "./themes";
+import { drinkChance, spoilingBoost } from "./incidents";
+import { familyMenu } from "./family";
 import { levelForXp } from "./progression";
 import { bookEntry, favoriteRecipeId, FAVORITE_REORDER_CHANCE, isRegular, isTheirUsual, pickCustomerName } from "./regulars";
 import type { Customer, CustomerBookEntry, Diet, GameState, Mood, Recipe } from "./types";
@@ -38,7 +40,7 @@ export const orderWeight = (state: GameState, recipe: Recipe): number => {
   const specialBoost = isSpecial(state, recipe.id) ? SPECIAL_ORDER_BOOST : 1;
   const seasonBoost = recipe.id === seasonalRecipe(state)?.id ? SEASONAL_RECIPE_BOOST : 1;
   const themeBoost = fitsTonight(state, recipe.ingredients) ? THEME_ORDER_BOOST : 1;
-  return recipeAppeal(recipe) * priceFactor * newBoost * specialBoost * seasonBoost * themeBoost;
+  return recipeAppeal(recipe) * priceFactor * newBoost * specialBoost * seasonBoost * themeBoost * spoilingBoost(state, recipe);
 };
 
 const pickWeighted = <T>(items: readonly T[], weights: readonly number[]): T => {
@@ -74,7 +76,7 @@ const rollDiet = (state: GameState, menu: readonly Recipe[]): Diet | null => {
 
 const rollDrink = (state: GameState): DrinkId | null => {
   const available = DRINK_IDS.filter((id) => DRINKS[id].barLevel <= state.upgrades.bar);
-  return available.length && Math.random() < DRINK_CHANCE ? pickRandom(available) : null;
+  return available.length && Math.random() < drinkChance(state) ? pickRandom(available) : null;
 };
 
 export type CustomerKind = "regular" | "critic" | "delivery" | "celebrity";
@@ -88,6 +90,8 @@ export interface CustomerOptions {
   tableId?: string;
   /** Back later the same evening, for a dessert pizza. */
   forDessert?: boolean;
+  /** One of Nonna's family: Nonna's recipes, no diet. */
+  family?: boolean;
 }
 
 // Returns null when nothing is on the menu (the player emptied it mid-service).
@@ -101,10 +105,10 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
   const name =
     options.name ??
     (kind === "regular" ? pickCustomerName(state, names, waitingNames) : pickRandom(names.filter((candidate) => !waitingNames.has(candidate))));
-  const entry = kind === "regular" ? bookEntry(state, name) : undefined;
+  const entry = kind === "regular" && !options.family ? bookEntry(state, name) : undefined;
   const isBirthday = Boolean(options.isBirthday && isRegular(entry));
 
-  const isGuest = kind === "critic" || kind === "celebrity";
+  const isGuest = kind === "critic" || kind === "celebrity" || Boolean(options.family);
   const { forDessert = false } = options;
   const story = options.story && isRegular(entry) ? options.story : undefined;
   const diet = isGuest || isBirthday || story || forDessert ? null : rollDiet(state, fullMenu);
@@ -112,7 +116,13 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
   const narrowed = fullMenu.filter(
     (recipe) => dietAllows(diet, recipe.ingredients) && !(entry?.dislikes && recipe.ingredients.includes(entry.dislikes)),
   );
-  const menu = forDessert ? fullMenu.filter((recipe) => isDessert(recipe.ingredients)) : narrowed.length ? narrowed : fullMenu;
+  const menu = options.family
+    ? familyMenu(fullMenu)
+    : forDessert
+      ? fullMenu.filter((recipe) => isDessert(recipe.ingredients))
+      : narrowed.length
+        ? narrowed
+        : fullMenu;
   if (!menu.length) return null;
   // A celebrity asks for the finest pizza on the menu, with an extra topping.
   const { recipe, isFavorite } =
@@ -171,6 +181,7 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
     drinkServed: false,
     birthday: isBirthday,
     ...(story ? { story } : {}),
+    ...(options.family ? { family: true } : {}),
     forDessert,
   };
 };

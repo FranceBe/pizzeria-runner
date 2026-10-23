@@ -215,6 +215,7 @@ export const fr = {
         : count >= target
           ? `Sur ta carte : ${count}. Il y aura du monde !`
           : `Sur ta carte : ${count}. Encore ${target - count} pour attirer plus de monde.`,
+    spoiling: ({ id }: { id: IngredientId }, t: H) => `Ce qui risque de s'abîmer : ${t.ingredient(id)}.`,
     tipsTitle: "Astuces du jour",
     tipsLabel: ({ count }: { count: number }) => `${count} ${plural(count, "astuce")} du jour`,
     tips: {
@@ -360,6 +361,8 @@ export const fr = {
     trashUnwantedShort: "🗑 Tout jeter ({count})",
     offerSlice: "🍕 En parts",
     offerSliceHint: "Coupée en parts pour la file : rien n'est jeté, et chacun patiente un peu mieux.",
+    family: "Famille de Nonna",
+    familyTitle: "La famille de Nonna : toute la table servie à temps, et c'est un beau bonus.",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }: { medal: string; clock: string }) => `${medal} encore ${clock}`,
     batchSlow: "Médaille de bronze",
@@ -628,6 +631,8 @@ export const fr = {
     reviewsLabel: ({ count }: { count: number }) => `${count} nouvel${count > 1 ? "s" : ""} avis en ligne`,
     ordersToggle: ({ count }: { count: number }) => `Détail des ${count} commande${count > 1 ? "s" : ""}`,
     inspectionShort: "Contrôle sanitaire réussi",
+    spoiled: ({ id }: { id: IngredientId }, t: H) => `Frigo en panne · ${t.ingredient(id)}`,
+    portionsLost: ({ count }: { count: number }) => `−${count} ${plural(count, "portion")}`,
     competitorLine: ({ name, day, total }: { name: string; day: number; total: number }) => `🏪 Face à « ${name} » (jour ${day}/${total})`,
     share: "Partager le ticket",
     stars: "Étoiles du jour",
@@ -836,6 +841,22 @@ export const fr = {
       name: "Soirée pizzas blanches",
       describe: "Ce soir, on veut des pizzas blanches, sans sauce tomate : elles sont bien plus commandées et rapportent 15 % de plus.",
     },
+    fridgeFailure: {
+      name: "Frigo en panne",
+      describe: "Le frigo lâche : un ingrédient va s'abîmer. Les pizzas qui l'utilisent sont deux fois plus commandées ce soir ; à la fermeture, la moitié de ce qu'il en reste est perdue (sans compter comme du gâchis).",
+    },
+    heatwave: {
+      name: "Canicule",
+      describe: "Il fait une chaleur écrasante : un peu plus de monde (beaucoup plus en terrasse), deux fois plus de boissons commandées, des clients moins patients mais un peu plus généreux.",
+    },
+    waterCut: {
+      name: "Coupure d'eau",
+      describe: "Plus d'eau au bar : pas de boissons ce soir. Les clients le prennent bien et laissent plus de pourboires.",
+    },
+    nonnaFamily: {
+      name: "La famille de Nonna",
+      describe: "La famille de Nonna passe vers 20:45 : une tablée de quatre qui ne jure que par ses recettes (ou la Margherita). Toute la table servie à temps : +20 € et de la réputation.",
+    },
   } satisfies Record<DayEventId | "woodShortage", { name: string; describe: string }>,
 
   achievements: {
@@ -974,6 +995,9 @@ export const fr = {
     secretCodeAgain: "Nonna sourit. Tu connais déjà le secret.",
     sliceOffered: ({ count }: { count: number }) =>
       `🍕 Une pizza coupée en parts pour la file : ${count} ${plural(count, "client patiente", "clients patientent")} avec le sourire.`,
+    familyArrived: ({ count }: { count: number }) => `👵 La famille de Nonna est là : ${count} couverts d'un coup !`,
+    familyHappy: ({ reward }: { reward: number }, t: H) => `👵 La famille de Nonna est ravie : « Comme chez elle ! » +${t.money(reward)}.`,
+    familyDisappointed: "👵 La famille de Nonna a trouvé le temps long. Nonna en entendra parler…",
     specialWeek: ({ recipeId, recipeName, served }: { recipeId: string; recipeName: string | null; served: number }, t: H) =>
       `★ Spéciale de la semaine : ${t.recipe({ id: recipeId, name: recipeName })}, ${served} ${plural(served, "servie")}. À toi de choisir la prochaine !`,
     newPairing: ({ pairings }: { pairings: readonly Pairing[] }, t: H) =>

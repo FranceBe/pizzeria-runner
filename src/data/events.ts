@@ -10,6 +10,8 @@ export const DAY_EVENT_IDS = [
   "mysteryGuest",
   // Themed nights: the neighbourhood fancies one kind of pizza (game/themes.ts).
   "veggieNight", "biancaNight",
+  // More incidents and visits (game/incidents.ts, game/family.ts).
+  "fridgeFailure", "heatwave", "waterCut", "nonnaFamily",
 ] as const;
 export type DayEventId = (typeof DAY_EVENT_IDS)[number];
 
@@ -55,7 +57,34 @@ export const DAY_EVENTS: Record<DayEventId, DayEvent> = {
   // on how many are on the menu (see game/themes.ts).
   veggieNight: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
   biancaNight: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
+  // The fridge breaks down: an ingredient well stocked must go tonight (ordered more); half of what is left is lost.
+  fridgeFailure: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 6 },
+  // Summer only: more people (the terrace as on a sunny day), twice as many drinks, less patience, a little more in tips.
+  heatwave: { weight: 2, customerFactor: 1.1, tipChanceBonus: 0.05, marketPriceFactor: 1, firstDay: 5 },
+  // No water: no drinks tonight (with a bar), and understanding customers.
+  waterCut: { weight: 1, customerFactor: 1, tipChanceBonus: 0.1, marketPriceFactor: 1, firstDay: 5 },
+  // Nonna's family, a table of four at a given time, for Nonna's recipes (see FAMILY_*).
+  nonnaFamily: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 8 },
 };
+
+// The fridge breakdown: an ingredient of the menu with at least this much in stock; recipes with it are ordered this
+// much more; at closing, this share of what is left of it is lost (not counted as waste: nobody binned it).
+export const FRIDGE_MIN_STOCK = 6;
+export const FRIDGE_ORDER_BOOST = 2;
+export const FRIDGE_LOSS_SHARE = 0.5;
+
+// The heatwave: drinks ordered this much more often (up to DRINK_MAX_CHANCE), waiting this much harder to bear.
+export const HEATWAVE_DRINK_FACTOR = 2;
+export const HEATWAVE_DRINK_MAX_CHANCE = 0.8;
+export const HEATWAVE_WAITING = 1.15;
+
+// Nonna's family: this many at one table, coming at this time on the evening's clock (or as soon as nobody else is
+// left to come), on top of the evening's customers. Served all happy or patient, they leave this much and reputation.
+export const FAMILY_TIME = 20 * 60 + 45;
+export const FAMILY_SIZE = 4;
+export const FAMILY_BONUS = 20;
+export const FAMILY_XP = 30;
+export const FAMILY_NAMES = ["Zia Carla", "Zio Beppe", "Cugina Lucia", "Nonno Pino", "Cugino Dario", "Zia Rosa", "Cugina Marta"];
 
 // The mystery guest is among the first customers of the evening, up to this share of them: someone on their own,
 // passing by (not a regular, a table, a delivery, a critic or a celebrity). Their stars: five, one less for each mood

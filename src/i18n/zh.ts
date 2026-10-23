@@ -195,6 +195,7 @@ export const zh: Dictionary = {
         : count >= target
           ? `你的菜单上有 ${count} 个。今晚会很热闹！`
           : `你的菜单上有 ${count} 个。再加 ${target - count} 个，能吸引更多客人。`,
+    spoiling: ({ id }, t) => `可能会坏的：${t.ingredient(id)}。`,
     tipsTitle: "今日小贴士",
     tipsLabel: ({ count }) => `今日小贴士 ${count} 条`,
     tips: {
@@ -334,6 +335,8 @@ export const zh: Dictionary = {
     trashUnwantedShort: "🗑 全部扔掉（{count}）",
     offerSlice: "🍕 切块请客",
     offerSliceHint: "切成小块请排队的客人吃：什么都不浪费，大家也更有耐心。",
+    family: "奶奶的家人",
+    familyTitle: "奶奶的家人：整桌都及时上菜，就有一笔丰厚的奖金。",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }) => `${medal}，还剩 ${clock}`,
     batchSlow: "铜牌",
@@ -580,6 +583,8 @@ export const zh: Dictionary = {
     reviewsLabel: ({ count }) => `${count} 条新网络评价`,
     ordersToggle: ({ count }) => `全部 ${count} 个订单`,
     inspectionShort: "卫生检查通过",
+    spoiled: ({ id }, t) => `冰箱坏了 · ${t.ingredient(id)}`,
+    portionsLost: ({ count }) => `−${count} 份`,
     competitorLine: ({ name, day, total }) => `🏪 对决“${name}”（第 ${day}/${total} 天）`,
     share: "分享小票",
     stars: "今日之星",
@@ -748,6 +753,10 @@ export const zh: Dictionary = {
     mysteryGuest: { name: "神秘客人", describe: "指南的一位检查员混在今晚的客人中，微服私访。不知道是谁：每位客人都很重要。结果会在小票上揭晓。" },
     veggieNight: { name: "素食之夜", describe: "街坊们想吃蔬菜：今晚素食披萨会被点得多得多，而且多赚 15%。" },
     biancaNight: { name: "白披萨之夜", describe: "今晚大家都想吃不放番茄酱的白披萨：点的人多得多，而且多赚 15%。" },
+    fridgeFailure: { name: "冰箱坏了", describe: "冰箱罢工了：有一种食材快要坏了。今晚用到它的披萨会被点两倍；打烊时，剩下的会损失一半（不算浪费）。" },
+    heatwave: { name: "热浪", describe: "热得不行：客人多一点（露台上多很多），饮料点得多一倍，客人没那么有耐心，但小费给得更大方一点。" },
+    waterCut: { name: "停水", describe: "吧台没水了：今晚没有饮料。客人都很体谅，小费给得更多。" },
+    nonnaFamily: { name: "奶奶的家人", describe: "奶奶的家人大约 20:45 会来：四个人一桌，只认奶奶的配方（或者玛格丽特）。整桌都及时上菜：+€20，还有声望。" },
   },
 
   achievements: {
@@ -865,6 +874,9 @@ export const zh: Dictionary = {
     secretFromCode: "奶奶对你眨眨眼：她的秘方是你的了。你可以在市场上做了。",
     secretCodeAgain: "奶奶笑了。你已经知道这个秘密了。",
     sliceOffered: ({ count }) => `🍕 一个披萨切成小块请排队的客人吃：${count} 位客人笑着继续等。`,
+    familyArrived: ({ count }) => `👵 奶奶的家人来了：一下子 ${count} 位！`,
+    familyHappy: ({ reward }, t) => `👵 奶奶的家人很满意：“跟在家里一样！” +${t.money(reward)}。`,
+    familyDisappointed: "👵 奶奶的家人觉得等得有点久。奶奶会听说的……",
     specialWeek: ({ recipeId, recipeName, served }, t) => `★ 本周特选：${t.recipe({ id: recipeId, name: recipeName })}，上了 ${served} 个。来选下一个吧！`,
     newPairing: ({ pairings }, t) => `新搭配：${pairings.map(t.pairing).join("、")}！`,
   },

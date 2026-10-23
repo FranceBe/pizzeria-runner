@@ -185,6 +185,9 @@ export const DaySummary = ({ summary, pizzeriaName, shownEventId, onNextDay }: D
               />
             )}
             {summary.waste > 0 && <ReceiptLine className="neg" label={t("summary.waste")} value={t.money(summary.waste)} />}
+            {summary.spoiled && (
+              <ReceiptLine className="neg" label={t("summary.spoiled", { id: summary.spoiled.id })} value={t("summary.portionsLost", { count: summary.spoiled.portions })} />
+            )}
             {summary.orders && summary.orders.length > 0 && (
               <details className="receipt-details">
                 <summary>{t("summary.ordersToggle", { count: summary.orders.length })}</summary>

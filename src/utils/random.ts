@@ -4,6 +4,14 @@ export const randomIndex = (length: number): number => Math.floor(Math.random() 
 
 export const pickRandom = <T>(list: readonly T[]): T => list[randomIndex(list.length)];
 
+// Up to `count` different items of the list, in random order.
+export const pickSome = <T>(list: readonly T[], count: number): T[] => {
+  const left = [...list];
+  const picked: T[] = [];
+  while (picked.length < count && left.length) picked.push(left.splice(randomIndex(left.length), 1)[0]);
+  return picked;
+};
+
 // Random, plus a counter: two ids made in the same session can never be the same, however the random numbers fall
 // (the tests' seeded generator only has 10,000 of them).
 let idCounter = 0;

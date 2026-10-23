@@ -8,6 +8,7 @@ import { playDays } from "../test/robot";
 import { pickLateIngredient } from "./events";
 import { activeMenu } from "./menu";
 import { prepareWedding } from "./quests";
+import { pickSpoilingIngredient } from "./incidents";
 import { lateGame, middling } from "../test/fixtures";
 import type { GameState } from "./types";
 
@@ -17,6 +18,7 @@ afterEach(() => vi.restoreAllMocks());
 const force = (state: GameState, event: DayEventId, goalIndex: number): GameState => {
   const next: GameState = { ...state, event, quest: event === "wedding" ? null : state.quest };
   if (event === "lateDelivery") next.lateIngredient = pickLateIngredient(next);
+  if (event === "fridgeFailure") next.spoilingIngredient = pickSpoilingIngredient(next);
   prepareWedding(next);
   const kind = TONIGHT_KINDS[goalIndex % TONIGHT_KINDS.length];
   const target = kind === "variety" ? Math.min(VARIETY_MAX, activeMenu(next).length) : kind === "allHot" ? 5 : kind === "lightning" ? 3 : 1;

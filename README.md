@@ -156,6 +156,20 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 - **Incidents**, from day 5, each with something in return: a power cut (one oven, one pizza at a time, but bigger
   tips; a wood-fired oven keeps going, and when every oven burns wood it is a missing wood delivery instead), a late delivery (one ingredient arrives a minute into the service, with free portions), a health inspection
   (a day without binning anything earns lots of reputation) and a scooter strike (no deliveries, more people eating in).
+- **More incidents and visits** (`game/incidents.ts`, `game/family.ts`):
+  - the fridge breakdown (from day 6, with an ingredient of the menu well stocked): pizzas using the best-stocked one are
+    ordered twice as much; at closing, half of what is left of it is lost, on the receipt but not counted as waste;
+  - the heatwave (summer market only, from day 5): 10% more customers, the terrace as on a sunny day, twice as many
+    drinks ordered, waiting 15% harder to bear, slightly bigger tips;
+  - the water cut (with a bar, from day 5): no drinks tonight (the bar is put away), and bigger tips;
+  - Nonna's family (from day 8, with tables): a table of four comes at 20:45 (or as soon as nobody else is left to
+    come), on top of the evening's customers, for Nonna's recipes on the menu (or a margherita). All served happy or
+    patient: €20 and 30 reputation on top of the table bonus. They never join the customer book, and the evening waits
+    for them (closing early still ends it).
+- **A day holds at most three things out of the ordinary** (`game/dayLoad.ts`): the day's event, the competitor, a
+  regular's story chapter, a birthday, a running quest (the wedding and its banquet count once). Tonight's goal, the
+  rush and real-calendar festivals don't count. Birthdays and story chapters keep their dates; once a day is full,
+  nothing new starts that morning (no event, new story, competitor or quest).
 - **Evenings with a time**, from day 4, on the evening's clock: the match on TV kicks off at 21:00 (customers come
   more slowly while everyone watches), then the whole street comes in at half-time, around 21:45, for 30 seconds of
   quick succession and doubled tips (instead of the evening's usual rush). The wedding (from day 6, never while a quest

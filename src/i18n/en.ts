@@ -198,6 +198,7 @@ export const en: Dictionary = {
         : count >= target
           ? `On your menu: ${count}. Expect a crowd!`
           : `On your menu: ${count}. ${target - count} more to draw a bigger crowd.`,
+    spoiling: ({ id }, t) => `What may spoil: ${t.ingredient(id)}.`,
     tipsTitle: "Today's tips",
     tipsLabel: ({ count }) => `${count} ${plural(count, "tip")} for today`,
     tips: {
@@ -338,6 +339,8 @@ export const en: Dictionary = {
     trashUnwantedShort: "🗑 Bin all ({count})",
     offerSlice: "🍕 Slice it",
     offerSliceHint: "Cut into slices for the queue: nothing is thrown away, and everyone waits a little more patiently.",
+    family: "Nonna's family",
+    familyTitle: "Nonna's family: the whole table served in time means a fine bonus.",
     batchLine: "{done} / {count}",
     batchMedal: ({ medal, clock }) => `${medal} for ${clock}`,
     batchSlow: "Bronze medal",
@@ -599,6 +602,8 @@ export const en: Dictionary = {
     reviewsLabel: ({ count }) => `${count} new online ${count === 1 ? "review" : "reviews"}`,
     ordersToggle: ({ count }) => `All ${count} ${count === 1 ? "order" : "orders"}`,
     inspectionShort: "Health inspection passed",
+    spoiled: ({ id }, t) => `Fridge breakdown · ${t.ingredient(id)}`,
+    portionsLost: ({ count }) => `−${count} ${plural(count, "portion")}`,
     competitorLine: ({ name, day, total }) => `🏪 Against “${name}” (day ${day}/${total})`,
     share: "Share the receipt",
     stars: "Today's stars",
@@ -801,6 +806,22 @@ export const en: Dictionary = {
       name: "White pizza night",
       describe: "Tonight everyone wants white pizzas, without tomato sauce: they are ordered far more and pay 15% more.",
     },
+    fridgeFailure: {
+      name: "Fridge breakdown",
+      describe: "The fridge gives out: one ingredient is going to spoil. Pizzas using it are ordered twice as much tonight; at closing, half of what is left of it is lost (not counted as waste).",
+    },
+    heatwave: {
+      name: "Heatwave",
+      describe: "Scorching heat: a few more people (many more on the terrace), twice as many drinks ordered, customers less patient but a little more generous.",
+    },
+    waterCut: {
+      name: "Water cut",
+      describe: "No water at the bar: no drinks tonight. Customers take it well and tip more.",
+    },
+    nonnaFamily: {
+      name: "Nonna's family",
+      describe: "Nonna's family drops by around 20:45: a table of four who swear by her recipes (or a Margherita). The whole table served in time: +€20 and reputation.",
+    },
   },
 
   achievements: {
@@ -922,6 +943,9 @@ export const en: Dictionary = {
     secretFromCode: "Nonna winks at you: her secret ingredient is yours. You can make it at the market.",
     secretCodeAgain: "Nonna smiles. You already know the secret.",
     sliceOffered: ({ count }) => `🍕 A pizza cut into slices for the queue: ${count} ${plural(count, "customer waits", "customers wait")} with a smile.`,
+    familyArrived: ({ count }) => `👵 Nonna's family is here: ${count} at once!`,
+    familyHappy: ({ reward }, t) => `👵 Nonna's family is delighted: "Just like at home!" +${t.money(reward)}.`,
+    familyDisappointed: "👵 Nonna's family found the wait long. Nonna will hear about it…",
     specialWeek: ({ recipeId, recipeName, served }, t) =>
       `★ Special of the week: ${t.recipe({ id: recipeId, name: recipeName })}, ${served} served. Time to pick the next one!`,
     newPairing: ({ pairings }, t) => `${plural(pairings.length, "New pairing")}: ${pairings.map(t.pairing).join(", ")}!`,

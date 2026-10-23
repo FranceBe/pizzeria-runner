@@ -937,11 +937,23 @@ button.secret-info[aria-expanded="true"] { background: var(--gold); color: #fff;
 .pan-coming { position: absolute; inset: auto 2px 22px 2px; font-size: 9.5px; font-weight: 800; text-align: center; color: #fff;
   background: rgba(20, 28, 24, .8); border-radius: 4px; padding: 1px 2px; }
 .mod.celebrity-tag { background: linear-gradient(90deg, #f0a43b, #e26aa6); color: #fff; }
+.mod.family-tag { background: #a2506a; color: #fff; }
 .ticket.celebrity { background: linear-gradient(180deg, #fff1d6, var(--surface) 55%); border-color: #f0a43b; }
 .ev-fete { --ev-bg: #f3e3f6; --ev-edge: #8a3c99; font-weight: 600; }
 .ev-powerCut, .ev-lateDelivery, .ev-inspection, .ev-scooterStrike { --ev-bg: var(--surface2); --ev-edge: var(--muted); }
 .ev-veggieNight { --ev-bg: var(--basil-soft); --ev-edge: var(--basil); }
 .ev-biancaNight { --ev-bg: #f4efe4; --ev-edge: #b49a62; }
+.ev-fridgeFailure, .ev-waterCut { --ev-bg: #e3eef3; --ev-edge: #4a86a3; }
+.ev-heatwave { --ev-bg: #fde6d8; --ev-edge: #d0662e; }
+.ev-nonnaFamily { --ev-bg: #f6e8ec; --ev-edge: #a2506a; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ev-fridgeFailure, :root:not([data-theme="light"]) .ev-waterCut { --ev-bg: #1a2a33; --ev-edge: #7fb6d1; }
+  :root:not([data-theme="light"]) .ev-heatwave { --ev-bg: #36231a; --ev-edge: #f09a62; }
+  :root:not([data-theme="light"]) .ev-nonnaFamily { --ev-bg: #32202a; --ev-edge: #e08aa6; }
+}
+:root[data-theme="dark"] .ev-fridgeFailure, :root[data-theme="dark"] .ev-waterCut { --ev-bg: #1a2a33; --ev-edge: #7fb6d1; }
+:root[data-theme="dark"] .ev-heatwave { --ev-bg: #36231a; --ev-edge: #f09a62; }
+:root[data-theme="dark"] .ev-nonnaFamily { --ev-bg: #32202a; --ev-edge: #e08aa6; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ev-biancaNight { --ev-bg: #2e2a20; --ev-edge: #d8c08a; } }
 :root[data-theme="dark"] .ev-biancaNight { --ev-bg: #2e2a20; --ev-edge: #d8c08a; }
 .weekly { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
