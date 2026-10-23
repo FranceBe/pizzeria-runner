@@ -213,6 +213,8 @@ export interface Service {
   paused?: boolean;
   /** Seconds since the restaurant opened. */
   elapsed?: number;
+  /** How long tonight should last (seconds), for the evening's clock (game/clock.ts). */
+  expectedSeconds?: number;
   /** Late delivery day: the ingredient has arrived. */
   lateArrived?: boolean;
   /** Rush hour: customers come in quick succession, tips are doubled. */

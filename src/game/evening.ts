@@ -5,6 +5,7 @@ import {
   BATCH_ARRIVES_AFTER, BATCH_GOLD_XP, deliveredCount, medalFor, openBatch, pizzaCount, rewardFor, unfinishedPay,
   batchItemFor,
 } from "./batch";
+import { expectedEveningSeconds } from "./clock";
 import { receivePayment } from "./economy";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
@@ -28,6 +29,7 @@ export const planEvening = (state: GameState, service: Service, customerCount: n
   const { quest } = state;
   service.batchArrivesIn = quest?.kind === "batch" && quest.deadlineDay === state.day ? BATCH_ARRIVES_AFTER : null;
   service.elapsed = 0;
+  service.expectedSeconds = expectedEveningSeconds(customerCount);
 };
 
 // Every tick: the clock of the evening. Mutates state.

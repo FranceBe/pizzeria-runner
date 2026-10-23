@@ -1276,3 +1276,6 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 @media (prefers-reduced-motion: reduce) { .royale-rain { display: none; } }
 .royale-win > :not(.royale-rain) { position: relative; z-index: 1; }
 .royale-rain span { filter: opacity(.75); }
+
+/* The evening's clock in the sign's day slot: same size as the day, digits that don't jiggle as they change */
+.stat-clock { font-variant-numeric: tabular-nums; }

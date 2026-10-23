@@ -32,8 +32,8 @@ import type { ActionHandlers, BestSeller, Customer, GameState, RecipeSales, Roya
 import { rateOrder, writeReviews } from "../reviews";
 
 const FIRST_ARRIVAL_DELAY = 0.6;
-const MIN_SECONDS_BETWEEN_ARRIVALS = 3.5;
-const MAX_SECONDS_BETWEEN_ARRIVALS = 6.5;
+export const MIN_SECONDS_BETWEEN_ARRIVALS = 3.5;
+export const MAX_SECONDS_BETWEEN_ARRIVALS = 6.5;
 // A day counts as waste-free with at least this many pizzas served and nothing binned.
 const WASTE_FREE_MIN_SERVED = 5;
 const MAX_HISTORY_DAYS = 120;

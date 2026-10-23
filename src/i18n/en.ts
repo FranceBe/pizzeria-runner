@@ -143,6 +143,8 @@ export const en: Dictionary = {
 
   header: {
     day: "Day",
+    dayNumber: "Day {day}",
+    clockLabel: "It is {time}",
     till: "Till",
     debt: ({ amount }, t) => `Owed: ${t.money(amount)}`,
     reputation: "Reputation · lvl {level}",

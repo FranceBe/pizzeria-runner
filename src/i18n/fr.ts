@@ -154,6 +154,8 @@ export const fr = {
 
   header: {
     day: "Jour",
+    dayNumber: "Jour {day}",
+    clockLabel: "Il est {time}",
     till: "Caisse",
     debt: ({ amount }: { amount: number }, t: H) => `Ardoise : ${t.money(amount)}`,
     reputation: "Réputation · niv. {level}",

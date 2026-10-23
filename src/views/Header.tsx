@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { eveningMinutes, formatEveningTime } from "../game/clock";
 import { levelForXp, levelProgressPercent, xpForNextLevel } from "../game/progression";
 import { averageRating } from "../game/reviews";
 import { useTranslation } from "../i18n/I18nContext";
@@ -36,6 +37,8 @@ export const Header = ({ state, dispatch, isDuo = false }: ScreenProps & { isDuo
   const t = useTranslation();
   const level = levelForXp(state.xp);
   const evening = eveningProgress(state);
+  // The evening's clock, during an ordinary service (a challenge has its own countdown).
+  const clock = state.service && !state.service.challenge ? formatEveningTime(eveningMinutes(state.service)) : null;
   return (
     <header
       className={`top${state.upgrades.deco >= 2 ? " has-lights" : ""}${state.service && !state.service.challenge ? " evening" : ""}`}
@@ -49,9 +52,19 @@ export const Header = ({ state, dispatch, isDuo = false }: ScreenProps & { isDuo
         </h1>
         <StorefrontDecor upgrades={state.upgrades} photos={state.celebrityWall.length} />
         <div className="stats">
-          <div className="stat">
-            <span className="stat-l">{t("header.day")}</span>
-            <span className="stat-v">{state.day}</span>
+          {/* During service, the day's number moves to the label and the evening's clock takes its place. */}
+          <div className="stat stat-day">
+            {clock === null ? (
+              <>
+                <span className="stat-l">{t("header.day")}</span>
+                <span className="stat-v">{state.day}</span>
+              </>
+            ) : (
+              <>
+                <span className="stat-l">{t("header.dayNumber", { day: state.day })}</span>
+                <span className="stat-v stat-clock" aria-label={t("header.clockLabel", { time: clock })}>{clock}</span>
+              </>
+            )}
           </div>
           <div className="stat stat-money">
             <span className="stat-l">{t("header.till")}</span>
