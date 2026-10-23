@@ -197,7 +197,8 @@ export const fr = {
     questDeadline: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour !" : `Encore ${days} jours`),
     dailyMenu: ({ recipes }: { recipes: string }) => `Au menu aujourd'hui : ${recipes}.`,
     lateIngredient: ({ id }: { id: IngredientId }, t: H) => `Ce soir, ${lower(t.ingredient(id))} n'arrivera qu'après une minute de service.`,
-    festival: ({ festival }: { festival: FestivalId }, t: H) => `C'est ${t.festival(festival)} ! Un ingrédient et une recette de fête pour quelques jours.`,
+    festival: ({ festival, until }: { festival: FestivalId; until: string }, t: H) =>
+      `Pour de vrai, c'est ${t.festival(festival)} (jusqu'au ${until}) : un ingrédient et une recette de fête, quel que soit le marché du jeu.`,
     weekly: "Cette semaine",
     weeklyReward: ({ reward, bonus }: { reward: number; bonus: number }, t: H) =>
       `${t.money(reward)} par mission, ${t.money(bonus)} de plus pour les trois`,
@@ -334,6 +335,7 @@ export const fr = {
     marketDay: "Jour de marché : tout est à −20 % aujourd'hui.",
     stall: "L'étal",
     inSeason: "de saison",
+    festive: "fête",
     secretTitle: "Le secret de Nonna",
     secretWhat: "À quoi ça sert ?",
     secretIntro: "Il ne s'achète pas : il se fabrique, un pot à la fois. Une pincée par pizza.",
@@ -365,6 +367,7 @@ export const fr = {
     makeSpecial: "Mettre en suggestion",
     specialHint: "La suggestion du chef est commandée plus souvent.",
     seasonal: "Recette de saison",
+    festive: ({ festival }: { festival: FestivalId }, t: H) => `De fête · ${t.festival(festival)}`,
     nonna: "Recette de Nonna",
     nonnaLocked: ({ level }: { level: number }) => `Nonna te la confiera au niveau ${level}.`,
   },
@@ -621,7 +624,8 @@ export const fr = {
     birthdayIn: ({ days }: { days: number }) => (days === 0 ? "🎂 Anniversaire aujourd'hui !" : `🎂 Anniversaire dans ${days} ${plural(days, "jour")}`),
   },
 
-  seasons: { spring: "Printemps", summer: "Été", autumn: "Automne", winter: "Hiver" } satisfies Record<SeasonId, string>,
+  // The game's seasons are its market's: what is cheap and in favour this week, never the real weather or date.
+  seasons: { spring: "Marché de printemps", summer: "Marché d'été", autumn: "Marché d'automne", winter: "Marché d'hiver" } satisfies Record<SeasonId, string>,
 
   diets: { veggie: "Végétarien", noPork: "Sans porc", glutenFree: "Sans gluten" },
 
@@ -764,7 +768,8 @@ export const fr = {
       `Nonna te confie sa recette secrète : ${t.recipe({ id: recipeId, name: null })} !${onMenu ? " (ajoutée à la carte)" : ""}`,
     birthday: "Joyeux anniversaire {name} ! Un beau cadeau pour toi.",
     happyTable: "Table de {size} ravie : bonus pour toute la tablée !",
-    festivalStarts: ({ festival }: { festival: FestivalId }, t: H) => `C'est ${t.festival(festival)} ! Un ingrédient de fête t'attend au marché, avec quelques portions offertes.`,
+    festivalStarts: ({ festival }: { festival: FestivalId }, t: H) =>
+      `Pour de vrai, c'est ${t.festival(festival)} ! Un ingrédient de fête t'attend au marché, avec quelques portions offertes.`,
     weeklyDone: ({ reward }: { reward: number }, t: H) => `Mission de la semaine réussie ! Nonna t'envoie ${t.money(reward)}.`,
     weeklyAllDone: ({ reward }: { reward: number }, t: H) => `Les trois missions de la semaine ! Bonus de ${t.money(reward)}.`,
     batchArrived: ({ giver }: { giver: QuestGiver }, t: H) => `${t.questGiver(giver)} a passé sa commande groupée : le chrono tourne !`,

@@ -1279,3 +1279,14 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 
 /* The evening's clock in the sign's day slot: same size as the day, digits that don't jiggle as they change */
 .stat-clock { font-variant-numeric: tabular-nums; }
+
+/* Real-calendar festivals: their own rose, apart from the game's market seasons (green) and Nonna's recipes (purple) */
+.tag.festive-tag, .crate-season.crate-festive { background: #fde2ec; color: #a3214f; }
+.tag.festive-tag { margin-left: 4px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) :is(.tag.festive-tag, .crate-season.crate-festive) { background: #45202f; color: #f7b8cf; }
+}
+:root[data-theme="dark"] :is(.tag.festive-tag, .crate-season.crate-festive) { background: #45202f; color: #f7b8cf; }
+/* The day's title keeps its line; the market badge goes under it when both don't fit */
+.prep-head { flex-wrap: wrap; row-gap: 4px; }
+.prep-head > .h { flex: 1 1 auto; min-width: min(100%, 14ch); }

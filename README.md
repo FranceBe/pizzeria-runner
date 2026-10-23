@@ -124,6 +124,8 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 ### Days and the neighbourhood
 
 - **Seasons** change every 7 days: their ingredients are 25% off, and a recipe of the season is ordered more often.
+  They are the market's ("Summer market"), never the real weather or date: the game shows no calendar date at all,
+  only its day number and, during service, the evening's clock (19:00 to about 23:00).
 - **Events**, from day 3, about one day in two: market day (20% off), rain (fewer, more generous customers), street
   party (many more customers), sunshine (more customers, many more with a terrace) and the food critic, who comes in
   once that evening: serve them quickly for a glowing review and lots of reputation.
@@ -139,7 +141,8 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 - **Weekly missions**: three goals each week (serve whole tables, reach a streak, earn tips…), €25 each from Nonna and
   €50 more for all three. They show on the morning screen.
 - **Festivals** follow the real date: Halloween, Christmas and Valentine's Day each bring a festive ingredient (with
-  free portions) and a recipe, for a few days.
+  free portions) and a recipe, for a few days. They say so ("For real, it's Halloween, until November 3"), and their
+  ingredient and recipe wear the festival's emoji, so a Zucca at the summer market makes sense.
 
 ### Upgrades
 

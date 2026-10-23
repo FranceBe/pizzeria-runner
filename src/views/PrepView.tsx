@@ -6,6 +6,8 @@ import { ingredientCost } from "../game/pizza";
 import { levelForXp, menuCapacity } from "../game/progression";
 import { birthdaysToday, regularsOf } from "../game/regulars";
 import { daysLeftInSeason, seasonalRecipe, seasonOf } from "../game/seasons";
+import { FESTIVALS } from "../data/festivals";
+import { festivalLastDay } from "../game/calendar";
 import { tutorialStep } from "../game/tutorial";
 import { useTranslation } from "../i18n/I18nContext";
 import { CoachTip } from "../components/CoachTip";
@@ -44,7 +46,12 @@ const EventBanner = ({ state }: { state: GameState }) => {
           </span>
         </div>
       )}
-      {state.festival && <div className="event-banner ev-fete" role="note">🎉 {t("prep.festival", { festival: state.festival })}</div>}
+      {/* A real-calendar festival, whatever the game's market season: said so, with its real last day. */}
+      {state.festival && (
+        <div className="event-banner ev-fete" role="note">
+          {`${FESTIVALS[state.festival].emoji} ${t("prep.festival", { festival: state.festival, until: festivalLastDay(state.festival, t.language) })}`}
+        </div>
+      )}
     </>
   );
 };

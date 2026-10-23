@@ -6,6 +6,7 @@ import { SUPPLIER_WELCOME_PORTIONS } from "../game/actions/shopActions";
 import { canBorrowFromNonna, NONNA_LOAN, restockPlan, type RestockPlan } from "../game/economy";
 import { marketPrice } from "../game/events";
 import { isInSeason } from "../game/seasons";
+import { FESTIVALS } from "../data/festivals";
 import { knowsRecipe } from "../game/menu";
 import { levelForXp } from "../game/progression";
 import { useTranslation } from "../i18n/I18nContext";
@@ -50,7 +51,11 @@ const Fridge = ({ state, dispatch }: ScreenProps) => {
             <div key={ingredient.id} className="crate">
               <span className={`crate-qty${quantity < 5 ? " low" : ""}`}>{quantity}</span>
               <IngredientIcon id={ingredient.id} className="crate-ic" />
-              {isInSeason(state, ingredient.id) && <span className="crate-season">{t("market.inSeason")}</span>}
+              {ingredient.festival ? (
+                <span className="crate-season crate-festive">{`${FESTIVALS[ingredient.festival].emoji} ${t("market.festive")}`}</span>
+              ) : (
+                isInSeason(state, ingredient.id) && <span className="crate-season">{t("market.inSeason")}</span>
+              )}
               <div className="crate-n">{t.ingredient(ingredient.id)}</div>
               <div className="price-tag">
                 {price < ingredient.cost && <s>{t.money(ingredient.cost)}</s>} {t.money(price)}

@@ -3,6 +3,8 @@ import { INGREDIENTS_BY_ID } from "../../data/ingredients";
 import { CLASSIC_RECIPES } from "../../data/recipes";
 import { activeMenu, canCook, isNewRecipe, knowsRecipe, recipeAppeal, signatureLevel } from "../../game/menu";
 import { seasonalRecipe } from "../../game/seasons";
+import { FESTIVALS } from "../../data/festivals";
+import { festivalOfRecipe } from "../../game/calendar";
 import { fairPrice, ingredientCost, PRICE_STEP } from "../../game/pizza";
 import { levelForXp, menuCapacity } from "../../game/progression";
 import { useTranslation } from "../../i18n/I18nContext";
@@ -24,6 +26,7 @@ const RecipeCard = ({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
   const t = useTranslation();
   const name = t.recipe(recipe);
   const isSpecial = state.chefSpecial === recipe.id;
+  const festive = festivalOfRecipe(recipe.id);
   const changePrice = (delta: number) => dispatch({ type: "changePrice", recipeId: recipe.id, delta });
   return (
     <div className={`card recipe${isSpecial ? " special" : ""}${recipe.onMenu ? "" : " off-menu"}`}>
@@ -36,6 +39,7 @@ const RecipeCard = ({ state, recipe, dispatch, isConfirmingDelete, onAskDelete, 
           {isNewRecipe(state, recipe) && <span className="tag">{t("common.new")}</span>}
           {signatureLevel(recipe.id) && <span className="tag nonna-tag">{t("menu.nonna")}</span>}
           {seasonalRecipe(state)?.id === recipe.id && <span className="tag seasonal">{t("menu.seasonal")}</span>}
+          {festive && <span className="tag festive-tag">{`${FESTIVALS[festive].emoji} ${t("menu.festive", { festival: festive })}`}</span>}
         </div>
         <div className="hint">{t.toppings(recipe.ingredients)}</div>
         <div className="row">

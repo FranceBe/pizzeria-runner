@@ -186,7 +186,8 @@ export const en: Dictionary = {
     questDeadline: ({ days }) => (days <= 1 ? "Last day!" : `${days} days left`),
     dailyMenu: ({ recipes }) => `On today's menu: ${recipes}.`,
     lateIngredient: ({ id }, t) => `Tonight, ${lower(t.ingredient(id))} only arrives a minute into the service.`,
-    festival: ({ festival }, t) => `It's ${t.festival(festival)}! A festive ingredient and recipe for a few days.`,
+    festival: ({ festival, until }, t) =>
+      `For real, it's ${t.festival(festival)} (until ${until}): a festive ingredient and recipe, whatever the game's market.`,
     weekly: "This week",
     weeklyReward: ({ reward, bonus }, t) => `${t.money(reward)} per mission, ${t.money(bonus)} more for all three`,
     batchTonight: ({ items }) => `To deliver tonight, all together: ${items}. The faster, the better paid.`,
@@ -320,6 +321,7 @@ export const en: Dictionary = {
     marketDay: "Market day: everything is 20% off today.",
     stall: "The stall",
     inSeason: "in season",
+    festive: "festive",
     secretTitle: "Nonna's secret",
     secretWhat: "What is it for?",
     secretIntro: "It can't be bought: it is made, one jar at a time. One pinch per pizza.",
@@ -351,6 +353,7 @@ export const en: Dictionary = {
     makeSpecial: "Make it the special",
     specialHint: "The chef's special gets ordered more often.",
     seasonal: "Recipe of the season",
+    festive: ({ festival }, t) => `Festive · ${t.festival(festival)}`,
     nonna: "Nonna's recipe",
     nonnaLocked: ({ level }) => `Nonna will share it at level ${level}.`,
   },
@@ -598,7 +601,7 @@ export const en: Dictionary = {
     birthdayIn: ({ days }) => (days === 0 ? "🎂 Birthday today!" : `🎂 Birthday in ${days} ${plural(days, "day")}`),
   },
 
-  seasons: { spring: "Spring", summer: "Summer", autumn: "Autumn", winter: "Winter" },
+  seasons: { spring: "Spring market", summer: "Summer market", autumn: "Autumn market", winter: "Winter market" },
 
   diets: { veggie: "Vegetarian", noPork: "No pork", glutenFree: "Gluten-free" },
 
@@ -733,7 +736,7 @@ export const en: Dictionary = {
       `Nonna shares her secret recipe: ${t.recipe({ id: recipeId, name: null })}!${onMenu ? " (added to the menu)" : ""}`,
     birthday: "Happy birthday {name}! A lovely gift for you.",
     happyTable: "Table of {size} delighted: a bonus from the whole table!",
-    festivalStarts: ({ festival }, t) => `It's ${t.festival(festival)}! A festive ingredient awaits at the market, with a few free portions.`,
+    festivalStarts: ({ festival }, t) => `For real, it's ${t.festival(festival)}! A festive ingredient awaits at the market, with a few free portions.`,
     weeklyDone: ({ reward }, t) => `Weekly mission done! Nonna sends you ${t.money(reward)}.`,
     weeklyAllDone: ({ reward }, t) => `All three weekly missions! A ${t.money(reward)} bonus.`,
     batchArrived: ({ giver }, t) => `${t.questGiver(giver)} placed their group order: the clock is ticking!`,

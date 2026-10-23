@@ -267,7 +267,7 @@ describe("views", () => {
     const html = render(<PrepView state={playedState()} dispatch={noop} goToTab={noop} />, "en");
     expect(html).toContain("The football club wants 5 Margherita for their evening.");
     expect(html).toContain("2 / 5");
-    expect(html).toContain("Spring · 4 days left");
+    expect(html).toContain("Spring market · 4 days left");
     expect(html).toContain("It&#x27;s Giulia&#x27;s birthday today!");
     expect(html).toContain("On today&#x27;s menu:");
   });
@@ -402,7 +402,8 @@ describe("views", () => {
     const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
     expect(html).toContain("This week");
     expect(html).toContain("12 / 30");
-    expect(html).toContain("It&#x27;s Halloween!");
+    // A real-calendar festival says so, with its real last day, whatever the game's market season.
+    expect(html).toContain("🎃 For real, it&#x27;s Halloween (until November 3)");
     expect(html).toContain("To deliver tonight, all together: 3 Margherita.");
   });
 

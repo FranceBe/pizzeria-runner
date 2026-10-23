@@ -10,12 +10,14 @@ export interface Festival {
   from: [number, number];
   to: [number, number];
   ingredient: IngredientId;
+  /** Shown with everything the festival brings, so it reads as the real calendar's, not the game's season. */
+  emoji: string;
 }
 
 export const FESTIVALS: Record<FestivalId, Festival> = {
-  halloween: { from: [10, 20], to: [11, 3], ingredient: "potiron" },
-  christmas: { from: [12, 15], to: [1, 2], ingredient: "marron" },
-  valentine: { from: [2, 9], to: [2, 16], ingredient: "framboise" },
+  halloween: { from: [10, 20], to: [11, 3], ingredient: "potiron", emoji: "🎃" },
+  christmas: { from: [12, 15], to: [1, 2], ingredient: "marron", emoji: "🎄" },
+  valentine: { from: [2, 9], to: [2, 16], ingredient: "framboise", emoji: "💝" },
 };
 
 // Portions offered when a festival starts.

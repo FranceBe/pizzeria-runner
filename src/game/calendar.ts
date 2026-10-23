@@ -1,4 +1,5 @@
 import { FESTIVALS, FESTIVAL_GIFT, FESTIVAL_IDS, type FestivalId } from "../data/festivals";
+import { CLASSIC_RECIPES } from "../data/recipes";
 import { discoverClassics } from "./menu";
 import { pushToast } from "./toasts";
 import type { GameState } from "./types";
@@ -15,6 +16,15 @@ export const festivalOn = (date: string): FestivalId | null => {
       return start <= end ? value >= start && value <= end : value >= start || value <= end;
     }) ?? null
   );
+};
+
+// The festival a recipe or an ingredient belongs to, if any (only on sale while it lasts).
+export const festivalOfRecipe = (id: string): FestivalId | null => CLASSIC_RECIPES.find((classic) => classic.id === id)?.festival as FestivalId | undefined ?? null;
+
+// The festival's last day, as the real calendar says it ("3 novembre", "November 3").
+export const festivalLastDay = (id: FestivalId, language: string): string => {
+  const [month, day] = FESTIVALS[id].to;
+  return new Date(2000, month - 1, day).toLocaleDateString(language, { day: "numeric", month: "long" });
 };
 
 // Follows the real date: a festival starting puts its ingredient on sale (with a few free portions) and its
