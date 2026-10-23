@@ -1,8 +1,10 @@
 // The customer book remembers everyone who was served, by name: their look, how often they came
 // and what they ordered. Customers who come back keep their look and often reorder their favourite.
+import type { FestivalId } from "../data/festivals";
 import type { IngredientId } from "../data/ingredients";
+import { CLASSIC_RECIPES } from "../data/recipes";
 import { pickRandom, randomIndex } from "../utils/random";
-import { activeMenu } from "./menu";
+import { activeMenu, canCook } from "./menu";
 import { fillingsOf } from "./pizza";
 import type { Customer, CustomerBookEntry, GameState } from "./types";
 
@@ -21,6 +23,8 @@ export const FAVORITE_REORDER_CHANCE = 0.6;
 export interface Regular extends CustomerBookEntry {
   name: string;
   favoriteRecipeId: string | null;
+  /** Their real favourite is a festival's recipe, back with its festival: until then, the next one is their favourite. */
+  favoriteBackWith: FestivalId | null;
 }
 
 export const bookEntry = (state: GameState, name: string): CustomerBookEntry | undefined => state.customerBook[name];
@@ -32,17 +36,36 @@ export const isRegular = (entry: CustomerBookEntry | undefined): entry is Custom
 
 const regularCount = (state: GameState): number => Object.values(state.customerBook).filter((entry) => entry.regular).length;
 
-// The recipe this customer ordered most, or null.
-export const favoriteRecipeId = (entry: CustomerBookEntry | undefined): string | null => {
-  const [mostOrdered] = Object.entries(entry?.orders ?? {}).sort((a, b) => b[1] - a[1]);
-  return mostOrdered?.[0] ?? null;
+// The recipe this customer ordered most, or null. Given the game, among those that can be made now: still in the book,
+// every ingredient on sale. A festival's recipe sleeps between festivals (the Zucca after Halloween), and a deleted
+// one is gone: the next one they ordered most is their favourite meanwhile. Their orders are all kept, so the
+// festival's recipe is their favourite again when it comes back.
+export const favoriteRecipeId = (entry: CustomerBookEntry | undefined, state?: GameState): string | null => {
+  const ranked = Object.entries(entry?.orders ?? {}).sort((a, b) => b[1] - a[1]);
+  const isMakeable = ([id]: [string, number]) => {
+    const recipe = state?.recipes.find((candidate) => candidate.id === id);
+    return recipe !== undefined && state !== undefined && canCook(state, recipe);
+  };
+  return (state ? ranked.find(isMakeable) : ranked[0])?.[0] ?? null;
 };
+
+// The festival their real favourite comes back with, while it sleeps (null otherwise).
+const favoriteBackWith = (entry: CustomerBookEntry, state: GameState): FestivalId | null => {
+  const allTime = favoriteRecipeId(entry);
+  if (!allTime || allTime === favoriteRecipeId(entry, state)) return null;
+  return (CLASSIC_RECIPES.find((classic) => classic.id === allTime)?.festival as FestivalId | undefined) ?? null;
+};
+
+// A pizza they ordered often enough to call it "the usual" (as many times as it takes to become a regular): a
+// favourite standing in for a sleeping one, ordered only once or twice, is ordered by name.
+export const isTheirUsual = (entry: CustomerBookEntry | undefined, recipeId: string): boolean =>
+  (entry?.orders[recipeId] ?? 0) >= REGULAR_SAME_ORDERS;
 
 // Regulars, most loyal first.
 export const regularsOf = (state: GameState): Regular[] => {
   return Object.entries(state.customerBook)
     .filter(([, entry]) => isRegular(entry))
-    .map(([name, entry]) => ({ name, ...entry, favoriteRecipeId: favoriteRecipeId(entry) }))
+    .map(([name, entry]) => ({ name, ...entry, favoriteRecipeId: favoriteRecipeId(entry, state), favoriteBackWith: favoriteBackWith(entry, state) }))
     .sort((a, b) => b.visits - a.visits);
 };
 
@@ -58,7 +81,7 @@ export const birthdaysToday = (state: GameState): string[] =>
 
 // Something a new regular never wants on their pizza: a filling the player knows, never one of their favourite.
 const pickDislike = (state: GameState, entry: CustomerBookEntry): IngredientId | undefined => {
-  const favorite = state.recipes.find((recipe) => recipe.id === favoriteRecipeId(entry));
+  const favorite = state.recipes.find((recipe) => recipe.id === favoriteRecipeId(entry, state));
   const known = [...new Set(state.recipes.flatMap((recipe) => fillingsOf(recipe.ingredients)))];
   const candidates = known.filter((id) => !favorite?.ingredients.includes(id));
   return candidates.length ? pickRandom(candidates) : undefined;

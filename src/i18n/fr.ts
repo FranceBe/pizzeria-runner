@@ -643,6 +643,7 @@ export const fr = {
     bestStreak: "Meilleure série",
     medal: ({ medal }: { medal: string }) => `médaille ${medal}`,
     likes: ({ recipe }: { recipe: string }) => `Préfère : ${recipe}`,
+    favoriteBack: ({ festival }: { festival: FestivalId }, t: H) => `Sa préférée revient avec ${t.festival(festival)}`,
     dislikes: ({ id }: { id: IngredientId }, t: H) => `N'aime pas : ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }: { days: number }) => (days === 0 ? "🎂 Anniversaire aujourd'hui !" : `🎂 Anniversaire dans ${days} ${plural(days, "jour")}`),
   },

@@ -4,7 +4,8 @@ import { canBorrowFromNonna, dailyCharges, forecastCustomers, NONNA_LOAN } from 
 import { activeMenu, isNewRecipe } from "../game/menu";
 import { ingredientCost } from "../game/pizza";
 import { levelForXp, menuCapacity } from "../game/progression";
-import { regularsOf } from "../game/regulars";
+import { regularsOf, type Regular } from "../game/regulars";
+import { FESTIVALS } from "../data/festivals";
 import { daysLeftInSeason, seasonalRecipe, seasonOf } from "../game/seasons";
 import { tutorialStep } from "../game/tutorial";
 import { useTranslation } from "../i18n/I18nContext";
@@ -75,6 +76,20 @@ const SeasonBadge = ({ day }: { day: number }) => {
   return <span className={`season-badge s-${season}`}>{t("prep.season", { season: t(`seasons.${season}`), days: daysLeftInSeason(day) })}</span>;
 };
 
+// Their favourite and visits; a favourite asleep until its festival is said so, with whatever stands in for it.
+const RegularLine = ({ state, regular }: { state: GameState; regular: Regular }) => {
+  const t = useTranslation();
+  const favorite = state.recipes.find((recipe) => recipe.id === regular.favoriteRecipeId);
+  return (
+    <>
+      <div className="hint">{favorite ? t("prep.regularLine", { recipe: t.recipe(favorite), visits: regular.visits }) : t("journal.visits", { count: regular.visits })}</div>
+      {regular.favoriteBackWith && (
+        <div className="hint">{`${FESTIVALS[regular.favoriteBackWith].emoji} ${t("journal.favoriteBack", { festival: regular.favoriteBackWith })}`}</div>
+      )}
+    </>
+  );
+};
+
 const Regulars = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const regulars = regularsOf(state).slice(0, MAX_REGULARS_SHOWN);
@@ -87,14 +102,7 @@ const Regulars = ({ state }: { state: GameState }) => {
           <CustomerFace customer={regular} mood={0} />
           <div className="grow">
             <strong>{regular.name}</strong>
-            <div className="hint">
-              {t("prep.regularLine", {
-                recipe: t.recipe(
-                  state.recipes.find((recipe) => recipe.id === regular.favoriteRecipeId) ?? { id: regular.favoriteRecipeId ?? "", name: "" },
-                ),
-                visits: regular.visits,
-              })}
-            </div>
+            <RegularLine state={state} regular={regular} />
           </div>
         </div>
       ))}

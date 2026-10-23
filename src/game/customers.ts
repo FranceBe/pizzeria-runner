@@ -12,7 +12,7 @@ import { activeMenu, isNewRecipe, recipeAppeal } from "./menu";
 import { fitAccessory, rollLooks } from "./looks";
 import { seasonalRecipe } from "./seasons";
 import { levelForXp } from "./progression";
-import { bookEntry, favoriteRecipeId, FAVORITE_REORDER_CHANCE, isRegular, pickCustomerName } from "./regulars";
+import { bookEntry, favoriteRecipeId, FAVORITE_REORDER_CHANCE, isRegular, isTheirUsual, pickCustomerName } from "./regulars";
 import type { Customer, CustomerBookEntry, Diet, GameState, Mood, Recipe } from "./types";
 
 // From this level, some customers ask for an extra topping or to leave one out.
@@ -53,7 +53,7 @@ const chooseRecipe = (
   menu: readonly Recipe[],
   entry: CustomerBookEntry | undefined,
   isBirthday: boolean,): { recipe: Recipe; isFavorite: boolean } => {
-  const favorite = menu.find((recipe) => recipe.id === favoriteRecipeId(entry));
+  const favorite = menu.find((recipe) => recipe.id === favoriteRecipeId(entry, state));
   if (favorite && (isBirthday || Math.random() < FAVORITE_REORDER_CHANCE)) return { recipe: favorite, isFavorite: true };
   return { recipe: pickWeighted(menu, menu.map((recipe) => orderWeight(state, recipe))), isFavorite: false };
 };
@@ -111,7 +111,8 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
   // A celebrity asks for the finest pizza on the menu, with an extra topping.
   const { recipe, isFavorite } =
     kind === "celebrity" ? { recipe: [...menu].sort((a, b) => b.price - a.price)[0], isFavorite: false } : chooseRecipe(state, menu, entry, isBirthday);
-  const asUsual = isFavorite && isRegular(entry) && !diet && !forDessert && Math.random() < AS_USUAL_CHANCE;
+  // "The usual" only for a pizza they really have a habit of (tonight's menu has it, as everything ordered).
+  const asUsual = isFavorite && isRegular(entry) && isTheirUsual(entry, recipe.id) && !diet && !forDessert && Math.random() < AS_USUAL_CHANCE;
 
   let ingredients: IngredientId[] = forDiet(diet, recipe.ingredients);
   let extraIngredient: IngredientId | null = null;

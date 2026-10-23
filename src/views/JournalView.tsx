@@ -1,3 +1,4 @@
+import { FESTIVALS } from "../data/festivals";
 import { useState } from "react";
 import { ACHIEVEMENT_IDS, HIDDEN_ACHIEVEMENTS } from "../data/achievements";
 import { GOOD_PAIRINGS, type Pairing } from "../data/recipes";
@@ -251,6 +252,9 @@ const RegularsBook = ({ state }: { state: GameState }) => {
               <div className="grow">
                 <strong>{regular.name}</strong> <span className="hint">· {t("journal.visits", { count: regular.visits })}</span>
                 {favorite && <div className="hint">{t("journal.likes", { recipe: t.recipe(favorite) })}</div>}
+                {regular.favoriteBackWith && (
+                  <div className="hint">{`${FESTIVALS[regular.favoriteBackWith].emoji} ${t("journal.favoriteBack", { festival: regular.favoriteBackWith })}`}</div>
+                )}
                 {regular.dislikes && <div className="hint">{t("journal.dislikes", { id: regular.dislikes })}</div>}
                 {regular.birthday && <div className="hint">{t("journal.birthdayIn", { days: daysUntilBirthday(state, regular.birthday) })}</div>}
               </div>

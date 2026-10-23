@@ -616,6 +616,7 @@ export const en: Dictionary = {
     bestStreak: "Best streak",
     medal: ({ medal }) => `${medal} medal`,
     likes: ({ recipe }) => `Favourite: ${recipe}`,
+    favoriteBack: ({ festival }, t) => `Their favourite is back with ${t.festival(festival)}`,
     dislikes: ({ id }, t) => `Doesn't like: ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }) => (days === 0 ? "🎂 Birthday today!" : `🎂 Birthday in ${days} ${plural(days, "day")}`),
   },

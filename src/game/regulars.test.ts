@@ -6,6 +6,8 @@ import {
   ensureLocals, lapseAbsentRegulars, LAPSE_DAYS, LOCALS_COUNT, MAX_REGULARS, pickCustomerName, recordVisit, regularsOf, favoriteRecipeId, REGULAR_SAME_ORDERS,
 } from "./regulars";
 import { createCustomer, tipChance } from "./customers";
+import { createClassicRecipe } from "./menu";
+import { CLASSIC_RECIPES } from "../data/recipes";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -151,5 +153,60 @@ describe("saves from version 9", () => {
     expect(state.locals).toContain("Someone");
     expect(state.customerBook["Name 0"]).toMatchObject({ choiceOrders: { margherita: 3 } });
     expect("lapsed" in state.customerBook["Passing by"]).toBe(false);
+  });
+});
+
+describe("a regular whose favourite is a festival's recipe", () => {
+  // Halloween with the Zucca on the menu, then the day after it ends, then next Halloween.
+  const HALLOWEEN = "2026-10-25";
+  const AFTER = "2026-11-10";
+  const withZuccaFan = (orders: Record<string, number>) => {
+    const state = play(makeState(), { type: "syncCalendar", date: HALLOWEEN });
+    expect(state.recipes.some((recipe) => recipe.id === "zucca")).toBe(true);
+    state.recipes = state.recipes.map((recipe) => (recipe.id === "zucca" ? { ...recipe, onMenu: true } : recipe));
+    state.customerBook = { Luca: makeBookEntry({ visits: 9, orders, regular: true }) };
+    return state;
+  };
+
+  it("keeps the next pizza they ordered most as their favourite until the festival comes back", () => {
+    const halloween = withZuccaFan({ zucca: 6, margherita: 3 });
+    expect(favoriteRecipeId(halloween.customerBook.Luca, halloween)).toBe("zucca");
+    const after = play(halloween, { type: "syncCalendar", date: AFTER });
+    expect(favoriteRecipeId(after.customerBook.Luca, after)).toBe("margherita");
+    expect(regularsOf(after)[0]).toMatchObject({ favoriteRecipeId: "margherita", favoriteBackWith: "halloween" });
+    // Nothing of their past is lost: back with the festival.
+    const nextYear = play(after, { type: "syncCalendar", date: "2027-10-25" });
+    expect(favoriteRecipeId(nextYear.customerBook.Luca, nextYear)).toBe("zucca");
+    expect(regularsOf(nextYear)[0].favoriteBackWith).toBeNull();
+  });
+
+  it("has no favourite meanwhile if the festival's recipe is all they ever ordered", () => {
+    const after = play(withZuccaFan({ zucca: 6 }), { type: "syncCalendar", date: AFTER });
+    expect(regularsOf(after)[0]).toMatchObject({ favoriteRecipeId: null, favoriteBackWith: "halloween" });
+  });
+
+  it("moves on to the next pizza when their favourite is deleted from the book", () => {
+    const state = makeState();
+    const marinara = CLASSIC_RECIPES.find((classic) => classic.id === "marinara");
+    if (!marinara) throw new Error("no marinara");
+    state.recipes = [...state.recipes, createClassicRecipe(marinara, { onMenu: true, newUntil: 0 })];
+    marinara.ingredients.forEach((id) => (state.unlocked[id] = true));
+    state.customerBook = { Luca: makeBookEntry({ orders: { margherita: 5, marinara: 2 }, regular: true }) };
+    const deleted = play(state, { type: "deleteRecipe", recipeId: "margherita" });
+    expect(favoriteRecipeId(deleted.customerBook.Luca, deleted)).toBe("marinara");
+    expect(regularsOf(deleted)[0].favoriteBackWith).toBeNull();
+  });
+
+  it("never asks for the usual for a pizza they hardly ever ordered, nor for one that isn't on the menu", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    // Their stand-in favourite, ordered twice: by name.
+    const after = play(withZuccaFan({ zucca: 6, margherita: 2 }), { type: "syncCalendar", date: AFTER });
+    const byName = createCustomer(after, "regular", { name: "Luca" });
+    expect(byName).toMatchObject({ recipeId: "margherita", asUsual: false });
+    // Ordered three times: a real habit.
+    const habit = play(withZuccaFan({ zucca: 6, margherita: 3 }), { type: "syncCalendar", date: AFTER });
+    expect(createCustomer(habit, "regular", { name: "Luca" })).toMatchObject({ recipeId: "margherita", asUsual: true });
+    // The Zucca itself, never once out of its festival.
+    expect(createCustomer(play(withZuccaFan({ zucca: 6 }), { type: "syncCalendar", date: AFTER }), "regular", { name: "Luca" })?.recipeId).not.toBe("zucca");
   });
 });
