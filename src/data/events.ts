@@ -4,6 +4,8 @@ export const DAY_EVENT_IDS = [
   "market", "rain", "festival", "critic", "sunny",
   // Incidents: a twist in how the day plays, always with something in return.
   "powerCut", "lateDelivery", "inspection", "scooterStrike",
+  // Evenings with a time: something happens at a given hour on the evening's clock (game/clock.ts).
+  "match",
 ] as const;
 export type DayEventId = (typeof DAY_EVENT_IDS)[number];
 
@@ -39,7 +41,17 @@ export const DAY_EVENTS: Record<DayEventId, DayEvent> = {
   inspection: { weight: 1, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
   // No deliveries today (only happens with the delivery upgrade), but more people eat in.
   scooterStrike: { weight: 1, customerFactor: 1.2, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
+  // The match on TV: quiet once it kicks off, then everyone at once at half-time (see MATCH_KICKOFF, MATCH_HALFTIME).
+  match: { weight: 2, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 4 },
 };
+
+// The match, on the evening's clock (minutes since midnight): customers come this much more slowly once it kicks off,
+// then rush in at half-time for this long (as the rush hour: quick succession, tips doubled), instead of the evening's
+// usual rush.
+export const MATCH_KICKOFF = 21 * 60;
+export const MATCH_HALFTIME = 21 * 60 + 45;
+export const MATCH_FIRST_HALF_PACE = 1.8;
+export const HALFTIME_SECONDS = 30;
 
 // Late delivery: the ingredient comes this many seconds into the service, with this many free portions.
 export const LATE_DELIVERY_SECONDS = 60;

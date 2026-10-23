@@ -132,6 +132,13 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 - **Incidents**, from day 5, each with something in return: a power cut (one oven, one pizza at a time, but bigger
   tips; a wood-fired oven keeps going, and when every oven burns wood it is a missing wood delivery instead), a late delivery (one ingredient arrives a minute into the service, with free portions), a health inspection
   (a day without binning anything earns lots of reputation) and a scooter strike (no deliveries, more people eating in).
+- **Evenings with a time**, from day 4, on the evening's clock: the match on TV kicks off at 21:00 (customers come
+  more slowly while everyone watches), then the whole street comes in at half-time, around 21:45, for 30 seconds of
+  quick succession and doubled tips (instead of the evening's usual rush). Every evening, the kitchen is told when the
+  last customer comes in.
+- **The morning's list**, "On tonight": the day's event, a real-calendar festival, tonight's goal, the neighbourhood
+  quest and birthdays, one line each (icon, name, the start of what it says, a time or a deadline on the right),
+  tapped open for the rest, rather than a stack of banners.
 - **Neighbourhood quests**, from day 4. **Group orders**: in the morning, someone books a big order for tonight
   (the football club wants 3 Regina and 2 Margherita…). A ticket comes in a little after opening; make the pizzas in any
   order, between customers. The faster the whole order is delivered, the better the medal and the pay (gold, silver,

@@ -211,12 +211,14 @@ export const fr = {
     season: ({ season, days }: { season: string; days: number }) => `${season} · encore ${days} ${plural(days, "jour")}`,
     seasonal: "De saison",
     quest: "Quête du quartier",
+    agenda: "Au programme ce soir",
+    forReal: "pour de vrai",
+    festivalShort: ({ until }: { until: string }) => `Jusqu'au ${until} : un ingrédient et une recette de fête, quel que soit le marché du jeu.`,
+    questDaysShort: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour" : `${days} j`),
+    birthdayTitle: "Anniversaire",
     questReward: ({ reward, xp }: { reward: number; xp: number }, t: H) => `Récompense : ${t.money(reward)} et ${xp} points`,
-    questDeadline: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour !" : `Encore ${days} jours`),
     dailyMenu: ({ recipes }: { recipes: string }) => `Au menu aujourd'hui : ${recipes}.`,
     lateIngredient: ({ id }: { id: IngredientId }, t: H) => `Ce soir, ${lower(t.ingredient(id))} n'arrivera qu'après une minute de service.`,
-    festival: ({ festival, until }: { festival: FestivalId; until: string }, t: H) =>
-      `Pour de vrai, c'est ${t.festival(festival)} (jusqu'au ${until}) : un ingrédient et une recette de fête, quel que soit le marché du jeu.`,
     weekly: "Cette semaine",
     weeklyReward: ({ reward, bonus }: { reward: number; bonus: number }, t: H) =>
       `${t.money(reward)} par mission, ${t.money(bonus)} de plus pour les trois`,
@@ -694,6 +696,10 @@ export const fr = {
     lateDelivery: { name: "Livraison en retard", describe: "Un ingrédient arrivera en cours de service, avec quelques portions offertes pour se faire pardonner." },
     inspection: { name: "Contrôle sanitaire", describe: "Une journée sans rien jeter rapporte beaucoup de réputation." },
     scooterStrike: { name: "Grève des scooters", describe: "Pas de livraisons aujourd'hui, mais plus de monde sur place." },
+    match: {
+      name: "Match à la télé",
+      describe: "Coup d'envoi à 21:00 : la rue se vide un peu… puis tout le monde débarque à la mi-temps, vers 21:45. Pourboires doublés pendant la vague.",
+    },
   } satisfies Record<DayEventId | "woodShortage", { name: string; describe: string }>,
 
   achievements: {
@@ -797,6 +803,9 @@ export const fr = {
       `${t.ingredient(ingredientId)} est arrivé, avec ${portions} portions offertes.`,
     notDeliveredYet: ({ ingredientId }: { ingredientId: IngredientId }, t: H) => `${t.ingredient(ingredientId)} n'est pas encore livré.`,
     rush: "Coup de feu ! Les clients arrivent en rafale, pourboires doublés.",
+    kickoff: "📺 Coup d'envoi ! Tout le monde regarde le match, c'est plus calme.",
+    halftime: "📺 Mi-temps ! Tout le quartier a faim d'un coup, pourboires doublés.",
+    lastOrders: "Dernier client de la soirée : on y est presque !",
     batchDone: ({ giver, medal, reward }: { giver: QuestGiver; medal: "gold" | "silver" | "bronze"; reward: number }, t: H) =>
       `Commande livrée : médaille ${t.medal(medal)} ! ${t.questGiver(giver)} paie ${t.money(reward)}.`,
     batchUnfinished: ({ giver, reward }: { giver: QuestGiver; reward: number }, t: H) =>

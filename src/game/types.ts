@@ -226,6 +226,11 @@ export interface Service {
   batchArrivesIn?: number | null;
   batch?: { elapsed: number } | null;
   celebrityCame?: boolean;
+  /** The match evening: the kick-off and the half-time already happened. */
+  matchKickedOff?: boolean;
+  halftimeCame?: boolean;
+  /** The last customer of the evening came in, and the kitchen was told. */
+  lastOrdersSaid?: boolean;
   /** Closed before the end: the day can't earn its "everyone served" star. */
   closedEarly?: boolean;
   oven: OvenPizza[];

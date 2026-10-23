@@ -197,12 +197,14 @@ export const en: Dictionary = {
     season: ({ season, days }) => `${season} · ${days} ${plural(days, "day")} left`,
     seasonal: "In season",
     quest: "Neighbourhood quest",
+    agenda: "On tonight",
+    forReal: "for real",
+    festivalShort: ({ until }) => `Until ${until}: a festive ingredient and recipe, whatever the game's market.`,
+    questDaysShort: ({ days }) => (days <= 1 ? "Last day" : `${days} days`),
+    birthdayTitle: "Birthday",
     questReward: ({ reward, xp }, t) => `Reward: ${t.money(reward)} and ${xp} points`,
-    questDeadline: ({ days }) => (days <= 1 ? "Last day!" : `${days} days left`),
     dailyMenu: ({ recipes }) => `On today's menu: ${recipes}.`,
     lateIngredient: ({ id }, t) => `Tonight, ${lower(t.ingredient(id))} only arrives a minute into the service.`,
-    festival: ({ festival, until }, t) =>
-      `For real, it's ${t.festival(festival)} (until ${until}): a festive ingredient and recipe, whatever the game's market.`,
     weekly: "This week",
     weeklyReward: ({ reward, bonus }, t) => `${t.money(reward)} per mission, ${t.money(bonus)} more for all three`,
     batchTonight: ({ items }) => `To deliver tonight, all together: ${items}. The faster, the better paid.`,
@@ -667,6 +669,10 @@ export const en: Dictionary = {
     lateDelivery: { name: "Late delivery", describe: "One ingredient arrives during the service, with a few free portions by way of apology." },
     inspection: { name: "Health inspection", describe: "A day without binning anything earns lots of reputation." },
     scooterStrike: { name: "Scooter strike", describe: "No deliveries today, but more people eat in." },
+    match: {
+      name: "Match on TV",
+      describe: "Kick-off at 21:00: the street goes quiet for a while… then everyone comes in at half-time, around 21:45. Tips doubled during the wave.",
+    },
   },
 
   achievements: {
@@ -760,6 +766,9 @@ export const en: Dictionary = {
     lateArrived: ({ ingredientId, portions }, t) => `${t.ingredient(ingredientId)} has arrived, with ${portions} free portions.`,
     notDeliveredYet: ({ ingredientId }, t) => `${t.ingredient(ingredientId)} hasn't been delivered yet.`,
     rush: "Rush hour! Customers pour in, tips are doubled.",
+    kickoff: "📺 Kick-off! Everyone is watching the match, it's quieter.",
+    halftime: "📺 Half-time! The whole street is suddenly hungry, tips doubled.",
+    lastOrders: "Last customer of the evening: almost there!",
     batchDone: ({ giver, medal, reward }, t) => `Order delivered: ${t.medal(medal)} medal! ${t.questGiver(giver)} pays ${t.money(reward)}.`,
     batchUnfinished: ({ giver, reward }, t) => `${t.questGiver(giver)} didn't get everything in time and pays ${t.money(reward)} for what arrived.`,
     celebrity: "{name} loved it! Their signed photo is up on the front.",

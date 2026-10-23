@@ -484,11 +484,6 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
 /* ---------------------------------------------------------------
    Daily events and the time challenge (prep screen)
 ---------------------------------------------------------------- */
-.event-banner { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 14px; border-radius: 12px;
-  background: var(--ev-bg, var(--gold-soft)); border: 1px solid var(--ev-edge, var(--gold)); }
-.event-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--ev-edge, var(--gold)); }
-.event-banner strong { font-size: 16px; }
-.event-d { flex-basis: 100%; font-size: 13.5px; color: var(--muted); }
 .ev-market { --ev-bg: var(--basil-soft); --ev-edge: var(--basil); }
 .ev-rain { --ev-bg: #e2ebf5; --ev-edge: #4b74a6; }
 .ev-festival { --ev-bg: #f8e4f0; --ev-edge: #b24a8a; }
@@ -702,14 +697,9 @@ header.top .top-inner { position: relative; }
 .s-autumn { --sb: #f8e1cc; --sf: #a24d14; } .s-winter { --sb: #e2ebf5; --sf: #3b5f8f; }
 .tag.seasonal { background: #e5f4dc; color: #3d7a2a; margin-left: 4px; }
 .tag.nonna-tag { background: #f3e3f6; color: #8a3c99; margin-left: 4px; }
-.quest { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); }
-.quest .event-label { color: var(--basil); }
-.quest-deadline { font-size: 12px; font-weight: 700; color: var(--muted); }
-.quest-t { margin: 0; font-weight: 600; }
 .quest-progress { position: relative; height: 18px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .quest-progress > i { display: block; height: 100%; background: var(--basil); border-radius: 99px; transition: width .4s; }
 .quest-progress > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--ink); }
-.birthday-note { padding: 10px 14px; border-radius: 12px; background: #fde7ef; border: 1px solid #e0708f; color: #7a2343; font-weight: 600; font-size: 14px; }
 
 /* Tickets: diets, tables, birthdays, drinks */
 .mod.diet { background: #e5f4dc; color: #3d7a2a; }
@@ -1300,3 +1290,34 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .tonight-line { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; font-size: 13px; opacity: .65; }
 .tonight-line.on { opacity: 1; }
 .tonight-line strong { white-space: nowrap; }
+
+/* The morning's "on tonight" list: one line per thing (event, festival, goal, quest, birthday), its colour on the left
+   edge, the start of what it says; tapped open, the whole of it */
+.agenda { display: flex; flex-direction: column; gap: 6px; }
+.agenda-h { margin: 0 0 2px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.agenda-row { border-radius: 10px; background: var(--ev-bg, var(--surface2)); border-left: 4px solid var(--ev-edge, var(--line)); }
+.agenda-row > summary { display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 8px; cursor: pointer; list-style: none; }
+.agenda-row > summary::-webkit-details-marker { display: none; }
+.agenda-row > summary::after { content: "▾"; flex: none; font-size: 12px; color: var(--muted); transition: transform .15s; }
+.agenda-row[open] > summary::after { transform: rotate(180deg); }
+.agenda-ic { flex: none; width: 24px; font-size: 19px; line-height: 1; text-align: center; }
+.agenda-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.agenda-title { display: flex; align-items: center; gap: 6px; font-size: 14px; min-width: 0; }
+.agenda-title strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-title .tag { flex: none; font-size: 10px; }
+.agenda-text { font-size: 13px; line-height: 1.35; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-row[open] .agenda-text { white-space: normal; }
+.agenda-aside { flex: none; padding: 2px 8px; border-radius: 99px; background: var(--surface); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.agenda-more { padding: 0 12px 10px 42px; }
+.agenda-more .quest-details { display: flex; flex-direction: column; gap: 4px; }
+.ag-goal { --ev-bg: var(--basil-soft); --ev-edge: var(--basil); }
+.ag-quest { --ev-bg: var(--gold-soft); --ev-edge: var(--gold); }
+.ag-birthday { --ev-bg: #fde7ef; --ev-edge: #e0708f; }
+.ev-match { --ev-bg: #e1eef6; --ev-edge: #2f6f9f; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ag-birthday { --ev-bg: #3a1f2a; --ev-edge: #e88aa6; }
+  :root:not([data-theme="light"]) .ev-match { --ev-bg: #18293a; --ev-edge: #6fa7d4; }
+}
+:root[data-theme="dark"] .ag-birthday { --ev-bg: #3a1f2a; --ev-edge: #e88aa6; }
+:root[data-theme="dark"] .ev-match { --ev-bg: #18293a; --ev-edge: #6fa7d4; }
+.prep-head + .sub { margin-top: 8px; }

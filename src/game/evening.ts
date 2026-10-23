@@ -1,11 +1,11 @@
 // What happens over the evening, besides customers: the rush hour, tonight's group order, a late delivery.
-import { LATE_DELIVERY_GIFT, LATE_DELIVERY_SECONDS } from "../data/events";
+import { HALFTIME_SECONDS, LATE_DELIVERY_GIFT, LATE_DELIVERY_SECONDS, MATCH_FIRST_HALF_PACE, MATCH_HALFTIME, MATCH_KICKOFF } from "../data/events";
 import { randomBetween } from "../utils/random";
 import {
   BATCH_ARRIVES_AFTER, BATCH_GOLD_XP, deliveredCount, medalFor, openBatch, pizzaCount, rewardFor, unfinishedPay,
   batchItemFor,
 } from "./batch";
-import { expectedEveningSeconds } from "./clock";
+import { eveningMinutes, expectedEveningSeconds } from "./clock";
 import { receivePayment } from "./economy";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
@@ -24,7 +24,8 @@ const QUEST_LOG_SIZE = 30;
 
 // When the restaurant opens: plans the rush and the group order. Mutates the service.
 export const planEvening = (state: GameState, service: Service, customerCount: number): void => {
-  const isBusy = levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS;
+  // A match evening has its own rush, at half-time.
+  const isBusy = levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS && state.event !== "match";
   service.rushAtServed = isBusy ? Math.floor(customerCount * randomBetween(0.3, 0.55)) : null;
   const { quest } = state;
   service.batchArrivesIn = quest?.kind === "batch" && quest.deadlineDay === state.day ? BATCH_ARRIVES_AFTER : null;
@@ -53,11 +54,40 @@ export const advanceEvening = (state: GameState, service: Service, seconds: numb
     service.batch.elapsed += seconds;
   }
 
+  if (state.event === "match") followMatch(state, service);
+
   if (state.event === "lateDelivery" && state.lateIngredient && !service.lateArrived && service.elapsed >= LATE_DELIVERY_SECONDS) {
     service.lateArrived = true;
     state.stock[state.lateIngredient] = (state.stock[state.lateIngredient] || 0) + LATE_DELIVERY_GIFT;
     pushToast(state, { key: "lateArrived", params: { ingredientId: state.lateIngredient, portions: LATE_DELIVERY_GIFT } }, "gold");
   }
+};
+
+// The match on TV: the kick-off empties the street a little, half-time brings everyone in at once. Mutates state.
+const followMatch = (state: GameState, service: Service): void => {
+  const minutes = eveningMinutes(service);
+  if (!service.matchKickedOff && minutes >= MATCH_KICKOFF) {
+    service.matchKickedOff = true;
+    pushToast(state, { key: "kickoff" });
+  }
+  if (!service.halftimeCame && minutes >= MATCH_HALFTIME) {
+    service.halftimeCame = true;
+    service.rush = { secondsLeft: HALFTIME_SECONDS };
+    // The first of them is at the door already.
+    service.nextArrivalIn = Math.min(service.nextArrivalIn, 0.5);
+    pushToast(state, { key: "halftime" }, "gold");
+  }
+};
+
+// How much more slowly customers come right now: during the first half of the match, everyone is watching it.
+export const arrivalPace = (state: GameState, service: Service): number =>
+  state.event === "match" && service.matchKickedOff && !service.halftimeCame ? MATCH_FIRST_HALF_PACE : 1;
+
+// The last customer of the evening came in: said once, so the end is in sight. Mutates state.
+export const announceLastOrders = (state: GameState, service: Service): void => {
+  if (service.lastOrdersSaid || service.customersToCome > 0 || service.challenge) return;
+  service.lastOrdersSaid = true;
+  pushToast(state, { key: "lastOrders" });
 };
 
 // After a pizza is served: starts the rush when its moment comes. Mutates the service.

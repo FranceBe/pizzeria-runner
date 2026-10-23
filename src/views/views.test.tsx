@@ -394,6 +394,27 @@ describe("views", () => {
     expect(html).toContain("Inspection passed: +40 reputation");
   });
 
+  it("gathers everything on tonight in one list, one line each, however much there is", () => {
+    const state = playedState();
+    state.event = "match";
+    state.festival = "halloween";
+    state.tonightGoal = { day: state.day, kind: "lightning", target: 3, progress: 0, status: "open" };
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
+    expect(html.match(/class="agenda"/g)).toHaveLength(1);
+    expect(html.match(/class="agenda-row /g)).toHaveLength(5);
+    // The event, with its time on the evening's clock; the festival, said to be the real one; the goal, optional.
+    expect(html).toContain("Match on TV");
+    expect(html).toContain("21:00");
+    expect(html).toContain("🎃");
+    expect(html).toContain("for real");
+    expect(html).toContain("Tonight&#x27;s goal");
+    expect(html).toContain("optional");
+    expect(html).toContain("Neighbourhood quest");
+    expect(html).toContain("Birthday");
+    // No more stacked banners.
+    expect(html).not.toContain("event-banner");
+  });
+
   it("shows the week's missions, the festival and tonight's group order in the morning", () => {
     const state = playedState();
     state.festival = "halloween";
@@ -403,7 +424,7 @@ describe("views", () => {
     expect(html).toContain("This week");
     expect(html).toContain("12 / 30");
     // A real-calendar festival says so, with its real last day, whatever the game's market season.
-    expect(html).toContain("🎃 For real, it&#x27;s Halloween (until November 3)");
+    expect(html).toContain("Until November 3: a festive ingredient");
     expect(html).toContain("To deliver tonight, all together: 3 Margherita.");
   });
 

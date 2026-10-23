@@ -11,7 +11,10 @@ import { birthdaysToday, ensureLocals, lapseAbsentRegulars, recordVisit } from "
 import { CUSTOMER_NAMES } from "../../data/customers";
 import { dailyCharges, forecastCustomers, payCharges, receivePayment, spend } from "../economy";
 import { pickLateIngredient, rollDayEvent } from "../events";
-import { advanceEvening, deliverToBatch, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR, settleUnfinishedBatch } from "../evening";
+import {
+  advanceEvening, announceLastOrders, arrivalPace, deliverToBatch, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR,
+  settleUnfinishedBatch,
+} from "../evening";
 import { syncFestival } from "../calendar";
 import { BATCH_ID } from "../batch";
 import { starCount, starGoals } from "../stars";
@@ -357,7 +360,7 @@ const letChallengeCustomerIn = (service: Service): void => {
 const letCustomersIn = (state: GameState, service: Service): void => {
   if (service.challenge) return letChallengeCustomerIn(service);
   service.nextArrivalIn =
-    randomBetween(MIN_SECONDS_BETWEEN_ARRIVALS, MAX_SECONDS_BETWEEN_ARRIVALS) * (service.rush ? RUSH_ARRIVAL_FACTOR : 1);
+    randomBetween(MIN_SECONDS_BETWEEN_ARRIVALS, MAX_SECONDS_BETWEEN_ARRIVALS) * (service.rush ? RUSH_ARRIVAL_FACTOR : 1) * arrivalPace(state, service);
 
   const birthdayGuest = nextBirthdayGuest(service);
   if (birthdayGuest) {
@@ -495,7 +498,10 @@ export const serviceActions = {
     service.nextArrivalIn -= seconds;
     const someoneCanArrive =
       service.nextArrivalIn <= 0 && service.customersToCome > 0 && service.customers.length < maxQueueLength(state);
-    if (someoneCanArrive) letCustomersIn(state, service);
+    if (someoneCanArrive) {
+      letCustomersIn(state, service);
+      announceLastOrders(state, service);
+    }
     if (service.charmsPending) charmWaitingCustomers(service);
     if (!service.challenge) bringBackForDessert(state, service, seconds);
   },
