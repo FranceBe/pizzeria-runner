@@ -8,6 +8,8 @@ import { LIGHTNING_SECONDS, TONIGHT_REWARD, TONIGHT_XP } from "../data/tonight";
 import { festivalLastDay } from "../game/calendar";
 import { formatEveningTime } from "../game/clock";
 import { birthdaysToday } from "../game/regulars";
+import { forecastCustomers } from "../game/economy";
+import { tonightsRush } from "../game/evening";
 import { shownEvent } from "../game/service";
 import type { GameState } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
@@ -50,6 +52,11 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
       aside: state.event === "match" ? formatEveningTime(MATCH_KICKOFF) : state.event === "wedding" ? formatEveningTime(WEDDING_TIME) : undefined,
       tone: `ev-${state.event}`,
     });
+  }
+  // Tonight's rush, if the evening is busy enough (as things stand this morning).
+  const rush = tonightsRush(state, forecastCustomers(state));
+  if (rush !== null) {
+    items.push({ id: "rush", icon: "🔥", title: t("prep.rushTitle"), text: t("prep.rushTonight", { time: formatEveningTime(rush) }), aside: formatEveningTime(rush), tone: "ag-rush" });
   }
   if (state.festival) {
     items.push({

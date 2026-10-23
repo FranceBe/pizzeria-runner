@@ -5,7 +5,8 @@ import { achievementProgress } from "./achievements";
 import { medalFor, medalInReach } from "./batch";
 import { festivalOn } from "./calendar";
 import { createCustomer } from "./customers";
-import { RUSH_SECONDS } from "./evening";
+import { BUSY_PACE, CALM_PACE, RUSH_EARLIEST, RUSH_LATEST, RUSH_SECONDS, RUSH_WARNING_MINUTES, curvePace } from "./evening";
+import { EVENING_MINUTES, OPENING_MINUTES } from "./clock";
 import { forecastCustomers } from "./economy";
 import { destinationOf, ovensOf } from "./service";
 import { hydrateState } from "./state";
@@ -63,23 +64,58 @@ describe("pizzas cooling on the pass", () => {
 });
 
 describe("rush hour", () => {
-  it("starts after a share of the evening, doubles tips and speeds arrivals, then ends", () => {
-    vi.spyOn(Math, "random").mockReturnValue(NO_TIP);
-    let state = play(makeState({ xp: 300, upgrades: { ...makeState().upgrades, salle: 2 } }), { type: "openRestaurant" });
-    const rushAt = serviceOf(state).rushAtServed;
-    expect(rushAt).toBeGreaterThan(0);
-    serviceOf(state).customers = [makeCustomer(), makeCustomer({ id: "c2", name: "Zoé" })];
-    serviceOf(state).stats.served = (rushAt ?? 1) - 1;
-    state = serveReady(bake(state));
-    expect(serviceOf(state).rush).toEqual({ secondsLeft: RUSH_SECONDS });
-    expect(state.toasts.map((toast) => toast.key)).toContain("rush");
+  const AT = 20 * 60 + 30;
+  // A busy evening with tonight's rush drawn for AT, the clock moved to `minutes`.
+  const busyEvening = () =>
+    play(makeState({ xp: 300, upgrades: { ...makeState().upgrades, salle: 2 }, rushPlan: { day: 1, at: AT } }), { type: "openRestaurant" });
+  const at = (state: GameState, minutes: number): GameState => {
+    const service = serviceOf(state);
+    return { ...state, service: { ...service, elapsed: ((minutes - OPENING_MINUTES) / EVENING_MINUTES) * (service.expectedSeconds ?? 1) } };
+  };
+  const toastKeys = (state: GameState) => state.toasts.map((toast) => toast.key);
+
+  it("comes at the time announced in the morning, with a warning first, doubles tips and speeds arrivals, then ends", () => {
+    let state = busyEvening();
+    expect(serviceOf(state).rushAtMinutes).toBe(AT);
+    state = play(at(state, AT - RUSH_WARNING_MINUTES + 1), { type: "tick", seconds: 0.01 });
+    expect(toastKeys(state)).toContain("rushSoon");
+    expect(serviceOf(state).rush).toBeFalsy();
+    state = play(at(state, AT + 1), { type: "tick", seconds: 0.01 });
+    expect(serviceOf(state).rush?.secondsLeft).toBeCloseTo(RUSH_SECONDS, 1);
+    expect(toastKeys(state)).toContain("rush");
+    expect(serviceOf(state).rushAtMinutes).toBeNull();
     state = play(state, { type: "tick", seconds: RUSH_SECONDS });
     expect(serviceOf(state).rush).toBeNull();
   });
 
-  it("never happens on quiet evenings or before level 3", () => {
-    const state = play(makeState({ xp: 0 }), { type: "openRestaurant" });
-    expect(serviceOf(state).rushAtServed).toBeNull();
+  it("is drawn each morning from level 3, between its earliest and latest times, in 5-minute steps", () => {
+    const next = play(makeState({ xp: 300 }), { type: "startNextDay" });
+    expect(next.rushPlan?.day).toBe(next.day);
+    const time = next.rushPlan?.at ?? 0;
+    expect(time).toBeGreaterThanOrEqual(RUSH_EARLIEST);
+    expect(time).toBeLessThanOrEqual(RUSH_LATEST);
+    expect(time % 5).toBe(0);
+    expect(play(makeState({ xp: 0 }), { type: "startNextDay" }).rushPlan).toBeNull();
+  });
+
+  it("never happens on quiet evenings, before level 3, or on a match night (half-time is its rush)", () => {
+    expect(serviceOf(play(makeState({ xp: 0, rushPlan: { day: 1, at: AT } }), { type: "openRestaurant" })).rushAtMinutes).toBeNull();
+    expect(serviceOf(play(makeState({ xp: 300, rushPlan: { day: 1, at: AT }, event: "match", upgrades: { ...makeState().upgrades, salle: 2 } }), { type: "openRestaurant" })).rushAtMinutes).toBeNull();
+    // A plan from another day counts for nothing.
+    expect(serviceOf(play(makeState({ xp: 300, rushPlan: { day: 0, at: AT }, upgrades: { ...makeState().upgrades, salle: 2 } }), { type: "openRestaurant" })).rushAtMinutes).toBeNull();
+  });
+});
+
+describe("the shape of an evening", () => {
+  it("is calmer while it opens and as it winds down, busier in between, and about as long on the whole", () => {
+    expect(curvePace(19 * 60 + 10)).toBe(CALM_PACE);
+    expect(curvePace(21 * 60)).toBe(BUSY_PACE);
+    expect(curvePace(22 * 60 + 30)).toBe(CALM_PACE);
+    // The average pace over an evening from 19:00 to 23:00 stays close to one.
+    let total = 0;
+    for (let minute = OPENING_MINUTES; minute < OPENING_MINUTES + EVENING_MINUTES; minute++) total += curvePace(minute);
+    expect(total / EVENING_MINUTES).toBeGreaterThan(0.95);
+    expect(total / EVENING_MINUTES).toBeLessThan(1.08);
   });
 });
 

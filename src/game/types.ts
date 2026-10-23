@@ -226,8 +226,10 @@ export interface Service {
   lateArrived?: boolean;
   /** Rush hour: customers come in quick succession, tips are doubled. */
   rush?: { secondsLeft: number } | null;
-  /** The rush starts once this many pizzas are served (null: no rush tonight, or it already happened). */
-  rushAtServed?: number | null;
+  /** Tonight's rush hour, at this time on the evening's clock (null: none tonight, or it already came). */
+  rushAtMinutes?: number | null;
+  /** The kitchen was told the rush is near. */
+  rushWarned?: boolean;
   /** Tonight's group order: seconds before it comes in, then seconds since it came in. */
   batchArrivesIn?: number | null;
   batch?: { elapsed: number } | null;
@@ -573,6 +575,8 @@ export interface GameState {
   weekly: Weekly | null;
   /** Tonight's optional goal (game/tonight.ts), for the day it was drawn. */
   tonightGoal: TonightGoal | null;
+  /** Tonight's rush hour, drawn in the morning so it can be announced: the time on the evening's clock. */
+  rushPlan: { day: number; at: number } | null;
   /** Signed photos of the celebrities who came, shown on the front. */
   celebrityWall: string[];
   /** Someone typed the code. */

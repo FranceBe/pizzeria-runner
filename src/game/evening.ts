@@ -1,6 +1,5 @@
 // What happens over the evening, besides customers: the rush hour, tonight's group order, a late delivery.
 import { WEDDING_TIME, HALFTIME_SECONDS, LATE_DELIVERY_GIFT, LATE_DELIVERY_SECONDS, MATCH_FIRST_HALF_PACE, MATCH_HALFTIME, MATCH_KICKOFF } from "../data/events";
-import { randomBetween } from "../utils/random";
 import {
   BATCH_ARRIVES_AFTER, BATCH_GOLD_XP, deliveredCount, medalFor, openBatch, pizzaCount, rewardFor, unfinishedPay,
   batchItemFor,
@@ -13,9 +12,19 @@ import { pushPop, pushToast } from "./toasts";
 import { recordWeekly } from "./weekly";
 import type { GameState, ReadyPizza, Service } from "./types";
 
-// Rush hour: from this level, once in a busy evening, after a share of the pizzas are served.
-const RUSH_LEVEL = 3;
-const RUSH_MIN_CUSTOMERS = 8;
+// Rush hour: from this level, once in a busy evening, at a time drawn in the morning (so it can be announced), the
+// kitchen warned a little before.
+export const RUSH_LEVEL = 3;
+export const RUSH_MIN_CUSTOMERS = 8;
+export const RUSH_EARLIEST = 20 * 60 + 15;
+export const RUSH_LATEST = 21 * 60 + 15;
+export const RUSH_WARNING_MINUTES = 15;
+// The shape of an evening: customers come a little more slowly while it opens and as it winds down, a little faster
+// in between (on the whole, an evening lasts about as long).
+export const CALM_UNTIL = 19 * 60 + 40;
+export const WIND_DOWN_FROM = 22 * 60 + 15;
+export const CALM_PACE = 1.3;
+export const BUSY_PACE = 0.85;
 export const RUSH_SECONDS = 40;
 // During the rush, customers come in this much faster and tips are multiplied by RUSH_TIP_FACTOR.
 export const RUSH_ARRIVAL_FACTOR = 0.4;
@@ -23,11 +32,26 @@ export const RUSH_TIP_FACTOR = 2;
 
 const QUEST_LOG_SIZE = 30;
 
+// A rush tonight: a pizzeria big enough, an evening busy enough, and not a match (it has its own, at half-time).
+export const isRushEvening = (state: GameState, customerCount: number): boolean =>
+  levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS && state.event !== "match";
+
+// Each morning, from the level of rushes: when tonight's would come (whether it comes depends on the evening being
+// busy enough, at opening). Mutates state.
+export const ensureRushPlan = (state: GameState): void => {
+  if (state.rushPlan?.day === state.day) return;
+  const steps = (RUSH_LATEST - RUSH_EARLIEST) / 5;
+  state.rushPlan = levelForXp(state.xp) >= RUSH_LEVEL ? { day: state.day, at: RUSH_EARLIEST + 5 * Math.floor(Math.random() * (steps + 1)) } : null;
+};
+
+// Tonight's rush, as announced in the morning: its time, or null.
+export const tonightsRush = (state: GameState, customerCount: number): number | null =>
+  state.rushPlan?.day === state.day && isRushEvening(state, customerCount) ? state.rushPlan.at : null;
+
 // When the restaurant opens: plans the rush and the group order. Mutates the service.
 export const planEvening = (state: GameState, service: Service, customerCount: number): void => {
-  // A match evening has its own rush, at half-time.
-  const isBusy = levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS && state.event !== "match";
-  service.rushAtServed = isBusy ? Math.floor(customerCount * randomBetween(0.3, 0.55)) : null;
+  service.rushAtMinutes = tonightsRush(state, customerCount);
+  service.rushWarned = false;
   const { quest } = state;
   const isGroupOrderTonight = quest?.kind === "batch" && quest.deadlineDay === state.day;
   // The wedding banquet comes at its time on the evening's clock; a neighbourhood group order soon after opening.
@@ -60,6 +84,7 @@ export const advanceEvening = (state: GameState, service: Service, seconds: numb
   }
 
   if (state.event === "match") followMatch(state, service);
+  followRush(state, service);
 
   if (state.event === "lateDelivery" && state.lateIngredient && !service.lateArrived && service.elapsed >= LATE_DELIVERY_SECONDS) {
     service.lateArrived = true;
@@ -84,9 +109,28 @@ const followMatch = (state: GameState, service: Service): void => {
   }
 };
 
-// How much more slowly customers come right now: during the first half of the match, everyone is watching it.
+// Tonight's rush: the kitchen warned a little before, then customers in quick succession. Mutates state.
+const followRush = (state: GameState, service: Service): void => {
+  const at = service.rushAtMinutes;
+  if (at == null) return;
+  const minutes = eveningMinutes(service);
+  if (!service.rushWarned && minutes >= at - RUSH_WARNING_MINUTES) {
+    service.rushWarned = true;
+    pushToast(state, { key: "rushSoon", params: { minutes: RUSH_WARNING_MINUTES } }, "warn");
+  }
+  if (minutes < at) return;
+  service.rushAtMinutes = null;
+  service.rush = { secondsLeft: RUSH_SECONDS };
+  pushToast(state, { key: "rush" }, "gold");
+};
+
+// The evening's shape on its clock: calmer while it opens and as it winds down, busier in between.
+export const curvePace = (minutes: number): number => (minutes < CALM_UNTIL || minutes >= WIND_DOWN_FROM ? CALM_PACE : BUSY_PACE);
+
+// How much more slowly customers come right now: the evening's shape, and during the first half of a match, everyone
+// is watching it.
 export const arrivalPace = (state: GameState, service: Service): number =>
-  state.event === "match" && service.matchKickedOff && !service.halftimeCame ? MATCH_FIRST_HALF_PACE : 1;
+  curvePace(eveningMinutes(service)) * (state.event === "match" && service.matchKickedOff && !service.halftimeCame ? MATCH_FIRST_HALF_PACE : 1);
 
 // Tonight's group order hasn't come in yet, or isn't complete: the evening isn't over without it. (Closing early is
 // always there to give up on it.)
@@ -111,13 +155,6 @@ export const announceLastOrders = (state: GameState, service: Service): void => 
   pushToast(state, { key: "lastOrders" });
 };
 
-// After a pizza is served: starts the rush when its moment comes. Mutates the service.
-export const maybeStartRush = (state: GameState, service: Service): void => {
-  if (service.rushAtServed == null || service.stats.served < service.rushAtServed) return;
-  service.rushAtServed = null;
-  service.rush = { secondsLeft: RUSH_SECONDS };
-  pushToast(state, { key: "rush" }, "gold");
-};
 
 // The ingredient is still on its way (late delivery day).
 export const isStillComing = (state: GameState, service: Service, id: string): boolean =>

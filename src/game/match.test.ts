@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { makeState, play, serviceOf } from "../test/helpers";
 import { HALFTIME_SECONDS, MATCH_FIRST_HALF_PACE, MATCH_HALFTIME, MATCH_KICKOFF } from "../data/events";
 import { EVENING_MINUTES, OPENING_MINUTES } from "./clock";
-import { arrivalPace } from "./evening";
+import { arrivalPace, curvePace } from "./evening";
 import type { GameState } from "./types";
 
 // The service at this time on the evening's clock.
@@ -16,16 +16,16 @@ const toastKeys = (state: GameState) => state.toasts.map((toast) => toast.key);
 
 describe("the match on TV", () => {
   it("has its own rush at half-time instead of the evening's", () => {
-    expect(serviceOf(matchNight()).rushAtServed).toBeNull();
+    expect(serviceOf(matchNight()).rushAtMinutes).toBeNull();
   });
 
   it("quietens the street at kick-off", () => {
     const before = play(at(matchNight(), MATCH_KICKOFF - 5), { type: "tick", seconds: 0.1 });
-    expect(arrivalPace(before, serviceOf(before))).toBe(1);
+    expect(arrivalPace(before, serviceOf(before))).toBe(curvePace(MATCH_KICKOFF - 5));
     const kickedOff = play(at(before, MATCH_KICKOFF + 1), { type: "tick", seconds: 0.1 });
     expect(serviceOf(kickedOff).matchKickedOff).toBe(true);
     expect(toastKeys(kickedOff)).toContain("kickoff");
-    expect(arrivalPace(kickedOff, serviceOf(kickedOff))).toBe(MATCH_FIRST_HALF_PACE);
+    expect(arrivalPace(kickedOff, serviceOf(kickedOff))).toBeCloseTo(MATCH_FIRST_HALF_PACE * curvePace(MATCH_KICKOFF + 1));
   });
 
   it("brings everyone in at half-time, once", () => {
@@ -34,7 +34,7 @@ describe("the match on TV", () => {
     expect(service.halftimeCame).toBe(true);
     expect(service.rush?.secondsLeft).toBeCloseTo(HALFTIME_SECONDS, 0);
     expect(toastKeys(halftime)).toContain("halftime");
-    expect(arrivalPace(halftime, service)).toBe(1);
+    expect(arrivalPace(halftime, service)).toBe(curvePace(MATCH_HALFTIME + 1));
   });
 
   it("changes nothing on other evenings", () => {

@@ -1,3 +1,4 @@
+import { formatEveningTime } from "../../game/clock";
 import { useEffect, useRef } from "react";
 import { BARMAN_SECONDS, COMMIS_FADES_PANS } from "../../data/progression";
 import { revealInList } from "../../utils/scroll";
@@ -175,6 +176,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
       : [
           t("service.progress", { served: service.stats.served, remaining: service.customersToCome + service.customers.length }),
           streak >= STREAK_SHOWN_FROM ? t("service.streak", { count: streak, multiplier: t.number(streakMultiplier(streak)) }) : "",
+          service.rushAtMinutes != null ? `🔥 ${formatEveningTime(service.rushAtMinutes)}` : "",
           tonightMark(state),
         ]
           .filter(Boolean)

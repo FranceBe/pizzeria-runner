@@ -216,6 +216,8 @@ export const fr = {
     festivalShort: ({ until }: { until: string }) => `Jusqu'au ${until} : un ingrédient et une recette de fête, quel que soit le marché du jeu.`,
     questDaysShort: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour" : `${days} j`),
     birthdayTitle: "Anniversaire",
+    rushTitle: "Coup de feu",
+    rushTonight: ({ time }: { time: string }) => `Vers ${time}, les clients arrivent en rafale pendant un moment : pourboires doublés. Le début et la fin de soirée sont plus calmes.`,
     weddingTonight: ({ items }: { items: string }) =>
       `Le banquet, à livrer d'un coup dès 21:00 : ${items}. Plus c'est rapide, mieux c'est payé ; un peu moins de clients à côté.`,
     questReward: ({ reward, xp }: { reward: number; xp: number }, t: H) => `Récompense : ${t.money(reward)} et ${xp} points`,
@@ -827,6 +829,7 @@ export const fr = {
       `${t.ingredient(ingredientId)} est arrivé, avec ${portions} portions offertes.`,
     notDeliveredYet: ({ ingredientId }: { ingredientId: IngredientId }, t: H) => `${t.ingredient(ingredientId)} n'est pas encore livré.`,
     rush: "Coup de feu ! Les clients arrivent en rafale, pourboires doublés.",
+    rushSoon: ({ minutes }: { minutes: number }) => `🔥 Coup de feu dans ${minutes} minutes : prépare-toi !`,
     weddingArrived: ({ count }: { count: number }) => `💍 Les mariés sont là : ${count} pizzas pour le banquet, le chrono tourne !`,
     weddingDone: ({ medal, reward }: { medal: "gold" | "silver" | "bronze"; reward: number }, t: H) =>
       `💍 Banquet servi : médaille ${t.medal(medal)} ! Les mariés paient ${t.money(reward)}.`,

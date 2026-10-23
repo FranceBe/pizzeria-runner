@@ -407,6 +407,16 @@ describe("views", () => {
     expect(absent).toContain("pas passé");
   });
 
+  it("announces tonight's rush in the morning, with its time, on a busy evening", () => {
+    const state = { ...playedState(), xp: 3000, event: null, rushPlan: { day: 4, at: 20 * 60 + 45 } };
+    state.upgrades = { ...state.upgrades, salle: 3 };
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
+    expect(html).toContain("Rush hour");
+    expect(html).toContain("20:45");
+    // Not on a quiet evening.
+    expect(render(<PrepView state={{ ...state, xp: 0 }} dispatch={noop} goToTab={noop} />, "en")).not.toContain("Rush hour");
+  });
+
   it("gathers everything on tonight in one list, one line each, however much there is", () => {
     const state = playedState();
     state.event = "match";

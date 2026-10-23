@@ -61,7 +61,11 @@ Nobody ever leaves angry: customers just get hungrier (happy, then patient, then
 - **Perfect streak**: customers served while still happy, in a row, raise every tip: ×1.1 from 3, ×1.25 from 6, ×1.5
   from 10. A patient customer keeps the streak, a hungry one breaks it. It shows in the message line.
 - **Hot pizzas**: a pizza left on the pass cools down (lukewarm after 25 seconds, cold after 50), and its tip with it.
-- **Rush hour** (from level 3, on busy evenings): once in the evening, 40 seconds where customers pour in and tips double.
+- **Rush hour** (from level 3, on evenings of at least 8 customers, not on a match night): 40 seconds where customers
+  pour in and tips double, at a time drawn in the morning between 20:15 and 21:15. It is announced in the morning
+  ("On tonight"), shown in the message line during service (🔥 20:45), and the kitchen is warned 15 minutes before.
+- **The shape of an evening**: customers come a little more slowly until 19:40 and after 22:15, a little faster in
+  between; an evening lasts about as long on the whole.
 - **Evening charges**: €6, plus a little for each upgrade.
 - **Debt**: if the till can't pay the charges, the rest goes on a tab, repaid automatically with half of the next sales.
 - **Never stuck**: when nothing on the menu can be made and the till can't buy more, the game says so and offers a way

@@ -1357,3 +1357,6 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .receipt-xp { font-weight: 700; }
 .receipt-level { margin: 4px 0 0; text-align: center; font-weight: 800; color: #1f6b3b; }
 .receipt-line.text .amount { font-family: var(--f-body); font-weight: 700; }
+.ag-rush { --ev-bg: #fde6d6; --ev-edge: #d2561f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ag-rush { --ev-bg: #3a2216; --ev-edge: #f08a52; } }
+:root[data-theme="dark"] .ag-rush { --ev-bg: #3a2216; --ev-edge: #f08a52; }

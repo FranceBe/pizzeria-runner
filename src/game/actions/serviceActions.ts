@@ -12,7 +12,7 @@ import { CUSTOMER_NAMES } from "../../data/customers";
 import { dailyCharges, forecastCustomers, payCharges, receivePayment, spend } from "../economy";
 import { pickLateIngredient, rollDayEvent } from "../events";
 import {
-  advanceEvening, announceLastOrders, arrivalPace, bringGroupOrderForward, deliverToBatch, isGroupOrderPending, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR,
+  advanceEvening, announceLastOrders, arrivalPace, bringGroupOrderForward, deliverToBatch, isGroupOrderPending, isStillComing, planEvening, ensureRushPlan, RUSH_ARRIVAL_FACTOR,
   settleUnfinishedBatch,
 } from "../evening";
 import { syncFestival } from "../calendar";
@@ -793,7 +793,6 @@ export const serviceActions = {
     }
 
     trackTonightServe(state, service, customer, pizza);
-    maybeStartRush(state, service);
     if (isDayOver(state, service)) endDay(state, service);
   },
 
@@ -816,6 +815,7 @@ export const serviceActions = {
     state.lateIngredient = state.event === "lateDelivery" ? pickLateIngredient(state) : null;
     ensureWeek(state);
     ensureTonightGoal(state);
+    ensureRushPlan(state);
     lapseAbsentRegulars(state);
     ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;
