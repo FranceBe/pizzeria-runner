@@ -5,7 +5,8 @@ export const QUEST_KINDS = ["serveRecipe", "serveTotal", "happy", "pairing", "sw
 export type QuestKind = (typeof QUEST_KINDS)[number];
 
 export const QUEST_GIVERS = ["football", "bakery", "school", "townHall", "neighbour"] as const;
-export type QuestGiver = (typeof QUEST_GIVERS)[number];
+// The wedding banquet's group order (a day event, see data/events.ts) comes from the newlyweds, never from the lot above.
+export type QuestGiver = (typeof QUEST_GIVERS)[number] | "wedding";
 
 export const FIRST_QUEST_DAY = 4;
 export const QUEST_CHANCE = 0.6;

@@ -13,7 +13,7 @@ export const BatchTicket = ({ quest, elapsed, isSelected, onSelect }: { quest: Q
   return (
     <button className="ticket batch-ticket" aria-pressed={isSelected} onClick={onSelect}>
       <div className="batch-head">
-        <strong>{t("service.batch")}</strong>
+        <strong>{t(quest.giver === "wedding" ? "service.banquet" : "service.batch")}</strong>
         <span className="batch-medal" title={t("journal.medal", { medal: t.medal(medal) })}>
           {secondsLeft === null ? MEDAL_ICONS[medal] : `${MEDAL_ICONS[medal]} ${formatClock(secondsLeft)}`}
         </span>

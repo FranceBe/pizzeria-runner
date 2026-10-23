@@ -5,6 +5,8 @@ import { useTranslation } from "../i18n/I18nContext";
 // "The football club wants 5 Regina for their evening."
 export const questText = (t: Translator, quest: Quest | QuestRecord): string => {
   const { target } = quest;
+  // The wedding banquet says it in its own words (the newlyweds are two).
+  if (quest.giver === "wedding") return t("quests.wedding", { target });
   const what = (() => {
     switch (quest.kind) {
       case "serveRecipe":

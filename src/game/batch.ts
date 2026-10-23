@@ -39,8 +39,9 @@ const recipeOf = (state: GameState, item: BatchItem): Recipe | undefined => stat
 const valueOf = (state: GameState, items: readonly BatchItem[], pick: (item: BatchItem) => number): number =>
   items.reduce((total, item) => total + (recipeOf(state, item)?.price ?? 0) * pick(item), 0);
 
-export const rewardFor = (state: GameState, items: readonly BatchItem[], medal: Medal): number =>
-  Math.round(valueOf(state, items, (item) => item.count) * MEDAL_FACTOR[medal]);
+// `factor`: a group order paid more than usual (the wedding banquet).
+export const rewardFor = (state: GameState, items: readonly BatchItem[], medal: Medal, factor = 1): number =>
+  Math.round(valueOf(state, items, (item) => item.count) * MEDAL_FACTOR[medal] * factor);
 
 export const unfinishedPay = (state: GameState, items: readonly BatchItem[]): number =>
   Math.round(valueOf(state, items, (item) => item.delivered) * UNFINISHED_FACTOR);

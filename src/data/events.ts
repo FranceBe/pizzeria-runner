@@ -5,7 +5,7 @@ export const DAY_EVENT_IDS = [
   // Incidents: a twist in how the day plays, always with something in return.
   "powerCut", "lateDelivery", "inspection", "scooterStrike",
   // Evenings with a time: something happens at a given hour on the evening's clock (game/clock.ts).
-  "match",
+  "match", "wedding",
 ] as const;
 export type DayEventId = (typeof DAY_EVENT_IDS)[number];
 
@@ -43,7 +43,16 @@ export const DAY_EVENTS: Record<DayEventId, DayEvent> = {
   scooterStrike: { weight: 1, customerFactor: 1.2, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 5 },
   // The match on TV: quiet once it kicks off, then everyone at once at half-time (see MATCH_KICKOFF, MATCH_HALFTIME).
   match: { weight: 2, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 4 },
+  // A wedding banquet: a big group order at 21:00 (see WEDDING_*), and a few fewer customers besides.
+  wedding: { weight: 1, customerFactor: 0.85, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 6 },
 };
+
+// The wedding banquet: this many pizzas (more for a bigger pizzeria), of up to three recipes on the menu, delivered all
+// together from this time on the evening's clock, paid this much more than a neighbourhood group order.
+export const WEDDING_TIME = 21 * 60;
+export const WEDDING_MIN_PIZZAS = 8;
+export const WEDDING_MAX_PIZZAS = 12;
+export const WEDDING_REWARD_FACTOR = 1.5;
 
 // The match, on the evening's clock (minutes since midnight): customers come this much more slowly once it kicks off,
 // then rush in at half-time for this long (as the rush hour: quick succession, tips doubled), instead of the evening's

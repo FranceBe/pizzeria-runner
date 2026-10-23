@@ -3,7 +3,7 @@
 // (a time or a deadline on the right); tapping it shows the rest.
 import type { ReactNode } from "react";
 import { FESTIVALS } from "../data/festivals";
-import { MATCH_KICKOFF } from "../data/events";
+import { MATCH_KICKOFF, WEDDING_TIME } from "../data/events";
 import { LIGHTNING_SECONDS, TONIGHT_REWARD, TONIGHT_XP } from "../data/tonight";
 import { festivalLastDay } from "../game/calendar";
 import { formatEveningTime } from "../game/clock";
@@ -15,7 +15,7 @@ import { QuestDetails, batchItemsText, questText } from "./QuestCard";
 
 const EVENT_ICONS: Record<string, string> = {
   market: "🧺", rain: "🌧️", festival: "🎉", critic: "🧐", sunny: "☀️", powerCut: "🔌", woodShortage: "🪵", lateDelivery: "🚚",
-  inspection: "📋", scooterStrike: "🛵", match: "📺",
+  inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍",
 };
 
 interface AgendaItem {
@@ -47,7 +47,7 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
       icon: EVENT_ICONS[eventId] ?? "📣",
       title: t(`events.${eventId}.name`),
       text: `${t(`events.${eventId}.describe`)}${late}`,
-      aside: state.event === "match" ? formatEveningTime(MATCH_KICKOFF) : undefined,
+      aside: state.event === "match" ? formatEveningTime(MATCH_KICKOFF) : state.event === "wedding" ? formatEveningTime(WEDDING_TIME) : undefined,
       tone: `ev-${state.event}`,
     });
   }
@@ -72,7 +72,11 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
       tone: "ag-goal",
     });
   }
-  if (state.quest) {
+  // The banquet is the wedding's line: what to make goes with it rather than on a quest line of its own.
+  if (state.quest?.giver === "wedding" && state.quest.items) {
+    const event = items.find((item) => item.id === "event");
+    if (event) event.text = t("prep.weddingTonight", { items: batchItemsText(t, state.quest) });
+  } else if (state.quest) {
     items.push({
       id: "quest",
       icon: "📜",

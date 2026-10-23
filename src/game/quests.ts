@@ -1,4 +1,6 @@
 import { QUEST_CHANCE, QUEST_DAYS, QUEST_GIVERS, FIRST_QUEST_DAY } from "../data/quests";
+import { WEDDING_MAX_PIZZAS, WEDDING_MIN_PIZZAS, WEDDING_REWARD_FACTOR } from "../data/events";
+import { levelForXp } from "./progression";
 import { GOOD_PAIRINGS } from "../data/recipes";
 import { pickRandom, randomIndex } from "../utils/random";
 import { forecastCustomers, receivePayment } from "./economy";
@@ -22,6 +24,38 @@ const groupOrder = (recipes: readonly Recipe[]): QuestDraft => {
   const items: BatchItem[] = picked.map((recipe) => ({ recipeId: recipe.id, recipeName: recipe.name, count: 0, delivered: 0 }));
   for (let pizza = 0; pizza < total; pizza++) items[pizza % items.length].count += 1;
   return { kind: "batch", target: total, items, reward: 0, xp: BATCH_XP_PER_PIZZA * total };
+};
+
+// The wedding banquet (a day event): a big group order from the newlyweds, for tonight at 21:00. Null when the menu
+// has nothing savoury to offer them.
+export const weddingOrder = (state: GameState): Quest | null => {
+  const savoury = activeMenu(state).filter((recipe) => !isDessert(recipe.ingredients));
+  if (!savoury.length) return null;
+  const total = Math.min(WEDDING_MAX_PIZZAS, WEDDING_MIN_PIZZAS + Math.floor(levelForXp(state.xp) / 3) + randomIndex(2));
+  const kinds = Math.min(savoury.length, 3);
+  const picked = [...savoury].sort(() => Math.random() - 0.5).slice(0, kinds);
+  const items: BatchItem[] = picked.map((recipe) => ({ recipeId: recipe.id, recipeName: recipe.name, count: 0, delivered: 0 }));
+  for (let pizza = 0; pizza < total; pizza++) items[pizza % items.length].count += 1;
+  return {
+    kind: "batch",
+    giver: "wedding",
+    target: total,
+    items,
+    progress: 0,
+    deadlineDay: state.day,
+    reward: 0,
+    xp: BATCH_XP_PER_PIZZA * total,
+    rewardFactor: WEDDING_REWARD_FACTOR,
+  };
+};
+
+// A wedding day: the banquet becomes tonight's group order. Without one to offer (a quest running, nothing savoury on
+// the menu), there is no wedding after all. Mutates state.
+export const prepareWedding = (state: GameState): void => {
+  if (state.event !== "wedding") return;
+  const banquet = state.quest ? null : weddingOrder(state);
+  if (banquet) state.quest = banquet;
+  else state.event = null;
 };
 
 // The quests that make sense right now, given the menu and what is left to discover.

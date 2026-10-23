@@ -12,6 +12,10 @@ const LAST_ORDERS_SECONDS = 30;
 // How long tonight should last, in the service's seconds, for so many customers.
 export const expectedEveningSeconds = (customerCount: number): number => Math.max(1, customerCount) * AVERAGE_ARRIVAL_SECONDS + LAST_ORDERS_SECONDS;
 
+// Seconds of service until this time on the evening's clock, for an evening expected to last this long.
+export const secondsUntil = (minutes: number, expectedSeconds: number): number =>
+  Math.max(0, ((minutes - OPENING_MINUTES) / EVENING_MINUTES) * expectedSeconds);
+
 // Minutes since midnight on the evening's clock (may pass 24:00 on a very long night).
 export const eveningMinutes = (service: Service): number => {
   const expected = service.expectedSeconds ?? expectedEveningSeconds(service.stats.served + service.customers.length + service.customersToCome);

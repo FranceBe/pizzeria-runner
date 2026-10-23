@@ -1,6 +1,7 @@
 import { DAY_EVENTS, DAY_EVENT_IDS, EVENT_CHANCE, FIRST_EVENT_DAY, type DayEvent, type DayEventId } from "../data/events";
 import { pickRandom } from "../utils/random";
 import { activeMenu } from "./menu";
+import { isDessert } from "./pizza";
 import { INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { seasonalPriceFactor } from "./seasons";
 import type { GameState } from "./types";
@@ -11,10 +12,12 @@ const NO_EVENT: DayEvent = { weight: 0, customerFactor: 1, marketPriceFactor: 1,
 export const todaysEvent = (state: GameState): DayEvent => (state.event ? DAY_EVENTS[state.event] : NO_EVENT);
 
 // Some events only make sense for some pizzerias.
-const canHappen = (state: GameState, id: DayEventId): boolean => {
+export const canHappen = (state: GameState, id: DayEventId): boolean => {
   if (state.day < (DAY_EVENTS[id].firstDay ?? FIRST_EVENT_DAY)) return false;
   if (id === "scooterStrike") return state.upgrades.livraison > 0;
   if (id === "lateDelivery") return lateCandidates(state).length > 0;
+  // The banquet is a group order: not while a quest is running, and only with something savoury to serve.
+  if (id === "wedding") return !state.quest && activeMenu(state).some((recipe) => !isDessert(recipe.ingredients));
   return true;
 };
 

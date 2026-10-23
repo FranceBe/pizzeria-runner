@@ -216,6 +216,8 @@ export const fr = {
     festivalShort: ({ until }: { until: string }) => `Jusqu'au ${until} : un ingrédient et une recette de fête, quel que soit le marché du jeu.`,
     questDaysShort: ({ days }: { days: number }) => (days <= 1 ? "Dernier jour" : `${days} j`),
     birthdayTitle: "Anniversaire",
+    weddingTonight: ({ items }: { items: string }) =>
+      `Le banquet, à livrer d'un coup dès 21:00 : ${items}. Plus c'est rapide, mieux c'est payé ; un peu moins de clients à côté.`,
     questReward: ({ reward, xp }: { reward: number; xp: number }, t: H) => `Récompense : ${t.money(reward)} et ${xp} points`,
     dailyMenu: ({ recipes }: { recipes: string }) => `Au menu aujourd'hui : ${recipes}.`,
     lateIngredient: ({ id }: { id: IngredientId }, t: H) => `Ce soir, ${lower(t.ingredient(id))} n'arrivera qu'après une minute de service.`,
@@ -313,6 +315,7 @@ export const fr = {
     offered: "offerte",
     barmanPouring: "Le barman la prépare",
     batch: "Commande groupée",
+    banquet: "💍 Banquet de mariage",
     theBatch: "la commande groupée",
     pizzaDone: "Pizza servie ✓",
     waitingDrink: "attend sa boisson",
@@ -673,7 +676,9 @@ export const fr = {
       school: "L'école du quartier",
       townHall: "La mairie",
       neighbour: "Le chef du restaurant d'en face",
+      wedding: "Les mariés",
     } satisfies Record<QuestGiver, string>,
+    wedding: ({ target }: { target: number }) => `Banquet de mariage : ${target} pizzas à livrer d'un coup.`,
     serveRecipe: ({ target, recipe }: { target: number; recipe: string }) => `veut ${target} ${recipe} pour sa soirée.`,
     serveTotal: ({ target }: { target: number }) => `organise une fête : sers ${target} pizzas.`,
     happy: ({ target }: { target: number }) => `fait une enquête : sers ${target} clients encore tout sourire.`,
@@ -696,6 +701,10 @@ export const fr = {
     lateDelivery: { name: "Livraison en retard", describe: "Un ingrédient arrivera en cours de service, avec quelques portions offertes pour se faire pardonner." },
     inspection: { name: "Contrôle sanitaire", describe: "Une journée sans rien jeter rapporte beaucoup de réputation." },
     scooterStrike: { name: "Grève des scooters", describe: "Pas de livraisons aujourd'hui, mais plus de monde sur place." },
+    wedding: {
+      name: "Mariage",
+      describe: "Les mariés attendent leur banquet à 21:00 : une grosse commande à livrer d'un coup, bien payée. Un peu moins de clients à côté.",
+    },
     match: {
       name: "Match à la télé",
       describe: "Coup d'envoi à 21:00 : la rue se vide un peu… puis tout le monde débarque à la mi-temps, vers 21:45. Pourboires doublés pendant la vague.",
@@ -803,6 +812,10 @@ export const fr = {
       `${t.ingredient(ingredientId)} est arrivé, avec ${portions} portions offertes.`,
     notDeliveredYet: ({ ingredientId }: { ingredientId: IngredientId }, t: H) => `${t.ingredient(ingredientId)} n'est pas encore livré.`,
     rush: "Coup de feu ! Les clients arrivent en rafale, pourboires doublés.",
+    weddingArrived: ({ count }: { count: number }) => `💍 Les mariés sont là : ${count} pizzas pour le banquet, le chrono tourne !`,
+    weddingDone: ({ medal, reward }: { medal: "gold" | "silver" | "bronze"; reward: number }, t: H) =>
+      `💍 Banquet servi : médaille ${t.medal(medal)} ! Les mariés paient ${t.money(reward)}.`,
+    weddingUnfinished: ({ reward }: { reward: number }, t: H) => `💍 Le banquet n'est pas complet : les mariés paient ${t.money(reward)} pour ce qui est arrivé.`,
     kickoff: "📺 Coup d'envoi ! Tout le monde regarde le match, c'est plus calme.",
     halftime: "📺 Mi-temps ! Tout le quartier a faim d'un coup, pourboires doublés.",
     lastOrders: "Dernier client de la soirée : on y est presque !",

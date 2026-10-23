@@ -1321,3 +1321,6 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 :root[data-theme="dark"] .ag-birthday { --ev-bg: #3a1f2a; --ev-edge: #e88aa6; }
 :root[data-theme="dark"] .ev-match { --ev-bg: #18293a; --ev-edge: #6fa7d4; }
 .prep-head + .sub { margin-top: 8px; }
+.ev-wedding { --ev-bg: #fbf3e4; --ev-edge: #c79a3e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ev-wedding { --ev-bg: #33291a; --ev-edge: #e2bf72; } }
+:root[data-theme="dark"] .ev-wedding { --ev-bg: #33291a; --ev-edge: #e2bf72; }

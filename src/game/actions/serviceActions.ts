@@ -12,7 +12,7 @@ import { CUSTOMER_NAMES } from "../../data/customers";
 import { dailyCharges, forecastCustomers, payCharges, receivePayment, spend } from "../economy";
 import { pickLateIngredient, rollDayEvent } from "../events";
 import {
-  advanceEvening, announceLastOrders, arrivalPace, deliverToBatch, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR,
+  advanceEvening, announceLastOrders, arrivalPace, bringGroupOrderForward, deliverToBatch, isGroupOrderPending, isStillComing, maybeStartRush, planEvening, RUSH_ARRIVAL_FACTOR,
   settleUnfinishedBatch,
 } from "../evening";
 import { syncFestival } from "../calendar";
@@ -26,7 +26,7 @@ import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
 import { hasBase, haveSameIngredients, ingredientCost, isBase, isDessert, isSauce, sortByLayer } from "../pizza";
 import { levelForXp } from "../progression";
-import { advanceQuest, expireQuest, maybeOfferQuest } from "../quests";
+import { advanceQuest, expireQuest, maybeOfferQuest, prepareWedding } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
 import {
   collectPayment, maybeShareMammasSecret, maybeShareNonnasSecret, recordLifetime, reputationFor, secretBonus, serveForChallenge, settleTable,
@@ -200,7 +200,8 @@ const isUnwanted = (service: Service, ingredients: readonly IngredientId[]): boo
   return coming >= wanted;
 };
 
-const isDayOver = (service: Service): boolean => service.customersToCome === 0 && service.customers.length === 0;
+const isDayOver = (state: GameState, service: Service): boolean =>
+  service.customersToCome === 0 && service.customers.length === 0 && !isGroupOrderPending(state, service);
 
 // A happy customer may come back later tonight for a dessert pizza, if the menu has one and the evening goes on.
 const maybePlanDessertReturn = (state: GameState, service: Service, customer: Customer, mood: number): void => {
@@ -314,7 +315,7 @@ const leaveIfDone = (state: GameState, service: Service, customer: Customer): vo
   if (!customer.pizzaServed || !customer.drinkServed) return;
   service.customers = service.customers.filter((c) => c.id !== customer.id);
   if (service.selectedCustomerId === customer.id) selectNextForPizza(service);
-  if (isDayOver(service)) endDay(state, service);
+  if (isDayOver(state, service)) endDay(state, service);
 };
 
 // Who walks in next: the critic and birthday regulars show up at a random point of the evening
@@ -381,7 +382,7 @@ const letCustomersIn = (state: GameState, service: Service): void => {
   if (!party.length) {
     // The menu was emptied mid-service: nobody else comes tonight.
     service.customersToCome = 0;
-    if (isDayOver(service)) endDay(state, service);
+    if (isDayOver(state, service)) endDay(state, service);
     return;
   }
   if (kind === "critic") service.criticPending = false;
@@ -484,6 +485,7 @@ export const serviceActions = {
       .forEach(({ id, ingredients, secret, mamma, woodFired }) => service.ready.push({ id, ingredients, secret, mamma, woodFired, waitingSeconds: 0 }));
     service.oven = service.oven.filter((pizza) => !isBaked(pizza));
     if (!service.challenge) {
+      bringGroupOrderForward(service);
       advanceEvening(state, service, seconds);
       trackTonightClock(state, service);
     }
@@ -504,6 +506,8 @@ export const serviceActions = {
     }
     if (service.charmsPending) charmWaitingCustomers(service);
     if (!service.challenge) bringBackForDessert(state, service, seconds);
+    // Nobody left and nothing more to wait for (a group order that can no longer be completed, say): the day is over.
+    if (!service.challenge && isDayOver(state, service)) endDay(state, service);
   },
 
   selectBatch(state) {
@@ -696,6 +700,8 @@ export const serviceActions = {
     }
     if ("batch" in destination) {
       deliverToBatch(state, service, pizza);
+      // The group order was the last thing the evening waited for.
+      if (isDayOver(state, service)) endDay(state, service);
       return;
     }
     const { customer } = destination;
@@ -776,7 +782,7 @@ export const serviceActions = {
 
     trackTonightServe(state, service, customer, pizza);
     maybeStartRush(state, service);
-    if (isDayOver(service)) endDay(state, service);
+    if (isDayOver(state, service)) endDay(state, service);
   },
 
   trashReadyPizza(state, { pizzaId }) {
@@ -802,6 +808,7 @@ export const serviceActions = {
     ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;
     expireQuest(state);
+    prepareWedding(state);
     maybeOfferQuest(state);
   },
 } satisfies Partial<ActionHandlers>;

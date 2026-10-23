@@ -4,7 +4,10 @@ export const randomIndex = (length: number): number => Math.floor(Math.random() 
 
 export const pickRandom = <T>(list: readonly T[]): T => list[randomIndex(list.length)];
 
-export const makeId = (): string => Math.random().toString(36).slice(2, 9);
+// Random, plus a counter: two ids made in the same session can never be the same, however the random numbers fall
+// (the tests' seeded generator only has 10,000 of them).
+let idCounter = 0;
+export const makeId = (): string => `${Math.random().toString(36).slice(2, 9)}-${(idCounter++).toString(36)}`;
 
 // FNV-1a: turns a string into a stable 32-bit number, used to seed drawings.
 export const hashString = (text: string): number => {

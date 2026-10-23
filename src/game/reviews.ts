@@ -10,8 +10,8 @@ import type { Customer, GameState, OrderRecord, PressReview, ReadyPizza, Review,
 // Lines per reason and tone (the lines themselves live in src/i18n).
 export const REVIEW_LINES = 3;
 // The latest reviews and articles kept for the journal; the overall rating counts every review ever written.
-const REVIEWS_KEPT = 30;
-const PRESS_KEPT = 10;
+export const REVIEWS_KEPT = 30;
+export const PRESS_KEPT = 10;
 // At most this many reviews a day.
 const MAX_REVIEWS_A_DAY = 5;
 // Chance that a customer writes a review, by the stars they give (index 1 to 5).

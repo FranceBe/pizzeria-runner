@@ -422,6 +422,8 @@ export interface Quest {
   deadlineDay: number;
   reward: number;
   xp: number;
+  /** A group order paid more than usual (the wedding banquet). */
+  rewardFactor?: number;
 }
 
 export interface Cosmetics {

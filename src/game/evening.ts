@@ -1,11 +1,11 @@
 // What happens over the evening, besides customers: the rush hour, tonight's group order, a late delivery.
-import { HALFTIME_SECONDS, LATE_DELIVERY_GIFT, LATE_DELIVERY_SECONDS, MATCH_FIRST_HALF_PACE, MATCH_HALFTIME, MATCH_KICKOFF } from "../data/events";
+import { WEDDING_TIME, HALFTIME_SECONDS, LATE_DELIVERY_GIFT, LATE_DELIVERY_SECONDS, MATCH_FIRST_HALF_PACE, MATCH_HALFTIME, MATCH_KICKOFF } from "../data/events";
 import { randomBetween } from "../utils/random";
 import {
   BATCH_ARRIVES_AFTER, BATCH_GOLD_XP, deliveredCount, medalFor, openBatch, pizzaCount, rewardFor, unfinishedPay,
   batchItemFor,
 } from "./batch";
-import { eveningMinutes, expectedEveningSeconds } from "./clock";
+import { eveningMinutes, expectedEveningSeconds, secondsUntil } from "./clock";
 import { receivePayment } from "./economy";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
@@ -28,9 +28,11 @@ export const planEvening = (state: GameState, service: Service, customerCount: n
   const isBusy = levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS && state.event !== "match";
   service.rushAtServed = isBusy ? Math.floor(customerCount * randomBetween(0.3, 0.55)) : null;
   const { quest } = state;
-  service.batchArrivesIn = quest?.kind === "batch" && quest.deadlineDay === state.day ? BATCH_ARRIVES_AFTER : null;
-  service.elapsed = 0;
+  const isGroupOrderTonight = quest?.kind === "batch" && quest.deadlineDay === state.day;
+  // The wedding banquet comes at its time on the evening's clock; a neighbourhood group order soon after opening.
   service.expectedSeconds = expectedEveningSeconds(customerCount);
+  service.batchArrivesIn = !isGroupOrderTonight ? null : quest.giver === "wedding" ? secondsUntil(WEDDING_TIME, service.expectedSeconds) : BATCH_ARRIVES_AFTER;
+  service.elapsed = 0;
 };
 
 // Every tick: the clock of the evening. Mutates state.
@@ -48,7 +50,8 @@ export const advanceEvening = (state: GameState, service: Service, seconds: numb
     if (service.batchArrivesIn <= 0) {
       service.batchArrivesIn = null;
       service.batch = { elapsed: 0 };
-      if (state.quest) pushToast(state, { key: "batchArrived", params: { giver: state.quest.giver } }, "gold");
+      if (state.quest?.giver === "wedding") pushToast(state, { key: "weddingArrived", params: { count: state.quest.target } }, "gold");
+      else if (state.quest) pushToast(state, { key: "batchArrived", params: { giver: state.quest.giver } }, "gold");
     }
   } else if (service.batch) {
     service.batch.elapsed += seconds;
@@ -83,6 +86,22 @@ const followMatch = (state: GameState, service: Service): void => {
 export const arrivalPace = (state: GameState, service: Service): number =>
   state.event === "match" && service.matchKickedOff && !service.halftimeCame ? MATCH_FIRST_HALF_PACE : 1;
 
+// Tonight's group order hasn't come in yet, or isn't complete: the evening isn't over without it. (Closing early is
+// always there to give up on it.)
+// One it can no longer be completed (a recipe of it deleted from the book meanwhile) holds nothing.
+export const isGroupOrderPending = (state: GameState, service: Service): boolean => {
+  const items = state.quest?.kind === "batch" ? state.quest.items : undefined;
+  if (!items) return false;
+  const canBeCompleted = items.every((item) => item.delivered >= item.count || state.recipes.some((recipe) => recipe.id === item.recipeId));
+  return canBeCompleted && (service.batchArrivesIn != null || Boolean(service.batch));
+};
+
+// Nobody else left to serve before tonight's group order comes in: it comes in now rather than keeping the kitchen
+// waiting. Mutates the service.
+export const bringGroupOrderForward = (service: Service): void => {
+  if (service.batchArrivesIn != null && service.customersToCome === 0 && service.customers.length === 0) service.batchArrivesIn = 0;
+};
+
 // The last customer of the evening came in: said once, so the end is in sight. Mutates state.
 export const announceLastOrders = (state: GameState, service: Service): void => {
   if (service.lastOrdersSaid || service.customersToCome > 0 || service.challenge) return;
@@ -113,7 +132,7 @@ export const deliverToBatch = (state: GameState, service: Service, pizza: ReadyP
   if (quest.progress < pizzaCount(quest.items)) return;
 
   const medal = medalFor(service.batch.elapsed, pizzaCount(quest.items));
-  const reward = rewardFor(state, quest.items, medal);
+  const reward = rewardFor(state, quest.items, medal, quest.rewardFactor);
   receivePayment(state, reward);
   pushPop(state, reward, "batch");
   state.xp += quest.xp + (medal === "gold" ? BATCH_GOLD_XP : 0);
@@ -126,7 +145,8 @@ export const deliverToBatch = (state: GameState, service: Service, pizza: ReadyP
     recordWeekly(state, "batchGold", 1);
   }
   logQuest(state, reward, medal);
-  pushToast(state, { key: "batchDone", params: { giver: quest.giver, medal, reward } }, "gold");
+  if (quest.giver === "wedding") pushToast(state, { key: "weddingDone", params: { medal, reward } }, "gold");
+  else pushToast(state, { key: "batchDone", params: { giver: quest.giver, medal, reward } }, "gold");
   state.quest = null;
   service.batch = null;
   if (service.selectedCustomerId === "batch") service.selectedCustomerId = service.customers[0]?.id ?? null;
@@ -142,7 +162,8 @@ export const settleUnfinishedBatch = (state: GameState, service: Service): void 
     service.stats.questRewards = (service.stats.questRewards ?? 0) + pay;
     state.lifetime.questRewards += pay;
   }
-  if (service.batch) pushToast(state, { key: "batchUnfinished", params: { giver: quest.giver, reward: pay } });
+  if (service.batch && quest.giver === "wedding") pushToast(state, { key: "weddingUnfinished", params: { reward: pay } });
+  else if (service.batch) pushToast(state, { key: "batchUnfinished", params: { giver: quest.giver, reward: pay } });
   state.quest = null;
   service.batch = null;
   service.batchArrivesIn = null;

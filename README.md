@@ -134,8 +134,13 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   (a day without binning anything earns lots of reputation) and a scooter strike (no deliveries, more people eating in).
 - **Evenings with a time**, from day 4, on the evening's clock: the match on TV kicks off at 21:00 (customers come
   more slowly while everyone watches), then the whole street comes in at half-time, around 21:45, for 30 seconds of
-  quick succession and doubled tips (instead of the evening's usual rush). Every evening, the kitchen is told when the
-  last customer comes in.
+  quick succession and doubled tips (instead of the evening's usual rush). The wedding (from day 6, never while a quest
+  runs): the newlyweds' banquet comes in at 21:00, a group order of 8 to 12 pizzas (more for a bigger pizzeria) paid
+  half as much again, with a few fewer customers besides. Every evening, the kitchen is told when the last customer
+  comes in.
+- **Group orders hold the evening**: it isn't over while tonight's group order is still to come or incomplete; with
+  nobody else left, it comes in at once. One that can no longer be completed (a recipe of it deleted) holds nothing,
+  and closing early always gives up on it, paid for what arrived.
 - **The morning's list**, "On tonight": the day's event, a real-calendar festival, tonight's goal, the neighbourhood
   quest and birthdays, one line each (icon, name, the start of what it says, a time or a deadline on the right),
   tapped open for the rest, rather than a stack of banners.
@@ -280,7 +285,14 @@ src/
 - `game/streak.ts`, `game/stars.ts`, `game/weekly.ts`, `game/calendar.ts`: streaks and cooling pizzas, the day's stars,
   weekly missions, calendar festivals
 - `data/tonight.ts` + `game/tonight.ts`, `game/clock.ts`: tonight's goal, the evening's clock
-- `game/simulation.test.ts`: a robot plays many full days with everything on, to catch what only shows when it all mixes
+- `game/simulation*.test.ts` + `test/robot.ts`: robots play many full days, to catch what only shows when it all
+  mixes. A careful robot (makes what is ordered), a sloppy one (wrong pizzas, binned boards, pauses, reloads mid-evening,
+  restarted days) and a chaotic one (empties the menu, deletes recipes, changes language, buys and sells upgrades
+  mid-evening, messes up its mornings); on a brand-new pizzeria, a broke one, a middling one and a big one; every day
+  event forced in turn with each of tonight's goals; 60 days in a row; friends' challenges of every length, Pizza
+  Royale, a quick co-op and a duo pizzeria played by two robots. All along: money, stock and reputation stay sane, every
+  day ends with its receipt, every save loads back the same, nothing grows without end, and an honest score always
+  passes the multiplayer server's checks
 - `data/customers.ts` + `game/looks.ts`: names, hair, hairstyles and accessories
 - `assets/sounds/`: the music and sound effects; `audio/engine.ts` plays them (Web Audio, seamless loops, live fades),
   `audio/cues.ts` decides what plays when. The music comes as Ogg and as AAC (`music.m4a`, for older iPhones); after

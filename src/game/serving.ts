@@ -17,7 +17,7 @@ import type { Customer, GameState, Mood, ReadyPizza, Service } from "./types";
 import { writePressReview } from "./reviews";
 
 // Signed photos shown on the front (the latest ones).
-const CELEBRITY_WALL_SIZE = 4;
+export const CELEBRITY_WALL_SIZE = 4;
 
 const SPECIAL_REQUEST_XP_BONUS = 3;
 const AS_USUAL_XP_BONUS = 4;
