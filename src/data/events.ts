@@ -6,6 +6,8 @@ export const DAY_EVENT_IDS = [
   "powerCut", "lateDelivery", "inspection", "scooterStrike",
   // Evenings with a time: something happens at a given hour on the evening's clock (game/clock.ts).
   "match", "wedding",
+  // Someone among tonight's customers is an inspector from the guide, incognito.
+  "mysteryGuest",
 ] as const;
 export type DayEventId = (typeof DAY_EVENT_IDS)[number];
 
@@ -45,7 +47,23 @@ export const DAY_EVENTS: Record<DayEventId, DayEvent> = {
   match: { weight: 2, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 4 },
   // A wedding banquet: a big group order at 21:00 (see WEDDING_*), and a few fewer customers besides.
   wedding: { weight: 1, customerFactor: 0.85, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 6 },
+  // The mystery guest: nothing gives them away; how they were served shows on the receipt (see MYSTERY_*).
+  mysteryGuest: { weight: 2, customerFactor: 1, tipChanceBonus: 0, marketPriceFactor: 1, firstDay: 7 },
 };
+
+// The mystery guest is among the first customers of the evening, up to this share of them: someone on their own,
+// passing by (not a regular, a table, a delivery, a critic or a celebrity). Their stars: five, one less for each mood
+// they had reached when served, one or two less for a lukewarm or cold pizza; one if still waiting at closing.
+export const MYSTERY_LATEST_SHARE = 0.7;
+export const MYSTERY_REWARDS: Record<number, { xp: number; money: number }> = {
+  5: { xp: 60, money: 25 },
+  4: { xp: 40, money: 12 },
+  3: { xp: 20, money: 0 },
+  2: { xp: 0, money: 0 },
+  1: { xp: 0, money: 0 },
+};
+// From this many stars, the guide's verdict comes out in the papers.
+export const MYSTERY_PRESS_STARS = 3;
 
 // The wedding banquet: this many pizzas (more for a bigger pizzeria), of up to three recipes on the menu, delivered all
 // together from this time on the evening's clock, paid this much more than a neighbourhood group order.

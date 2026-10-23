@@ -7,6 +7,7 @@ import {
 } from "./batch";
 import { eveningMinutes, expectedEveningSeconds, secondsUntil } from "./clock";
 import { receivePayment } from "./economy";
+import { planMysteryGuest } from "./mystery";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
 import { recordWeekly } from "./weekly";
@@ -33,6 +34,7 @@ export const planEvening = (state: GameState, service: Service, customerCount: n
   service.expectedSeconds = expectedEveningSeconds(customerCount);
   service.batchArrivesIn = !isGroupOrderTonight ? null : quest.giver === "wedding" ? secondsUntil(WEDDING_TIME, service.expectedSeconds) : BATCH_ARRIVES_AFTER;
   service.elapsed = 0;
+  planMysteryGuest(state, service, customerCount);
 };
 
 // Every tick: the clock of the evening. Mutates state.

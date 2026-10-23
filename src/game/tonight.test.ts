@@ -57,6 +57,10 @@ describe("tonight's goal", () => {
     const hot = withGoal(stateInService([makeCustomer()]), { kind: "allHot", target: 1 });
     expect(serveFirst(hot).tonightGoal?.status).toBe("done");
     expect(serveFirst(hot).summary?.tonightGoal?.status).toBe("done");
+    // Its bonus counts in the day's profit, as everything the till took in.
+    const summary = serveFirst(hot).summary;
+    expect(summary?.bonuses).toBe(TONIGHT_REWARD);
+    expect(summary?.net).toBeCloseTo((summary?.revenue ?? 0) + (summary?.tips ?? 0) + TONIGHT_REWARD - (summary?.charges ?? 0) - (summary?.purchases ?? 0));
     const early = withGoal(stateInService([makeCustomer()]), { kind: "onTime" });
     expect(play(early, { type: "closeEarly" }).tonightGoal?.status).toBe("missed");
   });

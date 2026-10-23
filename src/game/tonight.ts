@@ -5,7 +5,7 @@ import {
 } from "../data/tonight";
 import { pickRandom } from "../utils/random";
 import { eveningMinutes } from "./clock";
-import { receivePayment } from "./economy";
+import { payBonus } from "./economy";
 import { activeMenu } from "./menu";
 import { warmthOf } from "./streak";
 import { pushToast } from "./toasts";
@@ -42,7 +42,7 @@ const openGoal = (state: GameState, service: Service): TonightGoal | null => {
 
 const reach = (state: GameState, goal: TonightGoal): void => {
   goal.status = "done";
-  receivePayment(state, TONIGHT_REWARD);
+  payBonus(state, TONIGHT_REWARD);
   state.xp += TONIGHT_XP;
   if (state.service) state.service.stats.xp += TONIGHT_XP;
   pushToast(state, { key: "tonightDone", params: { reward: TONIGHT_REWARD } }, "gold");

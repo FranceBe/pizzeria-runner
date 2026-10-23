@@ -39,6 +39,16 @@ const runEveryEvent = (start: GameState, seed: number) => {
       seen.add(event);
       // Tonight's goal is settled at closing, whatever happened.
       expect(state.tonightGoal?.status, `tonight's goal on a ${event} day`).not.toBe("open");
+      // The mystery guest's evening always ends with a verdict on the receipt: their stars, or that they never came.
+      if (event === "mysteryGuest") {
+        expect(state.summary).toHaveProperty("mystery");
+        const visit = state.summary?.mystery;
+        if (visit) {
+          expect(visit.stars).toBeGreaterThanOrEqual(1);
+          expect(visit.stars).toBeLessThanOrEqual(5);
+          expect(state.customerBook[visit.name]?.regular).not.toBe(true);
+        }
+      }
       // The banquet is over with the evening, served or not; it never lingers as a quest.
       if (event === "wedding") {
         expect(state.quest).toBeNull();

@@ -290,7 +290,7 @@ describe("views", () => {
     expect(journal).toContain("1 quest completed · €35.00 earned");
     expect(journal).toContain("The football club wants 5 Margherita for their evening.");
     const receipt = render(<DaySummary summary={{ ...SUMMARY, questRewards: 35 }} pizzeriaName="Forno Lento" onNextDay={noop} />, "en");
-    expect(receipt).toContain("Neighbourhood quests");
+    expect(receipt).toContain("Quests and orders");
     expect(receipt).toContain("+ €35.00");
   });
 
@@ -390,8 +390,21 @@ describe("views", () => {
     const summary = { ...SUMMARY, stars: 2, starGoals: { happy: true, waste: false, profit: true }, inspectionPassed: true };
     const html = render(<DaySummary summary={summary} pizzeriaName="Forno Lento" onNextDay={noop} />, "en");
     expect(html).toContain("Today&#x27;s stars");
-    expect(html).toContain("✓ Everyone served in time");
-    expect(html).toContain("Inspection passed: +40 reputation");
+    expect(html).toContain("Everyone served in time");
+    expect(html).toMatch(/receipt-check on.*Everyone served in time/);
+    expect(html).toContain("Health inspection passed");
+  });
+
+  it("never gives the mystery guest away during service, and unmasks them on the receipt", () => {
+    const state = stateInService([makeCustomer({ id: "g", name: "Paolo" })]);
+    const plain = render(serviceScreen(state));
+    const disguised = render(serviceScreen({ ...state, service: { ...serviceOf(state), customers: [makeCustomer({ id: "g", name: "Paolo", mystery: true })] } }));
+    expect(disguised).toBe(plain);
+    const receipt = render(<DaySummary summary={{ ...SUMMARY, mystery: { name: "Paolo", recipeId: "margherita", recipeName: null, stars: 4, xp: 40, money: 12 } }} pizzeriaName="Forno Lento" onNextDay={noop} />);
+    expect(receipt).toContain("Client mystère");
+    expect(receipt).toContain("C&#x27;était Paolo");
+    const absent = render(<DaySummary summary={{ ...SUMMARY, mystery: null }} pizzeriaName="Forno Lento" onNextDay={noop} />);
+    expect(absent).toContain("pas passé");
   });
 
   it("gathers everything on tonight in one list, one line each, however much there is", () => {

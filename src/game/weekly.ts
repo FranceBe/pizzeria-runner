@@ -1,7 +1,7 @@
 import { SEASON_DAYS } from "../data/seasons";
 import { WEEKLY_BONUS, WEEKLY_COUNT, WEEKLY_KINDS, WEEKLY_REWARD, WEEKLY_XP, type WeeklyKind } from "../data/weekly";
 import { pickRandom } from "../utils/random";
-import { receivePayment } from "./economy";
+import { payBonus } from "./economy";
 import { activeMenu } from "./menu";
 import { isDessert } from "./pizza";
 import { levelForXp } from "./progression";
@@ -46,12 +46,12 @@ export const recordWeekly = (state: GameState, kind: WeeklyKind, amount: number,
   mission.progress = Math.min(mission.target, mode === "max" ? Math.max(mission.progress, amount) : mission.progress + amount);
   if (mission.progress < mission.target) return;
   mission.done = true;
-  receivePayment(state, WEEKLY_REWARD);
+  payBonus(state, WEEKLY_REWARD);
   state.xp += WEEKLY_XP;
   pushToast(state, { key: "weeklyDone", params: { reward: WEEKLY_REWARD } }, "gold");
   if (!weekly.bonusPaid && weekly.missions.every((candidate) => candidate.done)) {
     weekly.bonusPaid = true;
-    receivePayment(state, WEEKLY_BONUS);
+    payBonus(state, WEEKLY_BONUS);
     pushToast(state, { key: "weeklyAllDone", params: { reward: WEEKLY_BONUS } }, "gold");
   }
 };

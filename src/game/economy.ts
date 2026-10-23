@@ -71,6 +71,13 @@ export const receivePayment = (state: GameState, amount: number): void => {
   state.money += amount;
 };
 
+// A bonus paid during the evening (tonight's goal, a weekly mission, the mystery guest): paid like any money in, and
+// counted for the receipt, whose profit includes it. Mutates state.
+export const payBonus = (state: GameState, amount: number): void => {
+  receivePayment(state, amount);
+  if (state.service) state.service.stats.bonuses = (state.service.stats.bonuses ?? 0) + amount;
+};
+
 // Pays what the till can, the rest goes on the debt. Mutates state.
 export const payCharges = (state: GameState, amount: number): void => {
   if (state.money >= amount) {

@@ -21,6 +21,7 @@ import { starCount, starGoals } from "../stars";
 import { nextStreak } from "../streak";
 import { ensureWeek, recordWeekly } from "../weekly";
 import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightServe } from "../tonight";
+import { noteMysteryLeaving, noteMysteryServed, settleMysteryGuest, welcomeMaybeMystery } from "../mystery";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
@@ -92,6 +93,7 @@ const bestSellerOf = (byRecipe: Record<string, RecipeSales>): BestSeller | null 
 const endDay = (state: GameState, service: Service): void => {
   settleUnfinishedBatch(state, service);
   settleTonightGoal(state, service);
+  const mystery = settleMysteryGuest(state, service);
   const unservedPizzas = [...service.ready, ...service.oven];
   const waste = service.stats.waste + unservedPizzas.reduce((total, pizza) => total + ingredientCost(pizza.ingredients), 0);
   // Whatever is still on the board goes back in the fridge, and the secrets back on their shelf.
@@ -106,7 +108,8 @@ const endDay = (state: GameState, service: Service): void => {
 
   const { stats } = service;
   const questRewards = stats.questRewards ?? 0;
-  const net = stats.revenue + stats.tips + annexeIncome + questRewards - charges - state.purchasesToday;
+  const bonuses = stats.bonuses ?? 0;
+  const net = stats.revenue + stats.tips + annexeIncome + questRewards + bonuses - charges - state.purchasesToday;
   const inspectionPassed = state.event === "inspection" && waste === 0 && stats.served >= INSPECTION_MIN_SERVED;
   if (inspectionPassed) {
     state.xp += INSPECTION_XP;
@@ -134,11 +137,14 @@ const endDay = (state: GameState, service: Service): void => {
     drinks: stats.drinks ?? 0,
     annexeIncome,
     questRewards,
+    bonuses,
+    happyServed: stats.happyServed,
     stars,
     starGoals: goals,
     inspectionPassed,
     reviews,
     ...(state.tonightGoal?.day === state.day ? { tonightGoal: { ...state.tonightGoal } } : {}),
+    ...(state.event === "mysteryGuest" ? { mystery } : {}),
   };
 
   state.history = [
@@ -367,7 +373,10 @@ const letCustomersIn = (state: GameState, service: Service): void => {
   if (birthdayGuest) {
     service.birthdayGuests = (service.birthdayGuests ?? []).filter((name) => name !== birthdayGuest);
     const guest = createCustomer(state, "regular", { name: birthdayGuest, isBirthday: true });
-    if (guest) return seatCustomers(service, [guest]);
+    if (guest) {
+      welcomeMaybeMystery(state, service, [guest]);
+      return seatCustomers(service, [guest]);
+    }
   }
 
   const kind = nextCustomerKind(state, service);
@@ -392,6 +401,7 @@ const letCustomersIn = (state: GameState, service: Service): void => {
     const color = Object.keys(service.tables).length % TABLE_COLORS;
     service.tables[tableId] = { size: party.length, served: 0, allHappy: true, color };
   }
+  welcomeMaybeMystery(state, service, party);
   seatCustomers(service, party);
 };
 
@@ -446,6 +456,7 @@ export const serviceActions = {
     const { service } = state;
     if (!service || service.challenge) return;
     service.closedEarly = service.customers.length > 0 || service.customersToCome > 0;
+    noteMysteryLeaving(service);
     service.customers = [];
     service.customersToCome = 0;
     endDay(state, service);
@@ -718,6 +729,7 @@ export const serviceActions = {
 
     const levelBefore = levelForXp(state.xp);
     const mood = moodForWait(customer.waitedSeconds);
+    noteMysteryServed(service, customer, mood, pizza);
     const isHappy = mood === 0;
     // The streak counts this customer before the tip, so the one who extends it gets the raise.
     const streak = nextStreak(service.stats.streak ?? 0, mood);
@@ -732,7 +744,7 @@ export const serviceActions = {
       collectPayment(state, service, customer, pizza) + settleTable(state, service, customer) + secretBonus(state, customer, pizza.secret);
     if (pizza.mamma) charmNextCustomer(service, customer);
     // Critics, deliveries and celebrities are passing through: they never join the customer book.
-    const isPerson = !customer.critic && !customer.delivery && !customer.celebrity;
+    const isPerson = !customer.critic && !customer.delivery && !customer.celebrity && !customer.mystery;
     // Back for dessert, they already counted as a visit tonight.
     if (isPerson && !customer.forDessert && recordVisit(state, customer)) pushToast(state, { key: "newRegular", params: { name: customer.name } }, "gold");
     // The first pizza served completes the tutorial.

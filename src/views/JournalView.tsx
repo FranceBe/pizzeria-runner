@@ -358,7 +358,7 @@ const PressCuttings = ({ state }: { state: GameState }) => {
             <p className="press-quote">
               {`« ${t(`pressLines.${PRESS_TONE[Math.min(5, Math.max(3, article.stars)) as 3 | 4 | 5]}.${(article.line % REVIEW_LINES) as 0 | 1 | 2}`)} »`}
             </p>
-            <p className="press-byline">{t("journal.pressBy", { critic: article.critic })}</p>
+            <p className="press-byline">{t(article.mystery ? "journal.pressByMystery" : "journal.pressBy", { critic: article.critic })}</p>
           </li>
         ))}
       </ul>

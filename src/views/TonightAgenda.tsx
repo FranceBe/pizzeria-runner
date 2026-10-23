@@ -13,9 +13,9 @@ import type { GameState } from "../game/types";
 import { useTranslation } from "../i18n/I18nContext";
 import { QuestDetails, batchItemsText, questText } from "./QuestCard";
 
-const EVENT_ICONS: Record<string, string> = {
+export const EVENT_ICONS: Record<string, string> = {
   market: "🧺", rain: "🌧️", festival: "🎉", critic: "🧐", sunny: "☀️", powerCut: "🔌", woodShortage: "🪵", lateDelivery: "🚚",
-  inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍",
+  inspection: "📋", scooterStrike: "🛵", match: "📺", wedding: "💍", mysteryGuest: "🕵️",
 };
 
 interface AgendaItem {

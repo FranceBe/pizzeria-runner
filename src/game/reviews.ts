@@ -94,9 +94,15 @@ export const averageRating = (score: { count: number; total: number }): number |
   score.count ? Math.round((score.total / score.count) * 10) / 10 : null;
 
 // A food critic served: their article comes out in one of the papers. Mutates state.
-export const writePressReview = (state: GameState, critic: Customer, stars: number): void => {
+export const writePressReview = (
+  state: GameState,
+  critic: Pick<Customer, "name" | "recipeId" | "recipeName">,
+  stars: number,
+  { mystery = false }: { mystery?: boolean } = {},
+): void => {
   const article: PressReview = {
     day: state.day,
+    ...(mystery ? { mystery } : {}),
     paper: randomIndex(PRESS_PAPERS.length),
     critic: critic.name,
     stars,

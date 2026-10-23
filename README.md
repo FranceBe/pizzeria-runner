@@ -29,7 +29,11 @@ A day has three moments:
 1. **Prep**: stock the fridge at the market, set the menu and its prices, then open.
 2. **Service**: customers come in one by one. Build each order on the board (dough first, then the sauce, cheeses and
    toppings), bake it, then serve it from the pass.
-3. **Closing**: a receipt sums up the day (sales, tips, purchases, evening charges, reputation earned).
+3. **Closing**: a till receipt sums up the day. Its header gives the day's event and stars; then the service (pizzas
+   served, the best seller, new reviews, what was binned, every order folded away), the till (money in: sales, tips,
+   quests and group orders, bonuses, the second address; money out: purchases and charges; the day's profit, which
+   counts everything the till took in, and what is still owed), and the round-up (the stars' three goals, tonight's
+   goal, the mystery guest, the inspection, reputation earned and a new level).
 
 Nobody ever leaves angry: customers just get hungrier (happy, then patient, then hungry, then starving, at 25, 50 and
 90 seconds). Quick service makes tips more likely and more generous. The first day is guided step by step.
@@ -138,6 +142,11 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   runs): the newlyweds' banquet comes in at 21:00, a group order of 8 to 12 pizzas (more for a bigger pizzeria) paid
   half as much again, with a few fewer customers besides. Every evening, the kitchen is told when the last customer
   comes in.
+- **The mystery guest** (from day 7): an inspector from the guide, incognito among the first customers of the
+  evening (someone on their own, passing by: never a regular, a table, a critic or a delivery). Nothing gives them away
+  during service. The receipt unmasks them: five stars, one less for each mood they had reached when served, one or
+  two less for a lukewarm or cold pizza, one if still waiting when the kitchen closes early. Five stars bring 60
+  reputation and €25, four 40 and €12, three 20; from three, their verdict comes out in the papers.
 - **Group orders hold the evening**: it isn't over while tonight's group order is still to come or incomplete; with
   nobody else left, it comes in at once. One that can no longer be completed (a recipe of it deleted) holds nothing,
   and closing early always gives up on it, paid for what arrived.

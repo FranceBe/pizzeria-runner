@@ -61,6 +61,8 @@ export interface Customer extends Looks {
   asUsual?: boolean;
   /** The food critic of a critic day: not in the customer book, rewards reputation. */
   critic?: boolean;
+  /** The mystery guest (a day event): never shown, revealed on the receipt. */
+  mystery?: boolean;
   /** A delivery order: nobody at the counter, an express bonus instead of a tip. */
   delivery?: boolean;
   /** Only orders recipes that fit; gluten-free swaps the dough for the gluten-free one. */
@@ -156,6 +158,8 @@ export interface Review {
 // A food critic's article about the pizzeria.
 export interface PressReview {
   day: number;
+  /** Written by the mystery guest, for the guide. */
+  mystery?: boolean;
   /** Index in PRESS_PAPERS. */
   paper: number;
   critic: string;
@@ -179,6 +183,8 @@ export interface ServiceStats {
   drinks?: number;
   /** Neighbourhood quest rewards paid today (not counted in revenue). */
   questRewards?: number;
+  /** Bonuses paid today: tonight's goal, weekly missions, the mystery guest (see payBonus). */
+  bonuses?: number;
   /** Happy customers served in a row (see game/streak.ts). */
   streak?: number;
   bestStreak?: number;
@@ -231,6 +237,10 @@ export interface Service {
   halftimeCame?: boolean;
   /** The last customer of the evening came in, and the kitchen was told. */
   lastOrdersSaid?: boolean;
+  /** The mystery guest's evening: the arrival they come with (counting customers in), and how they were served. */
+  mysteryArrival?: number | null;
+  arrivals?: number;
+  mysteryVisit?: MysteryVisit | null;
   /** Closed before the end: the day can't earn its "everyone served" star. */
   closedEarly?: boolean;
   oven: OvenPizza[];
@@ -269,6 +279,15 @@ export interface Challenge {
 
 // In Pizza Royale: baking a pizza nobody is waiting for, or throwing anything away.
 export type RoyaleMistake = "unwantedPizza" | "waste";
+
+export interface MysteryVisit {
+  name: string;
+  recipeId: RecipeId;
+  recipeName: string | null;
+  stars: number;
+  xp: number;
+  money: number;
+}
 
 export interface TonightGoal {
   day: number;
@@ -319,6 +338,10 @@ export interface DaySummary {
   annexeIncome?: number;
   /** Neighbourhood quest rewards paid that day. */
   questRewards?: number;
+  /** Bonuses paid that day (tonight's goal, weekly missions, the mystery guest). */
+  bonuses?: number;
+  /** Customers served still happy. */
+  happyServed?: number;
   /** The day's stars (0–3) and which goals earned them. */
   stars?: number;
   starGoals?: StarGoals;
@@ -326,6 +349,8 @@ export interface DaySummary {
   inspectionPassed?: boolean;
   /** Tonight's goal, as it ended. */
   tonightGoal?: TonightGoal;
+  /** A mystery guest's evening: who it was and their stars, or null if they never came in. */
+  mystery?: MysteryVisit | null;
   /** Reviews written tonight. */
   reviews?: Review[];
 }
