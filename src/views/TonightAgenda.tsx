@@ -142,7 +142,7 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
   });
   const birthdays = birthdaysToday(state);
   if (birthdays.length) {
-    items.push({ id: "birthday", icon: "🎂", title: t("prep.birthdayTitle"), text: t("prep.birthdayToday", { names: birthdays.join(", ") }), tone: "ag-birthday" });
+    items.push({ id: "birthday", icon: "🎂", title: t("prep.birthdayTitle"), text: t("prep.birthdayToday", { names: t.list(birthdays) }), tone: "ag-birthday" });
   }
 
   if (!items.length) return null;

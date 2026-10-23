@@ -18,6 +18,10 @@ export interface TranslationHelpers {
   money(amount: number): string;
   number(value: number): string;
   ingredient(id: IngredientId): string;
+  /** "a, b, c" (Chinese: "a、b、c"). */
+  list(items: readonly string[]): string;
+  /** Words put side by side: spaced, except in Chinese, which writes without spaces. */
+  words(...parts: string[]): string;
   ingredientList(ids: readonly IngredientId[]): string;
   /** Everything but the dough, for recipe cards. */
   toppings(ids: readonly IngredientId[]): string;

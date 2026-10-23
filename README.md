@@ -351,12 +351,16 @@ Ids (`pate`, `margherita`, `salle`…) are stored in save files: don't rename th
 
 ## Languages
 
-The game is in French and English. It starts in the browser's language and can be switched in Settings.
+The game is in French, English and, as a trial, Simplified Chinese (not yet reviewed by a native speaker). It starts in
+the browser's language and can be switched in Settings.
 
-All text lives in `src/i18n/fr.ts` and `src/i18n/en.ts`. French is the reference: its keys, `{placeholders}` and
+All text lives in `src/i18n/fr.ts`, `src/i18n/en.ts` and `src/i18n/zh.ts`. French is the reference: its keys, `{placeholders}` and
 function signatures define the types, so a misspelt key, a missing param or an English entry out of shape fails to compile.
 Components get a translator with `const t = useTranslation()`, then call `t("prep.title", { day: 3 })`.
 Entries are either strings with `{placeholders}` or functions, for plurals and amounts of money.
+Lists and words put side by side go through `t.list` and `t.words`, since Chinese separates items with "、" and writes
+without spaces. The web fonts only cover Latin letters: in Chinese, characters come from the system's CJK fonts
+(`:root:lang(zh)` in `src/styles.css`).
 
 Game logic never produces text: it stores translation keys (for example, toasts are `{ key, params }`),
 so everything follows a language change immediately.

@@ -1,6 +1,6 @@
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { formatMoney, formatNumber } from "../utils/format";
-import { LANGUAGES, type Language } from "./languages";
+import { LANGUAGES, LIST_SEPARATORS, WORD_GAPS, type Language } from "./languages";
 import type { Dictionary, Translate, TranslationHelpers, Translator } from "./types";
 
 export * from "./languages";
@@ -10,6 +10,7 @@ export type * from "./types";
 const LOADERS: Record<Language, () => Promise<Dictionary>> = {
   fr: () => import("./fr").then((module) => module.fr),
   en: () => import("./en").then((module) => module.en),
+  zh: () => import("./zh").then((module) => module.zh),
 };
 const loaded = new Map<Language, Dictionary>();
 
@@ -49,7 +50,9 @@ export const createTranslator = (language: Language): Translator => {
     money: (amount) => formatMoney(amount, language),
     number: (value) => formatNumber(value, language),
     ingredient: (id) => translate(`ingredients.${id}`),
-    ingredientList: (ids) => ids.map(helpers.ingredient).join(", "),
+    list: (items) => items.join(LIST_SEPARATORS[language]),
+    words: (...parts) => parts.join(WORD_GAPS[language]),
+    ingredientList: (ids) => helpers.list(ids.map(helpers.ingredient)),
     toppings: (ids) => helpers.ingredientList(ids.filter((id) => id !== "pate")),
     recipe: ({ id, name }) => (CLASSIC_IDS.has(id) ? translate(`recipes.${id}`) : (name ?? "")),
     upgradeName: (key) => translate(`upgrades.${key}.name`),

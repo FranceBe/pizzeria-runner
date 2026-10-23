@@ -24,6 +24,15 @@
   --f-chalk: "Caveat", "Segoe Print", "Bradley Hand", cursive;
   --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+/* Chinese: the web fonts only cover Latin letters, so the characters come from the system's sans-serif CJK fonts
+   (bolder in titles, where Shrikhand is heavy). Latin letters and figures keep the game's fonts. */
+:root:lang(zh) {
+  --f-cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
+  --f-display: "Shrikhand", var(--f-cjk);
+  --f-chalk: "Caveat", var(--f-cjk);
+  --f-body: "Figtree", var(--f-cjk);
+}
+:lang(zh) h2.h, :lang(zh) .sign, :lang(zh) .receipt-name { font-weight: 800; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #111714; --tile: #161e1a; --surface: #1b231f; --surface2: #212b26;

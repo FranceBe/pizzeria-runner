@@ -23,12 +23,12 @@ export const questText = (t: Translator, quest: Quest | QuestRecord): string => 
         return t("quests.batch", { target });
     }
   })();
-  return `${t.questGiver(quest.giver)} ${what}`;
+  return t.words(t.questGiver(quest.giver), what);
 };
 
 // "3 Regina, 2 Margherita"
 export const batchItemsText = (t: Translator, quest: Pick<Quest, "items">): string =>
-  (quest.items ?? []).map((item) => `${item.count} ${t.recipe({ id: item.recipeId, name: item.recipeName })}`).join(", ");
+  t.list((quest.items ?? []).map((item) => t.words(String(item.count), t.recipe({ id: item.recipeId, name: item.recipeName }))));
 
 // What the running neighbourhood quest asks, how far it is and what it brings (the morning's list says the rest).
 export const QuestDetails = ({ quest }: { quest: Quest }) => {

@@ -183,7 +183,7 @@ const Suppliers = ({ state, dispatch }: ScreenProps) => {
               </div>
               <div className="mm">
                 {t("market.perPortion", { price: ingredient.cost })}
-                {helpsWith.length > 0 && t("market.usefulFor", { recipes: helpsWith.map(t.recipe).join(", ") })}
+                {helpsWith.length > 0 && t("market.usefulFor", { recipes: t.list(helpsWith.map(t.recipe)) })}
               </div>
             </div>
             {isAvailable ? (

@@ -54,7 +54,7 @@ const ChallengeOffer = ({ state, dispatch }: ScreenProps) => {
   if (!state.settings.tutorialDone) return null;
   const today = localDate();
   const bestToday = state.dailyChallenge?.date === today ? state.dailyChallenge.best : 0;
-  const menu = createChallenge(today).menu.map((id) => t.recipe({ id })).join(", ");
+  const menu = t.list(createChallenge(today).menu.map((id) => t.recipe({ id })));
   return (
     <div className="challenge-offer">
       <div className="grow">

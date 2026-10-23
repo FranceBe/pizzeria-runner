@@ -109,7 +109,7 @@ const ClassicsToDiscover = ({ state }: Pick<ScreenProps, "state">) => {
       <div className="grid2">
         {undiscovered.map((classic) => {
           const missing = classic.ingredients.filter((id) => !state.unlocked[id]);
-          const items = missing.map((id) => t("menu.missingItem", { id, level: INGREDIENTS_BY_ID[id].requiredLevel })).join(", ");
+          const items = t.list(missing.map((id) => t("menu.missingItem", { id, level: INGREDIENTS_BY_ID[id].requiredLevel })));
           return (
             <div key={classic.id} className="card pad locked row" style={{ flexWrap: "nowrap" }}>
               <div className="grow">

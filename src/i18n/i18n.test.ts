@@ -7,6 +7,7 @@ import { UPGRADE_KEYS } from "../data/progression";
 import { createTranslator, LANGUAGES } from "./index";
 import { en } from "./en";
 import { fr } from "./fr";
+import { zh } from "./zh";
 
 // Flattens a dictionary into "path.to.key" -> "string" | "function" | "array(…)", an array described by its rows
 // (the length of each row of lines, or "string").
@@ -42,11 +43,13 @@ const sourceFiles = (directory: string): string[] => {
 describe("dictionaries", () => {
   it("have exactly the same keys in every language", () => {
     expect(shapeOf(en)).toEqual(shapeOf(fr));
+    expect(shapeOf(zh)).toEqual(shapeOf(fr));
   });
 
   // TypeScript checks the shape, but not that both languages use the same {placeholders}.
   it("use the same placeholders in every language", () => {
     expect(placeholdersOf(en)).toEqual(placeholdersOf(fr));
+    expect(placeholdersOf(zh)).toEqual(placeholdersOf(fr));
   });
 
   it("name every ingredient, classic recipe, upgrade and station", () => {
@@ -63,7 +66,7 @@ describe("dictionaries", () => {
     const toastKeys = [...source.matchAll(/pushToast\(\w+, \{ key: "(\w+)"/g)].map((match) => match[1]);
     expect(toastKeys.length).toBeGreaterThan(15);
     for (const language of LANGUAGES) {
-      const dictionary = language === "fr" ? fr : en;
+      const dictionary = { fr, en, zh }[language];
       for (const key of toastKeys) expect(dictionary.toasts, `${language}: toasts.${key}`).toHaveProperty(key);
     }
   });
