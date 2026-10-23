@@ -9,6 +9,9 @@ import { festivalLastDay } from "../game/calendar";
 import { formatEveningTime } from "../game/clock";
 import { birthdaysToday } from "../game/regulars";
 import { storyGuestsToday } from "../game/stories";
+import { competitorDay, competitorFactor, ratingFactor } from "../game/competitor";
+import { averageRating } from "../game/reviews";
+import { COMPETITOR_DAYS, COMPETITOR_STARS_TO_WIN } from "../data/competitor";
 import { STORIES } from "../data/stories";
 import { forecastCustomers } from "../game/economy";
 import { tonightsRush } from "../game/evening";
@@ -53,6 +56,32 @@ export const TonightAgenda = ({ state }: { state: GameState }) => {
       text: `${t(`events.${eventId}.describe`)}${late}`,
       aside: state.event === "match" ? formatEveningTime(MATCH_KICKOFF) : state.event === "wedding" ? formatEveningTime(WEDDING_TIME) : undefined,
       tone: `ev-${state.event}`,
+    });
+  }
+  // The competitor across the street: its day, what it does to tonight's customers, how far the stars against it are.
+  const versus = competitorDay(state);
+  if (versus !== null && state.competitor) {
+    const rating = averageRating(state.reviewScore);
+    items.push({
+      id: "competitor",
+      icon: "🏪",
+      title: t("prep.competitorTitle", { name: state.competitor.name }),
+      text: t("prep.competitorText", {
+        rating: rating === null ? t("prep.noRating") : `${t.number(rating)} ★`,
+        share: Math.round((1 - ratingFactor(rating)) * 100),
+        stars: state.competitor.stars,
+        target: COMPETITOR_STARS_TO_WIN,
+      }),
+      aside: t("prep.competitorDay", { day: versus, total: COMPETITOR_DAYS }),
+      tone: "ag-competitor",
+    });
+  } else if (competitorFactor(state) > 1 && state.competitor) {
+    items.push({
+      id: "competitor",
+      icon: "🎉",
+      title: t("prep.competitorBoostTitle", { name: state.competitor.name }),
+      text: t("prep.competitorBoost", { share: Math.round((competitorFactor(state) - 1) * 100) }),
+      tone: "ag-goal",
     });
   }
   // Tonight's rush, if the evening is busy enough (as things stand this morning).

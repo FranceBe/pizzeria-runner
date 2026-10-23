@@ -4,6 +4,7 @@ import { Overlay } from "../components/Overlay";
 import type { DaySummary as Summary, MysteryVisit, OrderRecord, StarGoals, TonightGoal } from "../game/types";
 import { LIGHTNING_SECONDS, TONIGHT_REWARD } from "../data/tonight";
 import { INSPECTION_XP } from "../data/events";
+import { COMPETITOR_DAYS, COMPETITOR_STARS_TO_WIN } from "../data/competitor";
 import { profitTarget } from "../game/stars";
 import { useTranslation } from "../i18n/I18nContext";
 import { Pizza } from "../components/Pizza";
@@ -220,6 +221,11 @@ export const DaySummary = ({ summary, pizzeriaName, shownEventId, onNextDay }: D
               {summary.tonightGoal && <TonightCheck goal={summary.tonightGoal} />}
               {summary.mystery !== undefined && <MysteryCheck visit={summary.mystery} />}
               {summary.inspectionPassed && <Check isOn value={`+${INSPECTION_XP}`}>{t("summary.inspectionShort")}</Check>}
+              {summary.competitor && (
+                <Check isOn={summary.competitor.stars >= COMPETITOR_STARS_TO_WIN} value={`${summary.competitor.stars}/${COMPETITOR_STARS_TO_WIN} ★`}>
+                  {t("summary.competitorLine", { name: summary.competitor.name, day: summary.competitor.day, total: COMPETITOR_DAYS })}
+                </Check>
+              )}
             </ul>
             <ReceiptLine className="receipt-xp" label={t("summary.reputation")} value={`+${summary.xp}`} />
             {reachedLevel && <p className="receipt-level">{`⬆ ${t("summary.levelReached", { level: reachedLevel })}`}</p>}

@@ -1373,3 +1373,6 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 }
 :root[data-theme="dark"] .mod.story-tag { background: #2e2342; color: #cdb6f2; }
 :root[data-theme="dark"] .ag-story { --ev-bg: #261f36; --ev-edge: #a98ae0; }
+.ag-competitor { --ev-bg: #e9edf1; --ev-edge: #52606d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ag-competitor { --ev-bg: #22282e; --ev-edge: #9aa8b5; } }
+:root[data-theme="dark"] .ag-competitor { --ev-bg: #22282e; --ev-edge: #9aa8b5; }

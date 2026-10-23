@@ -430,6 +430,15 @@ describe("views", () => {
     expect(journal).not.toContain("They came back with the baby.");
   });
 
+  it("says in the morning what the competitor across the street does, and how far the stars against it are", () => {
+    const state = { ...playedState(), competitor: { name: "Pizza Fusée", firstDay: 3, stars: 2 }, reviewScore: { count: 4, total: 15 } };
+    const html = render(<PrepView state={state} dispatch={noop} goToTab={noop} />, "en");
+    expect(html).toContain("“Pizza Fusée” across the street");
+    expect(html).toContain("day 2/3");
+    expect(html).toContain("About 10% fewer customers");
+    expect(html).toContain("2/6 so far");
+  });
+
   it("gathers everything on tonight in one list, one line each, however much there is", () => {
     const state = playedState();
     state.event = "match";

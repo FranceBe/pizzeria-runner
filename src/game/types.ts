@@ -287,6 +287,16 @@ export interface Challenge {
 // In Pizza Royale: baking a pizza nobody is waiting for, or throwing anything away.
 export type RoyaleMistake = "unwantedPizza" | "waste";
 
+export interface Competitor {
+  name: string;
+  firstDay: number;
+  /** The day's stars won while it is open. */
+  stars: number;
+  outcome?: "gaveUp" | "stayed";
+  /** Once it gave up: its customers come until this day. */
+  boostUntil?: number;
+}
+
 export interface MysteryVisit {
   name: string;
   recipeId: RecipeId;
@@ -358,6 +368,8 @@ export interface DaySummary {
   tonightGoal?: TonightGoal;
   /** A mystery guest's evening: who it was and their stars, or null if they never came in. */
   mystery?: MysteryVisit | null;
+  /** The competitor across the street that day: which of its days, and the stars against it so far. */
+  competitor?: { name: string; day: number; stars: number };
   /** Reviews written tonight. */
   reviews?: Review[];
 }
@@ -584,6 +596,8 @@ export interface GameState {
   tonightGoal: TonightGoal | null;
   /** Tonight's rush hour, drawn in the morning so it can be announced: the time on the evening's clock. */
   rushPlan: { day: number; at: number } | null;
+  /** The last competitor across the street (game/competitor.ts): its days, the stars against it, how it ended. */
+  competitor: Competitor | null;
   /** Signed photos of the celebrities who came, shown on the front. */
   celebrityWall: string[];
   /** Someone typed the code. */

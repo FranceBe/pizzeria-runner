@@ -155,6 +155,11 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   comes again later. Two stories at a time at most, each lived once a game; the journal tells each regular's story so
   far. Regulars expected on an evening (birthdays, stories) always come: their seats are kept, so a table never takes
   the last ones.
+- **The competitor across the street** (from level 5 and day 12, now and then, at most once every 20 days): a
+  made-up chain opens for three days. With an online rating of 4.3 ★ or more, customers stay loyal; from 3.5, about
+  10% fewer come; below (or without reviews), about 20% fewer. Six of the day's stars over its three evenings and it
+  throws in the towel: 50 reputation, and its customers come to try the pizzeria (about 10% more for two days).
+  Otherwise it settles in, with no effect past its days. The morning's list and the receipt say where things stand.
 - **The mystery guest** (from day 7): an inspector from the guide, incognito among the first customers of the
   evening (someone on their own, passing by: never a regular, a table, a critic or a delivery). Nothing gives them away
   during service. The receipt unmasks them: five stars, one less for each mood they had reached when served, one or

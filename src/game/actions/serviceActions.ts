@@ -23,6 +23,7 @@ import { ensureWeek, recordWeekly } from "../weekly";
 import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightServe } from "../tonight";
 import { noteMysteryLeaving, noteMysteryServed, settleMysteryGuest, welcomeMaybeMystery } from "../mystery";
 import { companionsOf, maybeStartStory, storyGuestsToday, turnStoryPage } from "../stories";
+import { competitorDay, countStarsAgainstCompetitor, followCompetitor } from "../competitor";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
@@ -119,6 +120,8 @@ const endDay = (state: GameState, service: Service): void => {
   const goals = starGoals({ served: stats.served, hungryServed: stats.hungryServed ?? 0, closedEarly: Boolean(service.closedEarly), waste, net, charges });
   const stars = starCount(goals);
   state.lifetime.stars += stars;
+  countStarsAgainstCompetitor(state, stars);
+  const day = competitorDay(state);
   const reviews = writeReviews(state, stats.orders);
   state.summary = {
     day: state.day,
@@ -146,6 +149,7 @@ const endDay = (state: GameState, service: Service): void => {
     reviews,
     ...(state.tonightGoal?.day === state.day ? { tonightGoal: { ...state.tonightGoal } } : {}),
     ...(state.event === "mysteryGuest" ? { mystery } : {}),
+    ...(day !== null && state.competitor ? { competitor: { name: state.competitor.name, day, stars: state.competitor.stars } } : {}),
   };
 
   state.history = [
@@ -866,6 +870,7 @@ export const serviceActions = {
     ensureRushPlan(state);
     lapseAbsentRegulars(state);
     maybeStartStory(state);
+    followCompetitor(state);
     ensureLocals(state, CUSTOMER_NAMES);
     state.dayStart = null;
     expireQuest(state);

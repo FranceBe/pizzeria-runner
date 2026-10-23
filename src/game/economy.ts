@@ -1,3 +1,4 @@
+import { competitorFactor } from "./competitor";
 import type { IngredientId } from "../data/ingredients";
 import {
   UPGRADES, UPGRADE_KEYS, BASE_DAILY_CHARGES, DELIVERY_EXTRA_ORDERS, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS,
@@ -29,7 +30,8 @@ export const forecastCustomers = (state: GameState): number => {
     ) / menu.length;
   const qualityFactor = clamp(averageQuality, 0.6, 1.25);
   const varietyBonus = Math.min(3, Math.floor((menu.length - 1) / 2));
-  const atTheCounter = Math.max(3, Math.round(baseCount * qualityFactor) + varietyBonus);
+  // The competitor across the street takes some of them (or sends a few once it gave up).
+  const atTheCounter = Math.max(3, Math.round((Math.round(baseCount * qualityFactor) + varietyBonus) * competitorFactor(state)));
   const { terrasse, livraison } = state.upgrades;
   const terrace = terrasse * (TERRACE_CUSTOMERS + (state.event === "sunny" ? TERRACE_SUNNY_CUSTOMERS : 0));
   const deliveries = livraison ? DELIVERY_EXTRA_ORDERS : 0;
