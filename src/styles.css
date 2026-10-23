@@ -1376,3 +1376,45 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .ag-competitor { --ev-bg: #e9edf1; --ev-edge: #52606d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ag-competitor { --ev-bg: #22282e; --ev-edge: #9aa8b5; } }
 :root[data-theme="dark"] .ag-competitor { --ev-bg: #22282e; --ev-edge: #9aa8b5; }
+
+/* Postcards in the journal: face up (a scene on its sky, a stamp, a handwritten caption), or face down with a hint */
+.j-postcards { order: 5; }
+.j-achievements { order: 6; }
+@media (min-width: 760px) { .j-postcards { grid-column: 1 / -1; } }
+.postcards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.postcard { position: relative; display: flex; flex-direction: column; gap: 2px; min-height: 150px; padding: 8px 10px 10px; border-radius: 6px;
+  background: var(--paper); color: var(--paper-ink); box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 6px 14px -8px rgba(0,0,0,.35); transform: rotate(-.6deg); }
+.postcard:nth-child(even) { transform: rotate(.7deg); }
+.postcard-scene { display: grid; place-items: center; height: 64px; margin: -2px -4px 4px; border-radius: 4px; font-size: 28px; letter-spacing: 4px;
+  background: linear-gradient(180deg, var(--sky), color-mix(in srgb, var(--sky) 55%, #fff)); }
+.postcard-stamp { position: absolute; top: 4px; right: 6px; width: 26px; height: 30px; display: grid; place-items: center; font-size: 15px;
+  background: #fffdf6; border: 2px dashed #c9bfa8; border-radius: 3px; transform: rotate(6deg); }
+.postcard-title { font-size: 13.5px; }
+.postcard-caption { font-family: var(--f-chalk); font-size: 17px; line-height: 1.1; color: #3d5a8a; }
+.postcard-day { margin-top: auto; align-self: flex-end; font-size: 11px; opacity: .6; }
+.postcard.back { display: grid; place-items: center; text-align: center; gap: 2px; min-height: 84px; padding: 8px; transform: none; box-shadow: none;
+  background: var(--surface2); color: var(--muted); border: 2px dashed var(--line); }
+.postcard-q { font-family: var(--f-display); font-size: 22px; line-height: 1; opacity: .5; }
+.postcard-hint { font-size: 12px; font-style: italic; }
+@media (max-width: 420px) { .postcards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .postcard:not(.back) { min-height: 140px; } .postcard-caption { font-size: 15.5px; } }
+
+/* The journal on a phone: tabs, one part at a time. From a tablet up, no tabs: everything at once. */
+.journal-tabs { display: none; }
+@media (max-width: 759px) {
+  /* Every tab in sight: three by two */
+  .journal-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; order: 0; }
+  .journal-tab { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 6px; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 700; font-size: 13px; white-space: nowrap; min-width: 0; }
+  .journal-tab.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .journal-tab-count { font-size: 11.5px; font-weight: 800; opacity: .7; }
+  .journal[data-section="accounts"] .journal-card:not(.j-accounts),
+  .journal[data-section="reviews"] .journal-card:not(.j-reviews),
+  .journal[data-section="regulars"] .journal-card:not(.j-regulars),
+  .journal[data-section="pairings"] .journal-card:not(.j-pairings),
+  .journal[data-section="postcards"] .journal-card:not(.j-postcards),
+  .journal[data-section="achievements"] .journal-card:not(.j-achievements) { display: none; }
+  /* The tab says which part this is: its own title would only repeat it. */
+  .journal-card > h2.h:first-child, .j-postcards > .row:first-child { display: none; }
+  /* One part on screen: the regulars' list needn't scroll inside the page any more. */
+  .journal .regular-cards { max-height: none; }
+}

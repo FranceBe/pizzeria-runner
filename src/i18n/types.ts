@@ -3,6 +3,7 @@ import type { AchievementId } from "../data/achievements";
 import type { DrinkId } from "../data/drinks";
 import type { FestivalId } from "../data/festivals";
 import type { StoryId } from "../data/stories";
+import type { PostcardId } from "../data/postcards";
 import type { QuestGiver } from "../data/quests";
 import type { UpgradeKey } from "../data/progression";
 import type { Pairing } from "../data/recipes";
@@ -31,6 +32,7 @@ export interface TranslationHelpers {
   questGiver(giver: QuestGiver): string;
   festival(id: FestivalId): string;
   storyTitle(id: StoryId): string;
+  postcardTitle(id: PostcardId): string;
   medal(medal: "gold" | "silver" | "bronze"): string;
 }
 

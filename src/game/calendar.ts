@@ -2,6 +2,7 @@ import { FESTIVALS, FESTIVAL_GIFT, FESTIVAL_IDS, type FestivalId } from "../data
 import { CLASSIC_RECIPES } from "../data/recipes";
 import { discoverClassics } from "./menu";
 import { pushToast } from "./toasts";
+import { sendPostcard } from "./postcards";
 import type { GameState } from "./types";
 
 // "2026-10-31" → the festival going on that day, if any. Windows can cross the new year.
@@ -39,5 +40,6 @@ export const syncFestival = (state: GameState, date: string): void => {
   state.unlocked[ingredient] = true;
   state.stock[ingredient] = (state.stock[ingredient] || 0) + FESTIVAL_GIFT;
   pushToast(state, { key: "festivalStarts", params: { festival } }, "gold");
+  sendPostcard(state, festival);
   discoverClassics(state);
 };

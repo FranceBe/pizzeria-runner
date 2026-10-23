@@ -2,6 +2,7 @@
 // them away during service; their stars, and what they bring, are revealed on the receipt.
 import { MYSTERY_LATEST_SHARE, MYSTERY_PRESS_STARS, MYSTERY_REWARDS } from "../data/events";
 import { payBonus } from "./economy";
+import { sendPostcard } from "./postcards";
 import { writePressReview } from "./reviews";
 import { warmthOf } from "./streak";
 import type { Customer, GameState, Mood, MysteryVisit, ReadyPizza, Service } from "./types";
@@ -65,6 +66,7 @@ export const settleMysteryGuest = (state: GameState, service: Service): MysteryV
   state.xp += visit.xp;
   service.stats.xp += visit.xp;
   if (visit.money) payBonus(state, visit.money);
+  if (visit.stars === 5) sendPostcard(state, "mysteryFive");
   if (visit.stars >= MYSTERY_PRESS_STARS) {
     writePressReview(state, { name: visit.name, recipeId: visit.recipeId, recipeName: visit.recipeName }, visit.stars, { mystery: true });
   }

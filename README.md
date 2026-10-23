@@ -160,6 +160,14 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   10% fewer come; below (or without reviews), about 20% fewer. Six of the day's stars over its three evenings and it
   throws in the towel: 50 reputation, and its customers come to try the pizzeria (about 10% more for two days).
   Otherwise it settles in, with no effect past its days. The morning's list and the receipt say where things stand.
+- **The journal** on a phone: tabs (accounts, reviews, regulars, pairings, postcards, achievements, each with what it
+  holds at a glance) show one part at a time, the last one chosen remembered on the device; from a tablet up,
+  everything at once.
+- **Postcards**: sixteen to collect in the journal, one for each rare moment the first time it happens (a rush, a
+  street party, a power cut, a three-star day, a delighted critic, a celebrity, a match's half-time, the wedding
+  banquet, five stars from the mystery guest, the competitor giving up, each regular's story told to its end, and
+  each real-calendar festival). Face up, a scene on its sky, a stamp, a handwritten caption and the day it came; face
+  down, a hint.
 - **The mystery guest** (from day 7): an inspector from the guide, incognito among the first customers of the
   evening (someone on their own, passing by: never a regular, a table, a critic or a delivery). Nothing gives them away
   during service. The receipt unmasks them: five stars, one less for each mood they had reached when served, one or

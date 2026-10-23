@@ -12,6 +12,7 @@ import { CELEBRITY_TIP, CELEBRITY_XP } from "../data/events";
 import { RUSH_TIP_FACTOR } from "./evening";
 import { streakMultiplier, warmthTipFactor } from "./streak";
 import { pushPop, pushToast } from "./toasts";
+import { sendPostcard } from "./postcards";
 import { recordWeekly } from "./weekly";
 import type { Customer, GameState, Mood, ReadyPizza, Service } from "./types";
 import { writePressReview } from "./reviews";
@@ -141,6 +142,7 @@ export const reputationFor = (state: GameState, customer: Customer, newPairings:
   if (customer.celebrity) {
     xp += CELEBRITY_XP;
     pushToast(state, { key: "celebrity", params: { name: customer.name } }, "gold");
+    sendPostcard(state, "celebrity");
     if (!state.celebrityWall.includes(customer.name)) state.celebrityWall = [...state.celebrityWall, customer.name].slice(-CELEBRITY_WALL_SIZE);
   }
   if (customer.critic) {
@@ -160,7 +162,10 @@ export const recordLifetime = (state: GameState, customer: Customer, tip: number
   if (mood === 0) lifetime.happyServed += 1;
   if (customer.asUsual) lifetime.asUsualServed += 1;
   if (customer.delivery) lifetime.deliveries += 1;
-  if (customer.critic && mood <= 1) lifetime.criticsPleased += 1;
+  if (customer.critic && mood <= 1) {
+    lifetime.criticsPleased += 1;
+    sendPostcard(state, "critic");
+  }
   if (customer.celebrity) lifetime.celebrities += 1;
   if (isDessert(customer.ingredients)) {
     lifetime.sweetServed += 1;

@@ -7,6 +7,7 @@ import {
 import { eveningMinutes, expectedEveningSeconds, secondsUntil } from "./clock";
 import { receivePayment } from "./economy";
 import { planMysteryGuest } from "./mystery";
+import { sendPostcard } from "./postcards";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
 import { recordWeekly } from "./weekly";
@@ -106,6 +107,7 @@ const followMatch = (state: GameState, service: Service): void => {
     // The first of them is at the door already.
     service.nextArrivalIn = Math.min(service.nextArrivalIn, 0.5);
     pushToast(state, { key: "halftime" }, "gold");
+    sendPostcard(state, "matchNight");
   }
 };
 
@@ -122,6 +124,7 @@ const followRush = (state: GameState, service: Service): void => {
   service.rushAtMinutes = null;
   service.rush = { secondsLeft: RUSH_SECONDS };
   pushToast(state, { key: "rush" }, "gold");
+  sendPostcard(state, "rush");
 };
 
 // The evening's shape on its clock: calmer while it opens and as it winds down, busier in between.
@@ -184,8 +187,11 @@ export const deliverToBatch = (state: GameState, service: Service, pizza: ReadyP
     recordWeekly(state, "batchGold", 1);
   }
   logQuest(state, reward, medal);
-  if (quest.giver === "wedding") pushToast(state, { key: "weddingDone", params: { medal, reward } }, "gold");
-  else pushToast(state, { key: "batchDone", params: { giver: quest.giver, medal, reward } }, "gold");
+  if (quest.giver === "wedding") {
+    pushToast(state, { key: "weddingDone", params: { medal, reward } }, "gold");
+    sendPostcard(state, "wedding");
+  }
+  if (quest.giver !== "wedding") pushToast(state, { key: "batchDone", params: { giver: quest.giver, medal, reward } }, "gold");
   state.quest = null;
   service.batch = null;
   if (service.selectedCustomerId === "batch") service.selectedCustomerId = service.customers[0]?.id ?? null;

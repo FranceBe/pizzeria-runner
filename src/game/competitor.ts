@@ -9,6 +9,7 @@ import { pickRandom } from "../utils/random";
 import { levelForXp } from "./progression";
 import { averageRating } from "./reviews";
 import { pushToast } from "./toasts";
+import { sendPostcard } from "./postcards";
 import type { GameState } from "./types";
 
 // Which of its days it is (1 to COMPETITOR_DAYS), while it is open; null otherwise.
@@ -41,6 +42,7 @@ export const followCompetitor = (state: GameState): void => {
       competitor.boostUntil = state.day + COMPETITOR_BOOST_DAYS - 1;
       state.xp += COMPETITOR_WIN_XP;
       pushToast(state, { key: "competitorGaveUp", params: { name: competitor.name, xp: COMPETITOR_WIN_XP } }, "gold");
+      sendPostcard(state, "competitorGone");
     } else {
       competitor.outcome = "stayed";
       pushToast(state, { key: "competitorStayed", params: { name: competitor.name } });

@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+import { POSTCARDS, POSTCARD_IDS } from "../data/postcards";
 import { STORIES, type StoryId } from "../data/stories";
 import { FESTIVALS } from "../data/festivals";
 import { useState } from "react";
@@ -385,11 +387,98 @@ const PressCuttings = ({ state }: { state: GameState }) => {
   );
 };
 
-export const JournalView = ({ state }: { state: GameState }) => {
+// The postcards: those received face up and first, in the order they came (the scene, a stamp, the handwritten
+// caption, the day), then the others face down with a hint.
+const Postcards = ({ state }: { state: GameState }) => {
+  const t = useTranslation();
+  const received = POSTCARD_IDS.filter((id) => state.postcards[id] !== undefined).length;
   return (
-    // Two columns from a tablet up: the money and the pairings book, then what people say. On a phone the columns
-    // melt into one list, in the order set in styles.css.
-    <div className="journal">
+    <div className="card pad journal-card j-postcards">
+      <div className="row">
+        <h2 className="h grow">{t("journal.postcards")}</h2>
+        <span className="hint">{t("journal.postcardsCount", { count: received, total: POSTCARD_IDS.length })}</span>
+      </div>
+      <ul className="postcards">
+        {[...POSTCARD_IDS].sort((a, b) => (state.postcards[a] ?? Infinity) - (state.postcards[b] ?? Infinity)).map((id) => {
+          const day = state.postcards[id];
+          if (day === undefined) {
+            return (
+              <li key={id} className="postcard back">
+                <span className="postcard-q" aria-hidden="true">?</span>
+                <span className="postcard-hint">{t(`postcards.${id}.hint`)}</span>
+              </li>
+            );
+          }
+          const { scene, sky } = POSTCARDS[id];
+          return (
+            <li key={id} className="postcard" style={{ "--sky": sky } as CSSProperties}>
+              <span className="postcard-scene" aria-hidden="true">{scene}</span>
+              <span className="postcard-stamp" aria-hidden="true">🍕</span>
+              <strong className="postcard-title">{t(`postcards.${id}.title`)}</strong>
+              <span className="postcard-caption">{t(`postcards.${id}.caption`)}</span>
+              <span className="postcard-day">{t("journal.postcardDay", { day })}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
+
+// The journal's parts. On a phone, one at a time behind these tabs (the last one chosen is remembered on the device);
+// from a tablet up, all of them at once.
+const SECTIONS = ["accounts", "reviews", "regulars", "pairings", "postcards", "achievements"] as const;
+type Section = (typeof SECTIONS)[number];
+const SECTION_KEY = "forno-lento-journal-section";
+
+const rememberedSection = (): Section => {
+  try {
+    const saved = localStorage.getItem(SECTION_KEY);
+    return SECTIONS.find((section) => section === saved) ?? "accounts";
+  } catch {
+    return "accounts";
+  }
+};
+
+// Each tab's name, with what it holds at a glance.
+const SectionTabs = ({ state, section, choose }: { state: GameState; section: Section; choose: (section: Section) => void }) => {
+  const t = useTranslation();
+  const rating = averageRating(state.reviewScore);
+  const counts: Record<Section, string> = {
+    accounts: "",
+    reviews: rating === null ? "" : `${t.number(rating)}★`,
+    regulars: String(regularsOf(state).length),
+    pairings: `${state.discoveredPairings.length}/${GOOD_PAIRINGS.length}`,
+    postcards: `${POSTCARD_IDS.filter((id) => state.postcards[id] !== undefined).length}/${POSTCARD_IDS.length}`,
+    achievements: `${ACHIEVEMENT_IDS.filter((id) => isUnlocked(state, id)).length}/${ACHIEVEMENT_IDS.length}`,
+  };
+  return (
+    <nav className="journal-tabs" role="tablist" aria-label={t("tabs.journal")}>
+      {SECTIONS.map((id) => (
+        <button key={id} role="tab" aria-selected={id === section} className={`journal-tab${id === section ? " on" : ""}`} onClick={() => choose(id)}>
+          {t(`journal.tabs.${id}`)}
+          {counts[id] && <span className="journal-tab-count">{counts[id]}</span>}
+        </button>
+      ))}
+    </nav>
+  );
+};
+
+export const JournalView = ({ state }: { state: GameState }) => {
+  const [section, setSection] = useState<Section>(rememberedSection);
+  const choose = (next: Section) => {
+    setSection(next);
+    try {
+      localStorage.setItem(SECTION_KEY, next);
+    } catch {
+      // Not remembered: the journal opens on its first tab next time.
+    }
+  };
+  return (
+    // Two columns from a tablet up: the money and the pairings book, then what people say. On a phone, the tabs show
+    // one part at a time (styles.css hides the others).
+    <div className="journal" data-section={section}>
+      <SectionTabs state={state} section={section} choose={choose} />
       <div className="journal-col">
         <Accounts state={state} />
         <PairingsBook state={state} />
@@ -398,6 +487,7 @@ export const JournalView = ({ state }: { state: GameState }) => {
         <Reviews state={state} />
         <RegularsBook state={state} />
       </div>
+      <Postcards state={state} />
       <Achievements state={state} />
     </div>
   );

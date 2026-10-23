@@ -7,6 +7,7 @@ import type { QuestGiver } from "../data/quests";
 import type { SeasonId } from "../data/seasons";
 import type { TonightKind } from "../data/tonight";
 import type { StoryId } from "../data/stories";
+import type { PostcardId } from "../data/postcards";
 import type { IngredientId, IngredientKind, StationId } from "../data/ingredients";
 import {
   OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor, type UpgradeKey,
@@ -655,7 +656,27 @@ export const fr = {
     },
   } satisfies Record<StoryId, { title: string; lines: readonly string[]; told: readonly string[] }>,
 
+  // Postcards (game/postcards.ts): a title, a handwritten caption, and a hint while still to find.
+  postcards: {
+    rush: { title: "Coup de feu", caption: "Les clients en rafale, et toi au four.", hint: "Quand tout le monde arrive en même temps…" },
+    streetParty: { title: "Fête du quartier", caption: "Toute la rue dansait devant la vitrine.", hint: "Un soir où toute la rue a faim…" },
+    powerCut: { title: "Soirée à la bougie", caption: "Un seul four, et les plus beaux pourboires.", hint: "Un soir où le four boude…" },
+    perfectDay: { title: "Journée parfaite", caption: "Trois étoiles. Rien à redire.", hint: "Une journée sans fausse note…" },
+    critic: { title: "La critique ravie", caption: "Une belle plume, une belle pizza.", hint: "Une plume à combler…" },
+    celebrity: { title: "Une star en salle", caption: "La photo dédicacée trône sur la façade.", hint: "Une visite qui fait briller la façade…" },
+    matchNight: { title: "Mi-temps de folie", caption: "Tout le quartier à la mi-temps.", hint: "Un soir de match…" },
+    wedding: { title: "Le banquet", caption: "Vive les mariés, et vive la pizza !", hint: "Des invités en tenue de fête…" },
+    mysteryFive: { title: "Cinq étoiles du Guide", caption: "L'inspecteur incognito est reparti conquis.", hint: "Quelqu'un d'incognito à bluffer…" },
+    competitorGone: { title: "Le concurrent a plié", caption: "Ils ont fermé, leurs clients sont chez toi.", hint: "Un rival à faire plier…" },
+    storySweethearts: { title: "Les amoureux", caption: "Du premier rendez-vous au bébé.", hint: "Une histoire de cœur, à suivre…" },
+    storyStudent: { title: "Les examens", caption: "Des révisions au premier salaire.", hint: "Une histoire de révisions, à suivre…" },
+    storyOldChef: { title: "La vieille brigade", caption: "Une pelle à pizza, transmise avec fierté.", hint: "Un avis ronchon, à suivre…" },
+    halloween: { title: "Halloween", caption: "Courges, frissons et Zucca.", hint: "Une fête en orange…" },
+    christmas: { title: "Noël", caption: "Des marrons et de la neige sur la vitrine.", hint: "Une fête en hiver…" },
+    valentine: { title: "La Saint-Valentin", caption: "Des framboises et des cœurs partout.", hint: "Une fête pleine de cœurs…" },
+  } satisfies Record<PostcardId, { title: string; caption: string; hint: string }>,
   journal: {
+    tabs: { accounts: "Comptes", reviews: "Avis", regulars: "Habitués", pairings: "Accords", postcards: "Cartes", achievements: "Succès" },
     stats: "Comptes",
     reviews: "Avis en ligne",
     reviewsSource: "sur Gustoscope, le site où tout le monde a un avis",
@@ -702,6 +723,10 @@ export const fr = {
     bestStreak: "Meilleure série",
     medal: ({ medal }: { medal: string }) => `médaille ${medal}`,
     likes: ({ recipe }: { recipe: string }) => `Préfère : ${recipe}`,
+    postcards: "Cartes postales",
+    postcardsCount: ({ count, total }: { count: number; total: number }) => `${count}/${total} reçues`,
+    postcardDay: "Jour {day}",
+    postcardToFind: "À trouver",
     storySoFar: ({ story, chapter, total }: { story: string; chapter: number; total: number }) => `📖 ${story} · ${chapter}/${total}`,
     favoriteBack: ({ festival }: { festival: FestivalId }, t: H) => `Sa préférée revient avec ${t.festival(festival)}`,
     dislikes: ({ id }: { id: IngredientId }, t: H) => `N'aime pas : ${lower(t.ingredient(id))}`,
@@ -887,6 +912,7 @@ export const fr = {
     competitorOpens: ({ name }: { name: string }) => `🏪 « ${name} » vient d'ouvrir en face ! Tes avis en ligne vont compter.`,
     competitorGaveUp: ({ name, xp }: { name: string; xp: number }) => `🏪 « ${name} » jette l'éponge ! +${xp} réputation, et ses clients viennent te découvrir.`,
     competitorStayed: ({ name }: { name: string }) => `🏪 « ${name} » s'installe dans le quartier. On fera avec !`,
+    postcard: ({ id }: { id: PostcardId }, t: H) => `📮 Nouvelle carte postale : ${t.postcardTitle(id)} !`,
     kickoff: "📺 Coup d'envoi ! Tout le monde regarde le match, c'est plus calme.",
     halftime: "📺 Mi-temps ! Tout le quartier a faim d'un coup, pourboires doublés.",
     lastOrders: "Dernier client de la soirée : on y est presque !",

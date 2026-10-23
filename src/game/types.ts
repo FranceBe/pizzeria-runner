@@ -6,6 +6,7 @@ import type { FestivalId } from "../data/festivals";
 import type { WeeklyKind } from "../data/weekly";
 import type { TonightKind } from "../data/tonight";
 import type { StoryId } from "../data/stories";
+import type { PostcardId } from "../data/postcards";
 import type { QuestGiver, QuestKind } from "../data/quests";
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
@@ -598,6 +599,8 @@ export interface GameState {
   rushPlan: { day: number; at: number } | null;
   /** The last competitor across the street (game/competitor.ts): its days, the stars against it, how it ended. */
   competitor: Competitor | null;
+  /** Postcards received (game/postcards.ts), with the day each came. */
+  postcards: Partial<Record<PostcardId, number>>;
   /** Signed photos of the celebrities who came, shown on the front. */
   celebrityWall: string[];
   /** Someone typed the code. */

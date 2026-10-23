@@ -24,6 +24,7 @@ import { ensureTonightGoal, settleTonightGoal, trackTonightClock, trackTonightSe
 import { noteMysteryLeaving, noteMysteryServed, settleMysteryGuest, welcomeMaybeMystery } from "../mystery";
 import { companionsOf, maybeStartStory, storyGuestsToday, turnStoryPage } from "../stories";
 import { competitorDay, countStarsAgainstCompetitor, followCompetitor } from "../competitor";
+import { sendPostcard } from "../postcards";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
@@ -121,6 +122,9 @@ const endDay = (state: GameState, service: Service): void => {
   const stars = starCount(goals);
   state.lifetime.stars += stars;
   countStarsAgainstCompetitor(state, stars);
+  if (stars === 3) sendPostcard(state, "perfectDay");
+  if (state.event === "powerCut") sendPostcard(state, "powerCut");
+  if (state.event === "festival") sendPostcard(state, "streetParty");
   const day = competitorDay(state);
   const reviews = writeReviews(state, stats.orders);
   state.summary = {

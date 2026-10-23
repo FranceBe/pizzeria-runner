@@ -65,6 +65,8 @@ export const checkInvariants = (state: GameState, before?: GameState): void => {
     expect(summary.stars ?? 0).toBeLessThanOrEqual(3);
   }
   state.history.forEach((day) => expect(Number.isFinite(day.net), "a day in the history").toBe(true));
+  // Postcards are dated on a day of the game, never one to come.
+  Object.values(state.postcards).forEach((day) => expect(day, "a postcard's day").toBeLessThanOrEqual(state.day));
   // The competitor across the street ends only once its days are over.
   if (state.competitor) {
     expect(state.competitor.stars, "the stars against the competitor").toBeGreaterThanOrEqual(0);

@@ -102,6 +102,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     tonightGoal: null,
     rushPlan: null,
     competitor: null,
+    postcards: {},
     celebrityWall: [],
     secretCodeFound: false,
     service: null,

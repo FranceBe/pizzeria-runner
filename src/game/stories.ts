@@ -6,6 +6,7 @@ import { payBonus } from "./economy";
 import { levelForXp } from "./progression";
 import { isRegular } from "./regulars";
 import { pushToast } from "./toasts";
+import { sendPostcard, storyPostcard } from "./postcards";
 import type { Customer, CustomerBookEntry, GameState } from "./types";
 
 export interface StoryProgress {
@@ -55,4 +56,5 @@ export const turnStoryPage = (state: GameState, customer: Customer): void => {
   if (state.service) state.service.stats.xp += xp;
   if (money) payBonus(state, money);
   pushToast(state, { key: "storyPage", params: { name: customer.name, story: story.id, chapter: story.chapter, total: chapters.length } }, "gold");
+  if (isStoryOver(story)) sendPostcard(state, storyPostcard(story.id));
 };

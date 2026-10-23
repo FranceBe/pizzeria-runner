@@ -439,6 +439,27 @@ describe("views", () => {
     expect(html).toContain("2/6 so far");
   });
 
+  it("splits the journal into tabs for a phone, each with what it holds at a glance, the accounts first", () => {
+    const state = { ...playedState(), postcards: { matchNight: 3 } };
+    const html = render(<JournalView state={state} />, "en");
+    expect(html).toContain('data-section="accounts"');
+    expect(html.match(/role="tab"/g)).toHaveLength(6);
+    expect(html).toContain("Postcards<span class=\"journal-tab-count\">1/16</span>");
+    // Every part is there: on a tablet or a computer, all of them show at once.
+    ["j-accounts", "j-reviews", "j-regulars", "j-pairings", "j-postcards", "j-achievements"].forEach((part) => expect(html).toContain(part));
+  });
+
+  it("shows the postcards received face up, dated, and the others face down with a hint", () => {
+    const state = { ...playedState(), postcards: { matchNight: 3 } };
+    const html = render(<JournalView state={state} />, "en");
+    expect(html).toContain("Postcards");
+    expect(html).toContain("1/16 received");
+    expect(html).toContain("Half-time frenzy");
+    expect(html).toContain("The whole neighbourhood at half-time.");
+    expect(html).toContain("Day 3");
+    expect(html).toContain("A festival in orange…");
+  });
+
   it("gathers everything on tonight in one list, one line each, however much there is", () => {
     const state = playedState();
     state.event = "match";
