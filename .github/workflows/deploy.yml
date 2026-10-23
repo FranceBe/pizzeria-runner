@@ -26,7 +26,12 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          # The game's dependencies, and the multiplayer server's (checked with them).
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
       - run: npm ci
+      - run: npm ci --prefix server
       # Same checks as ci.yml: a failure stops the deployment, so a broken version never goes live.
       - run: npm run typecheck
       - run: npm run lint

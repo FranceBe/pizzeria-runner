@@ -5,7 +5,7 @@
 // at a time, so two rooms can never share a code, even when created at the same instant.
 import { DurableObject } from "cloudflare:workers";
 import {
-  PING, PONG, ROOM_MODES, normalizeRoomCode, parseClientMessage, randomRoomCode, type RoomError, type RoomMode, type ServerMessage,
+  PING, PONG, normalizeRoomCode, roomModeOf, parseClientMessage, randomRoomCode, type RoomError, type RoomMode, type ServerMessage,
 } from "../../src/multiplayer/protocol";
 import {
   addPlayer, allowMessage, canSendKitchen, canSendMove, createRoom, dropAway, finish, joinError, markAway, nextDeadline, noteActivity,
@@ -36,6 +36,17 @@ interface Attachment {
   id: string;
   connection: string;
 }
+
+// A connection's attachment, as stored (Cloudflare gives it back untyped), with empty fields for anything missing
+// (a connection from before attachments carried `connection`, like the players of that time).
+const attachmentOf = (socket: WebSocket): Attachment => {
+  const stored: unknown = socket.deserializeAttachment();
+  const fields = typeof stored === "object" && stored !== null ? (stored as Record<string, unknown>) : {};
+  return {
+    id: typeof fields.id === "string" ? fields.id : "",
+    connection: typeof fields.connection === "string" ? fields.connection : "",
+  };
+};
 
 // Random codes are almost never taken (hundreds of thousands of codes, a handful of rooms): a few tries are plenty.
 const CREATE_ATTEMPTS = 20;
@@ -70,14 +81,14 @@ export default {
       if (Number(request.headers.get("Content-Length") ?? 0) > MAX_BODY_BYTES) return new Response("Too large", { status: 413, headers: cors });
       const raw = await request.text();
       if (raw.length > MAX_BODY_BYTES) return new Response("Too large", { status: 413, headers: cors });
-      const body = (() => {
+      const body: unknown = (() => {
         try {
-          return JSON.parse(raw) as { mode?: unknown };
+          return JSON.parse(raw);
         } catch {
-          return {};
+          return null;
         }
       })();
-      const mode: RoomMode = ROOM_MODES.includes(body.mode as RoomMode) ? (body.mode as RoomMode) : "challenge";
+      const mode = roomModeOf(body);
       for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {
         const code = randomRoomCode();
         const room = env.ROOMS.get(env.ROOMS.idFromName(code));
@@ -135,7 +146,7 @@ export class Room extends DurableObject<Env> {
     const now = Date.now();
     const view = viewOf(this.room, now);
     for (const socket of this.ctx.getWebSockets()) {
-      const { id } = socket.deserializeAttachment() as Attachment;
+      const { id } = attachmentOf(socket);
       const token = this.room.players.find((player) => player.id === id)?.token ?? "";
       this.send(socket, { type: "room", room: view, you: id, token });
     }
@@ -150,7 +161,7 @@ export class Room extends DurableObject<Env> {
     return true;
   }
 
-  async fetch(request: Request): Promise<Response> {
+  override async fetch(request: Request): Promise<Response> {
     const room = await this.load();
     const [client, server] = Object.values(new WebSocketPair());
     const params = new URL(request.url).searchParams;
@@ -161,7 +172,7 @@ export class Room extends DurableObject<Env> {
     const returning = params.get("player") ?? "";
     if (room && returning && rejoinPlayer(room, returning, params.get("token") ?? "", connection, now)) {
       this.ctx.getWebSockets()
-        .filter((socket) => (socket.deserializeAttachment() as Attachment).id === returning)
+        .filter((socket) => attachmentOf(socket).id === returning)
         .forEach((socket) => socket.close(4001, "replaced"));
       this.ctx.acceptWebSocket(server);
       server.serializeAttachment({ id: returning, connection } satisfies Attachment);
@@ -186,9 +197,9 @@ export class Room extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  async webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer): Promise<void> {
+  override async webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer): Promise<void> {
     const room = await this.load();
-    const { id } = socket.deserializeAttachment() as Attachment;
+    const { id } = attachmentOf(socket);
     if (!room) return socket.close(4000, "notFound");
     const now = Date.now();
     const counter = this.counters.get(id) ?? { windowStart: now, count: 0 };
@@ -236,13 +247,13 @@ export class Room extends DurableObject<Env> {
     if (isKitchen ? !canSendKitchen(room, id) : !canSendMove(room, id)) return;
     const forward: ServerMessage = isKitchen ? { type: "state", state: message.state } : { type: "action", from: id, action: message.action };
     for (const socket of this.ctx.getWebSockets()) {
-      const target = (socket.deserializeAttachment() as Attachment).id;
+      const target = attachmentOf(socket).id;
       // The kitchen goes to everyone but the host; a move goes to the host only.
       if (isKitchen ? target !== id : target === room.players[0]?.id) this.send(socket, forward);
     }
   }
 
-  async webSocketClose(socket: WebSocket, code: number, reason: string): Promise<void> {
+  override async webSocketClose(socket: WebSocket, code: number, reason: string): Promise<void> {
     // Answers the close, so the phone learns at once that it is closed (otherwise it waits, stuck "closing").
     try {
       socket.close(code === 1005 || code === 1006 ? 1000 : code, reason);
@@ -253,19 +264,19 @@ export class Room extends DurableObject<Env> {
     if (!room) return;
     // A dropped connection is not leaving (a phone switching apps drops it): the player is away until they come back,
     // or for good after a while (alarm). Leaving on purpose says so first ("leave").
-    const { id, connection } = socket.deserializeAttachment() as Attachment;
+    const { id, connection } = attachmentOf(socket);
     markAway(room, id, connection, Date.now());
     this.counters.delete(id);
     await this.save();
     this.broadcast();
   }
 
-  async webSocketError(socket: WebSocket): Promise<void> {
+  override async webSocketError(socket: WebSocket): Promise<void> {
     await this.webSocketClose(socket, 1011, "error");
   }
 
   // The room's own clock: ends a match whose players went quiet, closes an idle room, and finally frees the code.
-  async alarm(): Promise<void> {
+  override async alarm(): Promise<void> {
     const room = await this.load();
     if (!room) return;
     const now = Date.now();

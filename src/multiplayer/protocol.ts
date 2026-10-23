@@ -16,6 +16,12 @@ const BLOCKED_CODES: ReadonlySet<string> = new Set([
 // (duo), for as long as the host keeps it open.
 export type RoomMode = "challenge" | "royale" | "coop" | "duo";
 export const ROOM_MODES: readonly RoomMode[] = ["challenge", "royale", "coop", "duo"];
+export const isRoomMode = (value: unknown): value is RoomMode => ROOM_MODES.includes(value as RoomMode);
+// The mode asked for when creating a room (its request body, as sent), a challenge by default.
+export const roomModeOf = (body: unknown): RoomMode => {
+  const mode = typeof body === "object" && body !== null ? (body as Record<string, unknown>).mode : undefined;
+  return isRoomMode(mode) ? mode : "challenge";
+};
 export const isSharedKitchen = (mode: RoomMode): boolean => mode === "coop" || mode === "duo";
 /** Each player in their own game, with the same customers. */
 export const isOwnKitchen = (mode: RoomMode): boolean => mode === "challenge" || mode === "royale";

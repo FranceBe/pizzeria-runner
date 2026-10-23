@@ -258,14 +258,17 @@ The `dist/` folder can be hosted anywhere (Netlify, GitHub Pages, Vercel…).
 ```bash
 npm test            # run the tests once
 npm run test:watch  # re-run on every change
-npm run typecheck   # TypeScript, strict mode
+npm run typecheck   # TypeScript, strict mode: the game, the multiplayer server and its tests
 npm run lint        # ESLint (npm run lint:fix to auto-fix)
 npm run check       # types + lint + tests + build, like the CI
 ```
 
+- **The server's dependencies** (`npm ci --prefix server`, once): the type check covers the multiplayer server too,
+  which needs Cloudflare's types.
 - **Pre-commit hook** (husky, installed by `npm install`): lints the staged files with auto-fix, type-checks, then runs the tests.
   A failure blocks the commit; `git commit --no-verify` skips it in an emergency.
-- **CI** (`.github/workflows/ci.yml`): types, lint, tests and build on every push and pull request to `main`.
+- **CI** (`.github/workflows/ci.yml`): installs the game's and the server's dependencies, then types (both), lint,
+  tests and build on every push and pull request to `main`.
 - **Deployment** (`.github/workflows/deploy.yml`): every push to `main` that passes the same checks goes live on GitHub Pages.
 - **Test game** (`src/dev/`, `npm run dev` only): Settings gets a panel to set up a game at any level, with any
   suppliers, upgrades and secrets, to try how it plays later on. "Generate the code" gives a save code to paste in the

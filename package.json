@@ -15,7 +15,7 @@
     "lint:fix": "eslint . --fix",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
     "prepare": "husky",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server"
   },
   "dependencies": {
     "@fontsource/caveat": "5.3.0",

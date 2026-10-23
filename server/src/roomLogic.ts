@@ -219,7 +219,7 @@ export const nextDeadline = (room: RoomData): { at: number; then: "finish" | "cl
   const own = room.status === "playing"
     ? { at: matchDeadline(room) ?? room.lastActivity + IDLE_MS, then: "finish" as const }
     : { at: room.lastActivity + IDLE_MS, then: "close" as const };
-  const away = room.players.filter((player) => player.connected && player.awaySince !== undefined).map((player) => (player.awaySince as number) + AWAY_GRACE_MS);
+  const away = room.players.flatMap((player) => (player.connected && player.awaySince !== undefined ? [player.awaySince + AWAY_GRACE_MS] : []));
   const drop = Math.min(...away);
   return drop < own.at ? { at: drop, then: "drop" } : own;
 };

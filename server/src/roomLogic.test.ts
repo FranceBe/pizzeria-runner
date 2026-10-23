@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MAX_PLAYERS, ROOM_CODE_LETTERS, cleanName, maxPlayersIn, normalizeRoomCode, parseClientMessage, randomRoomCode,
+  AWAY_GRACE_MS, COUNTDOWN_MS, MATCH_SECONDS, MAX_PLAYERS, ROOM_CODE_LETTERS, cleanName, maxPlayersIn, normalizeRoomCode, parseClientMessage, randomRoomCode, roomModeOf,
 } from "../../src/multiplayer/protocol";
 import { CHALLENGE_SECONDS } from "../../src/game/challenge";
 import {
@@ -27,6 +27,15 @@ describe("room codes", () => {
     const draws = [..."CACA"].map((letter) => ROOM_CODE_LETTERS.indexOf(letter) / ROOM_CODE_LETTERS.length);
     let call = 0;
     expect(randomRoomCode(() => (call < 4 ? draws[call++] : 0))).toBe("AAAA");
+  });
+
+  it("are made for the mode asked for, a challenge for anything else", () => {
+    expect(roomModeOf({ mode: "royale" })).toBe("royale");
+    expect(roomModeOf({ mode: "duo" })).toBe("duo");
+    expect(roomModeOf({ mode: "battle" })).toBe("challenge");
+    expect(roomModeOf({ mode: ["coop"] })).toBe("challenge");
+    expect(roomModeOf(null)).toBe("challenge");
+    expect(roomModeOf("coop")).toBe("challenge");
   });
 
   it("are read from what a player typed, or refused", () => {
