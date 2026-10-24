@@ -24,6 +24,13 @@ export const STORIES: Record<StoryId, readonly StoryChapter[]> = {
   oldChef: [chapter(0, 0), chapter(4, 0), chapter(5, 2), chapter(6, 0, 60, 20)],
 };
 
+// The picture on each chapter's photo, in the story album.
+export const STORY_SCENES: Record<StoryId, readonly string[]> = {
+  sweethearts: ["🌹", "💍", "🥂", "👶"],
+  student: ["📚", "⏳", "🎓", "💶"],
+  oldChef: ["🧐", "🔥", "🍽️", "🍕"],
+};
+
 // From this level, now and then in the morning, a regular without a story may start one; a few at a time.
 export const STORY_LEVEL = 4;
 export const STORY_CHANCE = 0.3;

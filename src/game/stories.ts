@@ -19,7 +19,7 @@ export interface StoryProgress {
 
 export const isStoryOver = (progress: StoryProgress): boolean => progress.chapter >= STORIES[progress.id].length;
 
-const storiesOf = (state: GameState): [string, CustomerBookEntry][] => Object.entries(state.customerBook).filter(([, entry]) => entry.story);
+export const storiesOf = (state: GameState): [string, CustomerBookEntry][] => Object.entries(state.customerBook).filter(([, entry]) => entry.story);
 
 // In the morning: maybe a regular without a story starts one (one they haven't all had yet). Mutates state.
 export const maybeStartStory = (state: GameState): void => {
@@ -51,6 +51,7 @@ export const turnStoryPage = (state: GameState, customer: Customer): void => {
   const chapters = STORIES[story.id];
   const { xp, money } = chapters[story.chapter];
   story.chapter += 1;
+  story.days = [...(story.days ?? []), state.day];
   story.dueDay = state.day + (chapters[story.chapter]?.daysAfter ?? 0);
   state.xp += xp;
   if (state.service) state.service.stats.xp += xp;

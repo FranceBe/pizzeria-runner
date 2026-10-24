@@ -4,7 +4,10 @@ import { REPUTATION_THRESHOLDS, UPGRADES, UPGRADE_KEYS, type UpgradeKey } from "
 import { discoverClassics } from "../game/menu";
 import { MAX_LEVEL } from "../game/progression";
 import { createInitialState } from "../game/state";
-import type { GameState } from "../game/types";
+import { SEASON_DAYS } from "../data/seasons";
+import { STORIES, type StoryId } from "../data/stories";
+import { rollLooks } from "../game/looks";
+import type { CustomerBookEntry, GameState, Gazette, GazetteHeadline } from "../game/types";
 
 export interface DevSetup {
   /** Reputation level, from 1 to MAX_LEVEL. */
@@ -18,6 +21,10 @@ export interface DevSetup {
   stock: number;
   nonnaSecret: boolean;
   mammaSecret: boolean;
+  /** Regulars living a story, at every stage (one due tonight, one halfway, one told to the end): the story album. */
+  stories: boolean;
+  /** Three issues of the neighbourhood gazette, the latest out this morning. */
+  gazettes: boolean;
 }
 
 export const maxUpgrades = (): Record<UpgradeKey, number> =>
@@ -35,6 +42,8 @@ export const DEFAULT_DEV_SETUP: DevSetup = {
   stock: 20,
   nonnaSecret: true,
   mammaSecret: true,
+  stories: true,
+  gazettes: true,
 };
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, Math.round(value)));
@@ -57,6 +66,63 @@ export const buildDevGame = (setup: DevSetup, current: GameState): GameState => 
   state.mammaSecret = setup.mammaSecret;
   state.mammaStock = setup.mammaSecret ? 6 : 0;
   discoverClassics(state);
+  if (setup.stories) addStoryRegulars(state);
+  if (setup.gazettes) addGazettes(state);
   state.toasts = [];
   return state;
+};
+
+// A regular of a while (their favourite the margherita), living this story so far: chapters lived on these days.
+const storyRegular = (state: GameState, name: string, id: StoryId, days: number[], dueDay: number): CustomerBookEntry => ({
+  ...rollLooks(name),
+  visits: 8 + days.length,
+  orders: { margherita: 6, [state.recipes[1]?.id ?? "margherita"]: 2 },
+  choiceOrders: { margherita: 6 },
+  regular: true,
+  lastVisit: Math.max(1, state.day - 1),
+  birthday: ((state.day + 9) % 28) + 1,
+  story: { id, chapter: days.length, dueDay, days },
+});
+
+const addStoryRegulars = (state: GameState): void => {
+  const day = state.day;
+  const past = (ago: number) => Math.max(1, day - ago);
+  state.customerBook = {
+    ...state.customerBook,
+    // The next chapter tonight: their tile in the morning's list, and they come in during service.
+    Giulia: storyRegular(state, "Giulia", "sweethearts", [past(10), past(6)], day),
+    // Halfway, the next chapter in a few days.
+    Luca: storyRegular(state, "Luca", "student", [past(3)], day + STORIES.student[1].daysAfter),
+    // Told to the end.
+    Sofia: storyRegular(state, "Sofia", "oldChef", [past(20), past(16), past(11), past(5)], past(5)),
+  };
+};
+
+// Three weeks of front pages, made up but plausible, the latest out this morning.
+const addGazettes = (state: GameState): void => {
+  const lastWeek = Math.max(0, Math.floor((state.day - 1) / SEASON_DAYS) - 1);
+  const headlines: GazetteHeadline[] = ["topPizza", "rainyWeek", "record"];
+  state.gazettes = [2, 1, 0]
+    .map((weeksAgo, index): Gazette | null => {
+      const week = lastWeek - weeksAgo;
+      if (week < 0) return null;
+      const firstDay = week * SEASON_DAYS + 1;
+      return {
+        week,
+        firstDay,
+        lastDay: firstDay + SEASON_DAYS - 1,
+        publishedDay: weeksAgo === 0 ? state.day : firstDay + SEASON_DAYS,
+        evenings: 7,
+        served: 60 + 12 * index,
+        net: 180 + 40 * index,
+        happyShare: 70 + 5 * index,
+        stars: 12 + index,
+        bestDay: { day: firstDay + 4, net: 45 + 5 * index },
+        top: { recipeId: "margherita", recipeName: null, count: 20 + 3 * index },
+        events: index === 1 ? ["rain", "critic"] : ["festival", "sunny"],
+        review: { day: firstDay + 2, name: "Giulia", stars: 5, reason: "perfect", line: index, recipeId: "margherita", recipeName: null },
+        headline: headlines[index],
+      };
+    })
+    .filter((issue): issue is Gazette => issue !== null);
 };

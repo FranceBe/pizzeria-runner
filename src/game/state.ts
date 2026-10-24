@@ -112,6 +112,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     service: null,
     summary: null,
     toasts: [],
+    messageLog: [],
     pops: [],
   };
 };
@@ -331,6 +332,7 @@ export const hydrateState = (saved: JsonObject): GameState => {
     ...defaults,
     ...migrated,
     toasts: [],
+    messageLog: [],
     pops: [],
     upgrades: { ...defaults.upgrades, ...migrated.upgrades },
     settings: { ...defaults.settings, ...migrated.settings },
@@ -351,9 +353,9 @@ export const hydrateState = (saved: JsonObject): GameState => {
   return state;
 };
 
-// Toasts and pops are transient UI feedback, not worth saving.
+// Toasts, pops and the evening's messages are transient UI feedback, not worth saving.
 export const toSaveData = (state: GameState): SaveData => {
-  const { toasts, pops, ...saveData } = state;
+  const { toasts, pops, messageLog, ...saveData } = state;
   return saveData;
 };
 

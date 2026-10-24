@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useDismiss } from "../components/useDismiss";
 import { MARGHERITA } from "../data/recipes";
 import { CHALLENGE_SECONDS, createChallenge, localDate } from "../game/challenge";
 import { canBorrowFromNonna, dailyCharges, forecastCustomers, NONNA_LOAN } from "../game/economy";
@@ -20,6 +21,7 @@ import type { GameState, Recipe } from "../game/types";
 import type { TabId } from "../components/TabIcon";
 import type { ScreenProps } from "./types";
 import { TonightAgenda } from "./TonightAgenda";
+import { showJournalSection } from "./JournalView";
 import { WEEKLY_BONUS, WEEKLY_REWARD } from "../data/weekly";
 
 // Nonna offers help when nothing on the menu can be made and a few margheritas are unaffordable.
@@ -78,22 +80,8 @@ const MorningTips = ({ state }: { state: GameState }) => {
   const tips = morningTips(state);
   const bubble = useRef<HTMLDetailsElement>(null);
   const [isOpen, setIsOpen] = useState(false);
-  useEffect(() => {
-    if (!isOpen) return;
-    const close = () => bubble.current?.removeAttribute("open");
-    const onPointerDown = (event: PointerEvent) => {
-      if (!bubble.current?.contains(event.target as Node)) close();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen]);
+  const close = useCallback(() => bubble.current?.removeAttribute("open"), []);
+  useDismiss(bubble, isOpen, close);
   if (!tips.length) return null;
   return (
     <details ref={bubble} className="tips-bubble" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
@@ -199,7 +187,14 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
           </div>
           <p className="sub">{t("prep.intro")}</p>
         </div>
-        <TonightAgenda state={state} dispatch={dispatch} />
+        <TonightAgenda
+          state={state}
+          dispatch={dispatch}
+          onOpenAlbum={() => {
+            showJournalSection("regulars");
+            goToTab("journal");
+          }}
+        />
         <div className="row" style={{ alignItems: "flex-end", gap: 24 }}>
           <div>
             <div className="forecast">{expectedCustomers}</div>

@@ -189,7 +189,10 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
   their line, and serving them turns the page (a little reputation, a reward for the last chapter). A chapter missed
   comes again later. Two stories at a time at most, each lived once a game; the journal tells each regular's story so
   far. Regulars expected on an evening (birthdays, stories) always come: their seats are kept, so a table never takes
-  the last ones.
+  the last ones. In the morning's list, a story's tile opens on what it is about and what happened so far. **The story
+  album** (journal, regulars) gives each story a page: the regular's face, an introduction, and each chapter lived as a
+  photo (what happened, what they said, the day), the next one "to be continued" (or "tonight!"), those to come blank
+  (`src/views/StoryAlbum.tsx`).
 - **The competitor across the street** (from level 5 and day 12, now and then, at most once every 20 days): a
   made-up chain opens for three days. With an online rating of 4.3 ★ or more, customers stay loyal; from 3.5, about
   10% fewer come; below (or without reviews), about 20% fewer. Six of the day's stars over its three evenings and it
@@ -298,6 +301,8 @@ a result to paste to friends.
   as browsers require. Where it all comes from: [CREDITS.md](CREDITS.md).
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
 - The game installs as an app and plays offline.
+- **Tonight's messages, in full**: a phone cuts long messages short in the message line. Tapping it opens the
+  evening's last 30 messages, newest first, in full (a tap anywhere else closes them); its × dismisses the message.
 - **Taps that always get through** (`src/components/tap.ts`): on a phone, the kitchen's buttons act when the finger
   comes up, not on the browser's click. iPhones hold a click back when something appears on screen at that moment (a
   pizza out of the oven), which used to take a second tap. A finger that moved was scrolling; the click that may follow

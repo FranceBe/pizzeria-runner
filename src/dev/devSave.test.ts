@@ -5,6 +5,8 @@ import { levelForXp } from "../game/progression";
 import { hydrateState } from "../game/state";
 import { makeState, play, toJson } from "../test/helpers";
 import { buildDevGame, DEFAULT_DEV_SETUP, noUpgrades } from "./devSave";
+import { isStoryOver, storyGuestsToday } from "../game/stories";
+import { todaysGazette } from "../game/gazette";
 
 describe("the dev test game", () => {
   it("is set up as asked, keeping the player's settings, with the classics already found", () => {
@@ -40,4 +42,21 @@ describe("the dev test game", () => {
     expect(hydrateState(toJson(loaded)).money).toBe(DEFAULT_DEV_SETUP.money);
     expect(play(loaded, { type: "openRestaurant" }).phase).toBe("service");
   });
+
+  it("can bring regulars with stories at every stage, and three issues of the gazette, the latest out this morning", () => {
+    const game = buildDevGame({ ...DEFAULT_DEV_SETUP, day: 30 }, makeState());
+    expect(game.customerBook.Giulia.story).toMatchObject({ id: "sweethearts", chapter: 2, dueDay: 30 });
+    expect(storyGuestsToday(game)).toEqual(["Giulia"]);
+    expect(isStoryOver(game.customerBook.Sofia.story!)).toBe(true);
+    Object.values(game.customerBook).forEach((entry) => expect(entry.story?.days).toHaveLength(entry.story?.chapter ?? 0));
+    expect(game.gazettes).toHaveLength(3);
+    expect(todaysGazette(game)?.week).toBe(3);
+    expect(game.gazettes.every((issue) => issue.lastDay < 30)).toBe(true);
+    const plain = buildDevGame({ ...DEFAULT_DEV_SETUP, stories: false, gazettes: false }, makeState());
+    expect(Object.keys(plain.customerBook)).toHaveLength(0);
+    expect(plain.gazettes).toEqual([]);
+    // Early on, only the weeks that were.
+    expect(buildDevGame({ ...DEFAULT_DEV_SETUP, day: 9 }, makeState()).gazettes).toHaveLength(1);
+  });
 });
+

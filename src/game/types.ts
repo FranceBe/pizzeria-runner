@@ -558,7 +558,7 @@ export interface CustomerBookEntry extends Looks {
   /** A regular for now: set when they qualify (see regulars.ts), cleared when they stay away too long. */
   regular?: boolean;
   /** Their story (game/stories.ts), once they have one: which, and how far it has come. */
-  story?: { id: StoryId; chapter: number; dueDay: number };
+  story?: { id: StoryId; chapter: number; dueDay: number; /** The day each chapter so far was lived (newer saves). */ days?: number[] };
 }
 
 export interface Settings {
@@ -689,13 +689,15 @@ export interface GameState {
   summary: DaySummary | null;
   toasts: Toast[];
   pops: Pop[];
+  /** Tonight's messages, latest last, to read again in full (game/toasts.ts). Not saved. */
+  messageLog: Toast[];
 }
 
 /** A copy of the game taken when the restaurant opens. */
-export type DayStart = Omit<GameState, "toasts" | "pops" | "dayStart">;
+export type DayStart = Omit<GameState, "toasts" | "pops" | "messageLog" | "dayStart">;
 
 /** What gets saved: toasts and pops are transient. */
-export type SaveData = Omit<GameState, "toasts" | "pops">;
+export type SaveData = Omit<GameState, "toasts" | "pops" | "messageLog">;
 
 export type GameAction =
   // Service

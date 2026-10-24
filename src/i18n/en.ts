@@ -253,6 +253,8 @@ export const en: Dictionary = {
     competitorBoost: ({ share }) => `They come to try yours: about ${share}% more customers.`,
     storyComing: ({ names }) => `${names} is coming tonight`,
     storyNext: ({ story, chapter, total }) => `The next part of their story, “${story}”: chapter ${chapter}/${total}.`,
+    storyPreviously: "So far:",
+    storyAlbum: "Open the album",
     rushTitle: "Rush hour",
     rushTonight: ({ time }) => `Around ${time}, customers pour in for a while: tips doubled. The start and the end of the evening are calmer.`,
     weddingTonight: ({ items }) => `The banquet, to deliver all together from 21:00: ${items}. The faster, the better paid; a few fewer customers besides.`,
@@ -357,6 +359,9 @@ export const en: Dictionary = {
     trashUnwantedShort: "🗑 Bin all ({count})",
     offerSlice: "🍕 Slice it",
     offerSliceHint: "Cut into slices for the queue: nothing is thrown away, and everyone waits a little more patiently.",
+    log: "Tonight's messages",
+    logOpen: "Read tonight's messages again",
+    logEmpty: "No message yet.",
     roleCook: "🧑‍🍳 You: the pizzas and the oven",
     rolePass: "🛎️ You: the pass and the bar",
     trap: ({ count }) => `🪤 Trap (${count})`,
@@ -658,6 +663,7 @@ export const en: Dictionary = {
   stories: {
     sweethearts: {
       title: "The sweethearts",
+      intro: ({ name }) => `${name} has a soft spot for someone in the neighbourhood. It all starts with a first date… at your pizzeria.`,
       lines: [
         "“Our first date… make it a dream!”",
         "“Tonight I'm proposing. Fingers crossed for me!”",
@@ -668,6 +674,7 @@ export const en: Dictionary = {
     },
     student: {
       title: "The exams",
+      intro: ({ name }) => `${name} is revising for exams, and your pizzas keep them going. From revision to a first pay slip, your pizzeria will be there at every step.`,
       lines: [
         "“Last stretch before exams… a pizza to keep going!”",
         "“Results tomorrow. I'm stressed, so I'm eating.”",
@@ -678,6 +685,7 @@ export const en: Dictionary = {
     },
     oldChef: {
       title: "The old brigade",
+      intro: ({ name }) => `${name} spent a lifetime in kitchens and is hard to impress. Winning them over will take a few evenings.`,
       lines: [
         "“Hmm. In my day, the dough rested forty-eight hours.”",
         "“Not bad, the bake. Not bad at all.”",
@@ -791,6 +799,13 @@ export const en: Dictionary = {
     postcardDay: "Day {day}",
     postcardToFind: "To find",
     storySoFar: ({ story, chapter, total }) => `📖 ${story} · ${chapter}/${total}`,
+    album: "The story album",
+    albumIntro: "Regulars living a story at your pizzeria: each evening that matters becomes a photo.",
+    albumEmpty: "No story yet. From level 4, a regular sometimes starts one: it will be written here, photo after photo.",
+    albumNext: "To be continued…",
+    albumTonight: "Tonight!",
+    albumDone: "Story complete",
+    albumDay: "Day {day}",
     favoriteBack: ({ festival }, t) => `Their favourite is back with ${t.festival(festival)}`,
     dislikes: ({ id }, t) => `Doesn't like: ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }) => (days === 0 ? "🎂 Birthday today!" : `🎂 Birthday in ${days} ${plural(days, "day")}`),

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { POSTCARDS, POSTCARD_IDS } from "../data/postcards";
-import { STORIES, type StoryId } from "../data/stories";
+import { STORIES } from "../data/stories";
 import { FESTIVALS } from "../data/festivals";
 import { useState } from "react";
 import { ACHIEVEMENT_IDS, HIDDEN_ACHIEVEMENTS } from "../data/achievements";
@@ -18,6 +18,8 @@ import { IngredientIcon } from "../components/IngredientIcon";
 import { averageRating, REVIEW_LINES } from "../game/reviews";
 import { reviewText } from "./reviewText";
 import { GazetteArchive } from "./Gazette";
+import { StoryAlbum } from "./StoryAlbum";
+import { Pager, usePages } from "../components/Pager";
 import { PRESS_PAPERS } from "../data/press";
 import { StarRow } from "../components/AppealStars";
 
@@ -241,23 +243,8 @@ const Achievements = ({ state }: { state: GameState }) => {
   );
 };
 
-// A regular's story as far as it has come: its title and progress, then each chapter lived, told in the past.
-const StorySoFar = ({ story }: { story: { id: StoryId; chapter: number } }) => {
-  const t = useTranslation();
-  const total = STORIES[story.id].length;
-  return (
-    <div className="story-so-far">
-      <div className="hint">{t("journal.storySoFar", { story: t.storyTitle(story.id), chapter: Math.min(story.chapter, total), total })}</div>
-      <ol>
-        {Array.from({ length: Math.min(story.chapter, total) }, (_, index) => (
-          <li key={index}>{t(`stories.${story.id}.told.${index as 0 | 1 | 2 | 3}`)}</li>
-        ))}
-      </ol>
-    </div>
-  );
-};
-
-// One card per regular: their favourite, what they never want, when their birthday is, and their story so far.
+// One card per regular: their favourite, what they never want, when their birthday is, and how far their story has
+// come (told in full in the story album).
 const RegularsBook = ({ state }: { state: GameState }) => {
   const t = useTranslation();
   const regulars = regularsOf(state);
@@ -279,7 +266,9 @@ const RegularsBook = ({ state }: { state: GameState }) => {
                 )}
                 {regular.dislikes && <div className="hint">{t("journal.dislikes", { id: regular.dislikes })}</div>}
                 {regular.birthday && <div className="hint">{t("journal.birthdayIn", { days: daysUntilBirthday(state, regular.birthday) })}</div>}
-                {regular.story && regular.story.chapter > 0 && <StorySoFar story={regular.story} />}
+                {regular.story && regular.story.chapter > 0 && (
+                  <div className="hint">{t("journal.storySoFar", { story: t.storyTitle(regular.story.id), chapter: Math.min(regular.story.chapter, STORIES[regular.story.id].length), total: STORIES[regular.story.id].length })}</div>
+                )}
               </div>
             </div>
           );
@@ -292,28 +281,6 @@ const RegularsBook = ({ state }: { state: GameState }) => {
 // Reviews and articles are shown a few at a time, newest first, so the card stays short and the papers stay in view.
 const REVIEWS_PER_PAGE = 3;
 const ARTICLES_PER_PAGE = 2;
-
-// Turns the pages of a list, newest first; renders nothing when everything fits on one page.
-const usePages = <T,>(items: readonly T[], perPage: number) => {
-  const [page, setPage] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(items.length / perPage));
-  // A list that got shorter (another save loaded) never leaves the page past its end.
-  const current = Math.min(page, pageCount - 1);
-  const shown = [...items].reverse().slice(current * perPage, (current + 1) * perPage);
-  return { shown, page: current, pageCount, setPage };
-};
-
-const Pager = ({ page, pageCount, setPage }: { page: number; pageCount: number; setPage: (page: number) => void }) => {
-  const t = useTranslation();
-  if (pageCount < 2) return null;
-  return (
-    <div className="book-nav">
-      <button className="btn sm ghost" disabled={page === 0} aria-label={t("journal.previousPage")} onClick={() => setPage(page - 1)}>◀</button>
-      <span className="hint">{t("journal.page", { page: page + 1, count: pageCount })}</span>
-      <button className="btn sm ghost" disabled={page >= pageCount - 1} aria-label={t("journal.nextPage")} onClick={() => setPage(page + 1)}>▶</button>
-    </div>
-  );
-};
 
 // Online reviews: only for show, but a perfectionist's nightmare.
 const Reviews = ({ state }: { state: GameState }) => {
@@ -426,6 +393,15 @@ const SECTIONS = ["accounts", "reviews", "regulars", "pairings", "postcards", "a
 type Section = (typeof SECTIONS)[number];
 const SECTION_KEY = "forno-lento-journal-section";
 
+/** Opens the journal on this part next time (on a phone): the regulars' stories, from the morning's list. */
+export const showJournalSection = (section: Section): void => {
+  try {
+    localStorage.setItem(SECTION_KEY, section);
+  } catch {
+    // Not remembered: the journal opens on the tab it would anyway.
+  }
+};
+
 const rememberedSection = (): Section => {
   try {
     const saved = localStorage.getItem(SECTION_KEY);
@@ -481,6 +457,7 @@ export const JournalView = ({ state }: { state: GameState }) => {
       <div className="journal-col">
         <Reviews state={state} />
         <RegularsBook state={state} />
+        <StoryAlbum state={state} />
       </div>
       <Postcards state={state} />
       <Achievements state={state} />

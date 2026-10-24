@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { INGREDIENTS } from "../data/ingredients";
@@ -18,6 +18,11 @@ import { SettingsView } from "./SettingsView";
 import { DaySummary } from "./DaySummary";
 import { JournalView } from "./JournalView";
 import { PerfectBurst } from "./service/PerfectBurst";
+import { openAlbumOn, StoryAlbum } from "./StoryAlbum";
+import { TonightAgenda } from "./TonightAgenda";
+import { pushToast } from "../game/toasts";
+
+const pushToastForTest = (state: GameState) => pushToast(state, { key: "ovenFull" });
 import { MoneyPops } from "../components/MoneyPops";
 import { ChallengeResult } from "./ChallengeResult";
 
@@ -256,6 +261,58 @@ describe("views", () => {
     expect(html).toContain("★ Special<");
     expect(html).toContain("2 served this week · until day 7");
     expect(html).not.toContain("special-star-btn");
+  });
+
+  it("tells every regular's story in the album: what it is about, each chapter lived as a photo, what comes next", () => {
+    const state = makeState({ day: 12 });
+    state.customerBook = {
+      Giulia: { ...makeBookEntry({ visits: 8 }), story: { id: "sweethearts", chapter: 2, dueDay: 12, days: [4, 8] } },
+      Luca: { ...makeBookEntry({ visits: 9 }), story: { id: "student", chapter: 4, dueDay: 30, days: [1, 4, 7, 13] } },
+    };
+    const html = render(<StoryAlbum state={state} />, "en");
+    expect(html).toContain("Giulia has a soft spot for someone in the neighbourhood");
+    expect(html).toContain("Their first date, here.");
+    expect(html).toContain("Day 8");
+    expect(html).toContain("Tonight!");
+    // A story a page, the one going on first; the one told to the end on the next page.
+    expect(html).toContain("Page 1 / 2");
+    expect(html).not.toContain("Story complete");
+    expect(render(<StoryAlbum state={makeState()} />, "en")).toContain("No story yet");
+  });
+
+  it("opens the album on the story chosen from the morning's list", () => {
+    const state = makeState({ day: 12 });
+    state.customerBook = {
+      Giulia: { ...makeBookEntry({ visits: 8 }), story: { id: "sweethearts", chapter: 2, dueDay: 12, days: [4, 8] } },
+      Luca: { ...makeBookEntry({ visits: 9 }), story: { id: "student", chapter: 4, dueDay: 30, days: [1, 4, 7, 13] } },
+    };
+    const stored = new Map<string, string>();
+    vi.stubGlobal("sessionStorage", { getItem: (key: string) => stored.get(key) ?? null, setItem: (key: string, value: string) => stored.set(key, value), removeItem: (key: string) => stored.delete(key) });
+    openAlbumOn("Luca");
+    const html = render(<StoryAlbum state={state} />, "en");
+    expect(html).toContain("Story complete");
+    expect(html).toContain("Page 2 / 2");
+    // Only once: next time, the first page.
+    expect(render(<StoryAlbum state={state} />, "en")).toContain("Page 1 / 2");
+    vi.unstubAllGlobals();
+  });
+
+  it("gives a story's tile its context in the morning: what it is about, and what happened so far", () => {
+    const state = makeState({ day: 12, xp: 5000 });
+    state.settings.tutorialDone = true;
+    state.customerBook = { Giulia: { ...makeBookEntry({ visits: 8 }), story: { id: "sweethearts", chapter: 2, dueDay: 12, days: [4, 8] } } };
+    const html = render(<TonightAgenda state={state} dispatch={noop} onOpenAlbum={noop} />, "en");
+    expect(html).toContain("It all starts with a first date");
+    expect(html).toContain("So far:");
+    expect(html).toContain("A proposal planned at your table.");
+    expect(html).toContain("Open the album");
+  });
+
+  it("offers tonight's messages to read again from the message line", () => {
+    const state = stateInService([makeCustomer()]);
+    pushToastForTest(state);
+    const html = render(serviceScreen(state), "en");
+    expect(html).toContain("Read tonight&#x27;s messages again");
   });
 
   it("bursts a perfect pizza on its own, never among the money pops", () => {

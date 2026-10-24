@@ -23,6 +23,7 @@ import { useTranslation } from "../i18n/I18nContext";
 import { QuestDetails, batchItemsText, questText } from "./QuestCard";
 import { EVENT_ICONS } from "./eventIcons";
 import { GazettePage } from "./Gazette";
+import { openAlbumOn, StoryPreviously } from "./StoryAlbum";
 import { todaysGazette } from "../game/gazette";
 
 
@@ -46,7 +47,7 @@ interface AgendaItem {
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
-export const TonightAgenda = ({ state, dispatch }: { state: GameState; dispatch: Dispatch }) => {
+export const TonightAgenda = ({ state, dispatch, onOpenAlbum }: { state: GameState; dispatch: Dispatch; onOpenAlbum?: () => void }) => {
   const t = useTranslation();
   const [isReading, setIsReading] = useState(false);
   const items: AgendaItem[] = [];
@@ -177,6 +178,24 @@ export const TonightAgenda = ({ state, dispatch }: { state: GameState; dispatch:
       title: t("prep.storyComing", { names: name }),
       text: t("prep.storyNext", { story: t.storyTitle(story.id), chapter: story.chapter + 1, total: STORIES[story.id].length }),
       tone: "ag-story",
+      // Opened: what the story is about, what happened so far, and the album.
+      more: (
+        <>
+          <p className="agenda-text">{t(`stories.${story.id}.intro`, { name })}</p>
+          <StoryPreviously story={story} />
+          {onOpenAlbum && (
+            <button
+              className="btn sm"
+              onClick={() => {
+                openAlbumOn(name);
+                onOpenAlbum();
+              }}
+            >
+              {t("prep.storyAlbum")}
+            </button>
+          )}
+        </>
+      ),
     });
   });
   const birthdays = birthdaysToday(state);

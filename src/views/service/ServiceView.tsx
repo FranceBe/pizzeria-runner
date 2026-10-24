@@ -250,7 +250,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
         ) : showCoach ? (
           <CoachTip step={tutorial} dispatch={dispatch} className="ticker" />
         ) : (
-          <MessageTicker toasts={state.toasts} dispatch={dispatch} idleText={progress} />
+          <MessageTicker toasts={state.toasts} dispatch={dispatch} idleText={progress} log={state.messageLog} />
         )}
       </div>
       {service.paused && <PauseMenu state={state} service={service} dispatch={dispatch} />}

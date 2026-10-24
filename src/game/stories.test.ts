@@ -74,7 +74,7 @@ describe("regulars with a story", () => {
     state.customerBook.Luca.story = { id: "student", chapter: 0, dueDay: 10 };
     const evening = untilStoryGuest(state);
     const served = serve(evening, storyGuestOf(evening));
-    expect(served.customerBook.Luca.story).toEqual({ id: "student", chapter: 1, dueDay: 10 + STORIES.student[1].daysAfter });
+    expect(served.customerBook.Luca.story).toEqual({ id: "student", chapter: 1, dueDay: 10 + STORIES.student[1].daysAfter, days: [10] });
     expect(served.toasts.map((toast) => toast.key)).toContain("storyPage");
     // The last chapter.
     const last = withRegulars("Luca");

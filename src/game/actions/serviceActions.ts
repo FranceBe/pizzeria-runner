@@ -505,10 +505,12 @@ export const serviceActions = {
     // starting the day over keeps the same missions.
     ensureWeek(state);
     // Kept to start the day over. Copied, so later changes to the game never reach it.
-    const { toasts, pops, dayStart, ...beforeOpening } = state;
+    const { toasts, pops, messageLog, dayStart, ...beforeOpening } = state;
     state.dayStart = structuredClone(beforeOpening);
     state.service = createService(customerCount);
     state.service.pace = paceFor(state);
+    // A new evening, a new thread of messages (the morning's stay out of it).
+    state.messageLog = [];
     state.service.criticPending = state.event === "critic";
     state.service.birthdayGuests = birthdaysToday(state);
     state.service.storyGuests = storyGuestsToday(state);
@@ -557,7 +559,7 @@ export const serviceActions = {
   // Back to this morning's prep, as if the restaurant had not opened yet. Settings stay as they are now.
   restartDay(state) {
     if (!state.dayStart || state.service?.challenge) return;
-    const restarted: GameState = { ...structuredClone(state.dayStart), settings: state.settings, dayStart: null, toasts: [], pops: [] };
+    const restarted: GameState = { ...structuredClone(state.dayStart), settings: state.settings, dayStart: null, toasts: [], pops: [], messageLog: [] };
     pushToast(restarted, { key: "dayRestarted" });
     return restarted;
   },

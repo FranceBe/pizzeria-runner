@@ -271,6 +271,8 @@ export const fr = {
     competitorBoost: ({ share }: { share: number }) => `Ils viennent te découvrir : environ ${share} % de clients en plus.`,
     storyComing: ({ names }: { names: string }) => `${names} passe ce soir`,
     storyNext: ({ story, chapter, total }: { story: string; chapter: number; total: number }) => `La suite de son histoire, « ${story} » : chapitre ${chapter}/${total}.`,
+    storyPreviously: "Jusqu'ici :",
+    storyAlbum: "Ouvrir l'album",
     rushTitle: "Coup de feu",
     rushTonight: ({ time }: { time: string }) => `Vers ${time}, les clients arrivent en rafale pendant un moment : pourboires doublés. Le début et la fin de soirée sont plus calmes.`,
     weddingTonight: ({ items }: { items: string }) =>
@@ -379,6 +381,9 @@ export const fr = {
     trashUnwantedShort: "🗑 Tout jeter ({count})",
     offerSlice: "🍕 En parts",
     offerSliceHint: "Coupée en parts pour la file : rien n'est jeté, et chacun patiente un peu mieux.",
+    log: "Messages de la soirée",
+    logOpen: "Relire les messages de la soirée",
+    logEmpty: "Aucun message pour l'instant.",
     roleCook: "🧑‍🍳 Toi : les pizzas et le four",
     rolePass: "🛎️ Toi : la passe et le bar",
     trap: ({ count }: { count: number }) => `🪤 Piège (${count})`,
@@ -690,6 +695,7 @@ export const fr = {
   stories: {
     sweethearts: {
       title: "Les amoureux",
+      intro: ({ name }: { name: string }) => `${name} a le cœur qui bat pour quelqu'un du quartier. Tout commence par un premier rendez-vous… dans ta pizzeria.`,
       lines: [
         "« Notre premier rendez-vous… fais-nous rêver ! »",
         "« Ce soir, je fais ma demande. Croise les doigts pour moi ! »",
@@ -700,6 +706,7 @@ export const fr = {
     },
     student: {
       title: "Les examens",
+      intro: ({ name }: { name: string }) => `${name} prépare ses examens, et tes pizzas l'aident à tenir. Des révisions au premier salaire, ta pizzeria sera de toutes les étapes.`,
       lines: [
         "« Dernière ligne droite avant les examens… une pizza pour tenir ! »",
         "« Résultats demain. Je stresse, donc je mange. »",
@@ -710,6 +717,7 @@ export const fr = {
     },
     oldChef: {
       title: "La vieille brigade",
+      intro: ({ name }: { name: string }) => `${name} a passé sa vie en cuisine et ne s'en laisse pas conter. Gagner sa confiance prendra quelques soirées.`,
       lines: [
         "« Hmm. De mon temps, la pâte reposait quarante-huit heures. »",
         "« Pas mal, la cuisson. Pas mal du tout. »",
@@ -718,7 +726,7 @@ export const fr = {
       ],
       told: ["Un avis ronchon sur ta pâte, de quelqu'un du métier.", "Ta cuisson, enfin approuvée.", "Sa vieille brigade, venue goûter.", "Sa pelle à pizza, offerte."],
     },
-  } satisfies Record<StoryId, { title: string; lines: readonly string[]; told: readonly string[] }>,
+  } satisfies Record<StoryId, { title: string; intro: (params: { name: string }) => string; lines: readonly string[]; told: readonly string[] }>,
 
   // Postcards (game/postcards.ts): a title, a handwritten caption, and a hint while still to find.
   postcards: {
@@ -826,6 +834,13 @@ export const fr = {
     postcardDay: "Jour {day}",
     postcardToFind: "À trouver",
     storySoFar: ({ story, chapter, total }: { story: string; chapter: number; total: number }) => `📖 ${story} · ${chapter}/${total}`,
+    album: "L'album des histoires",
+    albumIntro: "Les habitués qui vivent une histoire chez toi : chaque soirée qui compte devient une photo.",
+    albumEmpty: "Pas encore d'histoire. Dès le niveau 4, un habitué commence parfois la sienne : elle s'écrira ici, photo après photo.",
+    albumNext: "À suivre…",
+    albumTonight: "Ce soir !",
+    albumDone: "Histoire terminée",
+    albumDay: "Jour {day}",
     favoriteBack: ({ festival }: { festival: FestivalId }, t: H) => `Sa préférée revient avec ${t.festival(festival)}`,
     dislikes: ({ id }: { id: IngredientId }, t: H) => `N'aime pas : ${lower(t.ingredient(id))}`,
     birthdayIn: ({ days }: { days: number }) => (days === 0 ? "🎂 Anniversaire aujourd'hui !" : `🎂 Anniversaire dans ${days} ${plural(days, "jour")}`),

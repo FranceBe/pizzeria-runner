@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { makeState, play, stateInService, makeCustomer, serviceOf, toggle, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
+import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf, toggle, toJson, MARGHERITA_INGREDIENTS as MARGHERITA } from "../test/helpers";
+import { MESSAGE_LOG_SIZE, pushToast } from "./toasts";
+import { hydrateState, toSaveData } from "./state";
 import { createCustomer } from "./customers";
 import { RARE_LINES } from "../data/customers";
 import { countWeeklySale, gazetteFor, publishGazette, todaysGazette } from "./gazette";
@@ -114,5 +116,39 @@ describe("the first day's weekly missions", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.9);
     const again = play(play(open, { type: "restartDay" }), { type: "openRestaurant" });
     expect(again.weekly?.missions).toEqual(missions);
+  });
+});
+
+describe("tonight's messages", () => {
+  it("are all kept to read again, the latest ones, from the opening on", () => {
+    const state = makeState();
+    pushToast(state, { key: "gameLoaded" });
+    const open = play(state, { type: "openRestaurant" });
+    expect(open.messageLog.map((toast) => toast.key)).not.toContain("gameLoaded");
+    for (let i = 0; i < MESSAGE_LOG_SIZE + 5; i++) pushToast(open, { key: "ovenFull" });
+    expect(open.messageLog).toHaveLength(MESSAGE_LOG_SIZE);
+    // Four on screen at most, all of them in the log.
+    expect(open.toasts.length).toBeLessThanOrEqual(4);
+    expect(open.messageLog.at(-1)?.id).toBe(open.toasts.at(-1)?.id);
+  });
+
+  it("are never saved, nor brought back by starting the day over", () => {
+    const open = play(makeState(), { type: "openRestaurant" });
+    pushToast(open, { key: "ovenFull" });
+    expect(toSaveData(open)).not.toHaveProperty("messageLog");
+    expect(hydrateState(toJson(toSaveData(open))).messageLog).toEqual([]);
+    const restarted = play(open, { type: "restartDay" });
+    expect(restarted.messageLog.map((toast) => toast.key)).toEqual(["dayRestarted"]);
+  });
+});
+
+describe("a story's chapters", () => {
+  it("remember the day each one was lived, for the album", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const state = stateInService([makeCustomer({ name: "Giulia", story: { id: "student", chapter: 0 } })], { day: 6 });
+    state.customerBook = { Giulia: { ...makeBookEntry({ visits: 6 }), story: { id: "student", chapter: 0, dueDay: 6 } } };
+    const baked = play(state, ...toggle(...MARGHERITA), { type: "bake" }, { type: "tick", seconds: 6 });
+    const served = play(baked, { type: "servePizza", pizzaId: serviceOf(baked).ready[0].id });
+    expect(served.customerBook.Giulia.story).toMatchObject({ chapter: 1, days: [6] });
   });
 });

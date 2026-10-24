@@ -44,6 +44,8 @@ export const DevPanel = ({ state, dispatch }: ScreenProps) => {
       <Toggle label="Tous les fournisseurs signés" checked={setup.allIngredients} onChange={(allIngredients) => update({ allIngredients })} />
       <Toggle label="Secret de Nonna" checked={setup.nonnaSecret} onChange={(nonnaSecret) => update({ nonnaSecret })} />
       <Toggle label="Secret de Mamma" checked={setup.mammaSecret} onChange={(mammaSecret) => update({ mammaSecret })} />
+      <Toggle label="Habitués avec des histoires (l'album : une ce soir, une en cours, une finie)" checked={setup.stories} onChange={(stories) => update({ stories })} />
+      <Toggle label="La Gazette (3 numéros, le dernier sorti ce matin)" checked={setup.gazettes} onChange={(gazettes) => update({ gazettes })} />
       <div className="row">
         <strong className="grow">Améliorations</strong>
         <button className="btn sm" onClick={() => update({ upgrades: noUpgrades() })}>Aucune</button>
