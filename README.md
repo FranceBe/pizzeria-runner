@@ -542,3 +542,11 @@ give the game the server's address on your network: `VITE_MULTIPLAYER_URL=http:/
   analytics script, and only send data to itself, Cloudflare's analytics and the multiplayer server. It is added at build time,
   since the dev server needs an inline script for hot reload. A new third-party resource has to be added there too.
 - The page never inserts HTML from strings: everything shown, the pizzeria's name included, goes through React.
+- What the game keeps in the browser: the save (`forno-lento-save-v1`, about 80 KB after 150 days, twice that during
+  service, which also keeps the morning to start the day over), a copy of a save that couldn't be read
+  (`forno-lento-broken-save`, only then), the duo pizzerias (`forno-lento-duos-v1`, 6 at most) and the journal's last
+  tab; plus, for a moment, the story the album opens on (`sessionStorage`). The save is written every 2 seconds only
+  when something changed, and right away after a purchase or at the end of a day.
+- `npm audit` finds nothing in the game's dependencies. The server's tools (`wrangler`, used to run and deploy it, never
+  shipped) pull in `undici`, pinned to 7.30.1 in `server/package.json` (`overrides`) for advisories fixed there; the
+  pin can go once `wrangler` brings a fixed version itself.

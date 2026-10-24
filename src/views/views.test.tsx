@@ -292,8 +292,7 @@ describe("views", () => {
     const html = render(<StoryAlbum state={state} />, "en");
     expect(html).toContain("Story complete");
     expect(html).toContain("Page 2 / 2");
-    // Only once: next time, the first page.
-    expect(render(<StoryAlbum state={state} />, "en")).toContain("Page 1 / 2");
+    // Forgotten once the album is on screen (an effect: checked in a browser, not in a page drawn as text).
     vi.unstubAllGlobals();
   });
 

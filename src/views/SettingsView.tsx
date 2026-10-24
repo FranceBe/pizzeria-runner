@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toSaveData } from "../game/state";
 import { COMMIS_FADES_PANS } from "../data/progression";
-import { DevPanel } from "../dev/DevPanel";
 import { LANGUAGES, LANGUAGE_NAMES, type Language } from "../i18n";
 import { useTranslation } from "../i18n/I18nContext";
 import type { Dispatch, SoundChannel, Theme } from "../game/types";
 import { encodeSaveCode, decodeSaveCode } from "../utils/saveCode";
 import type { ScreenProps } from "./types";
+
+// Dev only: loaded on demand, so the built game holds none of it (import.meta.env.DEV is false there, and the import
+// goes with it).
+const DevPanel = import.meta.env.DEV ? lazy(() => import("../dev/DevPanel").then((module) => ({ default: module.DevPanel }))) : null;
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 const THEMES: readonly Theme[] = ["auto", "light", "dark"];
@@ -227,7 +230,11 @@ export const SettingsView = ({ state, dispatch }: ScreenProps) => {
       <PizzeriaSettings state={state} dispatch={dispatch} />
       <SaveTransfer state={state} dispatch={dispatch} />
       {/* Replaced by false in the built game, so the panel and its code are left out of it. */}
-      {import.meta.env.DEV && <DevPanel state={state} dispatch={dispatch} />}
+      {DevPanel && (
+        <Suspense fallback={null}>
+          <DevPanel state={state} dispatch={dispatch} />
+        </Suspense>
+      )}
     </div>
   );
 };

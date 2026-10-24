@@ -10,6 +10,14 @@ const TOAST_DURATION_MS = 4000;
 export const useGameLoop = (state: GameState, dispatch: Dispatch): void => {
   const latestState = useRef(state);
   latestState.current = state;
+  // The game as last written: unchanged (a quiet morning, a pause), it isn't written again. Every change makes a new
+  // state object (see game/reducer.ts), so comparing them is enough.
+  const lastSaved = useRef<GameState | null>(null);
+  const saveIfChanged = useRef(() => {
+    if (latestState.current === lastSaved.current) return;
+    lastSaved.current = latestState.current;
+    saveState(latestState.current);
+  });
 
   useEffect(() => {
     const timer = setInterval(() => dispatch({ type: "tick", seconds: TICK_SECONDS }), TICK_SECONDS * 1000);
@@ -17,7 +25,7 @@ export const useGameLoop = (state: GameState, dispatch: Dispatch): void => {
   }, [dispatch]);
 
   useEffect(() => {
-    const save = () => saveState(latestState.current);
+    const save = saveIfChanged.current;
     const timer = setInterval(save, AUTOSAVE_INTERVAL_MS);
     window.addEventListener("pagehide", save);
     document.addEventListener("visibilitychange", save);
@@ -31,7 +39,7 @@ export const useGameLoop = (state: GameState, dispatch: Dispatch): void => {
   // Outside service, save right away on meaningful changes like purchases.
   // Only these fields trigger it, so it reads the latest state rather than depending on all of it.
   useEffect(() => {
-    if (latestState.current.phase !== "service") saveState(latestState.current);
+    if (latestState.current.phase !== "service") saveIfChanged.current();
   }, [state.money, state.phase, state.recipes, state.day]);
 
   useEffect(() => {

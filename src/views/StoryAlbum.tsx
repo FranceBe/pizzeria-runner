@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { STORIES, STORY_SCENES, type StoryId } from "../data/stories";
 import { Pager, usePages } from "../components/Pager";
 import { CustomerFace } from "../components/CustomerFace";
@@ -78,7 +78,7 @@ const StoryPage = ({ name, entry, today }: { name: string; entry: CustomerBookEn
   );
 };
 
-// The story to open the album on next time (from the morning's list), read once.
+// The story to open the album on next time (from the morning's list): read when the album opens, then forgotten.
 const OPEN_ON_KEY = "forno-lento-album-story";
 export const openAlbumOn = (name: string): void => {
   try {
@@ -87,13 +87,18 @@ export const openAlbumOn = (name: string): void => {
     // Not remembered: the album opens on its first page.
   }
 };
-const takeOpenOn = (): string | null => {
+const readOpenOn = (): string | null => {
   try {
-    const name = sessionStorage.getItem(OPEN_ON_KEY);
-    sessionStorage.removeItem(OPEN_ON_KEY);
-    return name;
+    return sessionStorage.getItem(OPEN_ON_KEY);
   } catch {
     return null;
+  }
+};
+const forgetOpenOn = (): void => {
+  try {
+    sessionStorage.removeItem(OPEN_ON_KEY);
+  } catch {
+    // Nothing was kept.
   }
 };
 
@@ -105,7 +110,9 @@ export const StoryAlbum = ({ state }: { state: GameState }) => {
     const over = Number(isStoryOver(a.story!)) - Number(isStoryOver(b.story!));
     return over || a.story!.dueDay - b.story!.dueDay;
   });
-  const [openOn] = useState(takeOpenOn);
+  // Read on opening (an initializer may run twice), forgotten once the album is on screen.
+  const [openOn] = useState(readOpenOn);
+  useEffect(forgetOpenOn, []);
   const { shown, ...pages } = usePages(stories, 1, { inOrder: true, startAt: stories.findIndex(([name]) => name === openOn) });
   return (
     <div className="card pad journal-card j-regulars j-album">
