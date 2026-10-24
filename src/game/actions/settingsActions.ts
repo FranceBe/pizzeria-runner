@@ -1,5 +1,6 @@
 import { createInitialState, hydrateState } from "../state";
 import { pushToast } from "../toasts";
+import { setEventsOff, setFeaturesOff } from "../playOptions";
 import type { ActionHandlers } from "../types";
 
 const MAX_NAME_LENGTH = 32;
@@ -15,6 +16,14 @@ export const settingsActions = {
 
   setTheme(state, { theme }) {
     state.settings.theme = theme;
+  },
+
+  setEventsOff(state, { events, off }) {
+    setEventsOff(state, events, off);
+  },
+
+  setFeaturesOff(state, { features, off }) {
+    setFeaturesOff(state, features, off);
   },
 
   setPlayerName(state, { name }) {

@@ -71,6 +71,8 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
       useDrawer: true,
       commisFade: true,
       playerName: "",
+      offEvents: [],
+      offFeatures: [],
     },
     phase: "prep",
     purchasesToday: 0,

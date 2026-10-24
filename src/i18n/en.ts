@@ -610,6 +610,27 @@ export const en: Dictionary = {
     confirmReset: "Erase everything and start again from day 1?",
     yesReset: "Yes, start over",
     reset: "Start a new game…",
+    play: {
+      title: "Your way of playing",
+      intro: "Everything is on by default. For a calmer game, switch off whatever puts on the pressure: it counts from this morning (or from tomorrow if the service has started), and it all comes back whenever you like.",
+      calm: "Calm mode: switch it all off",
+      all: "Switch it all back on",
+      calmOn: "Calm mode: just pizzas, no pressure.",
+      service: "During service",
+      neighbourhood: "In the neighbourhood",
+      events: "Day events",
+      features: {
+        rush: "The rush (customers in quick succession)",
+        groupOrders: "Group orders",
+        asUsual: "\"The usual\" (otherwise, regulars say their pizza)",
+        specialRequests: "Special requests (an extra topping, one left out)",
+        quests: "Neighbourhood quests",
+        competitor: "The competitor across the street",
+      },
+      categories: { weather: "Weather and market", incidents: "Incidents", evenings: "Special evenings" },
+      oneByOne: "Choose one by one",
+      achievementsNote: "Some achievements need these moments: they will wait until you switch them back on.",
+    },
   },
 
   summary: {

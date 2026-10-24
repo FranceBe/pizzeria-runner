@@ -6,6 +6,7 @@ import { activeMenu } from "./menu";
 import { isDessert } from "./pizza";
 import { levelForXp } from "./progression";
 import { pushToast } from "./toasts";
+import { isFeatureOn } from "./playOptions";
 import type { GameState, Weekly } from "./types";
 
 export const weekOf = (day: number): number => Math.floor((day - 1) / SEASON_DAYS);
@@ -18,7 +19,7 @@ const possibleKinds = (state: GameState): WeeklyKind[] => {
     if (kind === "tables") return levelForXp(state.xp) >= 3;
     if (kind === "desserts") return activeMenu(state).some((recipe) => isDessert(recipe.ingredients));
     if (kind === "drinks") return state.upgrades.bar > 0;
-    if (kind === "batchGold") return state.day >= 4;
+    if (kind === "batchGold") return state.day >= 4 && isFeatureOn(state, "quests") && isFeatureOn(state, "groupOrders");
     return true;
   });
 };

@@ -300,6 +300,12 @@ a result to paste to friends.
   own volume and mute button in Settings; the music softens during a pause. Sound starts with the first tap or click,
   as browsers require. Where it all comes from: [CREDITS.md](CREDITS.md).
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
+- **Your way of playing** (Settings, `src/game/playOptions.ts`): everything is on by default, and a player who wants a
+  calmer game switches off what puts on the pressure: the rush, group orders, "the usual" (regulars then say their
+  pizza), special requests, neighbourhood quests, the competitor, and day events, by family (weather and market,
+  incidents, special evenings) or one by one. A "calm mode" switches it all off at once. Switched off in the morning,
+  today's plans lose it at once (the wedding with its banquet, a competitor settling in quietly); during service, from
+  the next day. Some achievements need these moments, and wait for them to be switched back on.
 - The game installs as an app and plays offline.
 - **Tonight's messages, in full**: a phone cuts long messages short in the message line. Tapping it opens the
   evening's last 30 messages, newest first, in full (a tap anywhere else closes them); its × dismisses the message.

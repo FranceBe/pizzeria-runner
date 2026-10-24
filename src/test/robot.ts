@@ -10,6 +10,8 @@ import { COMPETITOR_DAYS } from "../data/competitor";
 import { weekOf } from "../game/weekly";
 import { canOfferSlice } from "../game/slice";
 import { commisMood, MAX_FATIGUE } from "../game/commis";
+import { PLAY_FEATURES } from "../game/playOptions";
+import { DAY_EVENT_IDS } from "../data/events";
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import { BATCH_ID, nextBatchRecipe, openBatch } from "../game/batch";
 import { canBorrowFromNonna, forecastCustomers } from "../game/economy";
@@ -76,6 +78,8 @@ export const checkInvariants = (state: GameState, before?: GameState): void => {
     expect(state.competitor.stars, "the stars against the competitor").toBeGreaterThanOrEqual(0);
     if (state.competitor.outcome) expect(state.day, "the competitor's days").toBeGreaterThan(state.competitor.firstDay + COMPETITOR_DAYS - 1);
   }
+  // A morning never plans what the player switched off.
+  if (state.phase === "prep" && state.event) expect(state.settings.offEvents, "an event switched off").not.toContain(state.event);
   // The commis: named once hired, their fatigue within bounds.
   if (state.upgrades.commis > 0) expect(state.commis?.name, "a hired commis has a name").toBeTruthy();
   if (state.commis) expect(state.commis.fatigue >= 0 && state.commis.fatigue <= MAX_FATIGUE, "the commis's fatigue").toBe(true);
@@ -244,6 +248,9 @@ export const messUpMorning = (state: GameState, random: () => number): GameState
   if (random() < 0.3 && next.recipes.length) act({ type: "changePrice", recipeId: pick(next.recipes, random).id, delta: random() < 0.5 ? -50 : 50 });
   if (random() < 0.1 && next.recipes.length > 3) act({ type: "deleteRecipe", recipeId: pick(next.recipes, random).id });
   if (random() < 0.2) act({ type: "setSpecial", recipeId: null });
+  // A player trying the calmer settings, or going back on them.
+  if (random() < 0.15) act({ type: "setEventsOff", events: [pick(DAY_EVENT_IDS, random)], off: random() < 0.6 });
+  if (random() < 0.1) act({ type: "setFeaturesOff", features: [pick(PLAY_FEATURES, random)], off: random() < 0.6 });
   if (random() < 0.2 && next.recipes.length) act({ type: "setSpecial", recipeId: pick(next.recipes, random).id });
   return next;
 };

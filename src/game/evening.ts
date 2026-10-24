@@ -10,6 +10,7 @@ import { planMysteryGuest } from "./mystery";
 import { sendPostcard } from "./postcards";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
+import { isFeatureOn } from "./playOptions";
 import { recordWeekly } from "./weekly";
 import type { GameState, ReadyPizza, Service } from "./types";
 
@@ -35,14 +36,14 @@ const QUEST_LOG_SIZE = 30;
 
 // A rush tonight: a pizzeria big enough, an evening busy enough, and not a match (it has its own, at half-time).
 export const isRushEvening = (state: GameState, customerCount: number): boolean =>
-  levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS && state.event !== "match";
+  levelForXp(state.xp) >= RUSH_LEVEL && customerCount >= RUSH_MIN_CUSTOMERS && state.event !== "match" && isFeatureOn(state, "rush");
 
 // Each morning, from the level of rushes: when tonight's would come (whether it comes depends on the evening being
 // busy enough, at opening). Mutates state.
 export const ensureRushPlan = (state: GameState): void => {
   if (state.rushPlan?.day === state.day) return;
   const steps = (RUSH_LATEST - RUSH_EARLIEST) / 5;
-  state.rushPlan = levelForXp(state.xp) >= RUSH_LEVEL ? { day: state.day, at: RUSH_EARLIEST + 5 * Math.floor(Math.random() * (steps + 1)) } : null;
+  state.rushPlan = levelForXp(state.xp) >= RUSH_LEVEL && isFeatureOn(state, "rush") ? { day: state.day, at: RUSH_EARLIEST + 5 * Math.floor(Math.random() * (steps + 1)) } : null;
 };
 
 // Tonight's rush, as announced in the morning: its time, or null.

@@ -15,6 +15,14 @@ export const DAY_EVENT_IDS = [
 ] as const;
 export type DayEventId = (typeof DAY_EVENT_IDS)[number];
 
+// For the settings, where a player may switch some off: the events in three families.
+export const EVENT_CATEGORIES = {
+  weather: ["market", "rain", "sunny", "heatwave"],
+  incidents: ["powerCut", "lateDelivery", "inspection", "scooterStrike", "fridgeFailure", "waterCut"],
+  evenings: ["festival", "critic", "match", "wedding", "mysteryGuest", "nonnaFamily", "veggieNight", "biancaNight"],
+} as const satisfies Record<string, readonly DayEventId[]>;
+export type EventCategory = keyof typeof EVENT_CATEGORIES;
+
 export interface DayEvent {
   /** Relative chance of being picked on an event day. */
   weight: number;

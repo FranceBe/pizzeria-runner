@@ -8,6 +8,7 @@ import { canHaveTheme, isThemeNight } from "./themes";
 import { canHaveHeatwave, canSpoil } from "./incidents";
 import { FAMILY_LEVEL } from "./family";
 import { loyaltyDiscount } from "./loyalty";
+import { isEventOn } from "./playOptions";
 import { levelForXp } from "./progression";
 import type { GameState } from "./types";
 
@@ -16,9 +17,9 @@ const NO_EVENT: DayEvent = { weight: 0, customerFactor: 1, marketPriceFactor: 1,
 
 export const todaysEvent = (state: GameState): DayEvent => (state.event ? DAY_EVENTS[state.event] : NO_EVENT);
 
-// Some events only make sense for some pizzerias.
+// Some events only make sense for some pizzerias; the player may have switched some off (game/playOptions.ts).
 export const canHappen = (state: GameState, id: DayEventId): boolean => {
-  if (state.day < (DAY_EVENTS[id].firstDay ?? FIRST_EVENT_DAY)) return false;
+  if (state.day < (DAY_EVENTS[id].firstDay ?? FIRST_EVENT_DAY) || !isEventOn(state, id)) return false;
   if (id === "scooterStrike") return state.upgrades.livraison > 0;
   if (id === "lateDelivery") return lateCandidates(state).length > 0;
   if (isThemeNight(id)) return canHaveTheme(state, id);

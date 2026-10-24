@@ -10,6 +10,7 @@ import type { ScreenProps } from "./types";
 // Dev only: loaded on demand, so the built game holds none of it (import.meta.env.DEV is false there, and the import
 // goes with it).
 const DevPanel = import.meta.env.DEV ? lazy(() => import("../dev/DevPanel").then((module) => ({ default: module.DevPanel }))) : null;
+import { PlayOptions } from "./PlayOptions";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 const THEMES: readonly Theme[] = ["auto", "light", "dark"];
@@ -228,6 +229,7 @@ export const SettingsView = ({ state, dispatch }: ScreenProps) => {
   return (
     <div className="grid2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" }}>
       <PizzeriaSettings state={state} dispatch={dispatch} />
+      <PlayOptions state={state} dispatch={dispatch} />
       <SaveTransfer state={state} dispatch={dispatch} />
       {/* Replaced by false in the built game, so the panel and its code are left out of it. */}
       {DevPanel && (

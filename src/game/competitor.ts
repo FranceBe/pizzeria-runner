@@ -10,6 +10,7 @@ import { levelForXp } from "./progression";
 import { averageRating } from "./reviews";
 import { pushToast } from "./toasts";
 import { sendPostcard } from "./postcards";
+import { isFeatureOn } from "./playOptions";
 import type { GameState } from "./types";
 
 // Which of its days it is (1 to COMPETITOR_DAYS), while it is open; null otherwise.
@@ -60,6 +61,7 @@ export const maybeOpenCompetitor = (state: GameState): void => {
   const competitor = state.competitor;
   const isDue = !competitor || state.day >= competitor.firstDay + COMPETITOR_GAP_DAYS;
   if (!isDue || competitorDay(state) !== null || levelForXp(state.xp) < COMPETITOR_LEVEL || state.day < COMPETITOR_FIRST_DAY) return;
+  if (!isFeatureOn(state, "competitor")) return;
   if (Math.random() >= COMPETITOR_CHANCE) return;
   state.competitor = { name: pickRandom(COMPETITOR_NAMES), firstDay: state.day, stars: 0 };
   pushToast(state, { key: "competitorOpens", params: { name: state.competitor.name } }, "warn");

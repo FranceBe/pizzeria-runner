@@ -16,6 +16,7 @@ import { isSpecial, SPECIAL_ORDER_BOOST } from "./special";
 import { fitsTonight, THEME_ORDER_BOOST } from "./themes";
 import { drinkChance, spoilingBoost } from "./incidents";
 import { familyMenu } from "./family";
+import { isFeatureOn } from "./playOptions";
 import { levelForXp } from "./progression";
 import { bookEntry, favoriteRecipeId, FAVORITE_REORDER_CHANCE, isRegular, isTheirUsual, pickCustomerName } from "./regulars";
 import type { Customer, CustomerBookEntry, Diet, GameState, Mood, Recipe } from "./types";
@@ -128,14 +129,15 @@ export const createCustomer = (state: GameState, kind: CustomerKind = "regular",
   const { recipe, isFavorite } =
     kind === "celebrity" ? { recipe: [...menu].sort((a, b) => b.price - a.price)[0], isFavorite: false } : chooseRecipe(state, menu, entry, isBirthday);
   // "The usual" only for a pizza they really have a habit of (tonight's menu has it, as everything ordered).
-  const asUsual = isFavorite && isRegular(entry) && isTheirUsual(entry, recipe.id) && !diet && !forDessert && Math.random() < AS_USUAL_CHANCE;
+  const asUsual =
+    isFavorite && isRegular(entry) && isTheirUsual(entry, recipe.id) && !diet && !forDessert && isFeatureOn(state, "asUsual") && Math.random() < AS_USUAL_CHANCE;
 
   let ingredients: IngredientId[] = forDiet(diet, recipe.ingredients);
   let extraIngredient: IngredientId | null = null;
   let removedIngredient: IngredientId | null = null;
   let price = recipe.price;
 
-  const canAskForChanges = kind !== "critic" && !asUsual && !diet && !isBirthday && !forDessert;
+  const canAskForChanges = kind !== "critic" && !asUsual && !diet && !isBirthday && !forDessert && isFeatureOn(state, "specialRequests");
   const asksForChanges = kind === "celebrity" || (levelForXp(state.xp) >= SPECIAL_REQUESTS_LEVEL && Math.random() < SPECIAL_REQUEST_CHANCE);
   if (canAskForChanges && asksForChanges) {
     const recipeFillings = fillingsOf(recipe.ingredients);

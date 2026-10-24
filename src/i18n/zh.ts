@@ -590,6 +590,27 @@ export const zh: Dictionary = {
     confirmReset: "清空一切，从第 1 天重新开始？",
     yesReset: "是的，重新开始",
     reset: "开始新游戏……",
+    play: {
+      title: "你的玩法",
+      intro: "默认全部开启。想玩得轻松一点，就关掉让你有压力的部分：从今天早上起生效（营业已开始则从明天起），随时都能重新打开。",
+      calm: "悠闲模式：全部关闭",
+      all: "全部重新打开",
+      calmOn: "悠闲模式：只做披萨，没有压力。",
+      service: "营业时",
+      neighbourhood: "街区里",
+      events: "每日事件",
+      features: {
+        rush: "高峰时段（客人一拥而入）",
+        groupOrders: "团体订单",
+        asUsual: "“老样子”（关闭后，常客会直接说出要的披萨）",
+        specialRequests: "特殊要求（加料、不要某样）",
+        quests: "街坊任务",
+        competitor: "对面的竞争对手",
+      },
+      categories: { weather: "天气和集市", incidents: "意外", evenings: "特别的夜晚" },
+      oneByOne: "逐个选择",
+      achievementsNote: "有些成就需要这些时刻：等你重新打开后再来。",
+    },
   },
 
   summary: {

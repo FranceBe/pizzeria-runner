@@ -9,6 +9,7 @@ import { isDiscovered } from "./pairings";
 import { isDessert } from "./pizza";
 import { pushToast } from "./toasts";
 import { BATCH_XP_PER_PIZZA } from "./batch";
+import { isFeatureOn } from "./playOptions";
 import type { BatchItem, Customer, GameState, Quest, Recipe } from "./types";
 
 // How many completed quests the journal remembers.
@@ -64,7 +65,7 @@ const possibleQuests = (state: GameState): QuestDraft[] => {
   const expected = forecastCustomers(state);
   const drafts: QuestDraft[] = [];
   const savoury = menu.filter((recipe) => !isDessert(recipe.ingredients));
-  if (savoury.length) drafts.push(groupOrder(savoury));
+  if (savoury.length && isFeatureOn(state, "groupOrders")) drafts.push(groupOrder(savoury));
   if (expected) drafts.push({ kind: "serveTotal", target: Math.round(expected * 2.2), reward: 45, xp: 50 });
   drafts.push({ kind: "happy", target: 8 + randomIndex(5), reward: 30, xp: 40 });
   const canDiscover = GOOD_PAIRINGS.some((pairing) => !isDiscovered(state, pairing) && pairing.every((id) => state.unlocked[id]));
@@ -75,7 +76,7 @@ const possibleQuests = (state: GameState): QuestDraft[] => {
 
 // At the start of a day: maybe a new quest, if none is running. Mutates state.
 export const maybeOfferQuest = (state: GameState): void => {
-  if (state.quest || state.day < FIRST_QUEST_DAY || Math.random() >= QUEST_CHANCE) return;
+  if (state.quest || state.day < FIRST_QUEST_DAY || !isFeatureOn(state, "quests") || Math.random() >= QUEST_CHANCE) return;
   const drafts = possibleQuests(state);
   if (!drafts.length) return;
   const draft = pickRandom(drafts);

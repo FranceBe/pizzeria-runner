@@ -639,6 +639,27 @@ export const fr = {
     confirmReset: "Tout effacer et recommencer au jour 1 ?",
     yesReset: "Oui, recommencer",
     reset: "Recommencer une partie…",
+    play: {
+      title: "Ta façon de jouer",
+      intro: "Tout est activé par défaut. Pour une partie plus calme, coupe ce qui te met la pression : ça compte dès ce matin (ou dès demain si le service a commencé), et tout se remet quand tu veux.",
+      calm: "Mode tranquille : tout couper",
+      all: "Tout réactiver",
+      calmOn: "Mode tranquille : juste des pizzas, sans pression.",
+      service: "Pendant le service",
+      neighbourhood: "Dans le quartier",
+      events: "Événements du jour",
+      features: {
+        rush: "Le coup de feu (des clients en rafale)",
+        groupOrders: "Les commandes groupées",
+        asUsual: "Le « Comme d'habitude » (sinon, les habitués disent leur pizza)",
+        specialRequests: "Les demandes spéciales (supplément, sans…)",
+        quests: "Les quêtes du quartier",
+        competitor: "Le concurrent d'en face",
+      },
+      categories: { weather: "Météo et marché", incidents: "Imprévus", evenings: "Soirées spéciales" },
+      oneByOne: "Choisir un par un",
+      achievementsNote: "Certains succès demandent ces moments : ils attendront que tu les remettes.",
+    },
   },
 
   summary: {
