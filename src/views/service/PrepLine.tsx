@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PREP_STATIONS, type IngredientId } from "../../data/ingredients";
 import { useTranslation } from "../../i18n/I18nContext";
 import { IngredientPan } from "../../components/IngredientPan";
+import { onTap } from "../../components/tap";
 import type { CoachTarget, GameState } from "../../game/types";
 
 interface PanState {
@@ -118,7 +119,7 @@ export const PrepLine = ({
         className={isInDrawer ? `${className} in-drawer` : className}
         disabled={isComing || (!isOnBoard && quantity === 0)}
         aria-pressed={isOnBoard}
-        onClick={() => onPickIngredient(id)}
+        {...onTap(() => onPickIngredient(id))}
         title={isBottomless ? t.ingredient(id) : t("service.panTitle", { id, quantity })}
       >
         <IngredientPan id={id} quantity={quantity} />
@@ -144,7 +145,7 @@ export const PrepLine = ({
             <button
               className={`pan drawer-btn${isDrawerUsed && !isDrawerOpen ? " on" : isDrawerNeeded && !isDrawerOpen ? " need" : ""}`}
               aria-expanded={isDrawerOpen}
-              onClick={() => setDrawerOpen(!isDrawerOpen)}
+              {...onTap(() => setDrawerOpen(!isDrawerOpen))}
               title={t(isDrawerOpen ? "service.drawerClose" : "service.drawerOpen")}
             >
               <span className="drawer-ic" aria-hidden="true">{isDrawerOpen ? "▴" : "▾"}</span>
@@ -165,7 +166,7 @@ export const PrepLine = ({
                 className={`pan secret-pan${secret.isOnBoard ? " on" : ""}`}
                 disabled={!secret.canAdd && !secret.isOnBoard}
                 aria-pressed={secret.isOnBoard}
-                onClick={secret.onToggle}
+                {...onTap(secret.onToggle)}
                 title={t(secret.id === "mamma" ? "service.mammaTitle" : "service.secretTitle")}
               >
                 <SecretJar id={secret.id} />

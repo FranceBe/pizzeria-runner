@@ -298,6 +298,10 @@ a result to paste to friends.
   as browsers require. Where it all comes from: [CREDITS.md](CREDITS.md).
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
 - The game installs as an app and plays offline.
+- **Taps that always get through** (`src/components/tap.ts`): on a phone, the kitchen's buttons act when the finger
+  comes up, not on the browser's click. iPhones hold a click back when something appears on screen at that moment (a
+  pizza out of the oven), which used to take a second tap. A finger that moved was scrolling; the click that may follow
+  a tap is cancelled, so what slides under the finger (the next pizza on the pass) is never clicked too.
 - Have you tried every combination of keys (or of swipes)? Nonna has. And she doesn't share her secrets with just anyone: perhaps
   with someone who has served every one of hers. Mamma keeps something in a jar too, for those whose books balance day
   after day. Once shared, a secret is made at the market and goes on a pizza from the prep line (or with `S` and `M`).

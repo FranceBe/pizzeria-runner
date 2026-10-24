@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Overlay } from "../../components/Overlay";
 import { canBorrowFromNonna, NONNA_LOAN } from "../../game/economy";
 import { useTranslation } from "../../i18n/I18nContext";
+import { onTap } from "../../components/tap";
 import type { ServiceScreenProps } from "../types";
 
 // The ways out of a service: borrow from Nonna, close for today, start the day over.
@@ -14,14 +15,14 @@ export const ServiceWayOut = ({ state, service, dispatch }: ServiceScreenProps) 
     <div className="way-out">
       {canBorrowFromNonna(state) && (
         <div className="way-out-option">
-          <button className="btn" onClick={() => dispatch({ type: "borrowFromNonna" })}>{t("service.borrow", { amount: NONNA_LOAN })}</button>
+          <button className="btn" {...onTap(() => dispatch({ type: "borrowFromNonna" }))}>{t("service.borrow", { amount: NONNA_LOAN })}</button>
           <span className="hint">{t("service.borrowHint")}</span>
         </div>
       )}
       <div className="way-out-option">
         <button
           className={`btn${confirming === "close" ? " primary" : ""}`}
-          onClick={() => (confirming === "close" ? dispatch({ type: "closeEarly" }) : setConfirming("close"))}
+          {...onTap(() => (confirming === "close" ? dispatch({ type: "closeEarly" }) : setConfirming("close")))}
         >
           {t("service.closeEarly")}
         </button>
@@ -31,7 +32,7 @@ export const ServiceWayOut = ({ state, service, dispatch }: ServiceScreenProps) 
         <div className="way-out-option">
           <button
             className={`btn${confirming === "restart" ? " primary" : ""}`}
-            onClick={() => (confirming === "restart" ? dispatch({ type: "restartDay" }) : setConfirming("restart"))}
+            {...onTap(() => (confirming === "restart" ? dispatch({ type: "restartDay" }) : setConfirming("restart")))}
           >
             {t("service.restartDay")}
           </button>
@@ -50,7 +51,7 @@ export const PauseMenu = (props: ServiceScreenProps) => {
       <div className="card pad pause-menu">
         <h2 className="h">⏸ {t("service.paused")}</h2>
         <p className="hint">{t("service.pausedHint")}</p>
-        <button className="btn primary big" autoFocus onClick={() => props.dispatch({ type: "togglePause" })}>{t("service.resume")}</button>
+        <button className="btn primary big" autoFocus {...onTap(() => props.dispatch({ type: "togglePause" }))}>{t("service.resume")}</button>
         <ServiceWayOut {...props} />
       </div>
     </Overlay>

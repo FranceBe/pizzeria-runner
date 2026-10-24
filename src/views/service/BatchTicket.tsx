@@ -1,6 +1,7 @@
 import { medalInReach, pizzaCount } from "../../game/batch";
 import type { Quest } from "../../game/types";
 import { useTranslation } from "../../i18n/I18nContext";
+import { onTap } from "../../components/tap";
 import { formatClock } from "../../utils/format";
 
 const MEDAL_ICONS = { gold: "🥇", silver: "🥈", bronze: "🥉" } as const;
@@ -11,7 +12,7 @@ export const BatchTicket = ({ quest, elapsed, isSelected, onSelect }: { quest: Q
   const items = quest.items ?? [];
   const { medal, secondsLeft } = medalInReach(elapsed, pizzaCount(items));
   return (
-    <button className="ticket batch-ticket" aria-pressed={isSelected} onClick={onSelect}>
+    <button className="ticket batch-ticket" aria-pressed={isSelected} {...onTap(onSelect)}>
       <div className="batch-head">
         <strong>{t(quest.giver === "wedding" ? "service.banquet" : "service.batch")}</strong>
         <span className="batch-medal" title={t("journal.medal", { medal: t.medal(medal) })}>

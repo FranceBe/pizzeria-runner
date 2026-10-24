@@ -7,6 +7,7 @@ import { DELIVERY_EXPRESS_SECONDS } from "../../data/progression";
 import type { IngredientId } from "../../data/ingredients";
 import type { Customer, TableProgress } from "../../game/types";
 import { DrinkGlass } from "../../components/DrinkGlass";
+import { onTap } from "../../components/tap";
 import { DRINKS } from "../../data/drinks";
 
 type ChipStatus = "" | "ok" | "miss" | "extra";
@@ -74,7 +75,7 @@ export const OrderTicket = ({ customer, isSelected, isRegular, showIngredients, 
     <button
       className={`${ticketClassName(customer, table)}${partner ? ` partner-pick tb-${partner.color}` : ""}`}
       aria-pressed={isSelected}
-      onClick={onSelect}
+      {...onTap(onSelect)}
       title={customer.critic ? t("service.criticTitle") : customer.celebrity ? t("service.celebrityTitle") : undefined}
     >
       {/* Co-op: the other player is on this one, so it isn't made twice. */}

@@ -3,6 +3,7 @@ import { isRegularCustomer } from "../../game/customers";
 import { selectedCustomer } from "../../game/service";
 import { DrinkGlass } from "../../components/DrinkGlass";
 import { useTranslation } from "../../i18n/I18nContext";
+import { onTap } from "../../components/tap";
 import type { ServiceScreenProps } from "../types";
 
 // The bar, in the board's corners. On the left, the fridge: a tap pours that drink (it costs the glass). It goes straight
@@ -24,7 +25,7 @@ export const BarCounter = ({ state, service, dispatch }: ServiceScreenProps) => 
             key={id}
             className="glass-btn"
             title={t("service.pourTitle", { drink: t.drink(id), cost: DRINKS[id].cost })}
-            onClick={() => dispatch({ type: "pourDrink", drinkId: id })}
+            {...onTap(() => dispatch({ type: "pourDrink", drinkId: id }))}
           >
             <DrinkGlass id={id} />
             <span className="glass-n">{t.drink(id)}</span>
@@ -34,7 +35,7 @@ export const BarCounter = ({ state, service, dispatch }: ServiceScreenProps) => 
           <button
             className="glass-btn offer"
             title={t("service.offerDrink", { drink: t.drink(selected.drink).toLowerCase(), name: selected.name })}
-            onClick={() => dispatch({ type: "offerDrink" })}
+            {...onTap(() => dispatch({ type: "offerDrink" }))}
           >
             <span aria-hidden="true">🎁</span>
             <span className="glass-n">{t("service.offerShort")}</span>
@@ -48,12 +49,12 @@ export const BarCounter = ({ state, service, dispatch }: ServiceScreenProps) => 
               key={index}
               className="glass-btn on-tray"
               title={t("service.trayTitle", { drink: t.drink(id) })}
-              onClick={() => dispatch({ type: "serveTrayDrink", index })}
+              {...onTap(() => dispatch({ type: "serveTrayDrink", index }))}
             >
               <DrinkGlass id={id} />
             </button>
           ))}
-          <button className="glass-btn tray-bin" title={t("service.binTray")} onClick={() => dispatch({ type: "binTray" })}>
+          <button className="glass-btn tray-bin" title={t("service.binTray")} {...onTap(() => dispatch({ type: "binTray" }))}>
             <span aria-hidden="true">🗑️</span>
           </button>
         </div>

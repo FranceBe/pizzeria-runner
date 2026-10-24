@@ -28,6 +28,7 @@ import type { ServiceScreenProps } from "../types";
 import { useMultiplayer } from "../../multiplayer/MultiplayerContext";
 import { TRAP_EVERY_SERVED, trapsEarned } from "../../multiplayer/protocol";
 import { commisLevel } from "../../game/commis";
+import { onTap } from "../../components/tap";
 import { ranking } from "../MultiplayerView";
 
 // What the board is compared with: a customer's order, or the group order's next pizza.
@@ -48,7 +49,7 @@ const UsualReminder = ({ customer, dispatch }: { customer: Customer; dispatch: S
   return (
     <span className="match usual">
       <span className="usual-t">{t("service.asUsualCheck", { name: customer.name })} </span>
-      <button className="link-btn" title={t("service.revealUsualTitle")} onClick={() => dispatch({ type: "revealUsualOrder", customerId: customer.id })}>
+      <button className="link-btn" title={t("service.revealUsualTitle")} {...onTap(() => dispatch({ type: "revealUsualOrder", customerId: customer.id }))}>
         {t("service.revealUsual")}
       </button>
     </span>
@@ -80,11 +81,11 @@ const WorkBoard = ({ state, service, dispatch, selectedCustomer, target, coachTa
       </div>
       <BarCounter state={state} service={service} dispatch={dispatch} />
       <div className="peel-btns">
-        <button className="btn sm" disabled={!board.length} onClick={() => dispatch({ type: "trashBoard" })}>{t("common.trash")}</button>
+        <button className="btn sm" disabled={!board.length} {...onTap(() => dispatch({ type: "trashBoard" }))}>{t("common.trash")}</button>
         <button
           className={`btn primary${coachTarget === "bake" ? " coach-target" : ""}`}
           disabled={!hasBase(board) || ovenIsFull}
-          onClick={() => dispatch({ type: "bake" })}
+          {...onTap(() => dispatch({ type: "bake" }))}
         >
           {ovenIsFull ? t("service.ovenFull") : t("service.bake")}
         </button>
@@ -172,7 +173,7 @@ const TrapButton = () => {
       className="btn trap-btn"
       disabled={left <= 0 || !target}
       title={target ? `${t("service.trapTitle", { name: target.name })} · ${t("service.trapHint", { every: TRAP_EVERY_SERVED })}` : t("service.trapHint", { every: TRAP_EVERY_SERVED })}
-      onClick={() => target && sendTrap(target.id)}
+      {...onTap(() => target && sendTrap(target.id))}
     >
       {t("service.trap", { count: Math.max(0, left) })}
     </button>
@@ -237,7 +238,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
         {challenge?.royale && <TrapButton />}
         {service.role && <span className="role-badge">{t(service.role === "cook" ? "service.roleCook" : "service.rolePass")}</span>}
         {!challenge?.multiplayer && (
-          <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} onClick={() => dispatch({ type: "togglePause" })}>
+          <button className="btn pause-btn" aria-label={t("service.pause")} title={`${t("service.pause")} (P)`} {...onTap(() => dispatch({ type: "togglePause" }))}>
             ⏸
           </button>
         )}

@@ -5,6 +5,7 @@ import { useTranslation } from "../../i18n/I18nContext";
 import { Pizza } from "../../components/Pizza";
 import type { CoachTarget, GameState, Service } from "../../game/types";
 import type { ServiceScreenProps } from "../types";
+import { onTap } from "../../components/tap";
 import { canOfferSlice } from "../../game/slice";
 
 type WithCoach = ServiceScreenProps & { coachTarget: CoachTarget | null };
@@ -70,7 +71,7 @@ const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
       </h3>
       {service.ready.length === 0 && <p className="hint passe-empty">{t("service.passEmpty")}</p>}
       {unwantedCount > 1 && (
-        <button className="btn sm ghost bin-all" onClick={() => dispatch({ type: "trashUnwantedPizzas" })}>
+        <button className="btn sm ghost bin-all" {...onTap(() => dispatch({ type: "trashUnwantedPizzas" }))}>
           <span className="label-full">{t("service.trashUnwanted", { count: unwantedCount })}</span>
           <span className="label-short">{t("service.trashUnwantedShort", { count: unwantedCount })}</span>
         </button>
@@ -99,22 +100,22 @@ const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
                 <>
                   <button
                     className={`btn sm go${coachTarget === "serve" ? " coach-target" : ""}`}
-                    onClick={() => dispatch({ type: "servePizza", pizzaId: pizza.id })}
+                    {...onTap(() => dispatch({ type: "servePizza", pizzaId: pizza.id }))}
                   >
                     {t("service.serve")}
                   </button>
-                  <button className="btn sm ghost" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
+                  <button className="btn sm ghost" {...onTap(() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id }))}>
                     {t("common.trash")}
                   </button>
                 </>
               ) : (
                 <>
                   {canOfferSlice(state, service, pizza.id) && (
-                    <button className="btn sm slice" title={t("service.offerSliceHint")} onClick={() => dispatch({ type: "offerSlice", pizzaId: pizza.id })}>
+                    <button className="btn sm slice" title={t("service.offerSliceHint")} {...onTap(() => dispatch({ type: "offerSlice", pizzaId: pizza.id }))}>
                       {t("service.offerSlice")}
                     </button>
                   )}
-                  <button className="btn sm bin" onClick={() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id })}>
+                  <button className="btn sm bin" {...onTap(() => dispatch({ type: "trashReadyPizza", pizzaId: pizza.id }))}>
                     {t("common.trash")}
                   </button>
                 </>
