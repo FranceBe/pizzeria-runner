@@ -69,7 +69,7 @@ describe("the tidy prep line", () => {
   });
 
   it("lets the commis fading be switched off too", () => {
-    const state = withOregano({ upgrades: { ...makeState().upgrades, commis: 3 } });
+    const state = withOregano({ upgrades: { ...makeState().upgrades, commis: 3 }, commis: { name: "Charlie", fatigue: 0 } });
     expect(serviceHtml(state)).toContain("fade-2");
     expect(serviceHtml(play(state, { type: "toggleComfort", option: "commisFade" }))).not.toContain("fade-2");
   });

@@ -19,6 +19,7 @@ import { DaySummary } from "./DaySummary";
 import { JournalView } from "./JournalView";
 import { PerfectBurst } from "./service/PerfectBurst";
 import { openAlbumOn, StoryAlbum } from "./StoryAlbum";
+import { StaffCard } from "./StaffCard";
 import { TonightAgenda } from "./TonightAgenda";
 import { pushToast } from "../game/toasts";
 
@@ -74,7 +75,7 @@ const lateKitchen = (): GameState => {
       makeCustomer({ id: "t2", name: "Enzo", tableId: "tab", diet: "veggie", drink: "limonade", drinkServed: true }),
       makeCustomer({ id: "b1", name: "Giulia", birthday: true }),
     ],
-    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 2, livraison: 1, bar: 2, oven2: 2, annexe: 2 } },
+    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 2, livraison: 1, bar: 2, waiter: 0, oven2: 2, annexe: 2 } },
   );
   serviceOf(state).tables = { tab: { size: 2, served: 0, allHappy: true, color: 1 } };
   serviceOf(state).oven = [{ id: "o", ovenIndex: 1, ingredients: MARGHERITA_INGREDIENTS, bakedSeconds: 1, bakeDuration: 3 }];
@@ -111,7 +112,7 @@ describe.each(LANGUAGES)("views in %s", (language) => {
     const late = lateGameState();
     return [
       { name: "Header with pops", element: <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} /> },
-      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } }} dispatch={noop} /> },
+      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 } }} dispatch={noop} /> },
       { name: "Prep with regulars", element: <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} /> },
       { name: "Prep when broke", element: <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} /> },
       { name: "Service in progress", element: serviceScreen(serviceInProgress()) },
@@ -221,7 +222,7 @@ describe("views", () => {
 
   it("decorates the storefront as upgrades are bought", () => {
     expect(render(<Header state={makeState()} dispatch={noop} />)).not.toContain("storefront");
-    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } })} dispatch={noop} />);
+    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 } })} dispatch={noop} />);
     expect(upgraded.match(/decor table/g)).toHaveLength(2);
     expect(upgraded).toContain("oven-front");
     expect(upgraded).toContain('class="lights"');
@@ -312,6 +313,26 @@ describe("views", () => {
     pushToastForTest(state);
     const html = render(serviceScreen(state), "en");
     expect(html).toContain("Read tonight&#x27;s messages again");
+  });
+
+  it("shows the staff: who works at each open post, what they do, their wage, and this week's candidates", () => {
+    const state = makeState({ day: 10, upgrades: { ...makeState().upgrades, commis: 1, bar: 3 } });
+    state.commis = { name: "Noa", fatigue: 30, hiredDay: 1 };
+    state.staffCandidates = { week: 1, names: { commis: ["Eden", "Alex", "Sam"], barman: ["Marin", "Gabi", "Ange"], waiter: [] } };
+    const html = render(<StaffCard state={state} dispatch={noop} />, "en");
+    expect(html).toContain("Keeps the pizzas warm on the pass");
+    expect(html).toContain("Fatigue: 30%");
+    expect(html).toContain("Learning: helps as if a level lower for the first 14 days");
+    expect(html).toContain("Part ways");
+    expect(html).toContain("Nobody in this post for now.");
+    expect(html).not.toContain("On the floor");
+    expect(render(<StaffCard state={makeState()} dispatch={noop} />, "en")).toBe("");
+  });
+
+  it("says each morning that a post is empty", () => {
+    const state = makeState({ day: 10, upgrades: { ...makeState().upgrades, bar: 3 } });
+    state.settings.tutorialDone = true;
+    expect(render(<TonightAgenda state={state} dispatch={noop} onOpenStaff={noop} />, "en")).toContain("Nobody at the bar");
   });
 
   it("bursts a perfect pizza on its own, never among the money pops", () => {
@@ -625,6 +646,7 @@ describe("views", () => {
     state.unlocked.origan = true;
     expect(render(serviceScreen(state), "en")).not.toContain("pushed-back");
     state.upgrades.commis = 2;
+    state.commis = { name: "Charlie", fatigue: 0 };
     const html = render(serviceScreen(state), "en");
     expect(html).toContain('class="rail fade-1"');
     expect(html).toMatch(/class="pan pushed-back[^"]*"[^>]*title="Oregano/);

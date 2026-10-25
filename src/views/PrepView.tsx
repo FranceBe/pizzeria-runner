@@ -194,6 +194,7 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
             showJournalSection("regulars");
             goToTab("journal");
           }}
+          onOpenStaff={() => goToTab("upgrades")}
         />
         <div className="row" style={{ alignItems: "flex-end", gap: 24 }}>
           <div>

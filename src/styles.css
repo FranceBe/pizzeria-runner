@@ -1352,7 +1352,6 @@ html.svc-mode .duo-badge { font-size: 10px; padding: 1px 7px; margin-left: 6px; 
 .ag-quest { --ev-bg: var(--gold-soft); --ev-edge: var(--gold); }
 .ag-gazette { --ev-bg: var(--paper); --ev-edge: var(--paper-ink); }
 .ag-commis { --ev-bg: var(--surface2); --ev-edge: var(--muted); }
-.upgrade-status { font-size: 13px; font-weight: 700; color: var(--muted); }
 .ag-birthday { --ev-bg: #fde7ef; --ev-edge: #e0708f; }
 .ev-match { --ev-bg: #e1eef6; --ev-edge: #2f6f9f; }
 @media (prefers-color-scheme: dark) {
@@ -1560,3 +1559,14 @@ button.ticker-x { flex: none; padding: 0 0 0 8px; border: 0; background: none; c
 .play-options { display: flex; flex-direction: column; gap: 8px; }
 .difficulty-levels { display: flex; flex-wrap: wrap; gap: 6px; }
 .difficulty-describe { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--surface2); font-size: 13.5px; line-height: 1.4; text-wrap: pretty; }
+
+/* The staff, in the upgrades tab: each open post, who works there, and this week's candidates folded below. */
+.staff-card { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.staff-post { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.staff-person { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface2); }
+.staff-person.employed { background: var(--basil-soft); }
+.staff-traits { margin: 2px 0; padding-left: 16px; font-size: 13px; line-height: 1.35; }
+.staff-candidates > summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--muted); }
+.staff-candidates { display: flex; flex-direction: column; gap: 6px; }
+.staff-candidates[open] > .staff-person { margin-top: 6px; }
+.staff-vacant { margin: 0; }

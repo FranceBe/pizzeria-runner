@@ -245,7 +245,8 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 | Tidy prep line | The pans no pizza on tonight's menu uses go in a drawer at the end of the line: a shorter line, but a request for an ingredient off the menu means opening it |
 | Terrace | More customers, especially on sunny days |
 | Delivery | Scooter orders, with an express bonus when they leave within 45 seconds |
-| Bar | Drinks: lemonade and sparkling water, then chinotto and red wine, then a barman who serves them on his own |
+| Bar | Drinks: lemonade and sparkling water, then chinotto and red wine, then a barman who serves them (see the staff) |
+| Floor staff | Someone takes ready pizzas to the tables on their own, every 8 then 5 seconds (see the staff) |
 | Second oven | One slow slot when built, then improving like the first oven, up to wood-fired. Two ovens of two pizzas: four at most, which is already a lot to keep up with |
 | Second address | Brings in money every evening |
 
@@ -253,10 +254,23 @@ Any upgrade can be sold back, one level at a time and outside service, for 75% o
 doesn't suit the way you play. The tidy prep line, a pure comfort, is sold back for its full price. The comfort
 features (the drawer, the assistant fading the pans) can also simply be switched off in Settings, for free.
 
-**The kitchen assistant** (`game/commis.ts`) gets a name when hired, and a fatigue from 0 to 100: each pizza served adds 1
-(2 during a rush), each night takes 12 off. From 60 in the morning they help as if a level lower; from 85, not at all. In the morning,
-when they need it, a tile of the list offers an evening off: no help that evening, their share of the charges isn't
-paid, and they come back fully rested.
+**The kitchen assistant** (`game/commis.ts`) has a fatigue from 0 to 100: each pizza served adds 1 (2 during a rush,
+times the person's own pace), each night takes 12 off. From 60 in the morning they help as if a level lower; from 85,
+not at all. In the morning, when they need it, a tile of the list offers an evening off: no help that evening, their
+share of the charges isn't paid, and they come back fully rested.
+
+**The staff** (`data/staff.ts`, `game/staff.ts`, the "Staff" card of the upgrades tab): an upgrade opens a post (the
+commis, the barman at bar level 3, the new floor staff upgrade), and someone fills it, hired at once when it opens.
+Each person has their own ways, told by what they do: the commis tire faster or slower, sometimes forget the dough,
+chat with the queue (the wait counts slower), keep the pizzas warm on the pass, or learn for their first 14 days; the
+barmen pour every 4 to 8 seconds, sometimes the wrong drink, some earning a little tip on each; on the floor, quicker
+or slower, some charming a tip too. Each costs a wage a night, added to the evening's charges on top of the post's own
+upkeep (the card says exactly how much). In each post, one is flawless and costs nothing in charges, but keeps a
+quarter of the evening's tips, taken at closing and shown on the receipt. Three new
+candidates for each post come every Monday; whoever is hired stays until the player hires someone else or parts ways
+with them (in the morning; they stay among the candidates). An empty post is said in the morning's list. In
+hardcore, someone may hand in their notice (3% a morning). The floor staff take a ready pizza to its table every 8
+seconds (5 at the second level); never in challenges.
 
 **Loyal suppliers** (`game/loyalty.ts`): portions bought at the market (by hand or restocking, never what is given)
 count towards a supplier's loyalty: 40 portions bring 5% off, 120 bring 10%, 300 bring 15%, on top of the day's prices;

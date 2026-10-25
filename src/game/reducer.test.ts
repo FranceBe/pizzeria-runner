@@ -129,7 +129,7 @@ describe("baking and serving", () => {
   });
 
   it("lets the level-1 commis spread fresh dough after each bake", () => {
-    const state = play(stateInService([], { upgrades: { oven: 0, salle: 0, deco: 0, commis: 1, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 } }), ...addIngredients(["pate"]), { type: "bake" });
+    const state = play(stateInService([], { upgrades: { oven: 0, salle: 0, deco: 0, commis: 1, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 }, commis: { name: "Charlie", fatigue: 0 } }), ...addIngredients(["pate"]), { type: "bake" });
     expect(serviceOf(state).board).toEqual(["pate"]);
     expect(state.stock.pate).toBe(6);
   });

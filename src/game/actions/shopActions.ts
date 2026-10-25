@@ -11,7 +11,7 @@ import { levelForXp } from "../progression";
 import { pushToast } from "../toasts";
 import { COSMETIC_PRICES, STAR_LOOKS, isLookOf, type CosmeticId, type CosmeticSlot, type LookIds } from "../../data/cosmetics";
 import { recordPurchase } from "../loyalty";
-import { hireCommis } from "../commis";
+import { fillOpenPosts, fireStaff, hireStaff } from "../staff";
 import type { ActionHandlers, GameState } from "../types";
 
 const addToStock = (state: GameState, id: IngredientId, quantity: number): void => {
@@ -95,6 +95,15 @@ export const shopActions = {
     pushToast(state, { key: "nonna" }, "gold");
   },
 
+  // The staff: someone of this week's candidates hired, or let go (in the morning; see game/staff.ts).
+  hireStaff(state, { role, name }) {
+    hireStaff(state, role, name);
+  },
+
+  fireStaff(state, { role }) {
+    fireStaff(state, role);
+  },
+
   buyUpgrade(state, { upgradeKey }) {
     const upgrade = UPGRADES[upgradeKey];
     const currentLevel = state.upgrades[upgradeKey];
@@ -103,7 +112,8 @@ export const shopActions = {
     if (levelForXp(state.xp) < upgrade.requiredLevel[currentLevel] || state.money < cost) return;
     spend(state, cost);
     state.upgrades[upgradeKey] = currentLevel + 1;
-    if (upgradeKey === "commis") hireCommis(state);
+    // A post that opens (the commis, the barman, the waiter) is filled at once.
+    fillOpenPosts(state);
     pushToast(state, { key: "upgradeBought", params: { upgradeKey, level: currentLevel + 1 } }, "gold");
   },
 

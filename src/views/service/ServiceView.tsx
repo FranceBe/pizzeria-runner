@@ -1,6 +1,6 @@
 import { formatEveningTime } from "../../game/clock";
 import { useEffect, useRef } from "react";
-import { BARMAN_SECONDS, COMMIS_FADES_PANS } from "../../data/progression";
+import { COMMIS_FADES_PANS } from "../../data/progression";
 import { revealInList } from "../../utils/scroll";
 import { isRegularCustomer } from "../../game/customers";
 import { barmanTarget, isStuck, ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
@@ -28,6 +28,7 @@ import type { ServiceScreenProps } from "../types";
 import { useMultiplayer } from "../../multiplayer/MultiplayerContext";
 import { TRAP_EVERY_SERVED, trapsEarned } from "../../multiplayer/protocol";
 import { commisLevel } from "../../game/commis";
+import { barmanProfile } from "../../game/staff";
 import { onTap } from "../../components/tap";
 import { ranking } from "../MultiplayerView";
 
@@ -271,7 +272,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
                 board={service.board}
                 isRegular={isRegularCustomer(state, customer)}
                 table={group.tableId ? service.tables?.[group.tableId] : undefined}
-                pour={customer.id === pouringFor?.id ? Math.min(1, (service.barmanSeconds ?? 0) / BARMAN_SECONDS) : undefined}
+                pour={customer.id === pouringFor?.id ? Math.min(1, (service.barmanSeconds ?? 0) / (barmanProfile(state)?.pourSeconds ?? 1)) : undefined}
                 onSelect={() => dispatch({ type: "selectCustomer", customerId: customer.id })}
                 partner={service.partner?.selectedCustomerId === customer.id ? service.partner : undefined}
               />

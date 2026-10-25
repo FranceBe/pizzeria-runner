@@ -3,6 +3,8 @@ import { ensureRushPlan } from "./evening";
 import { weekOf } from "./weekly";
 import { DAY_EVENT_IDS } from "../data/events";
 import { nameOldCommis } from "./commis";
+import { ensureCandidates } from "./staff";
+import { BARMAN_LEVEL } from "../data/progression";
 import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { MARGHERITA } from "../data/recipes";
 import { LANGUAGES, detectLanguage, type Language } from "../i18n/languages";
@@ -57,7 +59,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     stock: { pate: 8, tomate: 8, mozza: 8, basilic: 8 },
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
-    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, oven2: 0, annexe: 0 },
+    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 },
     settings: {
       showHelp: true,
       language,
@@ -358,6 +360,10 @@ export const hydrateState = (saved: JsonObject): GameState => {
   // Records, without a toast, what an older save had already earned.
   unlockAchievements(state, { silent: true });
   nameOldCommis(state);
+  // The barman of older saves: the steady one they always were.
+  if (state.upgrades.bar >= BARMAN_LEVEL && !state.barman) state.barman = { name: "Lior" };
+  // This week's candidates, for a save from before them (or a new week reached in another tab).
+  ensureCandidates(state);
   // A morning without tonight's goal yet (a save from before goals, or a new game set up): it gets one now.
   if (state.phase === "prep") {
     ensureTonightGoal(state);

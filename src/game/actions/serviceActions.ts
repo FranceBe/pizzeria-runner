@@ -1,10 +1,10 @@
-import { DRINKS, TRAY_SIZE, type DrinkId } from "../../data/drinks";
+import { DRINKS, DRINK_IDS, TRAY_SIZE, type DrinkId } from "../../data/drinks";
 import { canAfford } from "../../utils/math";
 import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
 import {
-  ANNEXE_INCOME, BARMAN_SECONDS, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS, WOOD_FIRED_XP_BONUS,
+  ANNEXE_INCOME, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS, WOOD_FIRED_XP_BONUS,
 } from "../../data/progression";
-import { randomBetween, randomIndex, makeId, pickSome } from "../../utils/random";
+import { randomBetween, randomIndex, makeId, pickRandom, pickSome } from "../../utils/random";
 import { createChallenge, createChallengeCustomer, createTrapCustomer, nextChallengeArrival } from "../challenge";
 import { createCustomer, isRegularCustomer, moodForWait, type CustomerKind } from "../customers";
 import { birthdaysToday, ensureLocals, lapseAbsentRegulars, recordVisit } from "../regulars";
@@ -23,6 +23,7 @@ import { ensureWeek, recordWeekly } from "../weekly";
 import { ensureSpecialWeek, serveSpecial, specialReputation } from "../special";
 import { offerSlice } from "../slice";
 import { commisLevel, restCommisOvernight, tireCommis, toggleCommisOff } from "../commis";
+import { barmanProfile, commisProfile, ensureCandidates, maybeResign, staffTipShare, waiterProfile, waiterSeconds } from "../staff";
 import { countWeeklySale, isNewWeek, publishGazette } from "../gazette";
 import { deliverLoyaltyGifts } from "../loyalty";
 import { isFamilyDue, isFamilyExpected } from "../family";
@@ -116,10 +117,12 @@ const endDay = (state: GameState, service: Service): void => {
 
   const annexeIncome = ANNEXE_INCOME[state.upgrades.annexe] ?? 0;
   if (annexeIncome) receivePayment(state, annexeIncome);
-  const charges = dailyCharges(state);
+  const { stats } = service;
+  // The flawless staff's share of tonight's tips, with the charges.
+  const tipCut = Math.round(stats.tips * staffTipShare(state) * 100) / 100;
+  const charges = dailyCharges(state) + tipCut;
   payCharges(state, charges);
 
-  const { stats } = service;
   const questRewards = stats.questRewards ?? 0;
   const bonuses = stats.bonuses ?? 0;
   const net = stats.revenue + stats.tips + annexeIncome + questRewards + bonuses - charges - state.purchasesToday;
@@ -164,6 +167,7 @@ const endDay = (state: GameState, service: Service): void => {
     starGoals: goals,
     inspectionPassed,
     ...(spoiled ? { spoiled } : {}),
+    ...(tipCut ? { tipCut } : {}),
     reviews,
     ...(state.tonightGoal?.day === state.day ? { tonightGoal: { ...state.tonightGoal } } : {}),
     ...(state.event === "mysteryGuest" ? { mystery } : {}),
@@ -284,18 +288,52 @@ const thirstyFor = (service: Service, drinkId: DrinkId): Customer | undefined =>
   return service.customers.find((c) => c.id === service.selectedCustomerId && wantsIt(c)) ?? service.customers.find(wantsIt);
 };
 
-// The barman pours one drink at a time, for the first customer still waiting for one; he never gets it wrong.
+// The barman pours one drink at a time, for the first customer still waiting for one, at their own pace; some get one
+// wrong now and then (it goes on the tray, its glass paid), some earn a little tip on each drink (data/staff.ts).
 // Mutates state.
 const pourWithBarman = (state: GameState, service: Service, seconds: number): void => {
   const customer = barmanTarget(state, service);
-  if (!customer) {
+  const profile = barmanProfile(state);
+  if (!customer || !profile) {
     service.barmanSeconds = 0;
     return;
   }
   service.barmanSeconds = (service.barmanSeconds ?? 0) + seconds;
-  if (service.barmanSeconds < BARMAN_SECONDS) return;
+  if (service.barmanSeconds < profile.pourSeconds || !customer.drink) return;
   service.barmanSeconds = 0;
-  if (customer.drink) sellDrink(state, service, customer, DRINKS[customer.drink].cost);
+  const tray = service.tray ?? [];
+  const wrong = DRINK_IDS.filter((id) => id !== customer.drink && DRINKS[id].barLevel <= state.upgrades.bar);
+  if (wrong.length && tray.length < TRAY_SIZE && Math.random() < profile.mistake) {
+    const glass = pickRandom(wrong);
+    spend(state, DRINKS[glass].cost);
+    service.tray = [...tray, glass];
+    return;
+  }
+  sellDrink(state, service, customer, DRINKS[customer.drink].cost);
+  if (profile.charm) tipFromStaff(state, service, profile.charm);
+};
+
+// A little tip from a charming barman or waiter. Mutates state.
+const tipFromStaff = (state: GameState, service: Service, amount: number): void => {
+  receivePayment(state, amount);
+  pushPop(state, amount, "tip");
+  service.stats.tips += amount;
+  state.lifetime.tips += amount;
+};
+
+// The waiter takes a ready pizza to whoever waits for it, every so often (data/staff.ts): the oldest on the pass first.
+// Never in challenges. Mutates state.
+const serveWithWaiter = (state: GameState, service: Service, seconds: number): void => {
+  const every = waiterSeconds(state);
+  if (!every || service.challenge) return;
+  service.waiterSeconds = (service.waiterSeconds ?? 0) + seconds;
+  if (service.waiterSeconds < every) return;
+  const pizza = service.ready.find((candidate) => destinationOf(state, service, candidate.ingredients));
+  if (!pizza) return;
+  service.waiterSeconds = 0;
+  serviceActions.servePizza(state, { type: "servePizza", pizzaId: pizza.id });
+  const charm = waiterProfile(state)?.charm ?? 0;
+  if (charm && state.service) tipFromStaff(state, state.service, charm);
 };
 
 // Both secrets go back on their shelf (the dough came off the board). Mutates state.
@@ -600,7 +638,9 @@ export const serviceActions = {
   tick(state, { seconds }) {
     const { service } = state;
     if (!service) return;
-    const waiting = seconds * PACE_WAITING[service.pace ?? "normal"] * weatherWaiting(state);
+    // A commis who chats with the queue makes the wait easier (never in challenges: everyone gets the same evening).
+    const chatter = service.challenge ? 1 : (commisProfile(state)?.patience ?? 1);
+    const waiting = seconds * PACE_WAITING[service.pace ?? "normal"] * weatherWaiting(state) * chatter;
     service.customers.forEach((customer) => (customer.waitedSeconds += waiting));
     service.oven.forEach((pizza) => (pizza.bakedSeconds += seconds));
 
@@ -615,6 +655,7 @@ export const serviceActions = {
       trackTonightClock(state, service);
     }
     pourWithBarman(state, service, seconds);
+    serveWithWaiter(state, service, seconds);
     if (state.phase !== "service") return;
 
     if (service.challenge) {
@@ -808,7 +849,9 @@ export const serviceActions = {
     service.mammaOnBoard = false;
     // The commis rolls out the dough the selected order needs (gluten-free when asked).
     const dough = selectedCustomer(service)?.ingredients.find(isBase) ?? DOUGH;
-    if (commisLevel(state) >= COMMIS_SPREADS_DOUGH && inStock(state, dough) > 0) {
+    // Some forget now and then (data/staff.ts).
+    const forgets = Math.random() < (commisProfile(state)?.forget ?? 0);
+    if (commisLevel(state) >= COMMIS_SPREADS_DOUGH && inStock(state, dough) > 0 && !forgets) {
       service.board = [dough];
       takeFromStock(state, dough);
     }
@@ -938,6 +981,9 @@ export const serviceActions = {
     state.summary = null;
     state.purchasesToday = 0;
     restCommisOvernight(state);
+    // Hardcore: someone may hand in their notice. A new week brings new candidates (whoever works there stays).
+    maybeResign(state);
+    ensureCandidates(state);
     // What today already holds: the quest still running, the regulars' birthdays and story chapters, the competitor.
     lapseAbsentRegulars(state);
     expireQuest(state);

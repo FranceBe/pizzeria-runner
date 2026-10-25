@@ -11,6 +11,7 @@ import { sendPostcard } from "./postcards";
 import { levelForXp } from "./progression";
 import { pushPop, pushToast } from "./toasts";
 import { isFeatureOn } from "./playOptions";
+import { commisProfile } from "./staff";
 import { recordWeekly } from "./weekly";
 import type { GameState, ReadyPizza, Service } from "./types";
 
@@ -66,7 +67,9 @@ export const planEvening = (state: GameState, service: Service, customerCount: n
 // Every tick: the clock of the evening. Mutates state.
 export const advanceEvening = (state: GameState, service: Service, seconds: number): void => {
   service.elapsed = (service.elapsed ?? 0) + seconds;
-  service.ready.forEach((pizza) => (pizza.waitingSeconds = (pizza.waitingSeconds ?? 0) + seconds));
+  // A careful commis keeps the pizzas on the pass warm longer (data/staff.ts).
+  const cooling = seconds * (commisProfile(state)?.warmth ?? 1);
+  service.ready.forEach((pizza) => (pizza.waitingSeconds = (pizza.waitingSeconds ?? 0) + cooling));
 
   if (service.rush) {
     service.rush.secondsLeft -= seconds;

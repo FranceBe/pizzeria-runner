@@ -120,6 +120,8 @@ describe("drinks", () => {
     const withBarman = (customers: Parameters<typeof stateInService>[0]) => {
       const state = stateInService(customers, { money: 5 });
       state.upgrades.bar = 3;
+      // The steady barman of older saves: one drink every 6 seconds, never wrong.
+      state.barman = { name: "Lior" };
       // Enough for a glass poured by hand; the barman's are paid out of what they bring in.
       return state;
     };

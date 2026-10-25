@@ -11,6 +11,8 @@ import { weekOf } from "../game/weekly";
 import { canOfferSlice } from "../game/slice";
 import { commisMood, MAX_FATIGUE } from "../game/commis";
 import { DIFFICULTIES, isEventOn } from "../game/playOptions";
+import { candidatesFor, vacantPosts } from "../game/staff";
+import { STAFF_NAMES, STAFF_ROLES } from "../data/staff";
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import { BATCH_ID, nextBatchRecipe, openBatch } from "../game/batch";
 import { canBorrowFromNonna, forecastCustomers } from "../game/economy";
@@ -80,8 +82,13 @@ export const checkInvariants = (state: GameState, before?: GameState): void => {
   }
   // A morning never plans what the player switched off.
   if (state.phase === "prep" && state.event) expect(isEventOn(state, state.event), "an event this level doesn't have").toBe(true);
-  // The commis: named once hired, their fatigue within bounds.
-  if (state.upgrades.commis > 0) expect(state.commis?.name, "a hired commis has a name").toBeTruthy();
+  // The staff: each one of their post's people, never also among its candidates.
+  STAFF_ROLES.forEach((role) => {
+    const employee = state[role];
+    if (!employee) return;
+    expect(STAFF_NAMES[role], `the ${role}`).toContain(employee.name);
+    expect(candidatesFor(state, role), `the ${role} among the candidates`).not.toContain(employee.name);
+  });
   if (state.commis) expect(state.commis.fatigue >= 0 && state.commis.fatigue <= MAX_FATIGUE, "the commis's fatigue").toBe(true);
   // Loyalty only counts what was bought.
   Object.values(state.bought ?? {}).forEach((portions) => expect(isCount(portions), "portions bought").toBe(true));
@@ -222,6 +229,16 @@ export const runMorning = (state: GameState, random: () => number = Math.random)
     .slice(0, Math.max(0, capacity - activeMenu(next).length))
     .forEach((recipe) => act({ type: "toggleOnMenu", recipeId: recipe.id }));
   if (random() < 0.5 && activeMenu(next).length) act({ type: "setSpecial", recipeId: pick(activeMenu(next), random).id });
+  // An empty post gets someone, most of the time; now and then, someone better is hired.
+  vacantPosts(next).forEach((role) => {
+    const [name] = candidatesFor(next, role);
+    if (name && random() < 0.8) act({ type: "hireStaff", role, name });
+  });
+  if (random() < 0.05) {
+    const role = pick(STAFF_ROLES, random);
+    const [name] = candidatesFor(next, role);
+    if (name) act({ type: "hireStaff", role, name });
+  }
   // A tired commis gets the evening off, most of the time.
   const commis = commisMood(next);
   if ((commis === "tired" || commis === "exhausted") && random() < 0.7) act({ type: "toggleCommisOff" });
@@ -248,6 +265,7 @@ export const messUpMorning = (state: GameState, random: () => number): GameState
   if (random() < 0.3 && next.recipes.length) act({ type: "changePrice", recipeId: pick(next.recipes, random).id, delta: random() < 0.5 ? -50 : 50 });
   if (random() < 0.1 && next.recipes.length > 3) act({ type: "deleteRecipe", recipeId: pick(next.recipes, random).id });
   if (random() < 0.2) act({ type: "setSpecial", recipeId: null });
+  if (random() < 0.15) act({ type: "fireStaff", role: pick(STAFF_ROLES, random) });
   // A player trying another difficulty level.
   if (random() < 0.15) act({ type: "setDifficulty", difficulty: pick(DIFFICULTIES, random) });
   if (random() < 0.2 && next.recipes.length) act({ type: "setSpecial", recipeId: pick(next.recipes, random).id });

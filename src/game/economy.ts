@@ -11,14 +11,16 @@ import { levelForXp } from "./progression";
 import { themeCrowdFactor } from "./themes";
 import { isSunnyEvening } from "./incidents";
 import { isCommisOff } from "./commis";
+import { staffWages } from "./staff";
 import type { GameState } from "./types";
 
-// The evening's charges: rent, and each upgrade's upkeep (not the commis's on their evening off).
+// The evening's charges: rent, each upgrade's upkeep (not the commis's on their evening off), and the staff's wages.
 export const dailyCharges = (state: GameState): number => {
-  return UPGRADE_KEYS.reduce(
+  const upkeep = UPGRADE_KEYS.reduce(
     (total, key) => total + (key === "commis" && isCommisOff(state) ? 0 : UPGRADES[key].dailyCharge * state.upgrades[key]),
     BASE_DAILY_CHARGES,
   );
+  return upkeep + staffWages(state);
 };
 
 // Number of orders expected tonight, from room size, reputation, menu quality and variety,

@@ -14,6 +14,7 @@ import type { UpgradeKey } from "../data/progression";
 import type { ClassicRecipeId } from "../data/recipes";
 import type { Language, MessageInput, ToastKey, TutorialKey } from "../i18n";
 import type { Difficulty } from "./playOptions";
+import type { StaffRole } from "../data/staff";
 import type { JsonObject } from "../utils/saveCode";
 
 export type Phase = "prep" | "service" | "summary";
@@ -249,6 +250,8 @@ export interface Service {
   tray?: DrinkId[];
   /** How far the barman is with the drink he is pouring (seconds). */
   barmanSeconds?: number;
+  /** Seconds since the waiter last took a pizza to its table. */
+  waiterSeconds?: number;
   /** The clock is stopped: nobody waits, nothing bakes, nobody comes in. */
   paused?: boolean;
   /** Seconds since the restaurant opened. */
@@ -398,6 +401,8 @@ export interface DaySummary {
   inspectionPassed?: boolean;
   /** Fridge breakdown day: what spoiled at closing. */
   spoiled?: { id: IngredientId; portions: number };
+  /** The flawless staff's share of the evening's tips (counted in the charges). */
+  tipCut?: number;
   /** Tonight's goal, as it ended. */
   tonightGoal?: TonightGoal;
   /** A mystery guest's evening: who it was and their stars, or null if they never came in. */
@@ -679,7 +684,12 @@ export interface GameState {
   /** Postcards received (game/postcards.ts), with the day each came. */
   postcards: Partial<Record<PostcardId, number>>;
   /** The kitchen help, once hired (game/commis.ts). */
-  commis?: { name: string; fatigue: number; offDay?: number };
+  commis?: { name: string; fatigue: number; offDay?: number; /** The day they were hired (older saves: long ago). */ hiredDay?: number };
+  /** The barman (bar level 3) and the waiter, once hired (game/staff.ts). */
+  barman?: { name: string; hiredDay?: number };
+  waiter?: { name: string; hiredDay?: number };
+  /** This week's candidates for each post (game/staff.ts). */
+  staffCandidates?: { week: number; names: Record<StaffRole, string[]> };
   /** Portions of each ingredient bought at the market, ever: loyal suppliers (game/loyalty.ts). */
   bought?: Partial<Record<IngredientId, number>>;
   /** The neighbourhood gazette's issues, latest last (game/gazette.ts). */
@@ -739,6 +749,8 @@ export type GameAction =
   | { type: "trashUnwantedPizzas" }
   | { type: "offerSlice"; pizzaId: string }
   | { type: "toggleCommisOff" }
+  | { type: "hireStaff"; role: StaffRole; name: string }
+  | { type: "fireStaff"; role: StaffRole }
   | { type: "setDifficulty"; difficulty: Difficulty }
   | { type: "receiveTrap"; from: string }
   // Shop

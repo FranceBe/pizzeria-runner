@@ -1,9 +1,10 @@
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
-import { BAKE_SECONDS, BARMAN_LEVEL, EXTRA_OVEN_KEYS, OVEN_SLOTS, WOOD_FIRED_STAGE } from "../data/progression";
+import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS, WOOD_FIRED_STAGE } from "../data/progression";
 import { BATCH_ID, batchItemFor } from "./batch";
 import { marketPrice } from "./events";
 import { haveSameIngredients } from "./pizza";
+import { barmanProfile } from "./staff";
 import type { Customer, GameState, Service } from "./types";
 
 // Orders open at once; a bigger room and a terrace fit one more each.
@@ -56,7 +57,7 @@ const pizzasIn = (service: Service, ovenIndex: number): number =>
 // misses something the fridge doesn't have and the till can't pay for. The service screen then offers a way out.
 // With the barman hired, the customer whose drink he is pouring: the first one still waiting for a drink.
 export const barmanTarget = (state: GameState, service: Service): Customer | undefined =>
-  state.upgrades.bar >= BARMAN_LEVEL && !service.challenge
+  barmanProfile(state) && !service.challenge
     ? service.customers.find((customer) => customer.drink && !customer.drinkServed)
     : undefined;
 

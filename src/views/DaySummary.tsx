@@ -207,7 +207,12 @@ export const DaySummary = ({ summary, pizzeriaName, shownEventId, onNextDay }: D
               </div>
             ))}
             {moneyOut.map(([label, amount]) => (
-              <ReceiptLine key={label} className="out" label={label} value={signed(-amount)} />
+              <div key={label}>
+                <ReceiptLine className="out" label={label} value={signed(-amount)} />
+                {label === t("summary.charges") && Boolean(summary.tipCut) && (
+                  <ReceiptLine className="sub" label={`💸 ${t("summary.tipCut")}`} value={t.money(summary.tipCut ?? 0)} />
+                )}
+              </div>
             ))}
             <div className="receipt-rule thin" />
             <ReceiptLine className={`receipt-total ${isProfit ? "pos" : "neg"}`} label={t("summary.profit")} value={`${isProfit ? "+" : ""}${t.money(summary.net)}`} />

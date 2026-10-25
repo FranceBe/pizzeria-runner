@@ -7,6 +7,7 @@ import { COMMIS_NAMES, EXHAUSTED_FROM, NIGHTLY_REST, TIRED_FROM, commisLevel, co
 import { hydrateState } from "./state";
 import { INGREDIENTS_BY_ID } from "../data/ingredients";
 import { UPGRADES } from "../data/progression";
+import { wageOf } from "../data/staff";
 import type { GameState } from "./types";
 
 afterEach(() => vi.restoreAllMocks());
@@ -54,13 +55,14 @@ describe("loyal suppliers", () => {
 
 describe("the commis", () => {
   const withCommis = (fatigue: number, overrides: Partial<GameState> = {}): GameState =>
-    makeState({ upgrades: { ...makeState().upgrades, commis: 2 }, commis: { name: "Sasha", fatigue }, ...overrides });
+    // Charlie: the commis with no particular ways (data/staff.ts), so the figures are the post's own.
+    makeState({ upgrades: { ...makeState().upgrades, commis: 2 }, commis: { name: "Charlie", fatigue }, ...overrides });
 
   it("is hired with a name when the upgrade is bought", () => {
     const state = makeState({ money: 1000, xp: 5000 });
     const hired = play(state, { type: "buyUpgrade", upgradeKey: "commis" });
     expect(COMMIS_NAMES).toContain(hired.commis?.name);
-    expect(hired.toasts.map((toast) => toast.key)).toContain("commisHired");
+    expect(hired.toasts.map((toast) => toast.key)).toContain("staffHired");
     // Sold back and bought again: the same person comes back.
     const back = play(hired, { type: "sellUpgrade", upgradeKey: "commis" }, { type: "buyUpgrade", upgradeKey: "commis" });
     expect(back.commis?.name).toBe(hired.commis?.name);
@@ -116,7 +118,8 @@ describe("the commis", () => {
     const state = withCommis(80);
     const full = dailyCharges(state);
     const off = play(state, { type: "toggleCommisOff" });
-    expect(dailyCharges(off)).toBe(full - UPGRADES.commis.dailyCharge * 2);
+    // Neither the post's upkeep nor Charlie's wage.
+    expect(dailyCharges(off)).toBe(full - UPGRADES.commis.dailyCharge * 2 - wageOf("commis", "Charlie"));
     const inService = stateInService([makeCustomer()], withCommis(80));
     expect(play(inService, { type: "toggleCommisOff" }).commis?.offDay).toBeUndefined();
   });

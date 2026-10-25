@@ -1,5 +1,6 @@
 import { OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor } from "../data/progression";
 import { plural } from "../utils/format";
+import type { StaffRole } from "../data/staff";
 import type { Dictionary, TranslationHelpers } from "./types";
 
 const lower = (text: string): string => text.toLowerCase();
@@ -10,6 +11,9 @@ const ovenStage = (stage: number, t: TranslationHelpers): string =>
   (stage >= WOOD_FIRED_STAGE ? " · wood-fired: better pizzas, more tips and reputation" : "");
 
 // Same shape as the French reference (src/i18n/fr.ts); entry functions get their param types from it.
+
+// Where someone works, said of the post rather than the person.
+const STAFF_PLACE_EN: Record<StaffRole, string> = { commis: "in the kitchen", barman: "at the bar", waiter: "on the floor" };
 export const en: Dictionary = {
   crash: {
     title: "Oops, the kitchen caught fire",
@@ -556,6 +560,10 @@ export const en: Dictionary = {
           "A barman serves the drinks on his own, one at a time",
         ][level],
     },
+    waiter: {
+      name: "Floor staff",
+      describe: ({ level }) => ["You serve every pizza yourself", "Someone on the floor serves a ready pizza every 8 s", "Someone on the floor serves a ready pizza every 5 s"][level],
+    },
     oven2: {
       name: "Second oven",
       describe: ({ level }, t) => (level === 0 ? "Not built yet" : ovenStage(level - 1, t)),
@@ -564,7 +572,6 @@ export const en: Dictionary = {
       name: "Second address",
       describe: ({ level }, t) => (level === 0 ? "A single pizzeria" : `Brings in ${t.money(ANNEXE_INCOME[level])} every evening`),
     },
-    commisStatus: ({ name, fatigue }) => `${name} · fatigue ${fatigue}%`,
     looks: "Make it yours",
     looksIntro: "Just for the eyes: it changes nothing in the game.",
     choose: "Choose",
@@ -575,6 +582,42 @@ export const en: Dictionary = {
     signs: { classic: "Painted", neon: "Neon", gold: "Gold leaf", star: "Starry" },
     walls: { mint: "Mint tiles", terracotta: "Terracotta", azulejo: "Azulejos", checker: "Checkerboard", night: "Starry night" },
     starsNeeded: "⭐ {count} stars",
+  },
+
+  staff: {
+    title: "Staff",
+    intro: "An upgrade opens a post, someone fills it. Every Monday, new candidates come along: whoever works there stays until you replace them. Hiring and parting ways happen in the morning.",
+    roles: { commis: "In the kitchen", barman: "At the bar", waiter: "On the floor" },
+    inPost: "At work",
+    vacant: "Nobody in this post for now.",
+    candidates: "This week's candidates",
+    noCandidates: "No other candidate this week.",
+    hire: "Hire",
+    replace: "Replace",
+    fire: "Part ways",
+    morningOnly: "Hiring and parting ways happen in the morning, before opening.",
+    wage: ({ amount }, t) => (amount === 0 ? "Costs nothing in charges" : `Costs ${t.money(amount)} in charges an evening`),
+    fatigue: ({ fatigue }) => `Fatigue: ${fatigue}%`,
+    traits: {
+      tiresFast: "Tires quickly",
+      tiresSlowly: "Tires slowly",
+      tireless: "Hardly ever tires",
+      forgets: "Sometimes forgets the dough",
+      chats: "Chats with the queue: customers wait more patiently",
+      keepsWarm: "Keeps the pizzas warm on the pass",
+      apprentice: ({ days }) => `Learning: helps as if a level lower for the first ${days} days`,
+      learning: ({ days }) => `${days} more ${plural(days, "day")} of learning`,
+      steady: "Does the job, no surprises",
+      keepsTips: ({ share }) => `💸 Keeps ${share}% of the evening's tips`,
+      pours: ({ seconds }) => `Pours a drink every ${seconds} s`,
+      mistakes: "Pours the wrong drink now and then",
+      charm: ({ amount }, t) => `Makes people smile: +${t.money(amount)} in tips each time`,
+      fast: "Quick on the floor",
+      slow: "Takes their time on the floor",
+    },
+    vacantTitle: ({ role }) => `Nobody ${STAFF_PLACE_EN[role]}`,
+    vacantText: "A post is waiting for someone: hire among this week's candidates.",
+    seeStaff: "See the staff",
   },
 
   settings: {
@@ -633,6 +676,7 @@ export const en: Dictionary = {
     tips: "Tips",
     purchases: "Purchases (market, upgrades)",
     charges: "Charges (rent, oven, staff)",
+    tipCut: "of which tips kept by the staff",
     waste: "Ingredients binned",
     reputation: "Reputation earned",
     debt: "Still owed",
@@ -1039,7 +1083,8 @@ export const en: Dictionary = {
     specialWeek: ({ recipeId, recipeName, served }, t) =>
       `★ Special of the week: ${t.recipe({ id: recipeId, name: recipeName })}, ${served} served. Time to pick the next one!`,
     trapReceived: "🪤 {name} sends you a tricky customer: read their order carefully!",
-    commisHired: "👋 {name} joins your kitchen as commis!",
+    staffHired: ({ name, role }) => `👋 ${name} joins the team ${STAFF_PLACE_EN[role]}!`,
+    staffQuit: ({ name, role }) => `📭 ${name} has handed in their notice. Someone is needed ${STAFF_PLACE_EN[role]}: have a look at the staff.`,
     loyaltyTier: ({ ingredientId, discount }, t) => `🤝 Your ${t.ingredient(ingredientId)} supplier now gives you ${discount}% off: thanks for your loyalty!`,
     loyaltyGifts: ({ ingredientIds, portions }, t) => `🎁 Your loyal suppliers send ${portions} free portions: ${t.ingredientList(ingredientIds)}.`,
     gazetteOut: "📰 The Neighbourhood Gazette is out: it's waiting in today's list.",

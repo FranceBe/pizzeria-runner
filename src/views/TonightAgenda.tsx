@@ -19,6 +19,7 @@ import { shownEvent } from "../game/service";
 import { isThemeNight, THEME_MENU_TARGET, themeOnMenu } from "../game/themes";
 import type { Dispatch, GameState } from "../game/types";
 import { commisMood } from "../game/commis";
+import { vacantPosts } from "../game/staff";
 import { useTranslation } from "../i18n/I18nContext";
 import { QuestDetails, batchItemsText, questText } from "./QuestCard";
 import { EVENT_ICONS } from "./eventIcons";
@@ -47,7 +48,14 @@ interface AgendaItem {
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
-export const TonightAgenda = ({ state, dispatch, onOpenAlbum }: { state: GameState; dispatch: Dispatch; onOpenAlbum?: () => void }) => {
+interface TonightAgendaProps {
+  state: GameState;
+  dispatch: Dispatch;
+  onOpenAlbum?: () => void;
+  onOpenStaff?: () => void;
+}
+
+export const TonightAgenda = ({ state, dispatch, onOpenAlbum, onOpenStaff }: TonightAgendaProps) => {
   const t = useTranslation();
   const [isReading, setIsReading] = useState(false);
   const items: AgendaItem[] = [];
@@ -68,6 +76,17 @@ export const TonightAgenda = ({ state, dispatch, onOpenAlbum }: { state: GameSta
       ),
     });
   }
+  // A post nobody fills (someone let go, or gone in hardcore): said each morning until someone is hired.
+  vacantPosts(state).forEach((role) => {
+    items.push({
+      id: `vacant-${role}`,
+      icon: "🪧",
+      title: t("staff.vacantTitle", { role }),
+      text: t("staff.vacantText"),
+      tone: "ag-commis",
+      more: onOpenStaff ? <button className="btn sm" onClick={onOpenStaff}>{t("staff.seeStaff")}</button> : undefined,
+    });
+  });
   // The week's gazette, the morning it comes out.
   const gazette = todaysGazette(state);
   if (gazette) {

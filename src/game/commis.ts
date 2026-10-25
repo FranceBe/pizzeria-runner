@@ -1,11 +1,13 @@
 // The kitchen help (the commis upgrade) is a person: a name from the day they are hired, and a fatigue that grows with
 // busy evenings (more with the rush) and eases a little every night. Tired, they help as if a level lower; exhausted,
 // not at all. An evening off, given in the morning, rests them fully: no help that evening, and no wage either.
-import { hashString, pickRandom } from "../utils/random";
-import { pushToast } from "./toasts";
+// Who they are, and how they work, is in game/staff.ts.
+import { STAFF_NAMES } from "../data/staff";
+import { hashString } from "../utils/random";
+import { commisProfile, isLearning } from "./staff";
 import type { GameState, Service } from "./types";
 
-export const COMMIS_NAMES = ["Sasha", "Andrea", "Noa", "Alex", "Camille", "Lou", "Sam", "Eden", "Charlie", "Robin", "Yuki", "Ilian"];
+export const COMMIS_NAMES = STAFF_NAMES.commis;
 // Fatigue, from 0 to MAX_FATIGUE: each pizza served adds this much (twice during a rush), each night takes this off.
 export const MAX_FATIGUE = 100;
 const FATIGUE_PER_PIZZA = 1;
@@ -25,22 +27,17 @@ export const commisMood = (state: GameState): CommisMood | null => {
   return "fresh";
 };
 
-/** The help the commis gives tonight: their upgrade's level, one less when tired, none when exhausted or off. */
+/** The help the commis gives tonight: their upgrade's level, one less when tired or still learning, none when
+ * exhausted or off. */
 export const commisLevel = (state: GameState): number => {
   const mood = commisMood(state);
-  if (mood === "off" || mood === "exhausted") return 0;
-  return Math.max(0, state.upgrades.commis - (mood === "tired" ? 1 : 0));
+  // Nobody at the post (let go, gone in hardcore), off, or exhausted: no help.
+  if (mood === null || mood === "off" || mood === "exhausted") return 0;
+  return Math.max(0, state.upgrades.commis - (mood === "tired" ? 1 : 0) - (isLearning(state) ? 1 : 0));
 };
 
 /** Off tonight: their share of the evening's charges isn't paid. */
 export const isCommisOff = (state: GameState): boolean => commisMood(state) === "off";
-
-// Hired with the first level of the upgrade: they get a name, and the kitchen is told. Mutates state.
-export const hireCommis = (state: GameState): void => {
-  if (!state.upgrades.commis || state.commis) return;
-  state.commis = { name: pickRandom(COMMIS_NAMES), fatigue: 0 };
-  pushToast(state, { key: "commisHired", params: { name: state.commis.name } }, "gold");
-};
 
 // One already there in an older save: named after the pizzeria (so loading it twice names them the same). Mutates state.
 export const nameOldCommis = (state: GameState): void => {
@@ -61,7 +58,8 @@ export const tireCommis = (state: GameState, service: Service): void => {
     state.commis.fatigue = 0;
     return;
   }
-  const work = (service.stats.served + (service.stats.rushServed ?? 0)) * FATIGUE_PER_PIZZA;
+  // Some tire faster than others (data/staff.ts).
+  const work = (service.stats.served + (service.stats.rushServed ?? 0)) * FATIGUE_PER_PIZZA * (commisProfile(state)?.fatigue ?? 1);
   state.commis.fatigue = Math.min(MAX_FATIGUE, state.commis.fatigue + work);
 };
 

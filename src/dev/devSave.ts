@@ -7,6 +7,7 @@ import { createInitialState } from "../game/state";
 import { SEASON_DAYS } from "../data/seasons";
 import { STORIES, type StoryId } from "../data/stories";
 import { rollLooks } from "../game/looks";
+import { fillOpenPosts } from "../game/staff";
 import type { CustomerBookEntry, GameState, Gazette, GazetteHeadline } from "../game/types";
 
 export interface DevSetup {
@@ -66,6 +67,7 @@ export const buildDevGame = (setup: DevSetup, current: GameState): GameState => 
   state.mammaSecret = setup.mammaSecret;
   state.mammaStock = setup.mammaSecret ? 6 : 0;
   discoverClassics(state);
+  fillOpenPosts(state, { silent: true });
   if (setup.stories) addStoryRegulars(state);
   if (setup.gazettes) addGazettes(state);
   state.toasts = [];

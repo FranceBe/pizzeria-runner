@@ -16,6 +16,8 @@ export const lateGame = (): GameState => {
   state.secretIngredient = true;
   state.secretStock = 5;
   state.commis = { name: "Sasha", fatigue: 0 };
+  state.barman = { name: "Lior" };
+  state.waiter = { name: "Ari" };
   return state;
 };
 

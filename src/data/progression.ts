@@ -17,7 +17,7 @@ export const BASE_DAILY_CHARGES = 6;
 
 // The keys are stored in save files: never rename them. Names and descriptions live in src/i18n.
 export const UPGRADE_KEYS = [
-  "oven", "salle", "deco", "commis", "drawer", "terrasse", "livraison", "bar", "oven2", "annexe",
+  "oven", "salle", "deco", "commis", "drawer", "terrasse", "livraison", "bar", "waiter", "oven2", "annexe",
 ] as const;
 export type UpgradeKey = (typeof UPGRADE_KEYS)[number];
 
@@ -36,12 +36,15 @@ export const UPGRADES: Record<UpgradeKey, Upgrade> = {
   oven: { costs: [70, 180, 400], requiredLevel: [2, 4, 6], dailyCharge: 2 },
   salle: { costs: [50, 130, 280, 550], requiredLevel: [1, 3, 5, 7], dailyCharge: 3 },
   deco: { costs: [40, 120, 300], requiredLevel: [2, 4, 6], dailyCharge: 2 },
-  commis: { costs: [150, 350, 600], requiredLevel: [3, 6, 8], dailyCharge: 4 },
+  // The post's own upkeep; whoever fills it is paid on top (data/staff.ts).
+  commis: { costs: [150, 350, 600], requiredLevel: [3, 6, 8], dailyCharge: 2 },
   // Tidy prep line: the pans tonight's menu doesn't use go in a drawer. A comfort, so no evening charges.
   drawer: { costs: [150], requiredLevel: [4], dailyCharge: 0, isComfort: true },
   terrasse: { costs: [120, 320], requiredLevel: [4, 7], dailyCharge: 3 },
   livraison: { costs: [220], requiredLevel: [5], dailyCharge: 4 },
   bar: { costs: [90, 240, 350], requiredLevel: [3, 5, 7], dailyCharge: 2 },
+  // A waiter takes ready pizzas to the tables on their own (see data/staff.ts), faster at the second level.
+  waiter: { costs: [400, 800], requiredLevel: [7, 9], dailyCharge: 1 },
   // Extra ovens: building one gives a single slow slot, then it improves like the first oven.
   oven2: { costs: [450, 250, 500, 900], requiredLevel: [7, 7, 8, 9], dailyCharge: 3 },
   // A second address: brings in money every evening, run by someone else.
@@ -90,9 +93,8 @@ export const UPGRADE_RESALE_SHARE = 0.75;
 // From level 2, the pans the selected order doesn't need fade a little, then more at level 3.
 export const COMMIS_FADES_PANS = 2;
 
-// Bar level that hires a barman: drinks go out on their own, one at a time, this many seconds each.
+// Bar level that opens the barman's post: drinks go out on their own, one at a time (each barman's pace: data/staff.ts).
 export const BARMAN_LEVEL = 3;
-export const BARMAN_SECONDS = 6;
 
 export const tipChanceForDecor = (decorLevel: number): number => {
   return 0.3 + 0.12 * decorLevel;

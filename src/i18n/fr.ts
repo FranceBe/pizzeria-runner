@@ -14,6 +14,7 @@ import {
 } from "../data/progression";
 import type { ClassicRecipeId, Pairing } from "../data/recipes";
 import { plural } from "../utils/format";
+import type { StaffRole } from "../data/staff";
 import type { TranslationHelpers as H } from "./types";
 
 const lower = (text: string): string => text.toLowerCase();
@@ -24,6 +25,9 @@ const ovenStage = (stage: number, t: H): string =>
   (stage >= WOOD_FIRED_STAGE ? " · au feu de bois : meilleures pizzas, plus de pourboires et de réputation" : "");
 
 // The reference dictionary: its keys, literal strings and function signatures type every translation (see types.ts).
+
+// Where someone works, said of the post rather than the person.
+const STAFF_PLACE_FR: Record<StaffRole, string> = { commis: "en cuisine", barman: "au bar", waiter: "en salle" };
 export const fr = {
   crash: {
     title: "Oups, la cuisine a pris feu",
@@ -583,6 +587,11 @@ export const fr = {
           "Un barman sert les boissons tout seul, une à la fois",
         ][level],
     },
+    waiter: {
+      name: "Service en salle",
+      describe: ({ level }: { level: number }) =>
+        ["Tu sers toi-même chaque pizza", "Quelqu'un en salle sert une pizza prête toutes les 8 s", "Quelqu'un en salle sert une pizza prête toutes les 5 s"][level],
+    },
     oven2: {
       name: "Deuxième four",
       describe: ({ level }: { level: number }, t: H): string => (level === 0 ? "Pas encore construit" : ovenStage(level - 1, t)),
@@ -592,7 +601,6 @@ export const fr = {
       describe: ({ level }: { level: number }, t: H): string =>
         level === 0 ? "Une seule pizzeria" : `Rapporte ${t.money(ANNEXE_INCOME[level])} chaque soir`,
     },
-    commisStatus: ({ name, fatigue }: { name: string; fatigue: number }) => `${name} · fatigue ${fatigue} %`,
     looks: "La pizzeria à ton goût",
     looksIntro: "Pour le plaisir des yeux : ça ne change rien au jeu.",
     choose: "Choisir",
@@ -603,6 +611,42 @@ export const fr = {
     signs: { classic: "Peinte", neon: "Néon", gold: "Dorée à la feuille", star: "Étoilée" },
     walls: { mint: "Carreaux menthe", terracotta: "Terre cuite", azulejo: "Azulejos", checker: "Damier", night: "Nuit étoilée" },
     starsNeeded: "⭐ {count} étoiles",
+  },
+
+  staff: {
+    title: "Personnel",
+    intro: "Une amélioration ouvre un poste, quelqu'un l'occupe. Chaque lundi, de nouveaux candidats se présentent : la personne en poste reste tant que tu ne la remplaces pas. On embauche et on se sépare le matin.",
+    roles: { commis: "En cuisine", barman: "Au bar", waiter: "En salle" },
+    inPost: "En poste",
+    vacant: "Personne à ce poste pour l'instant.",
+    candidates: "Candidats de la semaine",
+    noCandidates: "Pas d'autre candidat cette semaine.",
+    hire: "Embaucher",
+    replace: "Remplacer",
+    fire: "Se séparer",
+    morningOnly: "On embauche et on se sépare le matin, avant d'ouvrir.",
+    wage: ({ amount }: { amount: number }, t: H) => (amount === 0 ? "Ne coûte rien en frais" : `Coûte ${t.money(amount)} de frais par soir`),
+    fatigue: ({ fatigue }: { fatigue: number }) => `Fatigue : ${fatigue} %`,
+    traits: {
+      tiresFast: "Se fatigue vite",
+      tiresSlowly: "Se fatigue lentement",
+      tireless: "Ne se fatigue presque jamais",
+      forgets: "Oublie parfois la pâte",
+      chats: "Discute avec la file : les clients patientent mieux",
+      keepsWarm: "Garde les pizzas au chaud sur la passe",
+      apprentice: ({ days }: { days: number }) => `En apprentissage : aide comme un niveau en dessous les ${days} premiers jours`,
+      learning: ({ days }: { days: number }) => `Encore ${days} ${plural(days, "jour")} d'apprentissage`,
+      steady: "Fait le travail, sans surprise",
+      keepsTips: ({ share }: { share: number }) => `💸 Garde ${share} % des pourboires de la soirée`,
+      pours: ({ seconds }: { seconds: number }) => `Sert un verre toutes les ${seconds} s`,
+      mistakes: "Se trompe de verre de temps en temps",
+      charm: ({ amount }: { amount: number }, t: H) => `Fait sourire : +${t.money(amount)} de pourboire à chaque service`,
+      fast: "Rapide en salle",
+      slow: "Prend son temps en salle",
+    },
+    vacantTitle: ({ role }: { role: StaffRole }) => `Personne ${STAFF_PLACE_FR[role]}`,
+    vacantText: "Un poste attend quelqu'un : embauche parmi les candidats de la semaine.",
+    seeStaff: "Voir le personnel",
   },
 
   settings: {
@@ -662,6 +706,7 @@ export const fr = {
     tips: "Pourboires",
     purchases: "Achats (marché, travaux)",
     charges: "Charges (loyer, four, personnel)",
+    tipCut: "dont part des pourboires gardée par le personnel",
     waste: "Ingrédients jetés",
     reputation: "Réputation gagnée",
     debt: "Ardoise restante",
@@ -1092,7 +1137,9 @@ export const fr = {
     specialWeek: ({ recipeId, recipeName, served }: { recipeId: string; recipeName: string | null; served: number }, t: H) =>
       `★ Spéciale de la semaine : ${t.recipe({ id: recipeId, name: recipeName })}, ${served} ${plural(served, "servie")}. À toi de choisir la prochaine !`,
     trapReceived: "🪤 {name} t'envoie un client difficile : lis bien sa commande !",
-    commisHired: "👋 {name} rejoint ta cuisine comme commis !",
+    staffHired: ({ name, role }: { name: string; role: StaffRole }) => `👋 ${name} rejoint l'équipe ${STAFF_PLACE_FR[role]} !`,
+    staffQuit: ({ name, role }: { name: string; role: StaffRole }) =>
+      `📭 ${name} a donné sa démission. Il faut quelqu'un ${STAFF_PLACE_FR[role]} : passe voir le personnel.`,
     loyaltyTier: ({ ingredientId, discount }: { ingredientId: IngredientId; discount: number }, t: H) =>
       `🤝 Le fournisseur de ${t.ingredient(ingredientId)} te fait désormais −${discount} % : merci pour ta fidélité !`,
     loyaltyGifts: ({ ingredientIds, portions }: { ingredientIds: readonly IngredientId[]; portions: number }, t: H) =>

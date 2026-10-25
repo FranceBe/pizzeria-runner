@@ -1,4 +1,5 @@
 import { OVEN_SLOTS, BAKE_SECONDS, WOOD_FIRED_STAGE, ANNEXE_INCOME, TERRACE_CUSTOMERS, TERRACE_SUNNY_CUSTOMERS, tipChanceForDecor } from "../data/progression";
+import type { StaffRole } from "../data/staff";
 import type { Dictionary, TranslationHelpers } from "./types";
 
 // An oven at a stage of its upgrades (see data/progression.ts).
@@ -7,6 +8,9 @@ const ovenStage = (stage: number, t: TranslationHelpers): string =>
 
 // Simplified Chinese, a trial (see README, "Languages"). Same shape as the French reference (src/i18n/fr.ts).
 // People are named or spoken of without he/she, as in the other languages.
+
+// Where someone works, said of the post rather than the person.
+const STAFF_PLACE_ZH: Record<StaffRole, string> = { commis: "厨房", barman: "吧台", waiter: "大厅" };
 export const zh: Dictionary = {
   crash: {
     title: "哎呀，厨房着火了",
@@ -536,6 +540,10 @@ export const zh: Dictionary = {
       name: "吧台",
       describe: ({ level }) => ["没有饮料", "柠檬水和气泡水", "柠檬水、气泡水、基诺托汽水和红酒", "调酒师自己上饮料，一次一杯"][level],
     },
+    waiter: {
+      name: "大厅服务",
+      describe: ({ level }) => ["每个披萨都由你自己端", "有人在大厅每 8 秒端出一个做好的披萨", "有人在大厅每 5 秒端出一个做好的披萨"][level],
+    },
     oven2: {
       name: "第二个烤炉",
       describe: ({ level }, t) => (level === 0 ? "还没建" : ovenStage(level - 1, t)),
@@ -544,7 +552,6 @@ export const zh: Dictionary = {
       name: "第二家分店",
       describe: ({ level }, t) => (level === 0 ? "只有一家店" : `每晚带来 ${t.money(ANNEXE_INCOME[level])}`),
     },
-    commisStatus: ({ name, fatigue }) => `${name} · 疲劳 ${fatigue}%`,
     looks: "打造你的风格",
     looksIntro: "只是好看：对游戏没有任何影响。",
     choose: "选择",
@@ -555,6 +562,42 @@ export const zh: Dictionary = {
     signs: { classic: "手绘", neon: "霓虹灯", gold: "金箔", star: "星光" },
     walls: { mint: "薄荷色瓷砖", terracotta: "陶土色", azulejo: "葡式花砖", checker: "棋盘格", night: "星空" },
     starsNeeded: "⭐ {count} 颗星",
+  },
+
+  staff: {
+    title: "员工",
+    intro: "一项升级开放一个岗位，由一个人来做。每周一会有新的应聘者：在岗的人会一直留下，除非你换掉。招人和辞退都在早上进行。",
+    roles: { commis: "厨房", barman: "吧台", waiter: "大厅" },
+    inPost: "在岗",
+    vacant: "这个岗位暂时没人。",
+    candidates: "本周应聘者",
+    noCandidates: "本周没有其他应聘者。",
+    hire: "招聘",
+    replace: "替换",
+    fire: "辞退",
+    morningOnly: "招人和辞退都在早上开店前进行。",
+    wage: ({ amount }, t) => (amount === 0 ? "不需要任何开销" : `每晚开销 ${t.money(amount)}`),
+    fatigue: ({ fatigue }) => `疲劳：${fatigue}%`,
+    traits: {
+      tiresFast: "容易累",
+      tiresSlowly: "不太容易累",
+      tireless: "几乎不会累",
+      forgets: "有时会忘记擀面团",
+      chats: "会和排队的客人聊天：客人更有耐心",
+      keepsWarm: "让出餐台上的披萨保温更久",
+      apprentice: ({ days }) => `学徒：前 ${days} 天帮忙时像低一级`,
+      learning: ({ days }) => `还要学习 ${days} 天`,
+      steady: "踏实干活，没有意外",
+      keepsTips: ({ share }) => `💸 拿走当晚 ${share}% 的小费`,
+      pours: ({ seconds }) => `每 ${seconds} 秒倒一杯`,
+      mistakes: "偶尔会倒错饮料",
+      charm: ({ amount }, t) => `让人开心：每次多 ${t.money(amount)} 小费`,
+      fast: "在大厅动作很快",
+      slow: "在大厅不紧不慢",
+    },
+    vacantTitle: ({ role }) => `${STAFF_PLACE_ZH[role]}没有人`,
+    vacantText: "有个岗位在等人：从本周的应聘者里招一个吧。",
+    seeStaff: "查看员工",
   },
 
   settings: {
@@ -613,6 +656,7 @@ export const zh: Dictionary = {
     tips: "小费",
     purchases: "采购（市场、升级）",
     charges: "开销（房租、烤炉、员工）",
+    tipCut: "其中员工拿走的小费",
     waste: "扔掉的食材",
     reputation: "获得的声望",
     debt: "仍欠",
@@ -968,7 +1012,8 @@ export const zh: Dictionary = {
     familyDisappointed: "👵 奶奶的家人觉得等得有点久。奶奶会听说的……",
     specialWeek: ({ recipeId, recipeName, served }, t) => `★ 本周特选：${t.recipe({ id: recipeId, name: recipeName })}，上了 ${served} 个。来选下一个吧！`,
     trapReceived: "🪤 {name} 给你送来一位难缠的客人：仔细看订单！",
-    commisHired: "👋 {name} 加入你的厨房，当你的助手！",
+    staffHired: ({ name, role }) => `👋 ${name} 加入了团队，负责${STAFF_PLACE_ZH[role]}！`,
+    staffQuit: ({ name, role }) => `📭 ${name} 辞职了。${STAFF_PLACE_ZH[role]}需要人手：去看看员工吧。`,
     loyaltyTier: ({ ingredientId, discount }, t) => `🤝 ${t.ingredient(ingredientId)}的供应商现在给你打 ${discount}% 的折扣：谢谢你的长期光顾！`,
     loyaltyGifts: ({ ingredientIds, portions }, t) => `🎁 忠实的供应商们各送你 ${portions} 份：${t.ingredientList(ingredientIds)}。`,
     gazetteOut: "📰 街坊小报出刊了：在今晚安排里等你。",
