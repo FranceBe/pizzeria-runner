@@ -300,12 +300,15 @@ a result to paste to friends.
   own volume and mute button in Settings; the music softens during a pause. Sound starts with the first tap or click,
   as browsers require. Where it all comes from: [CREDITS.md](CREDITS.md).
 - Light or dark theme, larger text, and a shareable image of the day's receipt (Settings, receipt).
-- **Your way of playing** (Settings, `src/game/playOptions.ts`): everything is on by default, and a player who wants a
-  calmer game switches off what puts on the pressure: the rush, group orders, "the usual" (regulars then say their
-  pizza), special requests, neighbourhood quests, the competitor, and day events, by family (weather and market,
-  incidents, special evenings) or one by one. A "calm mode" switches it all off at once. Switched off in the morning,
-  today's plans lose it at once (the wedding with its banquet, a competitor settling in quietly); during service, from
-  the next day. Some achievements need these moments, and wait for them to be switched back on.
+- **Difficulty** (Settings, `src/game/playOptions.ts`), normal by default:
+  - **Gentle**: only the kind events (a market, sunshine, rain), about one day in three; no rush, group orders or
+    competitor, no "usual" nor special requests; two things out of the ordinary a day at most;
+  - **Easy**: an event about one day in three, incidents a third as likely, special evenings a little rarer;
+  - **Normal**: an event about one day in two, three things out of the ordinary a day at most;
+  - **Hard**: an event most days (80%), incidents twice as likely, up to four things a day;
+  - **Hardcore**: an event every day, incidents three times as likely, no limit to what a day holds.
+  Changed in the morning, today's plans follow at once (a day event the level doesn't have goes, the wedding with its
+  banquet, a competitor settling in quietly); during service, from the next day. In Gentle, some achievements wait.
 - The game installs as an app and plays offline.
 - **Tonight's messages, in full**: a phone cuts long messages short in the message line. Tapping it opens the
   evening's last 30 messages, newest first, in full (a tap anywhere else closes them); its × dismisses the message.

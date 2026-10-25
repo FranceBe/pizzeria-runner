@@ -1,12 +1,12 @@
 // How much is going on today. Besides tonight's goal and rush (most evenings have them) and a real-calendar festival,
-// a day holds at most MAX_HAPPENINGS things out of the ordinary: the day's event, the competitor across the street, a
-// regular's story chapter, a birthday, a running quest. Once it is full, nothing new starts that day.
+// a day holds a few things out of the ordinary at most (three in normal; see game/playOptions.ts): the day's event, the
+// competitor across the street, a regular's story chapter, a birthday, a running quest. Once it is full, nothing new
+// starts that day.
 import { competitorDay } from "./competitor";
 import { birthdaysToday } from "./regulars";
 import { storyGuestsToday } from "./stories";
+import { maxHappenings } from "./playOptions";
 import type { GameState } from "./types";
-
-export const MAX_HAPPENINGS = 3;
 
 export const happeningsToday = (state: GameState): number =>
   [
@@ -18,4 +18,4 @@ export const happeningsToday = (state: GameState): number =>
     state.quest !== null && state.quest.giver !== "wedding",
   ].filter(Boolean).length;
 
-export const isDayFull = (state: GameState): boolean => happeningsToday(state) >= MAX_HAPPENINGS;
+export const isDayFull = (state: GameState): boolean => happeningsToday(state) >= maxHappenings(state);

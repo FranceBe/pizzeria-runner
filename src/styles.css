@@ -1556,10 +1556,7 @@ button.ticker-x { flex: none; padding: 0 0 0 8px; border: 0; background: none; c
 .story-previously { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 .story-previously ol { margin: 0; padding-left: 18px; }
 
-/* Settings, "your way of playing": the switches, a family of events at a time or one by one. */
+/* Settings, difficulty: five levels side by side (wrapping on a phone), the chosen one explained. */
 .play-options { display: flex; flex-direction: column; gap: 8px; }
-.play-options .binlabel { margin: 6px 0 0; }
-.play-options .switch input { flex: none; }
-.play-calm { margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--basil-soft); color: var(--basil); font-weight: 700; font-size: 13.5px; }
-.play-events > summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--muted); }
-.play-events-group { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 0 4px; }
+.difficulty-levels { display: flex; flex-wrap: wrap; gap: 6px; }
+.difficulty-describe { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--surface2); font-size: 13.5px; line-height: 1.4; text-wrap: pretty; }

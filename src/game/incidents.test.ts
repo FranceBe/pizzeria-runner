@@ -3,7 +3,10 @@ import { makeState, play, stateInService, makeCustomer, makeBookEntry, serviceOf
 import { createCustomer, orderWeight } from "./customers";
 import { forecastCustomers } from "./economy";
 import { canHappen } from "./events";
-import { happeningsToday, isDayFull, MAX_HAPPENINGS } from "./dayLoad";
+import { happeningsToday, isDayFull } from "./dayLoad";
+
+// In normal difficulty, the default.
+const MAX_HAPPENINGS = 3;
 import { drinkChance, pickSpoilingIngredient } from "./incidents";
 import { familyMenu } from "./family";
 import { DRINK_CHANCE } from "../data/drinks";

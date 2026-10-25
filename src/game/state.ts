@@ -1,6 +1,7 @@
 import { ensureTonightGoal } from "./tonight";
 import { ensureRushPlan } from "./evening";
 import { weekOf } from "./weekly";
+import { DAY_EVENT_IDS } from "../data/events";
 import { nameOldCommis } from "./commis";
 import { INGREDIENTS, INGREDIENTS_BY_ID, type IngredientId } from "../data/ingredients";
 import { MARGHERITA } from "../data/recipes";
@@ -16,7 +17,7 @@ import { LOCALS_COUNT, MAX_REGULARS, REGULAR_SAME_ORDERS } from "./regulars";
 
 // The key name says v1 for history; the version actually lives in the saved `version` field.
 const STORAGE_KEY = "forno-lento-save-v1";
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 const emptyLifetimeStats = (): LifetimeStats => ({
   served: 0,
@@ -71,8 +72,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
       useDrawer: true,
       commisFade: true,
       playerName: "",
-      offEvents: [],
-      offFeatures: [],
+      difficulty: "normal",
     },
     phase: "prep",
     purchasesToday: 0,
@@ -298,6 +298,16 @@ const migrateFromVersion11 = ({ chefSpecial, ...saved }: JsonObject): JsonObject
   return { ...saved, special: { recipeId: chefSpecial, week: weekOf(saved.day), chosenDay: saved.day, served: 0 } };
 };
 
+// Version 12: day events and a few features could be switched off one by one; five difficulty levels took their place.
+// Everything switched off was the calm mode: the gentle level; anything else, normal.
+const migrateFromVersion12 = (saved: JsonObject): JsonObject => {
+  const settings = asObject(saved.settings);
+  if (!settings) return saved;
+  const { offEvents, offFeatures, ...rest } = settings;
+  const isAllOff = Array.isArray(offEvents) && Array.isArray(offFeatures) && offEvents.length >= DAY_EVENT_IDS.length && offFeatures.length >= 6;
+  return { ...saved, settings: { ...rest, difficulty: isAllOff ? "gentle" : "normal" } };
+};
+
 // MIGRATIONS[n] upgrades a version n + 1 save to version n + 2.
 const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion1,
@@ -311,6 +321,7 @@ const MIGRATIONS: readonly ((saved: JsonObject) => JsonObject)[] = [
   migrateFromVersion9,
   migrateFromVersion10,
   migrateFromVersion11,
+  migrateFromVersion12,
 ];
 
 // Saves from before versioning have neither `version` nor `v`: they are version 1.

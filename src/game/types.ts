@@ -13,7 +13,7 @@ import type { IngredientId } from "../data/ingredients";
 import type { UpgradeKey } from "../data/progression";
 import type { ClassicRecipeId } from "../data/recipes";
 import type { Language, MessageInput, ToastKey, TutorialKey } from "../i18n";
-import type { PlayFeature } from "./playOptions";
+import type { Difficulty } from "./playOptions";
 import type { JsonObject } from "../utils/saveCode";
 
 export type Phase = "prep" | "service" | "summary";
@@ -578,9 +578,8 @@ export interface Settings {
   commisFade: boolean;
   /** The nickname shown to others in multiplayer; empty until chosen. */
   playerName: string;
-  /** What the player switched off for a calmer game (game/playOptions.ts): day events, and other features. */
-  offEvents: DayEventId[];
-  offFeatures: PlayFeature[];
+  /** How hard the game is (game/playOptions.ts). */
+  difficulty: Difficulty;
 }
 
 export type ToastKind = "" | "gold" | "warn";
@@ -740,8 +739,7 @@ export type GameAction =
   | { type: "trashUnwantedPizzas" }
   | { type: "offerSlice"; pizzaId: string }
   | { type: "toggleCommisOff" }
-  | { type: "setEventsOff"; events: readonly DayEventId[]; off: boolean }
-  | { type: "setFeaturesOff"; features: readonly PlayFeature[]; off: boolean }
+  | { type: "setDifficulty"; difficulty: Difficulty }
   | { type: "receiveTrap"; from: string }
   // Shop
   | { type: "buyIngredient"; ingredientId: IngredientId; quantity: number }

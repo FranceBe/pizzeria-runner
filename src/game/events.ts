@@ -1,4 +1,4 @@
-import { DAY_EVENTS, DAY_EVENT_IDS, EVENT_CHANCE, FIRST_EVENT_DAY, type DayEvent, type DayEventId } from "../data/events";
+import { DAY_EVENTS, DAY_EVENT_IDS, FIRST_EVENT_DAY, type DayEvent, type DayEventId } from "../data/events";
 import { pickRandom } from "../utils/random";
 import { activeMenu } from "./menu";
 import { isDessert } from "./pizza";
@@ -8,7 +8,7 @@ import { canHaveTheme, isThemeNight } from "./themes";
 import { canHaveHeatwave, canSpoil } from "./incidents";
 import { FAMILY_LEVEL } from "./family";
 import { loyaltyDiscount } from "./loyalty";
-import { isEventOn } from "./playOptions";
+import { eventChance, eventWeight, isEventOn } from "./playOptions";
 import { levelForXp } from "./progression";
 import type { GameState } from "./types";
 
@@ -17,7 +17,7 @@ const NO_EVENT: DayEvent = { weight: 0, customerFactor: 1, marketPriceFactor: 1,
 
 export const todaysEvent = (state: GameState): DayEvent => (state.event ? DAY_EVENTS[state.event] : NO_EVENT);
 
-// Some events only make sense for some pizzerias; the player may have switched some off (game/playOptions.ts).
+// Some events only make sense for some pizzerias; the difficulty level leaves some out (game/playOptions.ts).
 export const canHappen = (state: GameState, id: DayEventId): boolean => {
   if (state.day < (DAY_EVENTS[id].firstDay ?? FIRST_EVENT_DAY) || !isEventOn(state, id)) return false;
   if (id === "scooterStrike") return state.upgrades.livraison > 0;
@@ -44,12 +44,13 @@ export const pickLateIngredient = (state: GameState): IngredientId | null => {
 // Picks the event of a new day (state.day is already the new day), or null for an ordinary day.
 // Never the same event two days in a row.
 export const rollDayEvent = (state: GameState, yesterday: DayEventId | null): DayEventId | null => {
-  if (state.day < FIRST_EVENT_DAY || Math.random() >= EVENT_CHANCE) return null;
+  if (state.day < FIRST_EVENT_DAY || Math.random() >= eventChance(state)) return null;
   const candidates = DAY_EVENT_IDS.filter((id) => id !== yesterday && canHappen(state, id));
   if (!candidates.length) return null;
-  let remaining = Math.random() * candidates.reduce((total, id) => total + DAY_EVENTS[id].weight, 0);
+  // Weighed as the difficulty level has it (game/playOptions.ts).
+  let remaining = Math.random() * candidates.reduce((total, id) => total + eventWeight(state, id), 0);
   for (const id of candidates) {
-    remaining -= DAY_EVENTS[id].weight;
+    remaining -= eventWeight(state, id);
     if (remaining <= 0) return id;
   }
   return candidates[0];
