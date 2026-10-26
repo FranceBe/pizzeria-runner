@@ -3,11 +3,10 @@ import { useDismiss } from "../components/useDismiss";
 import { MARGHERITA } from "../data/recipes";
 import { CHALLENGE_SECONDS, createChallenge, localDate } from "../game/challenge";
 import { canBorrowFromNonna, dailyCharges, forecastCustomers, NONNA_LOAN } from "../game/economy";
-import { activeMenu, findRecipe, isNewRecipe } from "../game/menu";
+import { activeMenu, findRecipe, isNewRecipe, menuCapacityOf } from "../game/menu";
 import { canChooseSpecial, currentSpecial, isSpecial, specialUntil } from "../game/special";
 import { LOW_STOCK_THRESHOLD, morningTips } from "../game/tips";
 import { ingredientCost } from "../game/pizza";
-import { levelForXp, menuCapacity } from "../game/progression";
 import { regularsOf, type Regular } from "../game/regulars";
 import { FESTIVALS } from "../data/festivals";
 import { daysLeftInSeason, seasonalRecipe, seasonOf } from "../game/seasons";
@@ -167,7 +166,6 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
   const t = useTranslation();
   const expectedCustomers = forecastCustomers(state);
   const menu = activeMenu(state);
-  const level = levelForXp(state.xp);
   const usedIngredients = [...new Set(menu.flatMap((recipe) => recipe.ingredients))];
   const lowStock = usedIngredients.filter((id) => (state.stock[id] || 0) < LOW_STOCK_THRESHOLD);
   const tutorial = tutorialStep(state);
@@ -203,7 +201,7 @@ export const PrepView = ({ state, dispatch, goToTab }: ScreenProps & { goToTab: 
           </div>
           <dl className="kv">
             <dt>{t("prep.pizzasOnMenu")}</dt>
-            <dd>{menu.length} / {menuCapacity(level)}</dd>
+            <dd>{menu.length} / {menuCapacityOf(state)}</dd>
             <dt>{t("prep.eveningCharges")}</dt>
             <dd>{t.money(dailyCharges(state))}</dd>
             {state.debt > 0 && (

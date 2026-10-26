@@ -42,6 +42,21 @@ const lateGameState = (): GameState => {
   return play(makeState({ money: 5000, xp: 5000 }), ...signAll);
 };
 
+// The trattoria open at level 10, every supplier signed (pastas too): a service with a carbonara on the stove.
+const trattoriaState = (): GameState => {
+  const signAll = INGREDIENTS.map(({ id }) => ({ type: "signSupplier", ingredientId: id }) as const);
+  const open = makeState({ money: 9000, xp: 30000, upgrades: { ...makeState().upgrades, oven: 3, trattoria: 1 } });
+  return play(open, ...signAll);
+};
+
+const trattoriaKitchen = (): GameState => {
+  const carbonara = ["spaghetti", "guanciale", "oeuf", "pecorino"] as const;
+  let state = stateInService([makeCustomer({ recipeId: "carbonara", ingredients: [...carbonara] }), makeCustomer({ id: "c2" })], trattoriaState());
+  state.settings.tutorialDone = true;
+  state = play(state, ...toggle(...carbonara), { type: "bake" });
+  return play(state, ...toggle("lasagne", "ragu"));
+};
+
 const withRegulars = (state: GameState): GameState => {
   state.customerBook = { Giulia: makeBookEntry({ visits: 5, orders: { margherita: 5 } }) };
   return state;
@@ -75,7 +90,7 @@ const lateKitchen = (): GameState => {
       makeCustomer({ id: "t2", name: "Enzo", tableId: "tab", diet: "veggie", drink: "limonade", drinkServed: true }),
       makeCustomer({ id: "b1", name: "Giulia", birthday: true }),
     ],
-    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 2, livraison: 1, bar: 2, waiter: 0, oven2: 2, annexe: 2 } },
+    { ...lateGameState(), upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 2, livraison: 1, bar: 2, waiter: 0, oven2: 2, trattoria: 0, annexe: 2 } },
   );
   serviceOf(state).tables = { tab: { size: 2, served: 0, allHappy: true, color: 1 } };
   serviceOf(state).oven = [{ id: "o", ovenIndex: 1, ingredients: MARGHERITA_INGREDIENTS, bakedSeconds: 1, bakeDuration: 3 }];
@@ -112,7 +127,7 @@ describe.each(LANGUAGES)("views in %s", (language) => {
     const late = lateGameState();
     return [
       { name: "Header with pops", element: <Header state={makeState({ debt: 3, pops: [{ id: "p", amount: 7, kind: "money" }, { id: "q", amount: 0.5, kind: "tip" }] })} dispatch={noop} /> },
-      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 } }} dispatch={noop} /> },
+      { name: "Header fully upgraded", element: <Header state={{ ...late, upgrades: { oven: 3, salle: 4, deco: 3, commis: 2, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, trattoria: 0, annexe: 0 } }} dispatch={noop} /> },
       { name: "Prep with regulars", element: <PrepView state={withRegulars(makeState())} dispatch={noop} goToTab={noop} /> },
       { name: "Prep when broke", element: <PrepView state={makeState({ money: 0, stock: {} })} dispatch={noop} goToTab={noop} /> },
       { name: "Service in progress", element: serviceScreen(serviceInProgress()) },
@@ -136,6 +151,10 @@ describe.each(LANGUAGES)("views in %s", (language) => {
       { name: "Late kitchen", element: serviceScreen(lateKitchen()) },
       { name: "Upgrades with looks", element: <UpgradesView state={lateKitchen()} dispatch={noop} /> },
       { name: "Summary with drinks and second address", element: <DaySummary summary={{ ...SUMMARY, drinks: 9, annexeIncome: 70 }} pizzeriaName="Forno Lento" onNextDay={noop} /> },
+      { name: "Trattoria service", element: serviceScreen(trattoriaKitchen()) },
+      { name: "Trattoria editor", element: <RecipeEditor state={trattoriaState()} dispatch={noop} onClose={noop} /> },
+      { name: "Trattoria menu", element: <MenuView state={trattoriaState()} dispatch={noop} /> },
+      { name: "Trattoria market", element: <MarketView state={trattoriaState()} dispatch={noop} /> },
       { name: "Challenge result", element: <ChallengeResult result={{ date: "2026-10-17", score: 120, served: 6, happy: 4, isNewBest: false }} best={180} dispatch={noop} /> },
     ];
   };
@@ -148,6 +167,44 @@ describe.each(LANGUAGES)("views in %s", (language) => {
 });
 
 describe("views", () => {
+  it("shows the stove and the pizza/pasta tabs once the trattoria is open, and plates of pasta", () => {
+    const html = render(serviceScreen(trattoriaKitchen()));
+    expect(html).toContain("rail-tabs");
+    expect(html).toContain("stove-label");
+    expect(html).toContain("Spaghetti");
+    const closed = render(serviceScreen(stateInService([makeCustomer()], lateGameState())));
+    expect(closed).not.toContain("rail-tabs");
+    expect(closed).not.toContain("stove-label");
+  });
+
+  it("splits the menu into pizzas and pasta once the trattoria is open", () => {
+    const open = trattoriaState();
+    const carbonara = open.recipes.find((recipe) => recipe.id === "carbonara");
+    if (carbonara) carbonara.onMenu = true;
+    const html = render(<MenuView state={open} dispatch={noop} />);
+    expect(html).toContain("🍕 Pizzas");
+    expect(html).toContain("🍝 Pâtes");
+    expect(html).toContain("plats proposés");
+    const closed = render(<MenuView state={lateGameState()} dispatch={noop} />);
+    expect(closed).not.toContain("🍝 Pâtes");
+    expect(closed).toContain("pizzas proposées");
+  });
+
+  it("names a plate of pasta nobody ordered as improvised pasta on the pass, and offers the automatic switch setting", () => {
+    const state = trattoriaKitchen();
+    serviceOf(state).ready = [{ id: "r", ingredients: ["penne", "ragu", "truffe"] }];
+    const html = render(serviceScreen(state));
+    expect(html).toContain("Pâtes improvisées");
+    expect(html).not.toContain("Pizza improvisée");
+    expect(render(<SettingsView state={trattoriaState()} dispatch={noop} />)).toContain("Bascule pizza / pâtes automatique");
+    expect(render(<SettingsView state={lateGameState()} dispatch={noop} />)).not.toContain("Bascule pizza / pâtes automatique");
+  });
+
+  it("lets the editor make pasta only with the trattoria open", () => {
+    expect(render(<RecipeEditor state={trattoriaState()} dispatch={noop} onClose={noop} />)).toContain("🍝 Pâtes");
+    expect(render(<RecipeEditor state={lateGameState()} dispatch={noop} onClose={noop} />)).not.toContain("🍝 Pâtes");
+  });
+
   it("renders the whole app from a fresh game in the browser's language", () => {
     // Node reports an English locale.
     expect(renderToString(<App />)).toContain("Open the pizzeria");
@@ -222,7 +279,7 @@ describe("views", () => {
 
   it("decorates the storefront as upgrades are bought", () => {
     expect(render(<Header state={makeState()} dispatch={noop} />)).not.toContain("storefront");
-    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 } })} dispatch={noop} />);
+    const upgraded = render(<Header state={makeState({ upgrades: { oven: 1, salle: 2, deco: 2, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, trattoria: 0, annexe: 0 } })} dispatch={noop} />);
     expect(upgraded.match(/decor table/g)).toHaveLength(2);
     expect(upgraded).toContain("oven-front");
     expect(upgraded).toContain('class="lights"');

@@ -1,8 +1,8 @@
 import { makeId } from "../../utils/random";
 import { adjustPrice, sortByLayer } from "../pizza";
-import { findRecipe, menuIsFull, NEW_RECIPE_DAYS } from "../menu";
+import { findRecipe, menuCapacityOf, menuIsFull, NEW_RECIPE_DAYS } from "../menu";
 import { chooseSpecial, dropSpecialIfOffMenu } from "../special";
-import { levelForXp, menuCapacity } from "../progression";
+import { levelForXp } from "../progression";
 import { pushToast } from "../toasts";
 import type { ActionHandlers } from "../types";
 
@@ -18,7 +18,7 @@ export const menuActions = {
     if (!recipe) return;
     if (!recipe.onMenu && menuIsFull(state)) {
       const level = levelForXp(state.xp);
-      pushToast(state, { key: "menuFull", params: { capacity: menuCapacity(level), level } }, "warn");
+      pushToast(state, { key: "menuFull", params: { capacity: menuCapacityOf(state), level } }, "warn");
       return;
     }
     recipe.onMenu = !recipe.onMenu;

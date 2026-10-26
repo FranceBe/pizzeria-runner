@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PREP_STATIONS, type IngredientId } from "../../data/ingredients";
+import { PREP_STATIONS, type IngredientId, type PrepStation } from "../../data/ingredients";
 import { useTranslation } from "../../i18n/I18nContext";
 import { IngredientPan } from "../../components/IngredientPan";
 import { onTap } from "../../components/tap";
@@ -42,6 +42,8 @@ interface PrepLineProps {
   stillComing?: IngredientId | null;
   /** The secret ingredients, once shared: extra jars at the end of the line. */
   secrets?: SecretJarState[];
+  /** The line's stations: the pizzas' (by default), or the trattoria's for plates of pasta. */
+  stations?: readonly PrepStation[];
 }
 
 // A small jar: Nonna's with a sparkle, Mamma's with a heart.
@@ -85,7 +87,7 @@ const isCoachPan = (coachTarget: CoachTarget | null, id: IngredientId, isOnBoard
 // Pans the selected order still needs get a dashed outline.
 export const PrepLine = ({
   state, isBottomless, extraIngredients = [], board, neededIngredients, orderIngredients = [], fadeLevel = 0, drawerIds = [],
-  coachTarget, onPickIngredient, secrets = [], stillComing,
+  coachTarget, onPickIngredient, secrets = [], stillComing, stations: line = PREP_STATIONS,
 }: PrepLineProps) => {
   const t = useTranslation();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -97,11 +99,11 @@ export const PrepLine = ({
 
   const isAvailable = (id: IngredientId) => state.unlocked[id] || extraIngredients.includes(id);
   // Stations keep their order (dough, sauces, cheeses…); the drawer only takes pans out of them.
-  const stations = PREP_STATIONS.map((station) => ({
+  const stations = line.map((station) => ({
     ...station,
     ingredientIds: station.ingredientIds.filter((id) => isAvailable(id) && !drawerIds.includes(id)),
   })).filter((station) => station.ingredientIds.length);
-  const drawer = PREP_STATIONS.flatMap((station) => station.ingredientIds).filter((id) => isAvailable(id) && drawerIds.includes(id));
+  const drawer = line.flatMap((station) => station.ingredientIds).filter((id) => isAvailable(id) && drawerIds.includes(id));
   const isDrawerNeeded = drawer.some((id) => neededIngredients.includes(id) && !board.includes(id));
   // Something from the drawer is on the pizza: shown on the closed drawer, so it isn't forgotten there.
   const isDrawerUsed = drawer.some((id) => board.includes(id));

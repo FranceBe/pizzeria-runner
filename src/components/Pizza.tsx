@@ -1,5 +1,6 @@
 import { INGREDIENTS_BY_ID, type Ingredient, type IngredientId } from "../data/ingredients";
-import { sortByLayer, isSauce, isFilling } from "../game/pizza";
+import { dishOf, sortByLayer, isSauce, isFilling } from "../game/pizza";
+import { PastaPlate } from "./PastaPlate";
 import { hashString, seededRandom } from "../utils/random";
 import { useTranslation } from "../i18n/I18nContext";
 import { ToppingPiece } from "./ToppingPiece";
@@ -47,6 +48,14 @@ export const Pizza = ({ ingredients, baked = false, className, size }: PizzaProp
   const sauce = layers.find(isSauce);
   const fillings = layers.filter(isFilling);
   const label = t.ingredientList(layers);
+  // The trattoria: a plate of pasta rather than a pizza.
+  if (dishOf(layers) === "pasta") {
+    return (
+      <svg className={className} viewBox="0 0 200 200" width={size} height={size} role="img" aria-label={label}>
+        <PastaPlate ingredients={layers} baked={baked} />
+      </svg>
+    );
+  }
   return (
     <svg className={className} viewBox="0 0 200 200" width={size} height={size} role="img" aria-label={label}>
       {layers.includes("pate") && (

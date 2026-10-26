@@ -16,10 +16,11 @@ import { STAFF_NAMES, STAFF_ROLES } from "../data/staff";
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import { BATCH_ID, nextBatchRecipe, openBatch } from "../game/batch";
 import { canBorrowFromNonna, forecastCustomers } from "../game/economy";
-import { activeMenu } from "../game/menu";
-import { levelForXp, menuCapacity } from "../game/progression";
+import { activeMenu, menuCapacityOf } from "../game/menu";
+import { levelForXp } from "../game/progression";
+import { cooksInOven } from "../game/pizza";
 import { gameReducer } from "../game/reducer";
-import { destinationOf, maxQueueLength, ovenSlots, selectedCustomer } from "../game/service";
+import { destinationOf, maxQueueLength, ovensOf, ovenSlots, selectedCustomer } from "../game/service";
 import { hydrateState, toSaveData } from "../game/state";
 import type { GameAction, GameState } from "../game/types";
 import { toJson } from "./helpers";
@@ -54,6 +55,12 @@ export const checkInvariants = (state: GameState, before?: GameState): void => {
   }
   if (service && !service.challenge) {
     expect(service.oven.length, "pizzas in the ovens").toBeLessThanOrEqual(ovenSlots(state));
+    // Pasta on the stove's burners, pizzas and lasagne in the ovens.
+    const ovens = ovensOf(state);
+    service.oven.forEach((dish) => {
+      const oven = ovens.find((candidate) => candidate.index === (dish.ovenIndex ?? 0));
+      if (oven) expect(Boolean(oven.isStove), "a dish where it cooks").toBe(!cooksInOven(dish.ingredients));
+    });
     // A table may sit down together past the queue's length, never more than a table's worth.
     expect(service.customers.length, "customers at the counter").toBeLessThanOrEqual(maxQueueLength(state) + 3);
     expect(service.customersToCome, "customers to come").toBeGreaterThanOrEqual(0);
@@ -214,7 +221,10 @@ export const runMorning = (state: GameState, random: () => number = Math.random)
   let next = state;
   const act = (action: GameAction) => (next = gameReducer(next, action));
   const level = levelForXp(next.xp);
-  INGREDIENTS.filter((ingredient) => !ingredient.festival && !next.unlocked[ingredient.id] && ingredient.requiredLevel <= level)
+  INGREDIENTS.filter(
+    (ingredient) =>
+      !ingredient.festival && !next.unlocked[ingredient.id] && ingredient.requiredLevel <= level && (!ingredient.trattoria || next.upgrades.trattoria > 0),
+  )
     .filter((ingredient) => next.money > ingredient.supplierFee + 80)
     .slice(0, 1)
     .forEach((ingredient) => act({ type: "signSupplier", ingredientId: ingredient.id }));
@@ -223,7 +233,7 @@ export const runMorning = (state: GameState, random: () => number = Math.random)
     .sort((a, b) => a.cost - b.cost)[0];
   if (upgrade) act({ type: "buyUpgrade", upgradeKey: upgrade.key });
   // The menu, as full as it may be.
-  const capacity = menuCapacity(levelForXp(next.xp));
+  const capacity = menuCapacityOf(next);
   next.recipes
     .filter((recipe) => !recipe.onMenu)
     .slice(0, Math.max(0, capacity - activeMenu(next).length))

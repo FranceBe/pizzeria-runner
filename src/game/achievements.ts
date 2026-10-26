@@ -2,6 +2,9 @@ import { ACHIEVEMENT_IDS, type AchievementId } from "../data/achievements";
 import { INGREDIENTS } from "../data/ingredients";
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import { ALL_PAIRINGS_COUNT } from "./pairings";
+import { CLASSIC_RECIPES } from "../data/recipes";
+import { activeMenu } from "./menu";
+import { dishOf } from "./pizza";
 import { levelForXp, MAX_LEVEL } from "./progression";
 import { regularsOf } from "./regulars";
 import { pushToast } from "./toasts";
@@ -14,6 +17,9 @@ export interface Progress {
 
 // Ingredients signed at the market (festival ones come and go with the calendar).
 const SUPPLIED = INGREDIENTS.filter((ingredient) => !ingredient.festival);
+
+// The trattoria's classics, every one of them served at least once.
+const PASTA_CLASSICS = CLASSIC_RECIPES.filter((classic) => dishOf(classic.ingredients) === "pasta");
 
 const customRecipeCount = (state: GameState): number => state.recipes.filter((recipe) => recipe.custom).length;
 const upgradeLevels = (state: GameState): number => UPGRADE_KEYS.reduce((total, key) => total + state.upgrades[key], 0);
@@ -54,6 +60,10 @@ const PROGRESS: Record<AchievementId, (state: GameState) => Progress> = {
   threeStars: (state) => ({ current: state.history.some((day) => day.stars === 3) ? 1 : 0, target: 1 }),
   batchGold: (state) => ({ current: state.lifetime.batchGolds, target: 1 }),
   celebrity: (state) => ({ current: state.lifetime.celebrities, target: 1 }),
+  firstPasta: (state) => ({ current: state.lifetime.pastaServed ?? 0, target: 1 }),
+  pasta100: (state) => ({ current: state.lifetime.pastaServed ?? 0, target: 100 }),
+  trattoriaMenu: (state) => ({ current: activeMenu(state).filter((recipe) => dishOf(recipe.ingredients) === "pasta").length, target: 4 }),
+  allPastaClassics: (state) => ({ current: PASTA_CLASSICS.filter(({ id }) => (state.lifetime.byRecipe[id]?.count ?? 0) > 0).length, target: PASTA_CLASSICS.length }),
   // Only the code unlocks this one: finishing everything else leaves the journal one short.
   secretCode: (state) => ({ current: state.secretCodeFound ? 1 : 0, target: 1 }),
   mammaSecret: (state) => ({ current: state.mammaSecret ? 1 : 0, target: 1 }),

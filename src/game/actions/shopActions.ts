@@ -71,7 +71,9 @@ export const shopActions = {
   signSupplier(state, { ingredientId }) {
     const ingredient = INGREDIENTS_BY_ID[ingredientId];
     const levelTooLow = levelForXp(state.xp) < ingredient.requiredLevel;
-    if (levelTooLow || state.money < ingredient.supplierFee || state.unlocked[ingredientId]) return;
+    // The trattoria's suppliers only come once it is open.
+    const isClosed = Boolean(ingredient.trattoria) && state.upgrades.trattoria < 1;
+    if (levelTooLow || isClosed || state.money < ingredient.supplierFee || state.unlocked[ingredientId]) return;
     spend(state, ingredient.supplierFee);
     state.unlocked[ingredientId] = true;
     addToStock(state, ingredientId, SUPPLIER_WELCOME_PORTIONS);

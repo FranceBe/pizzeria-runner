@@ -570,6 +570,12 @@ textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, 
 .chalk-list { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 2px 32px;
   font-family: var(--f-chalk); font-size: 23px; }
 .chalk-list li { display: flex; align-items: baseline; gap: 8px; }
+/* With the trattoria: the board in two parts, pizzas then pasta */
+.chalk-part { grid-column: 1 / -1; min-width: 0; }
+.chalk-part-title { margin: 4px 0 2px; font-family: var(--f-chalk); font-size: 27px; font-weight: 700; color: #f6d77a;
+  border-bottom: 2px solid rgba(243,240,230,.25); padding-bottom: 2px; }
+.menu-part + .menu-part .menu-part-title { margin-top: 20px; }
+.menu-part-title { margin-bottom: 8px; font-size: 15px; }
 .chalk-dots { flex: 1; border-bottom: 2px dotted rgba(243,240,230,.4); transform: translateY(-5px); }
 @media (max-width: 560px) { .chalkboard { grid-template-columns: minmax(0, 1fr); padding: 14px 16px; } .chalkboard > .btn { grid-column: 1; grid-row: auto; justify-self: start; } }
 .recipe.special { border-color: var(--accent); box-shadow: var(--shadow), 0 0 0 2px var(--accent-soft); }
@@ -1173,6 +1179,10 @@ button, .pan { touch-action: manipulation; }
   .oven.multi .slot { min-height: 34px; padding: 2px; }
   .oven.multi .slot.idle { font-size: 9.5px; }
   .oven.multi .oven-label { font-size: 8px; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* The trattoria's stove: one row across the panel, its label beside the burners */
+  .oven.multi .oven-group.stove { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .oven.multi .oven-group.stove .oven-label { flex: none; margin: 0; max-width: 64px; white-space: normal; line-height: 1.2; }
+  .oven.multi .oven-group.stove .slots { flex: 1; grid-template-columns: repeat(var(--burners), minmax(0, 1fr)); }
 }
 
 /* The receipt marks the people who came as a table, in their table's colour */
@@ -1570,3 +1580,22 @@ button.ticker-x { flex: none; padding: 0 0 0 8px; border: 0; background: none; c
 .staff-candidates { display: flex; flex-direction: column; gap: 6px; }
 .staff-candidates[open] > .staff-person { margin-top: 6px; }
 .staff-vacant { margin: 0; }
+
+/* The trattoria: the prep line's two lines (pizzas, pasta), and the stove's burners in the oven panel. */
+/* The trattoria's pizza / pasta tabs: binder tabs on top of the prep line, the open one the colour of the line */
+.rail-tabs { display: flex; gap: 4px; padding: 0 12px; position: relative; z-index: 1; }
+.rail-tab { flex: none; padding: 3px 14px 2px; border-radius: 9px 9px 0 0; border: 1px solid var(--steel-edge); border-bottom: none;
+  background: var(--steel2); color: var(--steel-ink); opacity: .7; font-weight: 800; font-size: 12.5px; line-height: 1.4; cursor: pointer; margin-bottom: -1px; }
+.rail-tab.on { background: var(--steel); opacity: 1; }
+.a-rail .rail-tabs + .rail { border-top-left-radius: 6px; }
+@media (max-width: 700px) {
+  .a-rail:has(.rail-tabs) .rail { min-height: calc(100% - 23px); }
+  .rail-tab { font-size: 12px; padding: 2px 12px 1px; }
+}
+/* The recipe editor's pizza / pasta switch */
+.dish-tabs { display: flex; gap: 6px; margin: 0 0 8px; }
+.dish-tab { flex: 1; padding: 6px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 800; font-size: 13.5px; cursor: pointer; }
+.dish-tab.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.oven-label.stove-label { color: #9fd1ff; }
+.slot.burner { background: radial-gradient(circle, #3b3f45 0 48%, #23262a 49% 56%, #3b3f45 57%); }
+.slot.burner.idle { color: rgba(255, 255, 255, .55); }

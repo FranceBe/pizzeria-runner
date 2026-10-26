@@ -3,9 +3,9 @@
 import { UPGRADES, UPGRADE_KEYS } from "../data/progression";
 import type { IngredientId } from "../data/ingredients";
 import { forecastCustomers } from "./economy";
-import { activeMenu, isNewRecipe } from "./menu";
+import { activeMenu, isNewRecipe, menuCapacityOf } from "./menu";
 import { fairPrice } from "./pizza";
-import { levelForXp, menuCapacity } from "./progression";
+import { levelForXp } from "./progression";
 import type { MessageInput, TipKey } from "../i18n";
 import type { GameState, Recipe } from "./types";
 
@@ -63,7 +63,7 @@ const neverOrderedTips = (state: GameState): Tip[] => {
 };
 
 const menuRoomTips = (state: GameState): Tip[] => {
-  const room = menuCapacity(levelForXp(state.xp)) - activeMenu(state).length;
+  const room = menuCapacityOf(state) - activeMenu(state).length;
   const offMenu = state.recipes.filter((recipe) => !recipe.onMenu).length;
   return room > 0 && offMenu > 0 ? [{ key: "menuRoom", params: { count: Math.min(room, offMenu) } }] : [];
 };

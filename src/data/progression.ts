@@ -17,7 +17,7 @@ export const BASE_DAILY_CHARGES = 6;
 
 // The keys are stored in save files: never rename them. Names and descriptions live in src/i18n.
 export const UPGRADE_KEYS = [
-  "oven", "salle", "deco", "commis", "drawer", "terrasse", "livraison", "bar", "waiter", "oven2", "annexe",
+  "oven", "salle", "deco", "commis", "drawer", "terrasse", "livraison", "bar", "waiter", "oven2", "trattoria", "annexe",
 ] as const;
 export type UpgradeKey = (typeof UPGRADE_KEYS)[number];
 
@@ -47,6 +47,8 @@ export const UPGRADES: Record<UpgradeKey, Upgrade> = {
   waiter: { costs: [400, 800], requiredLevel: [7, 9], dailyCharge: 1 },
   // Extra ovens: building one gives a single slow slot, then it improves like the first oven.
   oven2: { costs: [450, 250, 500, 900], requiredLevel: [7, 7, 8, 9], dailyCharge: 3 },
+  // The trattoria: plates of pasta, a stove of two burners, then three and quicker (see STOVES, data/ingredients.ts).
+  trattoria: { costs: [2500, 1800], requiredLevel: [9, 11], dailyCharge: 5 },
   // A second address: brings in money every evening, run by someone else.
   annexe: { costs: [1500, 3000, 6000], requiredLevel: [8, 11, 14], dailyCharge: 0 },
 };
@@ -99,3 +101,9 @@ export const BARMAN_LEVEL = 3;
 export const tipChanceForDecor = (decorLevel: number): number => {
   return 0.3 + 0.12 * decorLevel;
 };
+
+// The trattoria's stove, by its level: burners, and seconds to cook a plate of pasta.
+export const STOVE_BURNERS = [0, 2, 3];
+export const STOVE_SECONDS = [0, 6, 4.5];
+// The menu holds this many more dishes with the trattoria open.
+export const TRATTORIA_MENU_ROOM = 4;

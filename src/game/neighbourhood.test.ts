@@ -164,7 +164,8 @@ describe("Nonna's recipes", () => {
     const later = makeState({ xp: 400, unlocked: allUnlocked });
     discoverClassics(later);
     expect(knowsRecipe(later, "nonna")).toBe(true);
-    expect(later.toasts.map((toast) => toast.key)).toContain("nonnaRecipe");
+    // Among many discoveries (the trattoria's too, every ingredient being signed here): in the evening's thread.
+    expect(later.messageLog.map((toast) => toast.key)).toContain("nonnaRecipe");
   });
 });
 

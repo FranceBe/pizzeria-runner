@@ -34,6 +34,11 @@ export const ACHIEVEMENT_IDS = [
   "threeStars",
   "batchGold",
   "celebrity",
+  // The trattoria
+  "firstPasta",
+  "pasta100",
+  "trattoriaMenu",
+  "allPastaClassics",
   "secretCode",
   "mammaSecret",
 ] as const;

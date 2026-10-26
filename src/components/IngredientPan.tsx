@@ -1,6 +1,7 @@
 import { INGREDIENTS_BY_ID, PALE_COLORS, type Ingredient, type IngredientId, type ToppingShape } from "../data/ingredients";
 import { hashString, seededRandom } from "../utils/random";
 import { ToppingPiece } from "./ToppingPiece";
+import { PastaPile } from "./PastaPlate";
 
 // Stock at which a pan looks full.
 const FULL_PAN_QUANTITY = 12;
@@ -71,6 +72,19 @@ const LoosePieces = ({ ingredient, fillRatio }: FillProps) => {
 const PanContents = ({ ingredient, quantity }: { ingredient: Ingredient; quantity: number }) => {
   if (quantity <= 0) return null;
   const fillRatio = Math.min(1, quantity / FULL_PAN_QUANTITY);
+  const { pasta } = ingredient;
+  if (pasta) {
+    const piles = Math.min(4, Math.ceil(quantity / 3));
+    return (
+      <>
+        {Array.from({ length: piles }, (_, index) => (
+          <g key={index} transform={`translate(${18 + (index % 2) * 24} ${18 + Math.floor(index / 2) * 24})`}>
+            <PastaPile shape={pasta} color={ingredient.color} scale={0.95} />
+          </g>
+        ))}
+      </>
+    );
+  }
   if (ingredient.kind === "base") return <DoughBalls quantity={quantity} />;
   if (ingredient.kind === "sauce" || ingredient.id === "miel") return <LiquidLevel ingredient={ingredient} fillRatio={fillRatio} />;
   return <LoosePieces ingredient={ingredient} fillRatio={fillRatio} />;

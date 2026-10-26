@@ -163,6 +163,7 @@ export const fr = {
     cancel: "Annuler",
     level: "Niveau {level}",
     improvisedPizza: "Pizza improvisée",
+    improvisedPasta: "Pâtes improvisées",
     dismissMessage: "Fermer le message",
   },
 
@@ -321,6 +322,8 @@ export const fr = {
     },
     bake: "Enfourner",
     ovenFull: "Four plein",
+    cook: "Cuire",
+    stoveFull: "Casserole pleine",
     ovenAndPass: "Four et passe",
     oven: "Four",
     freeSlot: "Libre",
@@ -388,6 +391,10 @@ export const fr = {
     log: "Messages de la soirée",
     logOpen: "Relire les messages de la soirée",
     logEmpty: "Aucun message pour l'instant.",
+    stove: "Casserole",
+    railPizza: "🍕 Pizzas",
+    railPasta: "🍝 Pâtes",
+    railLabel: "Ce que tu prépares",
     roleCook: "🧑‍🍳 Toi : les pizzas et le four",
     rolePass: "🛎️ Toi : la passe et le bar",
     trap: ({ count }: { count: number }) => `🪤 Piège (${count})`,
@@ -453,6 +460,9 @@ export const fr = {
   menu: {
     title: "La carte",
     capacity: "{count} / {capacity} pizzas proposées. La carte s'agrandit à chaque niveau.",
+    capacityDishes: "{count} / {capacity} plats proposés. La carte s'agrandit à chaque niveau.",
+    pizzas: "🍕 Pizzas",
+    pasta: "🍝 Pâtes",
     createRecipe: "Créer une recette",
     homemade: "maison",
     costAndAdvice: ({ cost, fair }: { cost: number; fair: number }, t: H) => `coût ${t.money(cost)} · conseillé ${t.money(fair)}`,
@@ -489,6 +499,9 @@ export const fr = {
     price: "Prix",
     lowerPrice: "Baisser le prix",
     raisePrice: "Monter le prix",
+    dishPizza: "🍕 Pizza",
+    dishPasta: "🍝 Pâtes",
+    pastaHint: " (une seule)",
     sauceHint: " (une seule, ou aucune pour une pizza blanche)",
     secretPairing: "Un accord secret se cache dans cette recette… Sers-la pour le découvrir.",
     tooManyFillings: "{max} garnitures maximum : la pâte ne tiendrait pas.",
@@ -501,6 +514,7 @@ export const fr = {
     },
     errors: {
       missingName: "Donne-lui un nom.",
+      noBase: "Choisis des pâtes.",
       noTopping: "Ajoute au moins un ingrédient sur la pâte.",
       duplicateIngredients: "Cette combinaison existe déjà dans ton carnet.",
       duplicateName: "Une pizza porte déjà ce nom.",
@@ -596,6 +610,11 @@ export const fr = {
       name: "Deuxième four",
       describe: ({ level }: { level: number }, t: H): string => (level === 0 ? "Pas encore construit" : ovenStage(level - 1, t)),
     },
+    trattoria: {
+      name: "Trattoria",
+      describe: ({ level }: { level: number }) =>
+        ["Que des pizzas", "Les pâtes : une casserole à 2 feux (6 s), des fournisseurs et des plats à découvrir, 4 places de plus à la carte", "Une casserole à 3 feux, cuisson en 4,5 s"][level],
+    },
     annexe: {
       name: "Deuxième adresse",
       describe: ({ level }: { level: number }, t: H): string =>
@@ -659,6 +678,7 @@ export const fr = {
     largeText: "Texte plus grand",
     useDrawer: "Ranger les bacs hors carte dans le tiroir",
     commisFade: "Le commis pousse les bacs inutiles",
+    autoDish: "Bascule pizza / pâtes automatique selon le ticket choisi",
     sound: "Son",
     music: "Musique",
     effects: "Effets sonores",
@@ -1029,6 +1049,10 @@ export const fr = {
     threeStars: { name: "Journée parfaite", describe: "Décrocher les trois étoiles en une journée" },
     batchGold: { name: "Livraison éclair", describe: "Décrocher l'or sur une commande groupée" },
     celebrity: { name: "Photo dédicacée", describe: "Servir une célébrité" },
+    firstPasta: { name: "Benvenuti", describe: "Servir sa première assiette de pâtes" },
+    pasta100: { name: "Mamma mia", describe: "Servir 100 assiettes de pâtes" },
+    trattoriaMenu: { name: "Vraie trattoria", describe: "Avoir 4 plats de pâtes à la carte en même temps" },
+    allPastaClassics: { name: "Tour d'Italie", describe: "Servir chacun des 8 classiques de pâtes" },
     secretCode: { name: "↑↑↓↓←→←→BA", describe: "Tu connais le code." },
     mammaSecret: { name: "La fierté de Mamma", describe: "Gagner la confiance de Mamma." },
   } satisfies Record<AchievementId, { name: string; describe: string }>,
@@ -1056,6 +1080,7 @@ export const fr = {
     outOfStock: ({ ingredientId }: { ingredientId: IngredientId }, t: H) =>
       `Plus de ${lower(t.ingredient(ingredientId))} en stock : passe au marché.`,
     ovenFull: "Le four est plein.",
+    stoveFull: "Les feux sont tous pris.",
     nobodyOrdered: "Personne n'a commandé cette pizza. Garde-la au chaud ou jette-la.",
     levelUp: ({ level, ingredientIds }: { level: number; ingredientIds: readonly IngredientId[] }, t: H) =>
       `Niveau ${level} ! ${
@@ -1211,6 +1236,7 @@ export const fr = {
     herb: "Herbes & épices",
     finish: "Finitions",
     sweet: "Desserts",
+    pasta: "Pâtes",
   } satisfies Record<StationId, string>,
 
   ingredients: {
@@ -1251,6 +1277,15 @@ export const fr = {
     potiron: "Potiron",
     marron: "Marrons",
     framboise: "Framboises",
+    spaghetti: "Spaghetti",
+    penne: "Penne",
+    tagliatelle: "Tagliatelles",
+    lasagne: "Feuilles de lasagne",
+    guanciale: "Guanciale",
+    pecorino: "Pecorino",
+    poivre: "Poivre noir",
+    ragu: "Ragù",
+    pesto: "Pesto",
   } satisfies Record<IngredientId, string>,
 
   recipes: {
@@ -1277,5 +1312,13 @@ export const fr = {
     zucca: "Zucca",
     natale: "Natale",
     amore: "Amore",
+    carbonara: "Carbonara",
+    cacioepepe: "Cacio e pepe",
+    amatriciana: "Amatriciana",
+    arrabbiata: "Penne all'arrabbiata",
+    pennepesto: "Penne au pesto",
+    bolognese: "Tagliatelles bolognaise",
+    funghi: "Tagliatelles aux champignons",
+    lasagna: "Lasagnes",
   } satisfies Record<ClassicRecipeId, string>,
 } as const;

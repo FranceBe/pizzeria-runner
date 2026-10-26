@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+import { dishOf } from "../../game/pizza";
 import { findRecipeByIngredients } from "../../game/menu";
 import { destinationOf, ovensOf } from "../../game/service";
 import { warmthOf } from "../../game/streak";
@@ -32,19 +34,27 @@ const Ovens = ({ state, service }: { state: GameState; service: Service }) => {
       {ovens.map((oven) => {
         const pizzas = service.oven.filter((pizza) => (pizza.ovenIndex ?? 0) === oven.index);
         return (
-          <div key={oven.index} className="oven-group">
+          <div
+            key={oven.index}
+            className={`oven-group${oven.isStove ? " stove" : ""}`}
+            style={oven.isStove ? ({ "--burners": oven.slots } as CSSProperties) : undefined}
+          >
             {ovens.length > 1 && (
-              <div className="oven-label">
-                {oven.isWoodFired ? `${t("service.ovenNumber", { number: oven.index + 1 })} · ${t("service.woodFired")}` : t("service.ovenNumber", { number: oven.index + 1 })}
+              <div className={`oven-label${oven.isStove ? " stove-label" : ""}`}>
+                {oven.isStove
+                  ? `🍝 ${t("service.stove")}`
+                  : oven.isWoodFired
+                    ? `${t("service.ovenNumber", { number: oven.index + 1 })} · ${t("service.woodFired")}`
+                    : t("service.ovenNumber", { number: oven.index + 1 })}
               </div>
             )}
             <div className="slots">
               {Array.from({ length: oven.slots }, (_, slotIndex) => {
                 const pizza = pizzas[slotIndex];
-                if (!pizza) return <div key={slotIndex} className="slot idle">{t("service.freeSlot")}</div>;
+                if (!pizza) return <div key={slotIndex} className={`slot idle${oven.isStove ? " burner" : ""}`}>{t("service.freeSlot")}</div>;
                 const progress = Math.min(100, (pizza.bakedSeconds / pizza.bakeDuration) * 100);
                 return (
-                  <div key={pizza.id} className="slot">
+                  <div key={pizza.id} className={`slot${oven.isStove ? " burner" : ""}`}>
                     <Pizza ingredients={pizza.ingredients} className="glow" />
                     <div className="bar"><i style={{ width: progress + "%" }} /></div>
                   </div>
@@ -86,7 +96,7 @@ const Pass = ({ state, service, dispatch, coachTarget }: WithCoach) => {
             <Pizza ingredients={pizza.ingredients} baked />
             <div className="grow">
               <div className="rn">
-                {recipe ? t.recipe(recipe) : t("common.improvisedPizza")}
+                {recipe ? t.recipe(recipe) : t(dishOf(pizza.ingredients) === "pasta" ? "common.improvisedPasta" : "common.improvisedPizza")}
                 {pizza.secret && <span aria-hidden="true"> ✨</span>}
               </div>
               <div className="hint rt">

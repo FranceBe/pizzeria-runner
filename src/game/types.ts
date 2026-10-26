@@ -450,6 +450,8 @@ export interface LifetimeStats {
   /** Keyed like ServiceStats.byRecipe. */
   byRecipe: Record<string, RecipeSales>;
   sweetServed: number;
+  /** Plates of pasta served (the trattoria). */
+  pastaServed?: number;
   drinksSold: number;
   happyTables: number;
   birthdays: number;
@@ -581,6 +583,8 @@ export interface Settings {
   /** Comfort upgrades can be switched off for free, for those who play better without them. */
   useDrawer: boolean;
   commisFade: boolean;
+  /** The trattoria: the prep line's pizza / pasta tab follows the selected ticket (and the commis with it). */
+  autoDish: boolean;
   /** The nickname shown to others in multiplayer; empty until chosen. */
   playerName: string;
   /** How hard the game is (game/playOptions.ts). */
@@ -717,6 +721,7 @@ export type GameAction =
   | { type: "openRestaurant" }
   | { type: "tick"; seconds: number }
   | { type: "selectCustomer"; customerId: string }
+  | { type: "switchDish"; dish: "pizza" | "pasta" }
   | { type: "toggleIngredient"; ingredientId: IngredientId }
   | { type: "trashBoard" }
   | { type: "bake" }
@@ -772,7 +777,7 @@ export type GameAction =
   | { type: "toggleHelp" }
   | { type: "setTheme"; theme: Theme }
   | { type: "toggleLargeText" }
-  | { type: "toggleComfort"; option: "useDrawer" | "commisFade" }
+  | { type: "toggleComfort"; option: "useDrawer" | "commisFade" | "autoDish" }
   | { type: "sellUpgrade"; upgradeKey: UpgradeKey }
   | { type: "setVolume"; channel: SoundChannel; volume: number }
   | { type: "toggleMute"; channel: SoundChannel }

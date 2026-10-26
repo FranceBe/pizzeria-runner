@@ -1,11 +1,11 @@
 import { formatEveningTime } from "../../game/clock";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { COMMIS_FADES_PANS } from "../../data/progression";
 import { revealInList } from "../../utils/scroll";
 import { isRegularCustomer } from "../../game/customers";
-import { barmanTarget, isStuck, ovenSlots, selectedCustomer as findSelectedCustomer } from "../../game/service";
+import { barmanTarget, isStuck, ovenSlots, ovenWithRoom, selectedCustomer as findSelectedCustomer } from "../../game/service";
 import { PauseMenu, ServiceWayOut } from "./PauseMenu";
-import { hasBase, haveSameIngredients } from "../../game/pizza";
+import { cooksInOven, dishOf, hasBase, haveSameIngredients, type Dish } from "../../game/pizza";
 import { tutorialStep } from "../../game/tutorial";
 import { useTranslation } from "../../i18n/I18nContext";
 import { formatClock } from "../../utils/format";
@@ -30,6 +30,7 @@ import { TRAP_EVERY_SERVED, trapsEarned } from "../../multiplayer/protocol";
 import { commisLevel } from "../../game/commis";
 import { barmanProfile } from "../../game/staff";
 import { onTap } from "../../components/tap";
+import { PASTA_STATIONS, PREP_STATIONS } from "../../data/ingredients";
 import { ranking } from "../MultiplayerView";
 
 // What the board is compared with: a customer's order, or the group order's next pizza.
@@ -69,7 +70,9 @@ const BoardCheck = ({ customer, board }: { customer: BoardTarget; board: readonl
 const WorkBoard = ({ state, service, dispatch, selectedCustomer, target, coachTarget }: WorkBoardProps) => {
   const t = useTranslation();
   const { board, oven } = service;
-  const ovenIsFull = oven.length >= ovenSlots(state);
+  // Full: no room where this dish cooks (the oven, or the trattoria's stove for pasta).
+  const ovenIsFull = hasBase(board) ? !ovenWithRoom(state, service) : oven.length >= ovenSlots(state);
+  const onStove = hasBase(board) && !cooksInOven(board);
   return (
     <section className="a-peel peel" aria-label={t("service.workBoard")}>
       <div className="peel-pz">
@@ -88,7 +91,7 @@ const WorkBoard = ({ state, service, dispatch, selectedCustomer, target, coachTa
           disabled={!hasBase(board) || ovenIsFull}
           {...onTap(() => dispatch({ type: "bake" }))}
         >
-          {ovenIsFull ? t("service.ovenFull") : t("service.bake")}
+          {onStove ? (ovenIsFull ? t("service.stoveFull") : t("service.cook")) : ovenIsFull ? t("service.ovenFull") : t("service.bake")}
         </button>
       </div>
       {/* The secrets' keys only once they are shared: the legend mustn't give them away. */}
@@ -217,6 +220,23 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
     : selectedCustomer && !selectedCustomer.asUsual && !selectedCustomer.pizzaServed ? selectedCustomer : undefined;
   const tutorial = tutorialStep(state);
   const coachTarget = tutorial?.target ?? null;
+  // The trattoria: the prep line shows what the order being made is (or what is on the board), pizzas or pasta, and
+  // can be switched by hand. Never in challenges (pizzas only).
+  const hasTrattoria = state.upgrades.trattoria > 0 && !challenge;
+  // The selected ticket picks the tab (each time a ticket is picked); without one, what is on the board.
+  const followed: Dish = target ? dishOf(target.ingredients) : service.board.length ? dishOf(service.board) : "pizza";
+  const [railDish, setRailDish] = useState<Dish>(followed);
+  // Unless switched off in the settings: then the tabs are only moved by hand.
+  const autoDish = state.settings.autoDish;
+  useEffect(() => {
+    if (autoDish) setRailDish(followed);
+  }, [autoDish, followed, service.selectedCustomerId]);
+  // A tab picked by hand: the commis swaps the base they laid for the other dish's.
+  const pickDish = (dish: Dish) => {
+    setRailDish(dish);
+    if (dish !== railDish) dispatch({ type: "switchDish", dish });
+  };
+  const shownDish: Dish = hasTrattoria ? railDish : "pizza";
 
   // Keeps the selected ticket on screen as tickets come and go (a phone shows only two or three at a time).
   const ticketList = useRef<HTMLDivElement>(null);
@@ -292,7 +312,17 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
       <WorkBoard state={state} service={service} dispatch={dispatch} selectedCustomer={selectedCustomer} target={target} coachTarget={coachTarget} />
       <OvenAndPass state={state} service={service} dispatch={dispatch} coachTarget={coachTarget} />
       <div className="a-rail">
+        {hasTrattoria && (
+          <div className="rail-tabs" role="tablist" aria-label={t("service.railLabel")}>
+            {(["pizza", "pasta"] as const).map((dish) => (
+              <button key={dish} role="tab" aria-selected={dish === shownDish} className={`rail-tab${dish === shownDish ? " on" : ""}`} {...onTap(() => pickDish(dish))}>
+                {t(dish === "pizza" ? "service.railPizza" : "service.railPasta")}
+              </button>
+            ))}
+          </div>
+        )}
         <PrepLine
+          stations={shownDish === "pasta" ? PASTA_STATIONS : PREP_STATIONS}
           state={state}
           isBottomless={Boolean(challenge)}
           stillComing={state.lateIngredient && isStillComing(state, service, state.lateIngredient) ? state.lateIngredient : null}
@@ -301,7 +331,7 @@ export const ServiceView = ({ state, service, dispatch }: ServiceScreenProps) =>
           neededIngredients={state.settings.showHelp && target ? target.ingredients : []}
           orderIngredients={target?.ingredients ?? []}
           fadeLevel={challenge || !state.settings.commisFade ? 0 : Math.max(0, commisLevel(state) - COMMIS_FADES_PANS + 1)}
-          drawerIds={challenge ? [] : drawerIngredients(state)}
+          drawerIds={challenge || shownDish === "pasta" ? [] : drawerIngredients(state)}
           coachTarget={coachTarget}
           onPickIngredient={(id) => dispatch({ type: "toggleIngredient", ingredientId: id })}
           secrets={challenge ? [] : secretJars(state, service, dispatch)}

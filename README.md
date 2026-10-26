@@ -89,7 +89,8 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 
 - **Classics** join the recipe book as soon as all their ingredients are signed. **Nonna's secret recipes** come at
   levels 4, 7, 10 and 15; they are a little more appealing than the others.
-- **House recipes**: create your own (up to 8 toppings, one sauce, or none for a white pizza). Appeal goes up with
+- **House recipes**: create your own (up to 8 toppings, one sauce, or none for a white pizza), or, with the trattoria
+  open, a plate of pasta (one pasta, then the same rules). Appeal goes up with
   toppings, cheese and good pairings, down with clashes. **Desserts** (from level 6: chocolate spread, mascarpone,
   banana, strawberries, hazelnuts) need neither cheese nor sauce, but don't mix with meat or fish.
 - **Price**: the suggested price covers the ingredients with a fair margin. Cheaper brings more orders, too expensive
@@ -248,6 +249,7 @@ can unlock suppliers, upgrades and recipes, and lets the menu hold one more pizz
 | Bar | Drinks: lemonade and sparkling water, then chinotto and red wine, then a barman who serves them (see the staff) |
 | Floor staff | Someone takes ready pizzas to the tables on their own, every 8 then 5 seconds (see the staff) |
 | Second oven | One slow slot when built, then improving like the first oven, up to wood-fired. Two ovens of two pizzas: four at most, which is already a lot to keep up with |
+| Trattoria | From level 9: plates of pasta (see below). The stove gets 2 burners at 6 seconds, then 3 at 4.5 seconds (level 11); the menu holds 4 more dishes |
 | Second address | Brings in money every evening |
 
 Any upgrade can be sold back, one level at a time and outside service, for 75% of what that level cost: for one that
@@ -272,6 +274,17 @@ with them (in the morning; they stay among the candidates). An empty post is sai
 hardcore, someone may hand in their notice (3% a morning). The floor staff take a ready pizza to its table every 8
 seconds (5 at the second level); never in challenges.
 
+**The trattoria** (`game/pizza.ts` `dishOf`/`cooksInOven`, `components/PastaPlate.tsx`): once open, its suppliers come
+to the market (spaghetti, penne, tagliatelle, lasagne sheets, guanciale, pecorino, black pepper, ragù, pesto) and eight
+pasta classics join the recipe book (carbonara, cacio e pepe, amatriciana, arrabbiata, penne al pesto, tagliatelle
+bolognese, tagliatelle with mushrooms, lasagne), with their own pairings. A pasta is a plate's base, as the dough is a
+pizza's: one per plate. During service, binder tabs on top of the prep line switch between the pizza line and the pasta line: picking a
+ticket opens its dish's tab (unless switched off in Settings, to move between them by hand), and the commis follows (with only the base they laid on the board, they swap it for the
+other dish's: pizza dough, or the order's pasta). Plates of pasta cook on the stove's burners, one row in the oven
+panel (on gas: it keeps going during a power cut), while lasagne bake in the oven like pizzas. A plate nobody ordered shows on the pass as improvised pasta. Pasta is a little more
+appealing with fewer things on it, never for gluten-free customers, never cut into slices. The recipe editor gets a
+Pizza / Pasta switch, and the Menu tab comes in two parts (pizzas, then pasta), on the chalkboard and below. Four achievements go with it. Daily challenges and multiplayer stay pizzas only.
+
 **Loyal suppliers** (`game/loyalty.ts`): portions bought at the market (by hand or restocking, never what is given)
 count towards a supplier's loyalty: 40 portions bring 5% off, 120 bring 10%, 300 bring 15%, on top of the day's prices;
 at the top tier, the supplier sends 5 portions every week. Each crate shows its tier and a thin bar to the next one.
@@ -282,7 +295,7 @@ Once the money piles up, the pizzeria's looks can be bought too: awning colours,
 
 Accounts (profit chart, best sellers, best day, stars, best streak, completed quests), online reviews, regulars'
 profiles, the pairings
-book, and the achievements. 34 of them can be earned by playing (one stays hidden until then); the last one keeps its
+book, and the achievements. 38 of them can be earned by playing (one stays hidden until then); the last one keeps its
 secret.
 
 **Online reviews** (on Gustoscope, a made-up site): every evening, a few customers rate the pizzeria from 1 to 5 stars.

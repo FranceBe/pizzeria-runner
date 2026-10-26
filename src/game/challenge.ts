@@ -4,7 +4,7 @@ import { CUSTOMER_NAMES, LINES_PER_MOOD } from "../data/customers";
 import { CLASSIC_RECIPES, type ClassicRecipeId } from "../data/recipes";
 import { hashString, makeId, pickRandom, randomIndex, seededStep } from "../utils/random";
 import { rollLooks } from "./looks";
-import { fairPrice, fillingsOf, isDessert, sortByLayer } from "./pizza";
+import { dishOf, fairPrice, fillingsOf, isDessert, sortByLayer } from "./pizza";
 import type { Challenge, Customer } from "./types";
 
 export const CHALLENGE_SECONDS = 120;
@@ -28,7 +28,10 @@ const draw = (challenge: Challenge): number => {
 const drawFrom = <T>(challenge: Challenge, list: readonly T[]): T => list[Math.floor(draw(challenge) * list.length)];
 
 // Savoury classics only: every player gets the same four, whatever they have unlocked.
-const CHALLENGE_RECIPES = CLASSIC_RECIPES.filter((classic) => !classic.signatureLevel && !classic.festival && !isDessert(classic.ingredients));
+// Pizzas only (no pasta): the pool, and so every challenge's customers, stay what they always were.
+const CHALLENGE_RECIPES = CLASSIC_RECIPES.filter(
+  (classic) => !classic.signatureLevel && !classic.festival && !isDessert(classic.ingredients) && dishOf(classic.ingredients) === "pizza",
+);
 
 // `seconds`: a match against friends may be shorter or longer, as its host picked.
 export const createChallenge = (date: string, multiplayer = false, seconds: number = CHALLENGE_SECONDS, royale = false): Challenge => {

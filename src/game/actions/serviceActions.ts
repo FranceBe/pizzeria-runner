@@ -1,6 +1,6 @@
 import { DRINKS, DRINK_IDS, TRAY_SIZE, type DrinkId } from "../../data/drinks";
 import { canAfford } from "../../utils/math";
-import { INGREDIENTS, type IngredientId } from "../../data/ingredients";
+import { INGREDIENTS, PASTA_STATIONS, type IngredientId } from "../../data/ingredients";
 import {
   ANNEXE_INCOME, COMMIS_SPREADS_DOUGH, DELIVERY_CHANCE, DESSERT_RETURN_CHANCE, DESSERT_RETURN_SECONDS, WOOD_FIRED_XP_BONUS,
 } from "../../data/progression";
@@ -39,7 +39,7 @@ import { sendPostcard } from "../postcards";
 import { CELEBRITY_CHANCE, CELEBRITY_LEVEL, INSPECTION_MIN_SERVED, INSPECTION_XP } from "../../data/events";
 import { activeMenu, discoverClassics } from "../menu";
 import { discoverPairings } from "../pairings";
-import { hasBase, haveSameIngredients, ingredientCost, isBase, isDessert, isSauce, sortByLayer } from "../pizza";
+import { hasBase, haveSameIngredients, ingredientCost, isBase, isDessert, isSauce, sortByLayer, cooksInOven, dishOf, type Dish } from "../pizza";
 import { levelForXp } from "../progression";
 import { advanceQuest, expireQuest, maybeOfferQuest, prepareWedding } from "../quests";
 import { barmanTarget, destinationOf, maxQueueLength, ovenWithRoom, selectedCustomer } from "../service";
@@ -67,6 +67,25 @@ const TABLE_COLORS = 4;
 const CHALLENGE_CUSTOMERS = 999;
 
 const DOUGH: IngredientId = "pate";
+
+// With the trattoria, the commis follows the dish being made: when the board holds only the base they put down, they
+// swap it for the other dish's (the selected order's own when it is that dish). Mutates state.
+const followDish = (state: GameState, service: Service, dish: Dish): void => {
+  const [laid] = service.board;
+  if (state.upgrades.trattoria < 1 || service.challenge || commisLevel(state) < COMMIS_SPREADS_DOUGH) return;
+  if (service.board.length !== 1 || !isBase(laid) || dishOf([laid]) === dish || service.secretOnBoard || service.mammaOnBoard) return;
+  const wanted = selectedCustomer(service)?.ingredients.find(isBase);
+  const base =
+    wanted && dishOf([wanted]) === dish
+      ? wanted
+      : dish === "pizza"
+        ? DOUGH
+        : PASTA_STATIONS[0].ingredientIds.find((id) => inStock(state, id) > 0 && !isStillComing(state, service, id));
+  if (!base || inStock(state, base) < 1 || isStillComing(state, service, base)) return;
+  addToStock(state, laid);
+  service.board = [base];
+  takeFromStock(state, base);
+};
 
 // During a challenge the fridge is bottomless and nothing is taken from it.
 const isChallenge = (state: GameState): boolean => Boolean(state.service?.challenge);
@@ -687,7 +706,16 @@ export const serviceActions = {
   },
 
   selectCustomer(state, { customerId }) {
-    if (state.service) state.service.selectedCustomerId = customerId;
+    const { service } = state;
+    if (!service) return;
+    service.selectedCustomerId = customerId;
+    const customer = selectedCustomer(service);
+    if (customer && state.settings.autoDish) followDish(state, service, dishOf(customer.ingredients));
+  },
+
+  // The prep line's pizza / pasta tabs: the commis's base follows.
+  switchDish(state, { dish }) {
+    if (state.service) followDish(state, state.service, dish);
   },
 
   // Gives up on remembering a regular's usual: the ticket shows the recipe, without the bonus.
@@ -830,7 +858,7 @@ export const serviceActions = {
     if (!service || !hasBase(service.board)) return;
     const oven = ovenWithRoom(state, service);
     if (!oven) {
-      pushToast(state, { key: "ovenFull" });
+      pushToast(state, { key: cooksInOven(service.board) ? "ovenFull" : "stoveFull" });
       return;
     }
     if (isRoyale(service) && isUnwanted(service, service.board)) return knockOut(state, service, "unwantedPizza");

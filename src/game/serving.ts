@@ -7,7 +7,7 @@ import type { Pairing } from "../data/recipes";
 import type { IngredientId } from "../data/ingredients";
 import { hasSpecialRequest, moodForWait, rollTip } from "./customers";
 import { payBonus, receivePayment } from "./economy";
-import { fillingsOf, isDessert } from "./pizza";
+import { dishOf, fillingsOf, isDessert } from "./pizza";
 import { CELEBRITY_TIP, CELEBRITY_XP, FAMILY_BONUS, FAMILY_XP } from "../data/events";
 import { RUSH_TIP_FACTOR } from "./evening";
 import { streakMultiplier, warmthTipFactor } from "./streak";
@@ -201,6 +201,7 @@ export const recordLifetime = (state: GameState, customer: Customer, tip: number
     lifetime.sweetServed += 1;
     recordWeekly(state, "desserts", 1);
   }
+  if (dishOf(customer.ingredients) === "pasta") lifetime.pastaServed = (lifetime.pastaServed ?? 0) + 1;
   if (mood === 0) recordWeekly(state, "happy", 1);
   recordWeekly(state, "served", 1);
   if (tip) recordWeekly(state, "tips", tip);

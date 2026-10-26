@@ -16,6 +16,13 @@ const isSavouryProtein = (id: IngredientId): boolean => Boolean(INGREDIENTS_BY_I
 export const isDessert = (ingredients: readonly IngredientId[]): boolean => ingredients.some((id) => isSweet(id) && id !== "miel");
 export const fillingsOf = (ingredients: readonly IngredientId[]): IngredientId[] => ingredients.filter(isFilling);
 
+// The trattoria: a pasta is the base of a plate of pasta, as the dough is a pizza's.
+export const isPasta = (id: IngredientId): boolean => Boolean(INGREDIENTS_BY_ID[id].pasta);
+export type Dish = "pizza" | "pasta";
+export const dishOf = (ingredients: readonly IngredientId[]): Dish => (ingredients.some(isPasta) ? "pasta" : "pizza");
+/** Pizzas bake in the oven, and so do lasagne; other pastas cook on the stove. */
+export const cooksInOven = (ingredients: readonly IngredientId[]): boolean => dishOf(ingredients) === "pizza" || ingredients.includes("lasagne");
+
 // Dough first, then sauce, cheeses, toppings; ties keep the ingredient list order.
 export const sortByLayer = (ingredients: readonly IngredientId[]): IngredientId[] => {
   return [...ingredients].sort(
@@ -68,6 +75,8 @@ export const appealOf = (ingredients: readonly IngredientId[], isClassic: boolea
   if (cheeseCount >= 3) appeal += 0.1;
   if (fillingCount > 7) appeal -= 0.08 * (fillingCount - 7);
   if (isClassic) appeal += 0.1;
+  // A plate of pasta needs fewer things on it to be good.
+  if (dishOf(ingredients) === "pasta") appeal += 0.15;
   if (isSignature) appeal += SIGNATURE_APPEAL_BONUS;
   return clamp(appeal, MIN_APPEAL, MAX_APPEAL);
 };

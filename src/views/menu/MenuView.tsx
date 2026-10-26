@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { INGREDIENTS_BY_ID } from "../../data/ingredients";
 import { CLASSIC_RECIPES } from "../../data/recipes";
-import { activeMenu, canCook, isNewRecipe, knowsRecipe, recipeAppeal, signatureLevel } from "../../game/menu";
+import { activeMenu, canCook, isNewRecipe, knowsRecipe, menuCapacityOf, recipeAppeal, signatureLevel } from "../../game/menu";
 import { seasonalRecipe } from "../../game/seasons";
 import { canChooseSpecial, isSpecial } from "../../game/special";
 import { FESTIVALS } from "../../data/festivals";
 import { festivalOfRecipe } from "../../game/calendar";
-import { fairPrice, ingredientCost, PRICE_STEP } from "../../game/pizza";
-import { levelForXp, menuCapacity } from "../../game/progression";
+import { dishOf, fairPrice, ingredientCost, PRICE_STEP, type Dish } from "../../game/pizza";
 import { useTranslation } from "../../i18n/I18nContext";
 import { AppealStars } from "../../components/AppealStars";
 import { Pizza } from "../../components/Pizza";
@@ -134,39 +133,62 @@ export const MenuView = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const [isEditorOpen, setEditorOpen] = useState(false);
   const [recipeIdToDelete, setRecipeIdToDelete] = useState<RecipeId | null>(null);
-  const level = levelForXp(state.xp);
   const cookableRecipes = state.recipes.filter((recipe) => canCook(state, recipe));
+  // With the trattoria open, the menu comes in two parts: the pizzas, then the pasta.
+  const hasTrattoria = state.upgrades.trattoria > 0;
+  const parts: readonly (Dish | null)[] = hasTrattoria ? ["pizza", "pasta"] : [null];
+  const inPart = (part: Dish | null) => (recipe: Recipe) => part === null || dishOf(recipe.ingredients) === part;
+  const partTitle = (part: Dish) => t(part === "pizza" ? "menu.pizzas" : "menu.pasta");
+  const capacity = { count: activeMenu(state).length, capacity: menuCapacityOf(state) };
   return (
     <>
       <div className="chalkboard">
         <div className="grow">
           <h2 className="chalk-title">{t("menu.title")}</h2>
-          <p className="chalk-sub">{t("menu.capacity", { count: activeMenu(state).length, capacity: menuCapacity(level) })}</p>
+          <p className="chalk-sub">{hasTrattoria ? t("menu.capacityDishes", capacity) : t("menu.capacity", capacity)}</p>
         </div>
-        <ul className="chalk-list">
-          {activeMenu(state).map((recipe) => (
-            <li key={recipe.id}>
-              <span>{isSpecial(state, recipe.id) && "★ "}{t.recipe(recipe)}</span>
-              <span className="chalk-dots" />
-              <span>{t.money(recipe.price)}</span>
-            </li>
-          ))}
-        </ul>
+        {parts.map((part) => {
+          const dishes = activeMenu(state).filter(inPart(part));
+          if (part && !dishes.length) return null;
+          return (
+            <div key={part ?? "all"} className="chalk-part">
+              {part && <h3 className="chalk-part-title">{partTitle(part)}</h3>}
+              <ul className="chalk-list">
+                {dishes.map((recipe) => (
+                  <li key={recipe.id}>
+                    <span>{isSpecial(state, recipe.id) && "★ "}{t.recipe(recipe)}</span>
+                    <span className="chalk-dots" />
+                    <span>{t.money(recipe.price)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
         <button className="btn primary" onClick={() => setEditorOpen(true)}>{t("menu.createRecipe")}</button>
       </div>
-      <div className="grid2">
-        {cookableRecipes.map((recipe) => (
-          <RecipeCard
-            key={recipe.id}
-            state={state}
-            recipe={recipe}
-            dispatch={dispatch}
-            isConfirmingDelete={recipeIdToDelete === recipe.id}
-            onAskDelete={() => setRecipeIdToDelete(recipe.id)}
-            onCancelDelete={() => setRecipeIdToDelete(null)}
-          />
-        ))}
-      </div>
+      {parts.map((part) => {
+        const recipes = cookableRecipes.filter(inPart(part));
+        if (part && !recipes.length) return null;
+        return (
+          <section key={part ?? "all"} className="menu-part">
+            {part && <h3 className="h menu-part-title">{partTitle(part)}</h3>}
+            <div className="grid2">
+              {recipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  state={state}
+                  recipe={recipe}
+                  dispatch={dispatch}
+                  isConfirmingDelete={recipeIdToDelete === recipe.id}
+                  onAskDelete={() => setRecipeIdToDelete(recipe.id)}
+                  onCancelDelete={() => setRecipeIdToDelete(null)}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
       <ClassicsToDiscover state={state} />
       {isEditorOpen && <RecipeEditor state={state} dispatch={dispatch} onClose={() => setEditorOpen(false)} />}
     </>

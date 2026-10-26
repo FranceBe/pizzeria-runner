@@ -1,10 +1,12 @@
 import { INGREDIENTS_BY_ID, PALE_COLORS, type Ingredient, type IngredientId } from "../data/ingredients";
 import { ToppingPiece } from "./ToppingPiece";
+import { PastaPile } from "./PastaPlate";
 
 const DOT_POSITIONS: readonly (readonly [number, number])[] = [[-5, -3], [4, -5], [0, 3], [-4, 6], [6, 4], [-8, 1]];
 
 const IconBody = ({ ingredient }: { ingredient: Ingredient }) => {
   const { kind, shape, color } = ingredient;
+  if (ingredient.pasta) return <PastaPile shape={ingredient.pasta} color={color} />;
   if (kind === "base") return <circle r="12" fill="#efd7a6" stroke="#dcae6d" strokeWidth="3" />;
   if (kind === "sauce") {
     return (

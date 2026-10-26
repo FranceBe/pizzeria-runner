@@ -76,6 +76,14 @@ describe("the staff", () => {
     expect(play(state, { type: "hireStaff", role: "commis", name: "Charlie" }).commis?.name).toBe("Charlie");
   });
 
+  it("keeps a post left vacant empty after reloading the save", () => {
+    const state = play(staffed(), { type: "fireStaff", role: "commis" }, { type: "fireStaff", role: "barman" });
+    const loaded = hydrateState(toJson(state));
+    expect(loaded.commis).toBeUndefined();
+    expect(loaded.barman).toBeUndefined();
+    expect(vacantPosts(loaded)).toEqual(["commis", "barman"]);
+  });
+
   it("changes the evening's charges by exactly what each one costs, in every post", () => {
     const empty = (role: StaffRole) => {
       const state = staffed();

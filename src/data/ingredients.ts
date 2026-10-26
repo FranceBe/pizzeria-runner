@@ -4,6 +4,9 @@ export type ToppingShape =
   | "blob" | "leaf" | "dot" | "square" | "mushroom" | "ring" | "strip" | "disc" | "round" | "shaving"
   | "fish" | "heart" | "egg" | "cube" | "slice" | "ribbon" | "ball" | "drizzle";
 
+/** The shapes of pasta, for drawing a plate (components/Pizza.tsx) and a pan. */
+export type PastaShape = "spaghetti" | "penne" | "tagliatelle" | "lasagne";
+
 interface IngredientSpec {
   id: string;
   kind: IngredientKind;
@@ -31,6 +34,10 @@ interface IngredientSpec {
   /** For customers' diets. */
   meat?: "pork" | "other";
   fish?: boolean;
+  /** A pasta (a base for a plate of pasta rather than a pizza): its shape. */
+  pasta?: PastaShape;
+  /** Sold once the trattoria is open (the upgrade), on top of the reputation level. */
+  trattoria?: boolean;
 }
 
 // The ids are stored in save files: never rename them. Names live in src/i18n.
@@ -70,6 +77,16 @@ const INGREDIENT_LIST = [
   { id: "banane", kind: "topping", cost: 0.5, requiredLevel: 6, supplierFee: 35, color: "#f2dc8a", shape: "slice", count: 8, sweet: true },
   { id: "fraise", kind: "topping", cost: 0.9, requiredLevel: 6, supplierFee: 45, color: "#d8344a", shape: "heart", count: 8, sweet: true },
   { id: "noisette", kind: "topping", cost: 0.6, requiredLevel: 6, supplierFee: 35, color: "#a86b3c", shape: "dot", count: 16, radius: 2.6, sweet: true },
+  // The trattoria (an upgrade): pastas, the bases of a plate of pasta, and what goes with them
+  { id: "spaghetti", kind: "base", cost: 0.5, requiredLevel: 9, supplierFee: 60, color: "#f1d48a", pasta: "spaghetti", trattoria: true },
+  { id: "penne", kind: "base", cost: 0.5, requiredLevel: 9, supplierFee: 60, color: "#eecb7e", pasta: "penne", trattoria: true },
+  { id: "tagliatelle", kind: "base", cost: 0.6, requiredLevel: 9, supplierFee: 70, color: "#f0cf86", pasta: "tagliatelle", trattoria: true },
+  { id: "lasagne", kind: "base", cost: 0.7, requiredLevel: 10, supplierFee: 80, color: "#efcf88", pasta: "lasagne", trattoria: true },
+  { id: "guanciale", kind: "topping", cost: 1.3, requiredLevel: 9, supplierFee: 70, color: "#eab6a3", shape: "cube", count: 14, meat: "pork", trattoria: true },
+  { id: "pecorino", kind: "cheese", cost: 1.2, requiredLevel: 9, supplierFee: 60, color: "#f3e6bf", shape: "shaving", count: 14, trattoria: true },
+  { id: "poivre", kind: "topping", cost: 0.1, requiredLevel: 9, supplierFee: 20, color: "#2c2a28", shape: "dot", count: 26, radius: 1.3, trattoria: true },
+  { id: "ragu", kind: "sauce", cost: 1.4, requiredLevel: 9, supplierFee: 80, color: "#8e2f1d", meat: "other", trattoria: true },
+  { id: "pesto", kind: "sauce", cost: 1.1, requiredLevel: 10, supplierFee: 70, color: "#5f8f2c", trattoria: true },
   // Festivals: on sale for a few days a year, to everyone
   { id: "potiron", kind: "topping", cost: 0.5, requiredLevel: 1, supplierFee: 0, color: "#e8862a", shape: "cube", count: 18, festival: "halloween" },
   { id: "marron", kind: "topping", cost: 0.8, requiredLevel: 1, supplierFee: 0, color: "#7a4a2a", shape: "round", count: 7, festival: "christmas" },
@@ -99,7 +116,7 @@ export const KIND_LAYER_ORDER: Record<IngredientKind, number> = { base: 0, sauce
 // Ingredients pale enough to need a darker backdrop when drawn on a light background.
 export const PALE_COLORS: readonly string[] = ["#ffffff", "#fbf6e9", "#f7f3ea", "#e3e8d3", "#f2e1ad", "#efd892", "#e8d29a"];
 
-export type StationId = "base" | "sauce" | "cheese" | "meat" | "veg" | "herb" | "finish" | "sweet";
+export type StationId = "base" | "sauce" | "cheese" | "meat" | "veg" | "herb" | "finish" | "sweet" | "pasta";
 
 export interface PrepStation {
   id: StationId;
@@ -116,4 +133,16 @@ export const PREP_STATIONS: readonly PrepStation[] = [
   { id: "herb", ingredientIds: ["basilic", "origan", "roquette", "piment"] },
   { id: "finish", ingredientIds: ["miel", "oeuf", "truffe", "marron"] },
   { id: "sweet", ingredientIds: ["banane", "fraise", "noisette", "framboise"] },
+];
+
+// The trattoria's prep line, for plates of pasta: the pastas, then their sauces, cheeses and what goes on top. Some
+// are the pizzas' too (the same pans, the same stock).
+export const PASTA_STATIONS: readonly PrepStation[] = [
+  { id: "pasta", ingredientIds: ["spaghetti", "penne", "tagliatelle", "lasagne"] },
+  { id: "sauce", ingredientIds: ["tomate", "ragu", "pesto", "creme"] },
+  { id: "cheese", ingredientIds: ["pecorino", "parmesan", "mozza"] },
+  { id: "meat", ingredientIds: ["guanciale", "lardons", "jambon"] },
+  { id: "veg", ingredientIds: ["champi", "artichaut", "olive"] },
+  { id: "herb", ingredientIds: ["basilic", "piment", "poivre", "roquette"] },
+  { id: "finish", ingredientIds: ["oeuf", "truffe"] },
 ];

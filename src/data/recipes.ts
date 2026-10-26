@@ -25,6 +25,15 @@ const CLASSIC_LIST = [
   { id: "nonnarosa", ingredients: ["pate", "creme", "mozza", "jambon", "champi", "roquette"], signatureLevel: 7 },
   { id: "segreto", ingredients: ["pate", "creme", "burrata", "truffe", "roquette", "miel"], signatureLevel: 10 },
   { id: "capolavoro", ingredients: ["pate", "tomate", "burrata", "jcru", "artichaut", "basilic", "parmesan"], signatureLevel: 15 },
+  // The trattoria: plates of pasta (the lasagne bake in the oven, the others cook on the stove).
+  { id: "carbonara", ingredients: ["spaghetti", "guanciale", "oeuf", "pecorino"] },
+  { id: "cacioepepe", ingredients: ["spaghetti", "pecorino", "poivre"] },
+  { id: "amatriciana", ingredients: ["spaghetti", "tomate", "guanciale", "pecorino"] },
+  { id: "arrabbiata", ingredients: ["penne", "tomate", "piment", "basilic"] },
+  { id: "pennepesto", ingredients: ["penne", "pesto", "parmesan"] },
+  { id: "bolognese", ingredients: ["tagliatelle", "ragu", "parmesan"] },
+  { id: "funghi", ingredients: ["tagliatelle", "creme", "champi", "parmesan"] },
+  { id: "lasagna", ingredients: ["lasagne", "ragu", "mozza", "parmesan"] },
   // Festivals: made with the basics plus the festival's ingredient, so every pizzeria can join in.
   { id: "zucca", ingredients: ["pate", "mozza", "potiron", "basilic"], festival: "halloween" },
   { id: "natale", ingredients: ["pate", "tomate", "mozza", "marron"], festival: "christmas" },
@@ -56,10 +65,14 @@ export const GOOD_PAIRINGS: readonly Pairing[] = [
   ["truffe", "creme"], ["poivron", "oignon"], ["artichaut", "olive"], ["jambon", "oeuf"], ["tomate", "origan"],
   ["salami", "miel"], ["chevre", "roquette"], ["gorgo", "champi"],
   ["chocolat", "banane"], ["chocolat", "noisette"], ["banane", "noisette"], ["fraise", "mascarpone"], ["chocolat", "fraise"],
+  // The trattoria's
+  ["guanciale", "pecorino"], ["guanciale", "oeuf"], ["oeuf", "pecorino"], ["pecorino", "poivre"], ["ragu", "parmesan"],
+  ["pesto", "parmesan"], ["ragu", "mozza"], ["tomate", "guanciale"], ["creme", "champi"], ["pesto", "basilic"],
 ];
 
 export const BAD_PAIRINGS: readonly Pairing[] = [
   ["miel", "anchois"], ["truffe", "piment"], ["burrata", "reblochon"],
   ["capres", "miel"], ["truffe", "salami"], ["oeuf", "anchois"],
   ["chocolat", "tomate"], ["fraise", "anchois"],
+  ["ragu", "pesto"], ["pesto", "anchois"],
 ];

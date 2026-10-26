@@ -1,5 +1,6 @@
 // A pizza nobody ordered, cut into slices for the queue instead of the bin: nothing is thrown away, and everyone
 // waiting gets some patience back (once each per evening). Not in challenges, where ingredients are free.
+import { dishOf } from "./pizza";
 import { destinationOf } from "./service";
 import { pushToast } from "./toasts";
 import type { Customer, GameState, Service } from "./types";
@@ -13,7 +14,8 @@ const enjoysASlice = (customer: Customer): boolean => !customer.delivery && !cus
 export const canOfferSlice = (state: GameState, service: Service, pizzaId: string): boolean => {
   if (service.challenge) return false;
   const pizza = service.ready.find((candidate) => candidate.id === pizzaId);
-  if (!pizza || destinationOf(state, service, pizza.ingredients)) return false;
+  // Only a pizza is shared in slices, not a plate of pasta.
+  if (!pizza || dishOf(pizza.ingredients) === "pasta" || destinationOf(state, service, pizza.ingredients)) return false;
   return service.customers.some(enjoysASlice);
 };
 

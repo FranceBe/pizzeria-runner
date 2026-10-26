@@ -33,6 +33,7 @@ const emptyLifetimeStats = (): LifetimeStats => ({
   bestDay: null,
   byRecipe: {},
   sweetServed: 0,
+  pastaServed: 0,
   drinksSold: 0,
   happyTables: 0,
   birthdays: 0,
@@ -59,7 +60,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
     stock: { pate: 8, tomate: 8, mozza: 8, basilic: 8 },
     unlocked,
     recipes: [createClassicRecipe(MARGHERITA, { onMenu: true, newUntil: 0 })],
-    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, annexe: 0 },
+    upgrades: { oven: 0, salle: 0, deco: 0, commis: 0, drawer: 0, terrasse: 0, livraison: 0, bar: 0, waiter: 0, oven2: 0, trattoria: 0, annexe: 0 },
     settings: {
       showHelp: true,
       language,
@@ -73,6 +74,7 @@ export const createInitialState = (language: Language = detectLanguage()): GameS
       tutorialDone: false,
       useDrawer: true,
       commisFade: true,
+      autoDish: true,
       playerName: "",
       difficulty: "normal",
     },
@@ -359,9 +361,12 @@ export const hydrateState = (saved: JsonObject): GameState => {
   };
   // Records, without a toast, what an older save had already earned.
   unlockAchievements(state, { silent: true });
-  nameOldCommis(state);
-  // The barman of older saves: the steady one they always were.
-  if (state.upgrades.bar >= BARMAN_LEVEL && !state.barman) state.barman = { name: "Lior" };
+  // Saves from before the staff (they have no candidates yet): the commis and the barman they had get a name. A post
+  // empty in a newer save was left empty by the player (or by a notice in hardcore), and stays so.
+  if (!state.staffCandidates) {
+    nameOldCommis(state);
+    if (state.upgrades.bar >= BARMAN_LEVEL && !state.barman) state.barman = { name: "Lior" };
+  }
   // This week's candidates, for a save from before them (or a new week reached in another tab).
   ensureCandidates(state);
   // A morning without tonight's goal yet (a save from before goals, or a new game set up): it gets one now.

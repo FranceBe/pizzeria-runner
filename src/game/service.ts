@@ -1,9 +1,9 @@
 import type { DayEventId } from "../data/events";
 import type { IngredientId } from "../data/ingredients";
-import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS, WOOD_FIRED_STAGE } from "../data/progression";
+import { BAKE_SECONDS, EXTRA_OVEN_KEYS, OVEN_SLOTS, STOVE_BURNERS, STOVE_SECONDS, WOOD_FIRED_STAGE } from "../data/progression";
 import { BATCH_ID, batchItemFor } from "./batch";
 import { marketPrice } from "./events";
-import { haveSameIngredients } from "./pizza";
+import { cooksInOven, haveSameIngredients } from "./pizza";
 import { barmanProfile } from "./staff";
 import type { Customer, GameState, Service } from "./types";
 
@@ -16,6 +16,8 @@ export interface Oven {
   slots: number;
   bakeSeconds: number;
   isWoodFired: boolean;
+  /** The trattoria's stove (its burners) cooks pasta; ovens bake pizzas and lasagne. */
+  isStove?: boolean;
 }
 
 const ovenAt = (index: number, stage: number): Oven => ({
@@ -33,12 +35,20 @@ const builtOvens = (state: GameState): Oven[] => [
     .map((level, position) => ovenAt(position + 1, level - 1)),
 ];
 
+// The trattoria's stove, once open: its burners come after the ovens.
+const stoveOf = (state: GameState, index: number): Oven[] =>
+  state.upgrades.trattoria > 0
+    ? [{ index, slots: STOVE_BURNERS[state.upgrades.trattoria], bakeSeconds: STOVE_SECONDS[state.upgrades.trattoria], isWoodFired: false, isStove: true }]
+    : [];
+
 export const ovensOf = (state: GameState): Oven[] => {
   const ovens = builtOvens(state);
-  if (state.event !== "powerCut") return ovens;
-  // Power cut (or no wood delivered): one oven, one pizza at a time. A wood-fired one keeps going without power.
+  const stove = stoveOf(state, ovens.length);
+  if (state.event !== "powerCut") return [...ovens, ...stove];
+  // Power cut (or no wood delivered): one oven, one pizza at a time. A wood-fired one keeps going without power, and
+  // so does the stove (on gas).
   const working = ovens.find((oven) => oven.isWoodFired) ?? ovens[0];
-  return [{ ...working, slots: 1 }];
+  return [{ ...working, slots: 1 }, ...stove];
 };
 
 // The power cut incident, told as a missing wood delivery when every oven burns wood.
@@ -70,10 +80,11 @@ export const isStuck = (state: GameState, service: Service): boolean => {
   });
 };
 
-// Where the next pizza goes: the fastest oven with room, or undefined when they are all full.
-export const ovenWithRoom = (state: GameState, service: Service): Oven | undefined => {
+// Where the next dish goes: the fastest oven (the stove, for pasta) with room, or undefined when they are all full.
+export const ovenWithRoom = (state: GameState, service: Service, ingredients: readonly IngredientId[] = service.board): Oven | undefined => {
+  const onStove = !cooksInOven(ingredients);
   return ovensOf(state)
-    .filter((oven) => pizzasIn(service, oven.index) < oven.slots)
+    .filter((oven) => Boolean(oven.isStove) === onStove && pizzasIn(service, oven.index) < oven.slots)
     .sort((a, b) => a.bakeSeconds - b.bakeSeconds)[0];
 };
 

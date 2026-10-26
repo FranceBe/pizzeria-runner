@@ -2,6 +2,7 @@ import type { IngredientId } from "../data/ingredients";
 import { CLASSIC_RECIPES, type ClassicRecipe } from "../data/recipes";
 import { appealOf, fairPrice, haveSameIngredients, isBase } from "./pizza";
 import { levelForXp, menuCapacity } from "./progression";
+import { TRATTORIA_MENU_ROOM } from "../data/progression";
 import { pushToast } from "./toasts";
 import type { GameState, Recipe } from "./types";
 
@@ -23,7 +24,11 @@ export const recipeAppeal = (recipe: { id: string; ingredients: readonly Ingredi
 // Recipes actually offered tonight: on the menu and with every supplier signed.
 export const activeMenu = (state: GameState): Recipe[] => state.recipes.filter((recipe) => recipe.onMenu && canCook(state, recipe));
 
-export const menuIsFull = (state: GameState): boolean => activeMenu(state).length >= menuCapacity(levelForXp(state.xp));
+/** How many dishes the menu holds: more with each level, and more again with the trattoria open. */
+export const menuCapacityOf = (state: GameState): number =>
+  menuCapacity(levelForXp(state.xp)) + (state.upgrades.trattoria > 0 ? TRATTORIA_MENU_ROOM : 0);
+
+export const menuIsFull = (state: GameState): boolean => activeMenu(state).length >= menuCapacityOf(state);
 
 export const isNewRecipe = (state: GameState, recipe: Recipe): boolean => recipe.newUntil >= state.day;
 
@@ -61,7 +66,7 @@ export const discoverClassics = (state: GameState): void => {
 export const MAX_FILLINGS = 8;
 
 /** Translation key under "editor.errors" in src/i18n. */
-export type RecipeError = "missingName" | "noTopping" | "duplicateIngredients" | "duplicateName";
+export type RecipeError = "missingName" | "noBase" | "noTopping" | "duplicateIngredients" | "duplicateName";
 
 // Returns why the recipe can't be saved, or null if it can.
 // displayName turns a recipe into the name the player sees (classic names are translated).
@@ -69,17 +74,19 @@ export const validateRecipe = (
   recipes: readonly Recipe[],
   name: string,
   ingredients: readonly IngredientId[],
-  displayName: (recipe: Recipe) => string,): RecipeError | null => {
+  displayName: (recipe: Recipe) => string,
+): RecipeError | null => {
   if (!name) return "missingName";
+  if (!ingredients.some(isBase)) return "noBase";
   if (ingredients.length < 2) return "noTopping";
   if (recipes.some((recipe) => haveSameIngredients(recipe.ingredients, ingredients))) return "duplicateIngredients";
   if (recipes.some((recipe) => displayName(recipe).toLowerCase() === name.toLowerCase())) return "duplicateName";
   return null;
 };
 
-// The recipe a pizza is, whatever its dough (a gluten-free Margherita is still a Margherita).
+// The recipe a pizza is, whatever its dough (a gluten-free Margherita is still a Margherita). A pasta stays itself.
 const withRegularDough = (ingredients: readonly IngredientId[]): IngredientId[] =>
-  ingredients.map((id) => (isBase(id) ? "pate" : id));
+  ingredients.map((id) => (id === "pateSG" ? "pate" : id));
 export const findRecipe = (state: GameState, recipeId: string): Recipe | undefined =>
   state.recipes.find((recipe) => recipe.id === recipeId);
 

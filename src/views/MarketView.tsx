@@ -185,7 +185,10 @@ const Suppliers = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const level = levelForXp(state.xp);
   // Festival ingredients come with the calendar, not from a supplier.
-  const lockedIngredients = INGREDIENTS.filter((ingredient) => !state.unlocked[ingredient.id] && !ingredient.festival);
+  // The trattoria's suppliers come along once it is open.
+  const lockedIngredients = INGREDIENTS.filter(
+    (ingredient) => !state.unlocked[ingredient.id] && !ingredient.festival && (!ingredient.trattoria || state.upgrades.trattoria > 0),
+  );
   return (
     <div className="card pad">
       <h2 className="h">{t("market.suppliers")}</h2>

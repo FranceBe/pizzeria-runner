@@ -143,6 +143,12 @@ const PizzeriaSettings = ({ state, dispatch }: ScreenProps) => {
           {t("settings.commisFade")}
         </label>
       )}
+      {state.upgrades.trattoria > 0 && (
+        <label className="switch">
+          <input type="checkbox" checked={state.settings.autoDish} onChange={() => dispatch({ type: "toggleComfort", option: "autoDish" })} />
+          {t("settings.autoDish")}
+        </label>
+      )}
       <InstallButton />
     </div>
   );
