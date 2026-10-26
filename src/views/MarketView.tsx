@@ -18,14 +18,12 @@ import { LOYALTY_GIFT_PORTIONS, LOYALTY_TIERS, loyaltyDiscount, loyaltyProgress,
 import type { ScreenProps } from "./types";
 
 const BUY_QUANTITIES = [1, 5, 10];
-const RESTOCK_TARGETS = [10, 20] as const;
+// Busy evenings, late in the game, need more than 20 of each.
+const RESTOCK_TARGETS = [10, 20, 30] as const;
 
 const Fridge = ({ state, dispatch }: ScreenProps) => {
   const t = useTranslation();
   const ownedIngredients = INGREDIENTS.filter((ingredient) => state.unlocked[ingredient.id]);
-  const [smallTarget, bigTarget] = RESTOCK_TARGETS;
-  const smallRestock = restockPlan(state, smallTarget);
-  const bigRestock = restockPlan(state, bigTarget);
   const canRestock = (plan: RestockPlan) => plan.items.length > 0 && plan.cost <= state.money;
   return (
     <div className="card pad">
@@ -39,12 +37,14 @@ const Fridge = ({ state, dispatch }: ScreenProps) => {
         </div>
       )}
       <div className="row" style={{ marginBottom: 12 }}>
-        <button className="btn sm" disabled={!canRestock(smallRestock)} onClick={() => dispatch({ type: "restock", targetQuantity: smallTarget })}>
-          {t("market.restockMenu", { target: smallTarget, cost: smallRestock.cost })}
-        </button>
-        <button className="btn sm" disabled={!canRestock(bigRestock)} onClick={() => dispatch({ type: "restock", targetQuantity: bigTarget })}>
-          {t("market.restockMore", { target: bigTarget, cost: bigRestock.cost })}
-        </button>
+        {RESTOCK_TARGETS.map((target, index) => {
+          const plan = restockPlan(state, target);
+          return (
+            <button key={target} className="btn sm" disabled={!canRestock(plan)} onClick={() => dispatch({ type: "restock", targetQuantity: target })}>
+              {t(index === 0 ? "market.restockMenu" : "market.restockMore", { target, cost: plan.cost })}
+            </button>
+          );
+        })}
       </div>
       <div className="crates">
         {ownedIngredients.map((ingredient) => {

@@ -200,6 +200,13 @@ describe("views", () => {
     expect(render(<SettingsView state={lateGameState()} dispatch={noop} />)).not.toContain("Bascule pizza / pâtes automatique");
   });
 
+  it("offers to restock the menu to 10, 20 or 30 portions", () => {
+    const html = render(<MarketView state={makeState({ money: 500, stock: {} })} dispatch={noop} />);
+    expect(html).toContain("Compléter la carte à 10");
+    expect(html).toContain("à 20 ·");
+    expect(html).toContain("à 30 ·");
+  });
+
   it("lets the editor make pasta only with the trattoria open", () => {
     expect(render(<RecipeEditor state={trattoriaState()} dispatch={noop} onClose={noop} />)).toContain("🍝 Pâtes");
     expect(render(<RecipeEditor state={lateGameState()} dispatch={noop} onClose={noop} />)).not.toContain("🍝 Pâtes");

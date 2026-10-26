@@ -26,7 +26,7 @@ Free, in English and French, on a computer or a phone (where it can also be inst
 
 A day has three moments:
 
-1. **Prep**: stock the fridge at the market, set the menu and its prices, then open.
+1. **Prep**: stock the fridge at the market (by hand, or topping up what the menu needs to 10, 20 or 30 portions), set the menu and its prices, then open.
 2. **Service**: customers come in one by one. Build each order on the board (dough first, then the sauce, cheeses and
    toppings), bake it, then serve it from the pass.
 3. **Closing**: a till receipt sums up the day. Its header gives the day's event and stars; then the service (pizzas
