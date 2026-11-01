@@ -5,12 +5,36 @@ import { dropPlace, layoutFor, locate, type Location } from "./layout";
 import { loadSave, recordsKey, withWin, writeSave, type SolitaireSave } from "./storage";
 import type { SolitaireTexts } from "./texts";
 import { CardBack, CardFace, Pip } from "./CardFace";
+import type { Hint, Step } from "./hint";
+import { useHints } from "./useHints";
 
 const UNDO_KEPT = 200;
 const DOUBLE_CLICK_MS = 400;
 const DRAG_THRESHOLD = 6;
 const FINISH_STEP_MS = 90;
 const LIFT_MS = 260;
+const HINT_MS = 2600;
+// After a move, how long the game waits before checking quietly whether it is stuck.
+const STUCK_CHECK_MS = 700;
+
+/** What the help lights up: cards, and empty spots ("stock", "f0" to "f3", "t0" to "t6"). */
+interface Highlight {
+  cards: ReadonlySet<string>;
+  slots: ReadonlySet<string>;
+}
+
+// The cards and spots a hint is about: the cards to move and where they go, or the stock to draw from.
+const highlightFor = (game: Game, step: Step): Highlight => {
+  if (step.kind === "draw") {
+    const top = game.stock.at(-1);
+    return { cards: new Set(top ? [top.id] : []), slots: new Set(top ? [] : ["stock"]) };
+  }
+  const moving = cardsAt(game, step.from) ?? [];
+  const pile = step.to.pile === "foundation" ? game.foundations[step.to.index] : step.to.pile === "tableau" ? game.tableau[step.to.index] : [];
+  const onto = pile.at(-1);
+  const slot = step.to.pile === "foundation" ? `f${step.to.index}` : step.to.pile === "tableau" ? `t${step.to.index}` : "";
+  return { cards: new Set([...moving.map((card) => card.id), ...(onto ? [onto.id] : [])]), slots: new Set(onto ? [] : [slot]) };
+};
 
 export const formatTime = (seconds: number): string => {
   const h = Math.floor(seconds / 3600);
@@ -84,6 +108,12 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
   const [isConfirmingNew, setConfirmingNew] = useState(false);
   const [win, setWin] = useState<{ score: number; bonus: number; moves: number; seconds: number; isNewBest: boolean } | null>(null);
   const lastTap = useRef<{ cardId: string; at: number } | null>(null);
+  const askHint = useHints();
+  const [highlight, setHighlight] = useState<Highlight | null>(null);
+  const [isStuck, setStuck] = useState(false);
+  const [noIdea, setNoIdea] = useState(false);
+  // The move count at which the player closed the "stuck" pop-up: it doesn't come back for the same position.
+  const stuckDismissedAt = useRef<number | null>(null);
   const table = useTableSize();
   const layout = useMemo(() => layoutFor(game, table.width || 320, table.height || 600), [game, table.width, table.height]);
 
@@ -159,8 +189,60 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
     };
   }, [persist]);
 
+  // Any change on the table turns the help's highlight off.
+  useEffect(() => {
+    setHighlight(null);
+    setNoIdea(false);
+  }, [game.stock, game.waste, game.foundations, game.tableau]);
+  useEffect(() => {
+    if (!highlight && !noIdea) return;
+    const timer = window.setTimeout(() => {
+      setHighlight(null);
+      setNoIdea(false);
+    }, HINT_MS);
+    return () => window.clearTimeout(timer);
+  }, [highlight, noIdea]);
+
+  const showStuck = (hint: Hint | null, current: Game) => {
+    if (hint?.kind !== "stuck" || current.won || canFinish(current)) return false;
+    setStuck(true);
+    return true;
+  };
+
+  // Help, on demand: the next useful move lights up (or the stock, to draw). Stuck: the pop-up.
+  const onHelp = async () => {
+    const current = game;
+    const hint = await askHint(current);
+    if (!hint || latest.current.game !== current) return;
+    if (showStuck(hint, current)) return;
+    const step = hint.kind === "unsure" ? hint.fallback : hint.kind === "stuck" ? null : hint;
+    if (step) setHighlight(highlightFor(current, step));
+    else setNoIdea(true);
+  };
+
+  // After each move (and undo), a quiet check: when nothing at all gets the game anywhere, the pop-up offers a new one.
+  useEffect(() => {
+    if (game.won || game.moves === 0 || drag || canFinish(game) || stuckDismissedAt.current === game.moves) return;
+    const current = game;
+    const timer = window.setTimeout(() => {
+      void askHint(current).then((hint) => {
+        if (latest.current.game.moves === current.moves && latest.current.game.stock === current.stock) showStuck(hint, current);
+      });
+    }, STUCK_CHECK_MS);
+    return () => window.clearTimeout(timer);
+    // The check runs once the table settles after a move; the clock's ticks don't count.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.moves, game.stock, game.waste, game.tableau, game.foundations, drag]);
+
+  const closeStuck = () => {
+    stuckDismissedAt.current = game.moves;
+    setStuck(false);
+  };
+
   const startNewGame = (drawCount: DrawCount = save.drawCount) => {
     hasRecordedWin.current = false;
+    stuckDismissedAt.current = null;
+    setStuck(false);
     setGame(deal(drawCount));
     setHistory([]);
     setWin(null);
@@ -293,6 +375,7 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
           <div><dt>{texts.best}</dt><dd>{records.bestScore || texts.none}</dd></div>
         </dl>
         <div className="sol-actions">
+          <button className="sol-btn" onClick={() => void onHelp()} disabled={game.won} aria-label={texts.help}>💡 {texts.help}</button>
           <button className="sol-btn" onClick={undo} disabled={!history.length || game.won}>{texts.undo}</button>
           <button className={`sol-btn primary${isConfirmingNew ? " confirm" : ""}`} onClick={onNewGame}>
             {isConfirmingNew ? texts.confirmNewGame : texts.newGame}
@@ -304,7 +387,7 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
         {table.width > 0 && (
           <>
             <button
-              className={`sol-slot stock-slot${game.stock.length ? "" : " empty"}`}
+              className={`sol-slot stock-slot${game.stock.length ? "" : " empty"}${highlight?.slots.has("stock") ? " hint" : ""}`}
               style={slot(layout.columnX(0), 0)}
               aria-label={game.stock.length ? texts.stock : texts.emptyStock}
               onPointerDown={(event) => onCardDown(event, null)}
@@ -312,10 +395,10 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
               {!game.stock.length && game.waste.length > 0 && <span className="sol-recycle">↻</span>}
             </button>
             {game.foundations.map((_, i) => (
-              <div key={i} className="sol-slot" style={slot(layout.columnX(3 + i), 0)}><span className="sol-slot-mark">A</span></div>
+              <div key={i} className={`sol-slot${highlight?.slots.has(`f${i}`) ? " hint" : ""}`} style={slot(layout.columnX(3 + i), 0)}><span className="sol-slot-mark">A</span></div>
             ))}
             {game.tableau.map((_, i) => (
-              <div key={i} className="sol-slot" style={slot(layout.columnX(i), layout.tableauTop)}><span className="sol-slot-mark">{texts.ranks[12]}</span></div>
+              <div key={i} className={`sol-slot${highlight?.slots.has(`t${i}`) ? " hint" : ""}`} style={slot(layout.columnX(i), layout.tableauTop)}><span className="sol-slot-mark">{texts.ranks[12]}</span></div>
             ))}
             {allCards.map((card) => {
               const spot = layout.spots.get(card.id);
@@ -327,7 +410,7 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
               return (
                 <div
                   key={card.id}
-                  className={`sol-card${isDragged ? " dragging" : ""}${card.faceUp ? "" : " down"}${buried.has(card.id) && !lifted.has(card.id) ? " buried" : ""}`}
+                  className={`sol-card${isDragged ? " dragging" : ""}${card.faceUp ? "" : " down"}${buried.has(card.id) && !lifted.has(card.id) ? " buried" : ""}${highlight?.cards.has(card.id) ? " hint" : ""}`}
                   style={{ transform: `translate(${x}px, ${y}px)`, zIndex: z, width: layout.cardWidth, height: layout.cardHeight }}
                   role="img"
                   aria-label={card.faceUp ? texts.cardName(texts.ranks[card.rank - 1], texts.suits[card.suit]) : texts.stock}
@@ -381,6 +464,21 @@ export const Solitaire = ({ texts }: { texts: SolitaireTexts }) => {
             </table>
             <h3>{texts.rulesTitle}</h3>
             <ul className="sol-rules">{texts.rules.map((rule) => <li key={rule}>{rule}</li>)}</ul>
+          </div>
+        </div>
+      )}
+
+      {noIdea && <p className="sol-toast" role="status">{texts.hintNothing}</p>}
+
+      {isStuck && !win && (
+        <div className="sol-modal" role="dialog" aria-modal="true" aria-label={texts.stuckTitle} onClick={closeStuck}>
+          <div className="sol-panel sol-stuck" onClick={(event) => event.stopPropagation()}>
+            <h2>{texts.stuckTitle}</h2>
+            <p>{texts.stuckBody}</p>
+            <div className="sol-stuck-actions">
+              <button className="sol-btn" onClick={closeStuck}>{texts.close}</button>
+              <button className="sol-btn primary" onClick={() => startNewGame()}>{texts.restart}</button>
+            </div>
           </div>
         </div>
       )}

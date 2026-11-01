@@ -74,10 +74,13 @@ const Headwear = ({ rank }: { rank: number }) => {
 
 const TOPPING_SPOTS = [[0, 0], [-12, -8], [12, -7], [-11, 9], [11, 10], [0, -16], [0, 16]] as const;
 
+// The green suits' pizzas have a pesto base, the red suits' a tomato one: a face card's colour shows at a glance.
+const SAUCE = { red: "#cf4a2a", green: "#5e9a2e" } as const;
+
 const FacePizza = ({ suit, rank }: { suit: Suit; rank: number }) => (
   <g>
     <circle cx="50" cy="88" r="31" fill="#d9a35b" />
-    <circle cx="50" cy="88" r="25.5" fill="#cf4a2a" />
+    <circle cx="50" cy="88" r="25.5" fill={SAUCE[colorOf(suit)]} />
     <circle cx="42" cy="80" r="5" fill="#f6e3b4" opacity=".9" />
     <circle cx="59" cy="96" r="4.5" fill="#f6e3b4" opacity=".9" />
     {TOPPING_SPOTS.map(([x, y], i) => (

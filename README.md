@@ -365,10 +365,16 @@ solitaire's, whose scope is that folder only, plays it offline and lets a phone 
 stores nothing in the game's save and only reads its language from it. `npm run dev:solitaire` serves it alone.
 
 - **The deck**: tomatoes and salami are the red suits, basil and olives the green ones; the jacks wear a chef's hat,
-  the queens a tiara, the kings a crown, over a pizza of their suit. The backs are a red and white tablecloth.
+  the queens a tiara, the kings a crown, over a pizza of their suit (on tomato sauce for the red suits, on pesto for the
+green ones). The jack is a J in every language. The backs are a red and white tablecloth.
 - **Options** (⚙︎): draw one card or three (a game under way keeps its own; one not started yet is dealt again), and
   sending a card where it goes with a tap on a phone or a double click with a mouse (on by default). Cards can always
   be dragged. Undo goes back as far as 200 moves.
+- **Help** (💡): the next move that gets the game somewhere (a card up to the foundations, a face-down card turned
+  over) lights up for a moment, or the stock when the card that helps is in it. A search (`src/solitaire/hint.ts`, in a
+  web worker so the cards never freeze) tries every sequence of moves and draws, through the whole stock as many times
+  as it takes. When none gets anywhere, a pop-up says the game is stuck and offers a new one; it only comes when that
+  is certain (past a few thousand positions, the game is never called stuck), and once closed, only after another move.
 - **Scoring**, as in the classic Windows solitaire: stock → column +5, to the foundations +10, a column's card turned
   over +5, foundation → column −15, going through the stock again −100 (one card) or −20 from the fourth pass (three
   cards), never below 0; a win adds a time bonus of 700,000 ÷ seconds (from 30 seconds). Moves and time are counted;

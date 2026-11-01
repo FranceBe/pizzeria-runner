@@ -65,6 +65,16 @@ button { font: inherit; }
   filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .35)); touch-action: none; }
 .sol-card.down { cursor: pointer; }
 .sol-card.buried { filter: none; }
+/* The help: what to move and where glows for a moment */
+.sol-card { border-radius: 9% / 6.5%; }
+.sol-card.hint { outline: 3px solid var(--gold); outline-offset: 1px; filter: drop-shadow(0 0 8px var(--gold)); animation: sol-hint .65s ease-in-out 4 alternate; }
+.sol-slot.hint { border-color: var(--gold); border-style: solid; box-shadow: 0 0 10px var(--gold); }
+@keyframes sol-hint { to { outline-color: rgba(242, 199, 92, .35); filter: drop-shadow(0 0 2px var(--gold)); } }
+.sol-toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 4000; margin: 0;
+  background: var(--panel); color: var(--panel-ink); padding: 8px 16px; border-radius: 99px; font-weight: 700; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); }
+.sol-stuck { text-align: center; }
+.sol-stuck p { margin: 10px 0 16px; line-height: 1.45; }
+.sol-stuck-actions { display: flex; gap: 10px; justify-content: center; }
 .sol-card.dragging { transition: none; cursor: grabbing; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4)); }
 .card-svg { display: block; width: 100%; height: 100%; }
 .card-rank { font-family: "Figtree", system-ui, sans-serif; font-weight: 800; letter-spacing: -.04em; }
