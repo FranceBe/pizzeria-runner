@@ -5,6 +5,10 @@
 const BUILD_ID = "__BUILD_ID__";
 const BUILT_FILES = JSON.parse('__BUILT_FILES__');
 const CACHE = `forno-lento-${BUILD_ID}`;
+// The solitaire, published next to the game (solitaire/), is a page of its own with its own service worker: this one
+// never answers for it, so it never stands in for the game offline.
+const SOLITAIRE = new URL("solitaire/", self.registration.scope).pathname;
+const SOLITAIRE_CACHE = "forno-lento-solitaire-";
 const PRECACHE = ["./", "manifest.webmanifest", "icon.svg", "icon-192.png", "apple-touch-icon.png", ...BUILT_FILES];
 
 self.addEventListener("install", (event) => {
@@ -15,7 +19,8 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      // The solitaire (solitaire/) keeps its own cache: left alone.
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE && !key.startsWith(SOLITAIRE_CACHE)).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -24,6 +29,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+  if (url.pathname.startsWith(SOLITAIRE)) return;
 
   // The page itself: the network first, so a new version shows up as soon as it is online.
   if (request.mode === "navigate") {

@@ -6,6 +6,10 @@ A laid-back pizzeria management game: no ads, no pressure.
 
 Free, in English and French, on a computer or a phone (where it can also be installed as an app and played offline).
 
+And, on the side, a plain solitaire with a pizza deck, free and without ads, on a phone or a computer:
+[francebe.github.io/pizzeria-runner/solitaire/](https://francebe.github.io/pizzeria-runner/solitaire/) (see
+[The solitaire](#the-solitaire)). The game doesn't link to it: it is only reached by its address.
+
 <p align="center">
   <img src="docs/screenshots/service-desktop.png" alt="The service: orders on the left, the pizza being built in the middle, the ovens and the pass on the right, the prep line below" width="100%">
 </p>
@@ -347,6 +351,34 @@ a result to paste to friends.
   with someone who has served every one of hers. Mamma keeps something in a jar too, for those whose books balance day
   after day. Once shared, a secret is made at the market and goes on a pizza from the prep line (or with `S` and `M`).
 
+## The solitaire
+
+A Klondike solitaire with a pizza deck, free and without ads, lives next to the game, at `solitaire/` (on GitHub
+Pages: [francebe.github.io/pizzeria-runner/solitaire/](https://francebe.github.io/pizzeria-runner/solitaire/)). Nothing
+in the game links to it.
+
+It is kept apart from the game so that adding it changes nothing there: its page is `solitaire/index.html` (with its
+service worker and manifest in `solitaire/public/`), its code is in `src/solitaire/`, and it has its own build
+(`vite.solitaire.config.ts`), run after the game's by `npm run build`, into `dist/solitaire/`. The game's build is the
+same, file for file, as without it. The game's service worker leaves the `solitaire/` folder and its cache alone; the
+solitaire's, whose scope is that folder only, plays it offline and lets a phone install it on its home screen. It
+stores nothing in the game's save and only reads its language from it. `npm run dev:solitaire` serves it alone.
+
+- **The deck**: tomatoes and salami are the red suits, basil and olives the green ones; the jacks wear a chef's hat,
+  the queens a tiara, the kings a crown, over a pizza of their suit. The backs are a red and white tablecloth.
+- **Options** (⚙︎): draw one card or three (a game under way keeps its own; one not started yet is dealt again), and
+  sending a card where it goes with a tap on a phone or a double click with a mouse (on by default). Cards can always
+  be dragged. Undo goes back as far as 200 moves.
+- **Scoring**, as in the classic Windows solitaire: stock → column +5, to the foundations +10, a column's card turned
+  over +5, foundation → column −15, going through the stock again −100 (one card) or −20 from the fourth pass (three
+  cards), never below 0; a win adds a time bonus of 700,000 ÷ seconds (from 30 seconds). Moves and time are counted;
+  the clock runs from the first move, only while the page is in view. Once nothing is hidden, the cards go up on their
+  own.
+- **Kept on the device**, under `forno-lento-solitaire-v1` in `localStorage` (a few kilobytes): the options, the game
+  under way (a reload picks it up) and, for each way of drawing, the games won, the best score, the fewest moves and
+  the fastest win.
+- In French, English or Chinese: Forno Lento's language on this device, otherwise the browser's.
+
 ## Running locally
 
 Requires Node 22.12 or later, for Vite 8 (`nvm use` picks up the version from `.nvmrc`).
@@ -356,7 +388,7 @@ npm install
 npm run dev
 ```
 
-Then open the address shown in the terminal (http://localhost:5173).
+Then open the address shown in the terminal (http://localhost:5173; the solitaire at http://localhost:5173/solitaire/).
 
 To try it on your phone, run `npm run dev:phone` instead: Vite also prints a network address (http://192.168.x.x:5173)
 to open on the phone, on the same Wi-Fi. The development server is then reachable by everyone on that network,
@@ -368,7 +400,8 @@ so stop it once you're done (the deployed game doesn't have this concern).
 npm run build
 ```
 
-The `dist/` folder can be hosted anywhere (Netlify, GitHub Pages, Vercel…).
+The `dist/` folder can be hosted anywhere (Netlify, GitHub Pages, Vercel…). It holds the game, and the solitaire in
+`dist/solitaire/`.
 
 ## Tests and checks
 
@@ -403,6 +436,7 @@ src/
   hooks/        game clock, autosave
   i18n/         every piece of text, in French (fr.ts) and English (en.ts)
   utils/        formatting, maths, randomness, save codes
+  solitaire/    the solitaire (rules in klondike.ts, tested; its own page, solitaire/index.html)
 ```
 
 - `data/ingredients.ts`: `INGREDIENTS` (price, required level, supplier fee, drawing) and `PREP_STATIONS` (order of the pans on the prep line)
@@ -472,7 +506,8 @@ player downloads only their language. The tests load them all first (`src/test/s
 
 `public/sw.js` is a service worker, registered in built versions only. The build (`vite.config.ts`) writes a build id
 and the list of built files into it, so each deployment caches its own files and drops the previous ones.
-The manifest and icons are in `public/`; `icon.svg` is the source of the PNG icons.
+The manifest and icons are in `public/`; `icon.svg` is the source of the PNG icons. The solitaire, published at `solitaire/`, has its own service worker
+and cache (see [The solitaire](#the-solitaire)); the game's never answers for it.
 
 ## Saves
 

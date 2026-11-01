@@ -1,0 +1,120 @@
+/* The solitaire: a green felt table in the pizzeria, cream cards, tomato-red buttons. */
+:root {
+  --felt: #1f4a33;
+  --felt2: #163a27;
+  --felt-line: rgba(255, 250, 240, .22);
+  --cream: #fffaf0;
+  --cream-muted: rgba(255, 250, 240, .72);
+  --tomato: #c63a21;
+  --tomato-dark: #9e2c1a;
+  --gold: #f2c75c;
+  --panel: #fffaf0;
+  --panel-ink: #23312a;
+  --panel-muted: #5a6a61;
+  --panel-line: #e3dccb;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: radial-gradient(ellipse at 50% 20%, var(--felt) 0%, var(--felt2) 75%) fixed, var(--felt2);
+  color: var(--cream);
+  font-family: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; }
+
+.sol { max-width: 860px; margin: 0 auto; padding: 10px 16px 12px; padding-top: max(10px, env(safe-area-inset-top)); }
+
+.sol-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.sol-back { color: var(--cream-muted); text-decoration: none; font-weight: 600; font-size: 14px; justify-self: start; }
+.sol-back:hover { color: var(--cream); }
+.sol-title { margin: 0; font-family: "Shrikhand", serif; font-weight: 400; font-size: 30px; color: var(--cream); letter-spacing: .01em;
+  text-shadow: 0 2px 0 var(--tomato-dark); }
+.sol-head .sol-btn { justify-self: end; }
+
+.sol-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; margin: 8px 0 12px; }
+.sol-stats { display: flex; gap: 18px; margin: 0; }
+.sol-stats > div { display: flex; flex-direction: column; min-width: 44px; }
+.sol-stats dt { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--cream-muted); }
+.sol-stats dd { margin: 0; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sol-stats.center { justify-content: center; }
+.sol-actions { display: flex; gap: 8px; }
+
+.sol-btn { border: 1px solid var(--felt-line); background: rgba(255, 250, 240, .1); color: var(--cream); border-radius: 99px;
+  padding: 7px 14px; font-weight: 800; font-size: 14px; cursor: pointer; touch-action: manipulation; }
+.sol-btn:hover:not(:disabled) { background: rgba(255, 250, 240, .18); }
+.sol-btn:disabled { opacity: .4; cursor: default; }
+.sol-btn.primary { background: var(--tomato); border-color: var(--tomato); color: #fff; }
+.sol-btn.primary:hover { background: var(--tomato-dark); }
+.sol-btn.primary.confirm { background: var(--gold); border-color: var(--gold); color: #3a2a00; }
+.sol-btn.ghost { background: transparent; }
+.sol-btn.big { padding: 10px 26px; font-size: 16px; }
+.sol-head .sol-btn.ghost { font-size: 20px; padding: 2px 10px; line-height: 1.3; }
+
+/* The table: every card is placed by its coordinates, and glides when it changes place */
+.sol-table { position: relative; width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sol-slot { position: absolute; left: 0; top: 0; border-radius: 7%/5%; border: 2px dashed var(--felt-line); background: rgba(0, 0, 0, .1);
+  display: grid; place-items: center; padding: 0; color: var(--felt-line); }
+.sol-slot-mark { font-weight: 800; font-size: clamp(14px, 4vw, 26px); color: var(--felt-line); }
+.stock-slot { cursor: pointer; }
+.stock-slot:not(.empty) { border-style: solid; }
+.sol-recycle { font-size: clamp(20px, 6vw, 36px); color: var(--cream-muted); font-weight: 800; }
+.sol-card { position: absolute; left: 0; top: 0; cursor: grab; transition: transform .2s ease; will-change: transform;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .35)); touch-action: none; }
+.sol-card.down { cursor: pointer; }
+.sol-card.buried { filter: none; }
+.sol-card.dragging { transition: none; cursor: grabbing; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4)); }
+.card-svg { display: block; width: 100%; height: 100%; }
+.card-rank { font-family: "Figtree", system-ui, sans-serif; font-weight: 800; letter-spacing: -.04em; }
+
+/* Options and the win */
+.sol-modal { position: fixed; inset: 0; z-index: 5000; background: rgba(8, 20, 13, .6); display: grid; place-items: center; padding: 16px; overflow: hidden; }
+.sol-panel { position: relative; width: min(460px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); color: var(--panel-ink);
+  border-radius: 16px; padding: 16px 18px 18px; box-shadow: 0 20px 50px rgba(0, 0, 0, .4); }
+.sol-panel h2 { margin: 0; font-size: 20px; }
+.sol-panel h3 { margin: 18px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--panel-muted); }
+.sol-panel .sol-btn { color: var(--panel-ink); border-color: var(--panel-line); }
+.sol-panel .sol-btn.primary { color: #fff; border-color: var(--tomato); }
+.sol-panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.sol-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; }
+.sol-segment { display: inline-flex; border: 1px solid var(--panel-line); border-radius: 99px; padding: 3px; gap: 3px; }
+.sol-segment button { border: 0; background: transparent; color: var(--panel-ink); border-radius: 99px; padding: 6px 14px; font-weight: 800; cursor: pointer; }
+.sol-segment button.on { background: var(--felt); color: var(--cream); }
+.sol-note { margin: 6px 0 0; font-size: 13px; color: var(--panel-muted); text-align: right; }
+.sol-check { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-weight: 600; line-height: 1.35; cursor: pointer; }
+.sol-check input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--felt); flex: none; }
+.sol-records { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sol-records th, .sol-records td { padding: 5px 4px; border-bottom: 1px solid var(--panel-line); text-align: right; font-variant-numeric: tabular-nums; }
+.sol-records th:first-child { text-align: left; font-weight: 600; }
+.sol-records thead th { font-size: 12px; color: var(--panel-muted); font-weight: 700; }
+.sol-rules { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; color: var(--panel-ink); }
+
+.sol-win { text-align: center; z-index: 1; }
+.sol-win h2 { font-family: "Shrikhand", serif; font-weight: 400; font-size: 34px; color: var(--tomato); }
+.sol-new-best { margin: 4px 0 0; font-weight: 800; color: #a26f00; }
+.sol-win-score { margin: 6px 0 10px; font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sol-win .sol-stats dt { color: var(--panel-muted); }
+.sol-win .sol-stats { margin-bottom: 16px; }
+.sol-confetti { position: absolute; inset: 0; pointer-events: none; }
+.sol-confetti svg { position: absolute; top: -40px; width: 28px; height: 28px; animation: sol-fall linear infinite; }
+@keyframes sol-fall {
+  from { transform: translateY(0) rotate(0); }
+  to { transform: translateY(calc(100vh + 80px)) rotate(540deg); }
+}
+
+@media (max-width: 560px) {
+  .sol-title { font-size: 24px; }
+  .sol-back { font-size: 13px; }
+  .sol-stats { gap: 12px; }
+  .sol-stats dd { font-size: 16px; }
+  .sol-stats dt { font-size: 9.5px; }
+  .sol-btn { padding: 6px 11px; font-size: 13px; }
+  .sol-bar { margin: 6px 0 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sol-card { transition: none; }
+  .sol-confetti { display: none; }
+}

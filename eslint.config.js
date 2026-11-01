@@ -29,7 +29,7 @@ export default tseslint.config(
   },
   {
     // The service worker runs in its own global scope.
-    files: ["public/sw.js"],
+    files: ["public/sw.js", "solitaire/public/sw.js"],
     languageOptions: { globals: globals.serviceworker },
   },
   {
