@@ -1,9 +1,10 @@
-// The solitaire's service worker (scope: solitaire/ only): it plays offline and installs on a phone's home screen.
-// The build (vite.solitaire.config.ts) stamps a build id and the list of built files below. It never touches the
-// game's own caches.
+// The service worker of a page next to the game (the solitaire, the factory), its scope that page's folder only: the page
+// plays offline and installs on a phone's home screen. The build (vite.sidePage.ts) writes one per page from this
+// template, stamped with the page's name, a build id and its built files. It never touches the game's caches, nor the
+// other pages'.
 const BUILD_ID = "__BUILD_ID__";
 const BUILT_FILES = JSON.parse('__BUILT_FILES__');
-const PREFIX = "forno-lento-solitaire-";
+const PREFIX = "forno-lento-__PAGE__-";
 const CACHE = `${PREFIX}${BUILD_ID}`;
 const PRECACHE = ["./", "manifest.webmanifest", ...BUILT_FILES];
 

@@ -207,6 +207,13 @@ describe("views", () => {
     expect(html).toContain("à 30 ·");
   });
 
+  it("links to the other modes from the settings, each at its own address", () => {
+    const html = render(<SettingsView state={makeState()} dispatch={noop} />);
+    expect(html).toContain('href="solitaire/"');
+    expect(html).toContain('href="factory/"');
+    expect(html).toContain("Forno Infinito");
+  });
+
   it("lets the editor make pasta only with the trattoria open", () => {
     expect(render(<RecipeEditor state={trattoriaState()} dispatch={noop} onClose={noop} />)).toContain("🍝 Pâtes");
     expect(render(<RecipeEditor state={lateGameState()} dispatch={noop} onClose={noop} />)).not.toContain("🍝 Pâtes");

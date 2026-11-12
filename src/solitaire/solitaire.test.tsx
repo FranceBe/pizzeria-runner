@@ -4,7 +4,8 @@ import { seededRandom } from "../utils/random";
 import { deal, draw, type Game } from "./klondike";
 import { dropPlace, layoutFor, locate } from "./layout";
 import { emptySave, parseSave, withWin } from "./storage";
-import { pickLanguage, TEXTS } from "./texts";
+import { TEXTS } from "./texts";
+import { pickLanguage } from "../sidePages/language";
 import { formatTime, Solitaire } from "./Solitaire";
 
 describe("the table's layout", () => {

@@ -6,9 +6,15 @@ A laid-back pizzeria management game: no ads, no pressure.
 
 Free, in English and French, on a computer or a phone (where it can also be installed as an app and played offline).
 
-And, on the side, a plain solitaire with a pizza deck, free and without ads, on a phone or a computer:
-[francebe.github.io/pizzeria-runner/solitaire/](https://francebe.github.io/pizzeria-runner/solitaire/) (see
-[The solitaire](#the-solitaire)). The game doesn't link to it: it is only reached by its address.
+Forno Lento is the way in. Next to it, each at its own address and with its own save (the game's Settings link to
+them, under Other modes):
+
+- a plain solitaire with a pizza deck, free and without ads, on a phone or a computer:
+  [francebe.github.io/pizzeria-runner/solitaire/](https://francebe.github.io/pizzeria-runner/solitaire/) (see
+  [The solitaire](#the-solitaire));
+- **Forno Infinito**, the factory mode (beta), from one pizza to a chain of restaurants, and later to factories and
+  beyond: [francebe.github.io/pizzeria-runner/factory/](https://francebe.github.io/pizzeria-runner/factory/) (see
+  [Forno Infinito](#forno-infinito-the-factory-mode)).
 
 <p align="center">
   <img src="docs/screenshots/service-desktop.png" alt="The service: orders on the left, the pizza being built in the middle, the ovens and the pass on the right, the prep line below" width="100%">
@@ -354,15 +360,10 @@ a result to paste to friends.
 ## The solitaire
 
 A Klondike solitaire with a pizza deck, free and without ads, lives next to the game, at `solitaire/` (on GitHub
-Pages: [francebe.github.io/pizzeria-runner/solitaire/](https://francebe.github.io/pizzeria-runner/solitaire/)). Nothing
-in the game links to it.
-
-It is kept apart from the game so that adding it changes nothing there: its page is `solitaire/index.html` (with its
-service worker and manifest in `solitaire/public/`), its code is in `src/solitaire/`, and it has its own build
-(`vite.solitaire.config.ts`), run after the game's by `npm run build`, into `dist/solitaire/`. The game's build is the
-same, file for file, as without it. The game's service worker leaves the `solitaire/` folder and its cache alone; the
-solitaire's, whose scope is that folder only, plays it offline and lets a phone install it on its home screen. It
-stores nothing in the game's save and only reads its language from it. `npm run dev:solitaire` serves it alone.
+Pages: [francebe.github.io/pizzeria-runner/solitaire/](https://francebe.github.io/pizzeria-runner/solitaire/)). Its page
+is `solitaire/index.html` (its manifest in `solitaire/public/`), its code is in `src/solitaire/`; it is built and
+published like Forno Infinito (see [Pages next to the game](#pages-next-to-the-game)). `npm run dev:solitaire` serves it
+alone.
 
 - **The deck**: tomatoes and salami are the red suits, basil and olives the green ones; the jacks wear a chef's hat,
   the queens a tiara, the kings a crown, over a pizza of their suit (on tomato sauce for the red suits, on pesto for the
@@ -385,6 +386,60 @@ green ones). The jack is a J in every language. The backs are a red and white ta
   the fastest win.
 - In French, English or Chinese: Forno Lento's language on this device, otherwise the browser's.
 
+## Forno Infinito, the factory mode
+
+The cozy pizzeria has a ceiling: an evening only earns what one pair of hands can make. Forno Infinito, at `factory/`
+([francebe.github.io/pizzeria-runner/factory/](https://francebe.github.io/pizzeria-runner/factory/)), is about the
+opposite: automating everything and growing without end, in the spirit of incremental games (Universal Paperclips,
+Cookie Clicker), in eras that each change the way it plays. Rules in `src/factory/engine.ts` (no React, tested), the
+page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/factory/texts.ts`.
+
+- **Era 1, the counter**: pizzas made by hand, a click each, from ingredient kits bought by the crate at a price that
+  wanders. Customers buy as fast as the price lets them (fewer, the dearer it is): the price is set so that they take
+  what is made. Then cooks, who cook on their own, upgrades (a second pair of hands, the wood-fired oven, Nonna's
+  recipe…), advertising, and a regular supplier who orders the kits.
+- **Era 2, the chain**: with the franchise, restaurants open, each with its own customers and kitchen room; a manager
+  hires, a pricing analyst sets the price, a central kitchen sells bigger crates. A new restaurant makes hires cheap
+  again, which is what keeps the chain growing: ten restaurants make a city, forty a country, a hundred and fifty a
+  continent.
+- **Coming next**: era 3, the factories (production lines, ratios between dough, sauce and cheese), then the universe
+  turned into pizza, and an ending. The factory plans already show, not for sale yet.
+- **Guidance** (`src/factory/coach.ts`): a short tour points at each first action in turn (make pizzas, see them sell,
+  buy kits, hire, set the price, buy an upgrade), the part it is about glowing; it moves on as soon as the action is
+  done, skips what the player already did, and can be skipped or replayed. Then tips come once each when something new
+  happens (out of kits, kitchen full, the franchise for sale, the chain open…). The goal of the moment always shows
+  under the figures, with its progress: sell enough for the franchise, then ten restaurants, forty, a million pizzas,
+  a hundred and fifty. The bubble moves out of the way of what it points at.
+- **Clear at a glance**: at the top, the circuit (ingredients → kitchen → display → customers → till), with the rate on
+  each arrow; whatever holds it back turns red, with a line saying what to do (the line only shows then). Each part
+  draws what it holds: the kitchen crew (a hat for each cook, an outline for each free place), the crates, the pizzas on
+  display, the restaurants. What a part is for sits behind its "?" (and shows when the tour points at it). Hiring
+  buttons say how many and for how much (hire 1, hire 10, fill up). A suggested price, to sell everything made, can be
+  applied in one tap.
+- **Tabs**, on a computer as on a phone: counter (the pizza, the price, the ingredients), kitchen (the crew, the chain),
+  upgrades (with the automations), journal. They sit under the circuit on a computer, the parts of a tab side by side;
+  at the bottom on a phone, one under the other. Every part is there from the start (the chain and the automations
+  locked until they open), so nothing moves when something new shows up. The upgrades tab shows how many upgrades the
+  till can pay for, and the tour opens the tab it points at.
+- **The pace**, checked by a robot that plays like a sensible player (`src/factory/bot.ts`, in the tests): about five
+  minutes at the counter for the robot (about ten for a player: it sets perfect prices and hires at once), ten
+  restaurants within a quarter of an hour, a million pizzas within half an hour. Customers come about as fast as a first
+  few cooks make pizzas at the starting price, and advertising brings 40% more each time.
+- **Time away counts**: the chain goes on while the page is closed, up to eight hours, and a line says what it made.
+  No punishment for being away, no pressure to come back.
+- **Kept on the device**, under `forno-lento-factory-v1` in `localStorage` (a few kilobytes), every few seconds and as
+  the page goes away. Start over erases it (after a confirmation). `npm run dev:factory` serves it alone.
+
+## Pages next to the game
+
+The solitaire and Forno Infinito are kept apart from the game, so that they change nothing there: each is its own page
+(`<page>/index.html`), with its own build (`vite.sidePage.ts`, used by `vite.solitaire.config.ts` and
+`vite.factory.config.ts`), run after the game's by `npm run build`, into `dist/<page>/`. Each has its own service worker,
+written from `src/sidePages/serviceWorker.js` with the page's name and files, whose scope is the page's folder only:
+it plays offline and installs on a phone's home screen. The game's service worker never answers for these folders and
+leaves their caches alone. They store nothing in the game's save and only read its language from it
+(`src/sidePages/language.ts`). The game's Settings link to them, under Other modes.
+
 ## Running locally
 
 Requires Node 22.12 or later, for Vite 8 (`nvm use` picks up the version from `.nvmrc`).
@@ -394,7 +449,8 @@ npm install
 npm run dev
 ```
 
-Then open the address shown in the terminal (http://localhost:5173; the solitaire at http://localhost:5173/solitaire/).
+Then open the address shown in the terminal (http://localhost:5173). The solitaire and Forno Infinito are served alone
+by `npm run dev:solitaire` and `npm run dev:factory`.
 
 To try it on your phone, run `npm run dev:phone` instead: Vite also prints a network address (http://192.168.x.x:5173)
 to open on the phone, on the same Wi-Fi. The development server is then reachable by everyone on that network,
@@ -406,8 +462,8 @@ so stop it once you're done (the deployed game doesn't have this concern).
 npm run build
 ```
 
-The `dist/` folder can be hosted anywhere (Netlify, GitHub Pages, Vercel…). It holds the game, and the solitaire in
-`dist/solitaire/`.
+The `dist/` folder can be hosted anywhere (Netlify, GitHub Pages, Vercel…). It holds the game, the solitaire in
+`dist/solitaire/` and Forno Infinito in `dist/factory/`.
 
 ## Tests and checks
 
@@ -443,6 +499,8 @@ src/
   i18n/         every piece of text, in French (fr.ts) and English (en.ts)
   utils/        formatting, maths, randomness, save codes
   solitaire/    the solitaire (rules in klondike.ts, tested; its own page, solitaire/index.html)
+  factory/      Forno Infinito, the factory mode (rules in engine.ts, tested; its own page, factory/index.html)
+  sidePages/    what the pages next to the game share: their language, their service worker
 ```
 
 - `data/ingredients.ts`: `INGREDIENTS` (price, required level, supplier fee, drawing) and `PREP_STATIONS` (order of the pans on the prep line)
@@ -512,8 +570,9 @@ player downloads only their language. The tests load them all first (`src/test/s
 
 `public/sw.js` is a service worker, registered in built versions only. The build (`vite.config.ts`) writes a build id
 and the list of built files into it, so each deployment caches its own files and drops the previous ones.
-The manifest and icons are in `public/`; `icon.svg` is the source of the PNG icons. The solitaire, published at `solitaire/`, has its own service worker
-and cache (see [The solitaire](#the-solitaire)); the game's never answers for it.
+The manifest and icons are in `public/`; `icon.svg` is the source of the PNG icons. The solitaire and Forno Infinito, published at `solitaire/` and
+`factory/`, have their own service workers and caches (see [Pages next to the game](#pages-next-to-the-game)); the
+game's never answers for them.
 
 ## Saves
 

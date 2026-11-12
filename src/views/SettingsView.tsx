@@ -231,12 +231,39 @@ const SaveTransfer = ({ state, dispatch }: ScreenProps) => {
   );
 };
 
+// The other modes, published next to the game, each at its own address: the solitaire and the factory. They keep their
+// own saves; the pizzeria stays as it is.
+const OTHER_MODES = [
+  { href: "solitaire/", icon: "🃏", name: "settings.solitaire", hint: "settings.solitaireHint" },
+  { href: "factory/", icon: "🏭", name: "settings.factory", hint: "settings.factoryHint" },
+] as const;
+
+const OtherModes = () => {
+  const t = useTranslation();
+  return (
+    <div className="card pad" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <h2 className="h">{t("settings.otherModes")}</h2>
+      <p className="hint" style={{ margin: 0 }}>{t("settings.otherModesIntro")}</p>
+      {OTHER_MODES.map((mode) => (
+        <a key={mode.href} className="other-mode" href={mode.href}>
+          <span className="other-mode-icon" aria-hidden="true">{mode.icon}</span>
+          <span>
+            <strong>{t(mode.name)}</strong>
+            <span className="hint">{t(mode.hint)}</span>
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+};
+
 export const SettingsView = ({ state, dispatch }: ScreenProps) => {
   return (
     <div className="grid2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" }}>
       <PizzeriaSettings state={state} dispatch={dispatch} />
       <PlayOptions state={state} dispatch={dispatch} />
       <SaveTransfer state={state} dispatch={dispatch} />
+      <OtherModes />
       {/* Replaced by false in the built game, so the panel and its code are left out of it. */}
       {DevPanel && (
         <Suspense fallback={null}>

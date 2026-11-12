@@ -1,0 +1,245 @@
+/* Forno Infinito: the pizzeria's colours (cream, tomato, basil), cards on a tiled wall, in light or dark. */
+:root {
+  --bg: #eaf0ec;
+  --tile: #dde6e0;
+  --surface: #ffffff;
+  --surface2: #f3f6f4;
+  --ink: #1f2a24;
+  --muted: #5a6a61;
+  --line: #dbe3de;
+  --tomato: #c63a21;
+  --tomato-dark: #9e2c1a;
+  --basil: #2f7a3a;
+  --gold: #b8862a;
+  --shadow: 0 1px 2px rgba(20, 40, 30, .08), 0 4px 14px rgba(20, 40, 30, .07);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111714;
+    --tile: #161e1a;
+    --surface: #1b231f;
+    --surface2: #212b26;
+    --ink: #e6eee9;
+    --muted: #98a89f;
+    --line: #2d3a33;
+    --tomato: #e0583c;
+    --tomato-dark: #c63a21;
+    --basil: #5fb36a;
+    --gold: #e0b452;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .3);
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--tile) 1px, transparent 1px), linear-gradient(90deg, var(--tile) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font-family: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+
+.fi { max-width: 1100px; margin: 0 auto; padding: 12px 16px 24px; padding-top: max(12px, env(safe-area-inset-top)); }
+
+.fi-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 10px; }
+.fi-back { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; justify-self: start; }
+.fi-back:hover { color: var(--ink); }
+.fi-brand { text-align: center; }
+.fi-title { margin: 0; font-family: "Shrikhand", serif; font-weight: 400; font-size: 32px; line-height: 1.1; color: var(--tomato); }
+.fi-tagline { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; font-weight: 500; }
+.fi-era { justify-self: end; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--basil);
+  border: 1.5px solid currentColor; border-radius: 99px; padding: 3px 9px; text-align: center; }
+
+.fi-top { position: sticky; top: 0; z-index: 10; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 12px;
+  padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.fi-goal { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.fi-goal-label { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
+.fi-goal-text { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-goal-bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
+.fi-goal-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--tomato)); border-radius: 99px; transition: width .3s; }
+.fi-stat-label { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+
+.fi-away { display: flex; justify-content: space-between; gap: 10px; width: 100%; text-align: left; border: 0; cursor: pointer;
+  background: #fff4d6; color: #5b4300; border-radius: 12px; padding: 10px 14px; font-weight: 600; margin-bottom: 12px; box-shadow: var(--shadow); }
+@media (prefers-color-scheme: dark) { .fi-away { background: #3a3013; color: #f4dc9b; } }
+
+/* A tab's parts, side by side on a computer */
+/* On a computer, the parts of a tab stand side by side at the same height */
+.fi-panel { display: grid; gap: 12px; align-items: stretch; grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)); }
+.fi.narrow .fi-panel { align-items: start; }
+.fi-panel > .fi-card:not(.locked) > :last-child { margin-top: auto; }
+.fi-counter .fi-pizza { margin-block: auto; }
+.fi-panel.count-3 { --cols: 3; }
+.fi-panel.count-2 { --cols: 2; }
+.fi-panel.count-1 { max-width: 640px; margin: 0 auto; width: 100%; }
+.fi.narrow .fi-panel { --cols: 1; }
+.fi-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fi-help-btn { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); background: none; color: var(--muted);
+  font-size: 12px; font-weight: 800; cursor: pointer; padding: 0; line-height: 1; }
+.fi-help-btn:hover, .fi-help-btn.on { border-color: var(--basil); color: var(--basil); }
+.fi-card-help { margin: -2px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+.fi-card.locked > :not(.fi-card-title) { opacity: .6; }
+
+/* The circuit: ingredients → kitchen → display → customers → till */
+/* Fixed widths and heights up here: growing numbers and changing lines never move anything */
+.fi-flow { display: grid; grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr) 96px minmax(0, 1fr); align-items: center; gap: 4px; }
+.fi-node { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; padding: 4px 2px; border-radius: 12px; }
+.fi-node-icon { font-size: 24px; line-height: 1.1; }
+.fi-node-label { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.fi-node-value { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.fi-node-sub { font-size: 11.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.fi-node.blocked { background: rgba(198, 58, 33, .1); color: var(--tomato); }
+.fi-link { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; color: var(--basil); }
+.fi-link-rate { font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fi-link-arrow { width: 100%; height: 2px; background: currentColor; position: relative; border-radius: 2px; }
+.fi-link-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid currentColor; border-right: 0; }
+.fi-link-label { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+.fi-link.blocked { color: var(--tomato); }
+.fi-flow-status { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-flow-status.blocked { color: var(--tomato); }
+
+/* Drawings: the crew, the crates, the display, the restaurants */
+.fi-icons { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 26px; }
+.fi-icon { font-size: 20px; line-height: 1; width: 24px; height: 24px; display: grid; place-items: center; color: var(--ink); }
+.fi-icon svg { width: 22px; height: 22px; }
+.fi-icon.empty { color: var(--line); }
+.fi-icons-more { font-size: 13px; font-weight: 800; color: var(--muted); margin-left: 2px; }
+.empty-shelf { border-bottom: 3px solid var(--line); min-height: 26px; }
+
+.fi-suggest { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface2); color: var(--muted);
+  border-radius: 10px; padding: 0 10px; font-size: 13px; font-weight: 600; min-height: 46px; line-height: 1.3; }
+.fi-suggest.off { background: #fff4d6; color: #5b4300; }
+@media (prefers-color-scheme: dark) { .fi-suggest.off { background: #3a3013; color: #f4dc9b; } }
+.fi-hire { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fi-hire .one { grid-column: 1 / -1; }
+.fi-hire .fi-btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-hint.reserved { min-height: 2.8em; }
+.fi-switch.off { color: var(--muted); font-weight: 600; cursor: default; }
+.fi-switch.off em { font-style: normal; font-weight: 700; }
+.fi-card { background: var(--surface); border-radius: 16px; padding: 14px 16px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
+.fi-card-title { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.fi-counter { align-items: center; }
+.fi-pizza { position: relative; width: min(190px, 52vw); aspect-ratio: 1; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%;
+  touch-action: manipulation; transition: transform .08s; filter: drop-shadow(0 6px 10px rgba(80, 40, 10, .25)); }
+.fi-pizza:active:not(:disabled) { transform: scale(.94) rotate(-4deg); }
+.fi-pizza:disabled { cursor: default; filter: grayscale(.8) opacity(.6); }
+.fi-pizza-svg { width: 100%; height: 100%; display: block; }
+.fi-pizza-label { margin: 0; font-weight: 800; font-size: 16px; }
+.fi-pop { position: absolute; left: calc(50% + var(--x)); top: 30%; transform: translateX(-50%); pointer-events: none; font-weight: 800; font-size: 22px;
+  color: var(--tomato); text-shadow: 0 1px 0 #fff; animation: fi-pop .8s ease-out forwards; }
+@keyframes fi-pop { to { transform: translate(-50%, -60px); opacity: 0; } }
+
+.fi-price { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.fi-price-value { display: flex; flex-direction: column; align-items: center; min-width: 110px; }
+.fi-price-value strong { font-size: 28px; font-variant-numeric: tabular-nums; }
+
+.fi-rows { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.fi-rows > div { display: flex; justify-content: space-between; gap: 10px; }
+.fi-rows dt { color: var(--muted); font-weight: 600; }
+.fi-rows dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fi-hint { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+.fi-hint.soon { font-weight: 700; color: var(--gold); }
+
+.fi-btn { border: 1px solid var(--line); background: var(--surface2); border-radius: 10px; padding: 9px 12px; font-weight: 800; font-size: 14px;
+  cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
+.fi-btn:hover:not(:disabled) { border-color: var(--muted); }
+.fi-btn:disabled { opacity: .45; cursor: default; }
+.fi-btn.primary { background: var(--tomato); border-color: var(--tomato); color: #fff; }
+.fi-btn.primary:hover:not(:disabled) { background: var(--tomato-dark); }
+.fi-btn.round { width: 44px; height: 44px; border-radius: 50%; padding: 0; font-size: 22px; }
+.fi-btn.wide { width: 100%; }
+.fi-btn.ghost { background: transparent; }
+.fi-btn.danger { border-color: var(--tomato); color: var(--tomato); }
+.grow { flex: 1; min-width: 0; }
+
+.fi-switch { display: flex; align-items: center; gap: 10px; font-weight: 700; cursor: pointer; }
+.fi-switch input { width: 18px; height: 18px; accent-color: var(--basil); }
+
+.fi-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fi-upgrade { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface2); }
+.fi-upgrade .grow { display: flex; flex-direction: column; gap: 2px; }
+.fi-upgrade span { font-size: 13px; color: var(--muted); line-height: 1.35; }
+.fi-upgrade .fi-btn { flex: none; min-width: 84px; }
+
+.fi-log { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; font-size: 14px; line-height: 1.4; }
+.fi-log li:first-child { font-weight: 700; }
+
+.fi-foot { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+/* The guided tour: the part it points at glows; the bubble sits at the bottom (above the tabs on a phone) */
+.coach-target { outline: 3px solid var(--gold); outline-offset: 2px; animation: fi-glow 1.4s ease-in-out infinite; }
+@keyframes fi-glow { 50% { outline-color: rgba(184, 134, 42, .25); } }
+.fi-bubble { position: fixed; z-index: 50; right: 20px; bottom: 20px; width: min(360px, calc(100vw - 32px)); background: var(--surface); color: var(--ink);
+  border-radius: 16px; padding: 14px 16px; box-shadow: 0 12px 36px rgba(20, 40, 30, .28); border: 2px solid var(--gold);
+  display: flex; flex-direction: column; gap: 4px; animation: fi-rise .25s ease-out; }
+@keyframes fi-rise { from { transform: translateY(12px); opacity: 0; } }
+.fi-bubble-kicker { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
+.fi-bubble-title { font-size: 17px; }
+.fi-bubble-text { margin: 0; line-height: 1.45; font-size: 14.5px; }
+.fi-bubble-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.fi-btn.small { padding: 6px 12px; font-size: 13px; }
+
+/* Phone: tabs at the bottom, one part of the factory at a time */
+/* On a computer, the tabs sit under the circuit */
+.fi-tabs.top { display: flex; gap: 6px; margin: 0 0 12px; }
+.fi-tabs.top .fi-tab { flex-direction: row; gap: 8px; padding: 9px 16px; background: var(--surface); box-shadow: var(--shadow); }
+.fi-tabs.top .fi-tab.on { background: var(--tomato); color: #fff; }
+.fi-tabs.top .fi-tab-label { font-size: 14px; }
+.fi-tabs.top .fi-tab-icon { font-size: 18px; }
+.fi-tabs.top .fi-tab-badge { position: static; margin-left: 2px; }
+.fi-tabs.top .fi-tab.on .fi-tab-badge { background: #fff; color: var(--tomato); }
+.fi-tabs.bottom { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(20, 40, 30, .08);
+  padding: 4px 6px max(4px, env(safe-area-inset-bottom)); }
+.fi-tab { position: relative; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px;
+  border-radius: 12px; cursor: pointer; color: var(--muted); touch-action: manipulation; }
+.fi-tab.on { color: var(--tomato); background: var(--surface2); }
+.fi-tab-icon { font-size: 20px; line-height: 1.1; }
+.fi-tab-label { font-size: 11.5px; font-weight: 800; }
+.fi-tab-badge { position: absolute; top: 2px; right: calc(50% - 22px); min-width: 18px; height: 18px; border-radius: 99px; padding: 0 5px;
+  background: var(--tomato); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+.fi.narrow { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+.fi.narrow .fi-bubble { left: 12px; right: 12px; width: auto; bottom: calc(70px + env(safe-area-inset-bottom)); }
+/* Moved out of the way of what it points at: to the left on a computer, to the top on a phone */
+.fi-bubble.flipped { right: auto; left: 20px; }
+.fi.narrow .fi-bubble.flipped { top: max(10px, env(safe-area-inset-top)); bottom: auto; }
+/* Room at the bottom, so any part can come up into view above the bubble */
+.fi.narrow.coaching { padding-bottom: 45vh; }
+
+@media (max-width: 560px) {
+  .fi-head { grid-template-columns: 1fr auto; margin-bottom: 8px; }
+  .fi-brand { grid-column: 1 / -1; grid-row: 2; }
+  .fi-title { font-size: 26px; }
+  .fi-tagline { display: none; }
+  .fi-era { font-size: 10px; padding: 2px 8px; }
+  .fi-top { padding: 7px 10px; gap: 6px; border-radius: 12px; }
+  .fi-goal { padding-top: 6px; }
+  .fi-goal-text { font-size: 12.5px; white-space: normal; line-height: 1.3; min-height: 2.6em; display: flex; align-items: center; }
+  .fi-pizza { width: min(120px, 34vw); }
+  .fi-icon { font-size: 16px; width: 20px; height: 20px; }
+  .fi-icon svg { width: 18px; height: 18px; }
+  .fi-card { padding: 12px 14px 14px; gap: 8px; }
+  /* One compact line on a phone: the figures stay in view without hiding the game. */
+  .fi-flow { gap: 2px; }
+  .fi-node-icon { font-size: 19px; }
+  .fi-node-label { font-size: 8.5px; letter-spacing: .03em; }
+  .fi-node-value { font-size: 14.5px; }
+  .fi-node-sub { font-size: 9.5px; }
+  .fi-flow { grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr) 58px minmax(0, 1fr); }
+  .fi-link-rate { font-size: 11px; }
+  .fi-link-label { font-size: 9px; }
+  .fi-flow-status { font-size: 12px; white-space: normal; min-height: 2.7em; display: flex; align-items: center; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-target, .fi-bubble { animation: none; }
+  .fi-pop { animation: none; opacity: 0; }
+  .fi-pizza { transition: none; }
+}

@@ -1,8 +1,8 @@
-// The solitaire's few words, in the three languages of the game. The language is Forno Lento's, when the player has a
-// pizzeria on this device, otherwise the browser's.
+// The solitaire's few words, in the three languages of the game (see sidePages/language.ts for which one).
+import type { PageLanguage } from "../sidePages/language";
 import type { Suit } from "./klondike";
 
-export type SolitaireLanguage = "fr" | "en" | "zh";
+export type SolitaireLanguage = PageLanguage;
 
 const FR = {
   htmlLang: "fr",
@@ -161,17 +161,3 @@ const ZH: SolitaireTexts = {
 };
 
 export const TEXTS: Record<SolitaireLanguage, SolitaireTexts> = { fr: FR, en: EN, zh: ZH };
-
-const isLanguage = (value: unknown): value is SolitaireLanguage => value === "fr" || value === "en" || value === "zh";
-
-// Forno Lento's language on this device, or the browser's (French, Chinese, otherwise English).
-export const pickLanguage = (gameSave: string | null, browserLanguage: string): SolitaireLanguage => {
-  try {
-    const language = (JSON.parse(gameSave ?? "null") as { settings?: { language?: unknown } } | null)?.settings?.language;
-    if (isLanguage(language)) return language;
-  } catch {
-    // Not a save we can read: the browser decides.
-  }
-  const browser = browserLanguage.slice(0, 2).toLowerCase();
-  return isLanguage(browser) ? browser : "en";
-};

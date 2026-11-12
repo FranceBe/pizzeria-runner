@@ -1,0 +1,384 @@
+// Forno Infinito, the factory mode: the rules only (no React), so they can be tested and balanced by robots.
+//
+// Pizzas are made from ingredient kits (one kit a pizza), by hand at first, then by cooks. Customers buy them as fast
+// as the price lets them: the lower the price, the more they want. The player's job is to keep production, demand and
+// supplies in balance, then to automate it all and grow, from one counter to a chain of restaurants across a continent.
+// Later eras (factories, then the universe) build on this.
+//
+// Every action returns a new state and leaves the one it is given untouched.
+
+export type Era = 1 | 2;
+
+export const UPGRADE_IDS = [
+  // Era 1: the counter
+  "doubleHands", "woodOven", "supplier", "nonnaRecipe", "bigMixer", "secondShift", "franchise",
+  // Era 2: the chain
+  "manager", "centralKitchen", "pricingAnalyst", "conveyorOven", "tvAd", "pizzaAcademy", "deliveryFleet", "factoryPlans",
+] as const;
+export type UpgradeId = (typeof UPGRADE_IDS)[number];
+
+export const MESSAGE_KEYS = [
+  "welcome", "firstSale", "sold100", "outOfKits", "firstCook", "kitchenFull", "sold1000", "franchiseOpen",
+  "city", "country", "continent", "sold1m", "upgradeBought",
+] as const;
+export type MessageKey = (typeof MESSAGE_KEYS)[number];
+
+export interface LogEntry {
+  id: number;
+  key: MessageKey;
+  upgrade?: UpgradeId;
+}
+
+export interface FactoryState {
+  version: 1;
+  era: Era;
+  money: number;
+  /** Pizzas made and not yet sold (they keep: this is a game). */
+  pizzas: number;
+  /** One kit makes one pizza. */
+  kits: number;
+  price: number;
+  /** What a crate of kits costs today; it moves a little every few seconds. */
+  cratePrice: number;
+  cooks: number;
+  restaurants: number;
+  marketing: number;
+  upgrades: UpgradeId[];
+  /** The supplier, the manager and the analyst, once hired, can be told to stop. */
+  autoBuy: boolean;
+  autoHire: boolean;
+  autoPrice: boolean;
+  totalMade: number;
+  totalSold: number;
+  totalEarned: number;
+  cratesBought: number;
+  seconds: number;
+  /** Seconds until the crate price moves again. */
+  marketClock: number;
+  milestones: MessageKey[];
+  log: LogEntry[];
+  nextLogId: number;
+}
+
+// The numbers the game is balanced on (see engine.test.ts, where robots play it through).
+export const RULES = {
+  startMoney: 20,
+  startKits: 30,
+  startPrice: 5,
+  refPrice: 5,
+  minPrice: 0.5,
+  maxPrice: 500,
+  /** Customers a second, per restaurant, at the reference price. */
+  demandPerRestaurant: 2,
+  /** How much a price above the reference puts customers off. */
+  priceElasticity: 2,
+  cookRate: 0.4,
+  cookBaseCost: 15,
+  cookCostGrowth: 1.13,
+  cooksPerRestaurant: 5,
+  crateSize: 50,
+  crateBasePrice: 15,
+  crateMinPrice: 8,
+  crateMaxPrice: 25,
+  marketEvery: 3,
+  marketingBaseCost: 60,
+  marketingGrowth: 2.2,
+  marketingBoost: 1.4,
+  restaurantBaseCost: 2500,
+  restaurantGrowth: 1.07,
+  logKept: 40,
+  offlineCap: 8 * 3600,
+};
+
+interface UpgradeSpec {
+  era: Era;
+  cost: number;
+  /** When it shows up in the shop. */
+  shows: (state: FactoryState) => boolean;
+  /** Not for sale yet (the next era is still being built). */
+  comingSoon?: boolean;
+}
+
+export const UPGRADES: Record<UpgradeId, UpgradeSpec> = {
+  doubleHands: { era: 1, cost: 40, shows: (s) => s.totalMade >= 15 },
+  woodOven: { era: 1, cost: 250, shows: (s) => s.cooks >= 2 },
+  supplier: { era: 1, cost: 300, shows: (s) => s.cratesBought >= 3 },
+  nonnaRecipe: { era: 1, cost: 900, shows: (s) => s.totalSold >= 400 },
+  bigMixer: { era: 1, cost: 1500, shows: (s) => s.cooks >= 5 },
+  secondShift: { era: 1, cost: 2500, shows: (s) => s.cooks >= cookCapacity(s) - 1 },
+  franchise: { era: 1, cost: 8000, shows: (s) => s.totalSold >= 3000 },
+  manager: { era: 2, cost: 5000, shows: (s) => s.era >= 2 },
+  pricingAnalyst: { era: 2, cost: 40_000, shows: (s) => s.era >= 2 && s.restaurants >= 4 },
+  centralKitchen: { era: 2, cost: 25_000, shows: (s) => s.era >= 2 && s.restaurants >= 3 },
+  conveyorOven: { era: 2, cost: 80_000, shows: (s) => s.era >= 2 && s.restaurants >= 5 },
+  tvAd: { era: 2, cost: 200_000, shows: (s) => s.era >= 2 && s.restaurants >= 8 },
+  pizzaAcademy: { era: 2, cost: 500_000, shows: (s) => s.era >= 2 && s.restaurants >= 12 },
+  deliveryFleet: { era: 2, cost: 1_500_000, shows: (s) => s.era >= 2 && s.restaurants >= 18 },
+  factoryPlans: { era: 2, cost: 10_000_000, shows: (s) => s.era >= 2 && s.totalSold >= 500_000, comingSoon: true },
+};
+
+const has = (state: FactoryState, id: UpgradeId): boolean => state.upgrades.includes(id);
+
+// --- What the state is worth, second by second ----------------------------------------------------------------------
+
+export const clickPower = (state: FactoryState): number => (has(state, "doubleHands") ? 2 : 1);
+
+const cookMultiplier = (state: FactoryState): number =>
+  (has(state, "woodOven") ? 1.5 : 1) * (has(state, "bigMixer") ? 2 : 1) * (has(state, "conveyorOven") ? 3 : 1);
+
+export const cookCapacity = (state: FactoryState): number =>
+  state.restaurants * (RULES.cooksPerRestaurant + (has(state, "secondShift") ? 5 : 0) + (has(state, "pizzaAcademy") ? 10 : 0));
+
+/** Pizzas the cooks would make in a second, with kits enough. */
+export const productionRate = (state: FactoryState): number => state.cooks * RULES.cookRate * cookMultiplier(state);
+
+const demandMultiplier = (state: FactoryState): number =>
+  RULES.marketingBoost ** state.marketing *
+  (has(state, "nonnaRecipe") ? 1.5 : 1) *
+  (has(state, "tvAd") ? 2 : 1) *
+  (has(state, "deliveryFleet") ? 2 : 1);
+
+/** Customers a second at this price. */
+export const demandRate = (state: FactoryState, price = state.price): number =>
+  RULES.demandPerRestaurant * state.restaurants * demandMultiplier(state) * (RULES.refPrice / price) ** RULES.priceElasticity;
+
+export const crateSize = (state: FactoryState): number => (has(state, "centralKitchen") ? RULES.crateSize * 10 : RULES.crateSize);
+export const crateCost = (state: FactoryState): number => (has(state, "centralKitchen") ? state.cratePrice * 6 : state.cratePrice);
+
+// A cook costs more as each kitchen fills up, and a little more with every restaurant: a new restaurant brings
+// cheaper hires back, which is what makes the chain grow.
+export const cookCost = (state: FactoryState): number =>
+  RULES.cookBaseCost * RULES.cookCostGrowth ** (state.cooks / state.restaurants) * state.restaurants;
+export const marketingCost = (state: FactoryState): number => RULES.marketingBaseCost * RULES.marketingGrowth ** state.marketing;
+export const restaurantCost = (state: FactoryState): number => RULES.restaurantBaseCost * RULES.restaurantGrowth ** (state.restaurants - 1);
+
+// --- Starting, and the log ------------------------------------------------------------------------------------------
+
+export const newFactory = (): FactoryState => {
+  const state: FactoryState = {
+    version: 1,
+    era: 1,
+    money: RULES.startMoney,
+    pizzas: 0,
+    kits: RULES.startKits,
+    price: RULES.startPrice,
+    cratePrice: RULES.crateBasePrice,
+    cooks: 0,
+    restaurants: 1,
+    marketing: 0,
+    upgrades: [],
+    autoBuy: false,
+    autoHire: false,
+    autoPrice: false,
+    totalMade: 0,
+    totalSold: 0,
+    totalEarned: 0,
+    cratesBought: 0,
+    seconds: 0,
+    marketClock: RULES.marketEvery,
+    milestones: [],
+    log: [],
+    nextLogId: 1,
+  };
+  return reach(state, "welcome");
+};
+
+const copy = (state: FactoryState): FactoryState => ({ ...state, upgrades: [...state.upgrades], milestones: [...state.milestones], log: [...state.log] });
+
+const say = (state: FactoryState, entry: Omit<LogEntry, "id">): FactoryState => {
+  const log = [...state.log, { ...entry, id: state.nextLogId }].slice(-RULES.logKept);
+  return { ...state, log, nextLogId: state.nextLogId + 1 };
+};
+
+// A milestone is told once, the first time it is reached.
+const reach = (state: FactoryState, key: MessageKey): FactoryState =>
+  state.milestones.includes(key) ? state : say({ ...state, milestones: [...state.milestones, key] }, { key });
+
+// --- The player's actions -------------------------------------------------------------------------------------------
+
+export const makePizza = (state: FactoryState): FactoryState => {
+  const made = Math.min(clickPower(state), Math.floor(state.kits));
+  if (made <= 0) return reach(state, "outOfKits");
+  return { ...state, kits: state.kits - made, pizzas: state.pizzas + made, totalMade: state.totalMade + made };
+};
+
+// The price goes up and down in steps that suit it: 10 cents under 2 €, then 50 cents, then whole euros, and so on.
+const priceStep = (price: number): number => (price < 2 ? 0.1 : price < 20 ? 0.5 : 10 ** Math.floor(Math.log10(price)) / 2);
+
+export const changePrice = (state: FactoryState, direction: 1 | -1): FactoryState => {
+  const step = priceStep(direction > 0 ? state.price : state.price - priceStep(state.price) / 2);
+  const price = Math.round((state.price + direction * step) * 100) / 100;
+  return { ...state, price: Math.min(RULES.maxPrice, Math.max(RULES.minPrice, price)) };
+};
+
+export const buyCrate = (state: FactoryState): FactoryState | null => {
+  const cost = crateCost(state);
+  if (state.money < cost) return null;
+  return { ...state, money: state.money - cost, kits: state.kits + crateSize(state), cratesBought: state.cratesBought + 1 };
+};
+
+export const hireCook = (state: FactoryState): FactoryState | null => {
+  const cost = cookCost(state);
+  if (state.money < cost || state.cooks >= cookCapacity(state)) return null;
+  const next = { ...state, money: state.money - cost, cooks: state.cooks + 1 };
+  const hired = next.cooks === 1 ? reach(next, "firstCook") : next;
+  return hired.cooks >= cookCapacity(hired) ? reach(hired, "kitchenFull") : hired;
+};
+
+export const buyMarketing = (state: FactoryState): FactoryState | null => {
+  const cost = marketingCost(state);
+  if (state.money < cost) return null;
+  return { ...state, money: state.money - cost, marketing: state.marketing + 1 };
+};
+
+const REGIONS: readonly [number, MessageKey][] = [[10, "city"], [40, "country"], [150, "continent"]];
+
+export const openRestaurant = (state: FactoryState): FactoryState | null => {
+  const cost = restaurantCost(state);
+  if (state.era < 2 || state.money < cost) return null;
+  let next: FactoryState = { ...state, money: state.money - cost, restaurants: state.restaurants + 1 };
+  for (const [count, key] of REGIONS) if (next.restaurants >= count) next = reach(next, key);
+  return next;
+};
+
+export const isForSale = (state: FactoryState, id: UpgradeId): boolean =>
+  !has(state, id) && UPGRADES[id].era <= state.era && UPGRADES[id].shows(state);
+
+export const buyUpgrade = (state: FactoryState, id: UpgradeId): FactoryState | null => {
+  const spec = UPGRADES[id];
+  if (!isForSale(state, id) || spec.comingSoon || state.money < spec.cost) return null;
+  let next: FactoryState = copy(state);
+  next.money -= spec.cost;
+  next.upgrades.push(id);
+  if (id === "supplier") next.autoBuy = true;
+  if (id === "manager") next.autoHire = true;
+  if (id === "pricingAnalyst") next.autoPrice = true;
+  next = say(next, { key: "upgradeBought", upgrade: id });
+  if (id === "franchise") next = reach({ ...next, era: 2 }, "franchiseOpen");
+  return next;
+};
+
+export type Automation = "autoBuy" | "autoHire" | "autoPrice";
+export const AUTOMATION_OWNERS: Record<Automation, UpgradeId> = { autoBuy: "supplier", autoHire: "manager", autoPrice: "pricingAnalyst" };
+
+export const toggleAutomation = (state: FactoryState, which: Automation): FactoryState =>
+  has(state, AUTOMATION_OWNERS[which]) ? { ...state, [which]: !state[which] } : state;
+
+/** How many cooks the till and the kitchens allow, up to `wanted`, and what they cost together. */
+export const hiringPlan = (state: FactoryState, wanted: number): { count: number; cost: number } => {
+  let s = state;
+  let cost = 0;
+  let count = 0;
+  while (count < wanted && s.cooks < cookCapacity(s) && s.money >= cookCost(s)) {
+    cost += cookCost(s);
+    s = { ...s, money: s.money - cookCost(s), cooks: s.cooks + 1 };
+    count++;
+  }
+  return { count, cost };
+};
+
+// Hires as many cooks as asked (or as the till and the kitchens allow, whichever comes first).
+export const hireCooks = (state: FactoryState, count: number): FactoryState => {
+  let next = state;
+  for (let i = 0; i < count; i++) {
+    const hired = hireCook(next);
+    if (!hired) break;
+    next = hired;
+  }
+  return next;
+};
+
+/** The price at which customers take about what is made (a little less, so pizzas never pile up for nothing). */
+export const fairPrice = (state: FactoryState, supply = productionRate(state)): number => {
+  const atReference = demandRate(state, RULES.refPrice);
+  const price = RULES.refPrice * Math.sqrt(atReference / Math.max(supply * 0.95, 0.01));
+  return Math.min(RULES.maxPrice, Math.max(RULES.minPrice, Math.round(price * 10) / 10));
+};
+
+// --- Time -----------------------------------------------------------------------------------------------------------
+
+const SOLD_MILESTONES: readonly [number, MessageKey][] = [[1, "firstSale"], [100, "sold100"], [1000, "sold1000"], [1_000_000, "sold1m"]];
+
+/** One step of time (a fraction of a second up to a second): cooks cook, customers buy, the automations do their job. */
+export const tick = (state: FactoryState, dt: number, random: () => number = Math.random): FactoryState => {
+  let next: FactoryState = { ...state, seconds: state.seconds + dt };
+
+  // The crate price wanders between its bounds.
+  next.marketClock -= dt;
+  if (next.marketClock <= 0) {
+    next.marketClock += RULES.marketEvery;
+    const drift = (random() - 0.5) * 3 + (RULES.crateBasePrice - next.cratePrice) * 0.08;
+    next.cratePrice = Math.round(Math.min(RULES.crateMaxPrice, Math.max(RULES.crateMinPrice, next.cratePrice + drift)) * 100) / 100;
+  }
+
+  // The supplier keeps about twenty seconds of kits in stock (and never spends the last of the till on it).
+  if (next.autoBuy && has(next, "supplier")) {
+    const wanted = Math.max(productionRate(next) * 20, 10);
+    for (let crates = 0; crates < 1000 && next.kits < wanted && next.money >= crateCost(next) * 1.2; crates++) next = buyCrate(next) ?? next;
+  }
+
+  // The manager hires as long as there is room in the kitchens and money to spare.
+  if (next.autoHire && has(next, "manager")) {
+    for (let hires = 0; hires < 1000 && next.cooks < cookCapacity(next) && next.money >= cookCost(next) * 1.5; hires++) next = hireCook(next) ?? next;
+  }
+
+  // The analyst sets the price to what customers will take, counting the pizzas waiting to be sold.
+  if (next.autoPrice && has(next, "pricingAnalyst")) next = { ...next, price: fairPrice(next, productionRate(next) + next.pizzas / 30) };
+
+  const made = Math.min(productionRate(next) * dt, next.kits);
+  if (made > 0) next = { ...next, kits: next.kits - made, pizzas: next.pizzas + made, totalMade: next.totalMade + made };
+  if (next.kits < 1 && productionRate(next) > 0) next = reach(next, "outOfKits");
+
+  const sold = Math.min(demandRate(next) * dt, next.pizzas);
+  if (sold > 0) {
+    const earned = sold * next.price;
+    next = { ...next, pizzas: next.pizzas - sold, money: next.money + earned, totalSold: next.totalSold + sold, totalEarned: next.totalEarned + earned };
+    for (const [count, key] of SOLD_MILESTONES) if (next.totalSold >= count) next = reach(next, key);
+  }
+  return next;
+};
+
+/** Time spent away (or a long stretch to simulate): up to the offline cap, second by second. */
+export const advance = (state: FactoryState, seconds: number, random: () => number = Math.random): FactoryState => {
+  let next = state;
+  let left = Math.min(Math.max(0, seconds), RULES.offlineCap);
+  while (left > 0) {
+    const dt = Math.min(1, left);
+    next = tick(next, dt, random);
+    left -= dt;
+  }
+  return next;
+};
+
+// --- Saves ----------------------------------------------------------------------------------------------------------
+
+const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+
+// A saved factory, read with care: anything odd starts a new one rather than a broken game.
+export const readFactory = (value: unknown): FactoryState | null => {
+  if (typeof value !== "object" || value === null) return null;
+  const saved = value as Partial<FactoryState>;
+  const numbers = [
+    saved.money, saved.pizzas, saved.kits, saved.price, saved.cratePrice, saved.cooks, saved.restaurants, saved.marketing,
+    saved.totalMade, saved.totalSold, saved.totalEarned, saved.cratesBought, saved.seconds, saved.marketClock, saved.nextLogId,
+  ];
+  if (saved.version !== 1 || (saved.era !== 1 && saved.era !== 2) || !numbers.every((n) => isNumber(n) && n >= 0)) return null;
+  if (!Array.isArray(saved.upgrades) || !Array.isArray(saved.milestones) || !Array.isArray(saved.log)) return null;
+  if ((saved.restaurants ?? 0) < 1 || (saved.price ?? 0) < RULES.minPrice) return null;
+  const upgrades = saved.upgrades.filter((id): id is UpgradeId => (UPGRADE_IDS as readonly string[]).includes(id));
+  const milestones = saved.milestones.filter((key): key is MessageKey => (MESSAGE_KEYS as readonly string[]).includes(key));
+  const log = saved.log.filter(
+    (entry): entry is LogEntry =>
+      typeof entry === "object" && entry !== null && isNumber(entry.id) && (MESSAGE_KEYS as readonly string[]).includes(entry.key) &&
+      (entry.upgrade === undefined || (UPGRADE_IDS as readonly string[]).includes(entry.upgrade)),
+  );
+  return {
+    ...(saved as FactoryState),
+    upgrades,
+    milestones,
+    log,
+    autoBuy: saved.autoBuy === true,
+    autoHire: saved.autoHire === true,
+    autoPrice: saved.autoPrice === true,
+  };
+};

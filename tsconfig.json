@@ -15,8 +15,9 @@
     "forceConsistentCasingInFileNames": true,
 
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["src", "vite.config.ts", "vite.solitaire.config.ts", "server/src/**/*.test.ts"]
+  "include": ["src", "vite.config.ts", "vite.sidePage.ts", "vite.solitaire.config.ts", "vite.factory.config.ts", "server/src/**/*.test.ts"]
 }

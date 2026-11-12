@@ -4,18 +4,11 @@ import "@fontsource/figtree/latin-600.css";
 import "@fontsource/figtree/latin-800.css";
 import "@fontsource/shrikhand/latin-400.css";
 import { Solitaire } from "./Solitaire";
-import { pickLanguage, TEXTS } from "./texts";
+import { TEXTS } from "./texts";
+import { pageLanguage } from "../sidePages/language";
 import "./solitaire.css";
 
-const readGameSave = (): string | null => {
-  try {
-    return localStorage.getItem("forno-lento-save-v1");
-  } catch {
-    return null;
-  }
-};
-
-const texts = TEXTS[pickLanguage(readGameSave(), navigator.language)];
+const texts = TEXTS[pageLanguage()];
 document.documentElement.lang = texts.htmlLang;
 document.title = `${texts.title} · Forno Lento`;
 

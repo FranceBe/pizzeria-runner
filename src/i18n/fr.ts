@@ -688,6 +688,12 @@ export const fr = {
     soundHint: "Le son démarre au premier toucher, comme le veulent les navigateurs.",
     install: "Installer le jeu",
     installHint: "Installé, le jeu s'ouvre en plein écran et marche sans connexion. Sur iPhone : Partager, puis « Sur l'écran d'accueil ».",
+    otherModes: "Autres modes",
+    otherModesIntro: "À côté de la pizzeria, chacun avec sa propre sauvegarde : ta pizzeria ne bouge pas.",
+    solitaire: "Solitaire",
+    solitaireHint: "Un solitaire classique, avec des cartes pizza. Gratuit, sans pub.",
+    factory: "Forno Infinito (bêta)",
+    factoryHint: "Le mode usine : d'une pizza à une chaîne de restaurants, et bientôt plus loin.",
     helpHint: "Sans cette aide, il faut connaître ses recettes par cœur.",
     save: "Sauvegarde",
     saveIntro:

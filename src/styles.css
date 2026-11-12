@@ -1599,3 +1599,11 @@ button.ticker-x { flex: none; padding: 0 0 0 8px; border: 0; background: none; c
 .oven-label.stove-label { color: #9fd1ff; }
 .slot.burner { background: radial-gradient(circle, #3b3f45 0 48%, #23262a 49% 56%, #3b3f45 57%); }
 .slot.burner.idle { color: rgba(255, 255, 255, .55); }
+
+/* Settings: the other modes, each a link to its own page */
+.other-mode { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface2); color: var(--ink);
+  text-decoration: none; border: 1px solid var(--line); }
+.other-mode:hover { border-color: var(--muted); }
+.other-mode-icon { font-size: 26px; line-height: 1; }
+.other-mode strong { display: block; }
+.other-mode .hint { display: block; margin: 0; }
