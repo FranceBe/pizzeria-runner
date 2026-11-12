@@ -2,6 +2,7 @@
 import type { PageLanguage } from "../sidePages/language";
 import type { GoalId, PlantStepId, Section, StepId, TipId } from "./coach";
 import type { MessageKey, UpgradeId } from "./engine";
+import type { IncidentKind } from "./incidents";
 import type { BuildingId, Good } from "./plant";
 import type { ChainId } from "./PlantDiagram";
 import type { ResearchId } from "./research";
@@ -61,6 +62,19 @@ const FR = {
   sell: (refund: string) => `En vendre un · rend ${refund}`,
   plantView: "Affichage des usines",
   plantViews: { graph: "🗺️ Schéma", chains: "☰ Chaînes" },
+  incidents: {
+    strike: { icon: "🪧", name: "Grève", effect: "tourne à moitié", status: "En grève : 50 %" },
+    breakdown: { icon: "🔧", name: "Panne", effect: "à l'arrêt", status: "En panne : à l'arrêt" },
+    drought: { icon: "🌵", name: "Sécheresse", effect: "champs, serres et oliveraies à 60 %", status: "Sécheresse : 60 %" },
+    calm: { icon: "🍃", name: "Pas un souffle de vent", effect: "éoliennes à 30 %", status: "Pas de vent : 30 %" },
+    harvest: { icon: "🌻", name: "Récolte exceptionnelle", effect: "champs, serres, oliveraies et fermes à 150 %", status: "Récolte : 150 %" },
+    fair: { icon: "🎪", name: "Salon de la pizza", effect: "les camions vendent 50 % plus cher", status: "Salon : +50 % le prix" },
+  } satisfies Record<IncidentKind, { icon: string; name: string; effect: string; status: string }>,
+  incidentLeft: (time: string) => `encore ${time}`,
+  incidentFix: { strike: (cost: string) => `Payer une prime · ${cost}`, breakdown: (cost: string) => `Réparer · ${cost}` },
+  incidentNone: "Rien à signaler à l'usine.",
+  incidentsOff: "Incidents coupés.",
+  incidentsSwitch: "Incidents",
   buildModule: (count: number, cost: string) => `Construire un module (${count} bâtiments) · ${cost}`,
   shipping: (rate: string) => `Camions : ${rate} pizzas vendues/s`,
   research: "Recherche",
@@ -76,6 +90,7 @@ const FR = {
     fertilizer: { name: "Engrais", text: "Les matières premières sortent deux fois plus vite." },
     efficientTurbines: { name: "Turbines efficaces", text: "Les éoliennes et centrales font deux fois plus de courant." },
     automatedDocks: { name: "Camions rapides", text: "Les camions livrent deux fois plus vite." },
+    maintenance: { name: "Maintenance", text: "Les pannes arrivent deux fois moins souvent et durent deux fois moins longtemps." },
     robotArms: { name: "Bras robotisés", text: "Les usines à pizzas vont deux fois plus vite." },
     foreman: { name: "Contremaître·sse", text: "Construit des modules tout·e seul·e, dès que la caisse le permet." },
     modernised: { name: "Ateliers modernisés", text: "Tout va deux fois plus vite, pour moitié plus de courant." },
@@ -127,7 +142,7 @@ const FR = {
     chain: "Chaque restaurant apporte des clients et des places en cuisine.",
     automations: "Ce qui tourne tout seul. Tu peux reprendre la main.",
     upgrades: "Des bonus pour de bon : achète-les dès que la caisse le permet.",
-    factories: "Chaque flèche porte une marchandise d'un bâtiment au suivant. Verte : ça circule. Orange : le suivant en manque. Pointillée : ça déborde. Et tout demande du courant. Une étape trop rapide ? « −1 » revend un bâtiment (pour la moitié de son prix) et libère son courant.",
+    factories: "Chaque flèche porte une marchandise d'un bâtiment au suivant. Verte : ça circule. Orange : le suivant en manque. Pointillée : ça déborde. Et tout demande du courant. Une étape trop rapide ? « −1 » revend un bâtiment (pour la moitié de son prix) et libère son courant. Un incident (grève, panne, météo…) s'affiche au-dessus du schéma, avec de quoi le régler s'il se règle.",
     research: "Les laboratoires transforment des pizzas en points de recherche, à dépenser ici.",
   } satisfies Record<Section, string>,
   kitchenFullHint: "Cuisine pleine : il faut plus de place.",
@@ -204,6 +219,7 @@ const FR = {
     chainGrowth: { title: "Ça tourne tout seul", text: "Les recrutements se font seuls dès qu'il y a de la place. À toi d'ouvrir des restaurants, de faire de la pub et de choisir les améliorations." },
     power: { title: "Le courant", text: "Tout ralentit quand il manque du courant. Les éoliennes en font un peu, sans rien. Les centrales biogaz en font plus, en brûlant le petit-lait de la fromagerie : mais il faut déjà du courant pour en produire. Commence par quelques éoliennes." },
     research: { title: "La recherche", text: "Le laboratoire prend des pizzas et en fait des points de recherche. Ils débloquent de quoi aller plus vite : un calculateur de ratios, des modules, un·e contremaître·sse…" },
+    incident: { title: "Un incident", text: "De temps en temps, il arrive quelque chose à l'usine : une grève, une panne, la météo… ou un coup de chance. C'est annoncé en haut de l'onglet Usines, avec le temps qu'il reste. Une grève ou une panne se règle tout de suite contre de l'argent ; sinon, ça passe tout seul. Rien n'arrive quand tu n'es pas là, et tu peux couper les incidents." },
   } satisfies Record<TipId, GuideText>,
   upgrade: {
     doubleHands: { name: "Deuxième paire de mains", text: "Deux pizzas par clic." },
@@ -243,6 +259,7 @@ const FR = {
     researchDone: "Recherche terminée : ",
     sold1b: "Un milliard de pizzas vendues. On regarde déjà vers le ciel…",
     sold100m: "Cent millions de pizzas vendues. On regarde déjà vers le ciel…",
+    incident: "Incident à l'usine.",
   } satisfies Record<MessageKey, string>,
 };
 
@@ -300,6 +317,19 @@ const EN: FactoryTexts = {
   sell: (refund: string) => `Sell one · gives back ${refund}`,
   plantView: "How the plant is shown",
   plantViews: { graph: "🗺️ Diagram", chains: "☰ Chains" },
+  incidents: {
+    strike: { icon: "🪧", name: "Strike", effect: "runs at half speed", status: "On strike: 50%" },
+    breakdown: { icon: "🔧", name: "Breakdown", effect: "stopped", status: "Broken down: stopped" },
+    drought: { icon: "🌵", name: "Drought", effect: "fields, greenhouses and olive groves at 60%", status: "Drought: 60%" },
+    calm: { icon: "🍃", name: "Not a breath of wind", effect: "wind turbines at 30%", status: "No wind: 30%" },
+    harvest: { icon: "🌻", name: "Bumper harvest", effect: "fields, greenhouses, olive groves and farms at 150%", status: "Harvest: 150%" },
+    fair: { icon: "🎪", name: "Pizza trade fair", effect: "the trucks sell 50% dearer", status: "Fair: price +50%" },
+  },
+  incidentLeft: (time: string) => `${time} left`,
+  incidentFix: { strike: (cost: string) => `Pay a bonus · ${cost}`, breakdown: (cost: string) => `Repair · ${cost}` },
+  incidentNone: "All quiet at the plant.",
+  incidentsOff: "Incidents off.",
+  incidentsSwitch: "Incidents",
   buildModule: (count: number, cost: string) => `Build a module (${count} buildings) · ${cost}`,
   shipping: (rate: string) => `Trucks: ${rate} pizzas sold/s`,
   research: "Research",
@@ -315,6 +345,7 @@ const EN: FactoryTexts = {
     fertilizer: { name: "Fertiliser", text: "Raw materials come twice as fast." },
     efficientTurbines: { name: "Efficient turbines", text: "Turbines and plants make twice the power." },
     automatedDocks: { name: "Fast trucks", text: "Trucks deliver twice as fast." },
+    maintenance: { name: "Maintenance", text: "Breakdowns come half as often and last half as long." },
     robotArms: { name: "Robot arms", text: "Pizza factories work twice as fast." },
     foreman: { name: "Foreman", text: "Builds modules on their own, whenever the till allows." },
     modernised: { name: "Modernised workshops", text: "Everything twice as fast, for half as much power again." },
@@ -366,7 +397,7 @@ const EN: FactoryTexts = {
     chain: "Each restaurant brings customers and kitchen places.",
     automations: "What runs on its own. You can always take over.",
     upgrades: "Bonuses for good: buy them as soon as the till allows.",
-    factories: "Each arrow carries a good from one building to the next. Green: it flows. Orange: the next one runs short. Dotted: it overflows. And everything needs power. A step running too fast? “−1” sells a building back (for half its price) and frees its power.",
+    factories: "Each arrow carries a good from one building to the next. Green: it flows. Orange: the next one runs short. Dotted: it overflows. And everything needs power. A step running too fast? “−1” sells a building back (for half its price) and frees its power. An incident (a strike, a breakdown, the weather…) shows above the diagram, with how to settle it if it can be.",
     research: "Laboratories turn pizzas into research points, to spend here.",
   },
   kitchenFullHint: "The kitchen is full: more room needed.",
@@ -443,6 +474,7 @@ const EN: FactoryTexts = {
     chainGrowth: { title: "It runs itself", text: "Hiring happens on its own whenever there is room. Your job: open restaurants, advertise, and pick the upgrades." },
     power: { title: "Power", text: "Everything slows down when power runs short. Wind turbines make a little, from nothing. Biogas plants make more, burning the creamery's whey: but making it takes power already. Start with a few turbines." },
     research: { title: "Research", text: "The laboratory takes pizzas and makes research points. They unlock ways to go faster: a ratio calculator, modules, a foreman…" },
+    incident: { title: "An incident", text: "Now and then, something happens at the plant: a strike, a breakdown, the weather… or a stroke of luck. It shows at the top of the Factories tab, with the time left. A strike or a breakdown can be settled at once for money; otherwise it passes on its own. Nothing happens while you are away, and incidents can be switched off." },
   },
   upgrade: {
     doubleHands: { name: "A second pair of hands", text: "Two pizzas a click." },
@@ -482,6 +514,7 @@ const EN: FactoryTexts = {
     researchDone: "Research done: ",
     sold1b: "A billion pizzas sold. Eyes are already on the sky…",
     sold100m: "A hundred million pizzas sold. Eyes are already on the sky…",
+    incident: "Incident at the plant.",
   },
 };
 
@@ -537,6 +570,19 @@ const ZH: FactoryTexts = {
   sell: (refund: string) => `卖掉一座 · 退回 ${refund}`,
   plantView: "工厂的显示方式",
   plantViews: { graph: "🗺️ 图示", chains: "☰ 链条" },
+  incidents: {
+    strike: { icon: "🪧", name: "罢工", effect: "只开一半速度", status: "罢工中：50%" },
+    breakdown: { icon: "🔧", name: "故障", effect: "停工了", status: "故障：停工" },
+    drought: { icon: "🌵", name: "干旱", effect: "麦田、温室和橄榄园降到 60%", status: "干旱：60%" },
+    calm: { icon: "🍃", name: "一丝风都没有", effect: "风力发电机降到 30%", status: "无风：30%" },
+    harvest: { icon: "🌻", name: "大丰收", effect: "麦田、温室、橄榄园和牧场达到 150%", status: "丰收：150%" },
+    fair: { icon: "🎪", name: "披萨博览会", effect: "卡车卖价高 50%", status: "博览会：价格 +50%" },
+  },
+  incidentLeft: (time: string) => `还剩 ${time}`,
+  incidentFix: { strike: (cost: string) => `发奖金 · ${cost}`, breakdown: (cost: string) => `维修 · ${cost}` },
+  incidentNone: "工厂一切正常。",
+  incidentsOff: "意外事件已关闭。",
+  incidentsSwitch: "意外事件",
   buildModule: (count: number, cost: string) => `建造一个模块（${count} 座建筑）· ${cost}`,
   shipping: (rate: string) => `卡车：每秒卖出 ${rate} 张披萨`,
   research: "研究",
@@ -552,6 +598,7 @@ const ZH: FactoryTexts = {
     fertilizer: { name: "肥料", text: "原材料产出快一倍。" },
     efficientTurbines: { name: "高效涡轮", text: "风机和电厂发电翻倍。" },
     automatedDocks: { name: "快速卡车", text: "卡车送货快一倍。" },
+    maintenance: { name: "维护", text: "故障的次数减半，持续时间也减半。" },
     robotArms: { name: "机械臂", text: "披萨工厂快一倍。" },
     foreman: { name: "工头", text: "钱够时自动建造模块。" },
     modernised: { name: "现代化车间", text: "一切快一倍，耗电多一半。" },
@@ -603,7 +650,7 @@ const ZH: FactoryTexts = {
     chain: "每家餐厅都带来顾客和厨房位置。",
     automations: "自动运转的部分。你随时可以自己来。",
     upgrades: "永久加成：钱够了就买。",
-    factories: "每个箭头把一种货物从一座建筑运到下一座。绿色：在流动。橙色：下一座不够用。虚线：溢出了。而且一切都需要电。某一步太快？「−1」以半价卖掉一座建筑，并腾出它的电。",
+    factories: "每个箭头把一种货物从一座建筑运到下一座。绿色：在流动。橙色：下一座不够用。虚线：溢出了。而且一切都需要电。某一步太快？「−1」以半价卖掉一座建筑，并腾出它的电。意外事件（罢工、故障、天气……）显示在图示上方，能解决的话也有解决按钮。",
     research: "实验室把披萨变成研究点数，在这里使用。",
   },
   kitchenFullHint: "厨房满了：需要更多位置。",
@@ -680,6 +727,7 @@ const ZH: FactoryTexts = {
     chainGrowth: { title: "自己就能运转", text: "一有空位就会自动招人。你要做的：开餐厅、打广告、挑选升级。" },
     power: { title: "电力", text: "电力不足时一切都会变慢。风力发电机不需原料，发一点电。沼气电厂烧奶酪厂的乳清，发电更多：但生产乳清本身就需要电。先建几台风机。" },
     research: { title: "研究", text: "实验室用披萨换研究点数，可以解锁提速的东西：比例计算器、模块、工头……" },
+    incident: { title: "意外事件", text: "工厂时不时会出点事：罢工、故障、天气……或者好运降临。它会显示在「工厂」标签顶部，还有剩余时间。罢工或故障可以花钱立刻解决；否则会自己过去。你不在的时候什么都不会发生，而且可以关闭意外事件。" },
   },
   upgrade: {
     doubleHands: { name: "第二双手", text: "每次点击做两张披萨。" },
@@ -719,6 +767,7 @@ const ZH: FactoryTexts = {
     researchDone: "研究完成：",
     sold1b: "卖出十亿张披萨。大家已经开始仰望星空……",
     sold100m: "卖出一亿张披萨。大家已经开始仰望星空……",
+    incident: "工厂出了意外。",
   },
 };
 

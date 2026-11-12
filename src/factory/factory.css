@@ -192,6 +192,22 @@ button { font: inherit; color: inherit; }
 .fi-chain-card .fi-node-actions .fi-btn.small { padding: 5px 12px; font-size: 12.5px; }
 .fi-chain-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
 /* Diagram or chains */
+/* Above the plant: the incident of the moment, and the choice of view */
+.fi-plant-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fi-incident { flex: 1 1 320px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 34px; padding: 4px 10px;
+  border-radius: 12px; border: 1.5px solid var(--line); font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.fi-incident.bad { border-color: var(--tomato); background: rgba(198, 58, 33, .08); color: inherit; }
+.fi-incident.lucky { border-color: var(--basil); background: rgba(47, 122, 58, .08); color: inherit; }
+.fi-incident-text { flex: 1 1 200px; min-width: 0; }
+/* On a phone an incident takes three lines: kept for it, so nothing jumps when one comes */
+.fi.narrow .fi-incident { min-height: 92px; align-content: center; }
+.fi-incident .fi-btn.small { padding: 4px 10px; font-size: 12px; }
+.fi-switch.small { gap: 6px; font-size: 12px; color: var(--muted); }
+.fi-switch.small input { width: 15px; height: 15px; }
+.fi-node-card.hit, .fi-chain-card.hit { border-color: var(--tomato); }
+.fi-node-card.hit .fi-node-status, .fi-chain-card.hit .fi-node-status { color: var(--tomato); }
+.fi-node-card.lucky, .fi-chain-card.lucky { border-color: var(--basil); }
+.fi-node-card.lucky .fi-node-status, .fi-chain-card.lucky .fi-node-status { color: var(--basil); }
 .fi-view-switch { display: flex; width: fit-content; margin-left: auto; gap: 2px; padding: 2px; border-radius: 99px; background: var(--surface2); }
 .fi-view-switch button { border: 0; background: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--muted); padding: 4px 12px;
   border-radius: 99px; cursor: pointer; }

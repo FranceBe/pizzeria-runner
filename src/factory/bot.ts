@@ -1,11 +1,11 @@
 // A robot that plays the factory mode the way a sensible player would, to balance it and to check it through. It
 // clicks a few times a second while that still matters, keeps the price where customers take what is made, keeps
 // kits in stock, and buys whatever pays for itself: cooks, upgrades, advertising, restaurants; with the factories, whole
-// balanced modules, laboratories, and research.
+// balanced modules, laboratories, and research, and it settles strikes and breakdowns when the till can spare it.
 import {
   buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, fairPrice, hireCook, isForSale, makePizza,
   marketingCost, openRestaurant, productionRate, restaurantCost, tick, UPGRADE_IDS, UPGRADES, type FactoryState,
-  build, doResearch,
+  build, doResearch, fixIncident, incidentFixCost,
 } from "./engine";
 import { nextModule, type BuildingId } from "./plant";
 import { isResearchOpen, RESEARCH, RESEARCH_IDS } from "./research";
@@ -44,6 +44,8 @@ export const botSecond = (state: FactoryState, { clicksPerSecond, random }: BotO
   if (next.era >= 2 && next.cooks >= cookCapacity(next) && next.money >= restaurantCost(next)) next = openRestaurant(next) ?? next;
   if (next.money >= marketingCost(next) * 3) next = buyMarketing(next) ?? next;
   if (next.era >= 3) {
+    const fix = incidentFixCost(next);
+    if (fix !== null && next.money >= fix * 2) next = fixIncident(next) ?? next;
     // The plant: a whole balanced module whenever the till allows (the robot plans like the calculator), a laboratory
     // for every four factories, and whatever research is open and paid for.
     for (let i = 0; i < 20; i++) {

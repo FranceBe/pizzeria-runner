@@ -3,6 +3,7 @@
 // only, like the game's own dev panel.
 import { useState } from "react";
 import { advance, UPGRADE_IDS, UPGRADES, type Era, type FactoryState, type UpgradeId } from "../engine";
+import { INCIDENT_KINDS, INCIDENTS, type IncidentKind } from "../incidents";
 import { BUILDING_IDS, type BuildingId } from "../plant";
 import { RESEARCH_IDS, type ResearchId } from "../research";
 import type { FactoryTexts } from "../texts";
@@ -33,6 +34,13 @@ interface DevTabProps {
   /** Replaces the game (the tour is switched off, so the bubbles keep out of the way). */
   onLoad: (state: FactoryState) => void;
 }
+
+// An incident right now (a strike or a breakdown at the first kind of building built that it can hit).
+const startIncident = (state: FactoryState, kind: IncidentKind): FactoryState => {
+  const spec = INCIDENTS[kind];
+  const building = spec.picksOne ? spec.hits.find((id) => state.buildings[id] > 0) ?? spec.hits[0] : undefined;
+  return { ...state, incidentsOn: true, incident: { kind, left: spec.seconds, ...(building ? { building } : {}) } };
+};
 
 export const DevTab = ({ state, texts, onLoad }: DevTabProps) => {
   const [setup, setSetup] = useState<DevSetup>(() => devSetupOf(state));
@@ -68,6 +76,16 @@ export const DevTab = ({ state, texts, onLoad }: DevTabProps) => {
         <button className="fi-btn" onClick={() => onLoad({ ...state, money: state.money * 10 })}>Argent ×10</button>
         <button className="fi-btn" onClick={() => onLoad(advance(state, 600))}>Avancer 10 min</button>
         <button className="fi-btn" onClick={() => setSetup(devSetupOf(state))}>Reprendre la partie en cours</button>
+      </div>
+
+      <h3 className="fi-dev-title">Incidents (époque 3)</h3>
+      <div className="fi-dev-row">
+        {INCIDENT_KINDS.map((kind) => (
+          <button key={kind} className="fi-btn" onClick={() => onLoad(startIncident(state, kind))}>
+            {texts.incidents[kind].icon} {texts.incidents[kind].name}
+          </button>
+        ))}
+        <button className="fi-btn" onClick={() => onLoad({ ...state, incident: null, incidentClock: 5 })}>Prochain dans 5 s</button>
       </div>
 
       <h3 className="fi-dev-title">Tout régler</h3>

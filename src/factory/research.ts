@@ -1,10 +1,10 @@
 // Era 3's research tree: laboratories turn frozen pizzas into research points, spent here. It brings the factory's
 // automation step by step (a ratio calculator, then modules built in one go, then a foreman who builds on their own) and
 // makes the buildings better (belts, fertiliser, robot arms, turbines, docks, then modernised workshops, then workshops
-// of the future).
+// of the future). Maintenance makes breakdowns rarer and shorter (see incidents.ts).
 
 export const RESEARCH_IDS = [
-  "calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks", "robotArms", "foreman", "modernised", "futuristic",
+  "calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks", "maintenance", "robotArms", "foreman", "modernised", "futuristic",
 ] as const;
 export type ResearchId = (typeof RESEARCH_IDS)[number];
 
@@ -22,6 +22,7 @@ export const RESEARCH: Record<ResearchId, ResearchSpec> = {
   fertilizer: { cost: 1_200, requires: ["conveyorBelts"] },
   efficientTurbines: { cost: 1_200, requires: ["conveyorBelts"] },
   automatedDocks: { cost: 1_500, requires: ["conveyorBelts"] },
+  maintenance: { cost: 1_500, requires: ["conveyorBelts"] },
   robotArms: { cost: 1_800, requires: ["fertilizer"] },
   foreman: { cost: 3_000, requires: ["modules"] },
   modernised: { cost: 5_000, requires: ["robotArms", "efficientTurbines"] },

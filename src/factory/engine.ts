@@ -11,6 +11,9 @@
 import {
   BUILDING_IDS, BUILDINGS, buildingCost, GOODS, nextModule, noBuildings, noStocks, runPlant, sellValue, storeCap, WHOLESALE_PRICE, type BuildingId, type Good,
 } from "./plant";
+import {
+  endIncident, FIRST_INCIDENT, fixCost, incidentSpeeds, INCIDENT_KINDS, priceFactor, readIncident, stepIncidents, type Incident, type IncidentKind,
+} from "./incidents";
 import { isResearchOpen, RESEARCH, RESEARCH_IDS, type ResearchId } from "./research";
 
 export type Era = 1 | 2 | 3;
@@ -28,7 +31,7 @@ export type UpgradeId = (typeof UPGRADE_IDS)[number];
 export const MESSAGE_KEYS = [
   "welcome", "firstSale", "sold100", "outOfKits", "firstCook", "kitchenFull", "sold1000", "franchiseOpen",
   "city", "country", "continent", "sold1m", "upgradeBought", "factoriesOpen", "firstFactoryPizza", "factory10k", "sold100m",
-  "researchDone", "sold1b",
+  "researchDone", "sold1b", "incident",
 ] as const;
 export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
@@ -37,6 +40,9 @@ export interface LogEntry {
   key: MessageKey;
   upgrade?: UpgradeId;
   research?: ResearchId;
+  /** An incident that started (see incidents.ts), and the kind of building it hit. */
+  incident?: IncidentKind;
+  building?: BuildingId;
 }
 
 export interface FactoryState {
@@ -72,6 +78,10 @@ export interface FactoryState {
   autoKits: boolean;
   /** Kits a second the restaurants take from the factories' stores, smoothed. */
   kitsFromPlant: number;
+  /** Era 3's incidents (see incidents.ts): the one going on, the seconds until the next, and whether there are any. */
+  incident: Incident | null;
+  incidentClock: number;
+  incidentsOn: boolean;
   totalMade: number;
   totalSold: number;
   totalEarned: number;
@@ -211,6 +221,9 @@ export const newFactory = (): FactoryState => {
     autoBuild: false,
     autoKits: false,
     kitsFromPlant: 0,
+    incident: null,
+    incidentClock: FIRST_INCIDENT,
+    incidentsOn: true,
     totalMade: 0,
     totalSold: 0,
     totalEarned: 0,
@@ -337,6 +350,20 @@ export const sell = (state: FactoryState, id: BuildingId): FactoryState | null =
   return { ...state, money: state.money + sellValue(state, id), buildings: { ...state.buildings, [id]: state.buildings[id] - 1 } };
 };
 
+/** What ending the incident of the moment costs now, if it can be ended (a strike, a breakdown). */
+export const incidentFixCost = (state: FactoryState): number | null => fixCost(state.incident, shippedRate(state) * WHOLESALE_PRICE);
+
+/** A bonus paid to end a strike, or a repair to end a breakdown. */
+export const fixIncident = (state: FactoryState): FactoryState | null => {
+  const cost = incidentFixCost(state);
+  if (cost === null || state.money < cost) return null;
+  return endIncident({ ...state, money: state.money - cost });
+};
+
+/** Incidents on or off: off, the one going on ends too. */
+export const toggleIncidents = (state: FactoryState): FactoryState =>
+  state.incidentsOn ? { ...state, incidentsOn: false, incident: null } : { ...state, incidentsOn: true };
+
 /** A whole module at once (see plant.ts): once researched, or by the foreman. */
 export const buildModule = (state: FactoryState): FactoryState | null => {
   const { builds, cost } = nextModule(state);
@@ -389,8 +416,9 @@ const smoothKits = (current: number, value: number, dt: number): number => curre
 
 const SOLD_MILESTONES: readonly [number, MessageKey][] = [[1, "firstSale"], [100, "sold100"], [1000, "sold1000"], [1_000_000, "sold1m"], [1e8, "sold100m"], [1e9, "sold1b"]];
 
-/** One step of time (a fraction of a second up to a second): cooks cook, customers buy, the automations do their job. */
-export const tick = (state: FactoryState, dt: number, random: () => number = Math.random): FactoryState => {
+/** One step of time (a fraction of a second up to a second): cooks cook, customers buy, the automations do their job.
+ * `isLive`: the player is there (no new incident while away). */
+export const tick = (state: FactoryState, dt: number, random: () => number = Math.random, isLive = true): FactoryState => {
   let next: FactoryState = { ...state, seconds: state.seconds + dt };
 
   // The crate price wanders between its bounds.
@@ -428,8 +456,8 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
   if (next.era >= 3) {
     // The restaurants take their kits from the factories' stores first (a dough, a sauce and a mozzarella each).
     const kitsWanted = next.autoKits ? Math.max(0, productionRate(next) * 20 - next.kits) : 0;
-    const plant = runPlant(next, dt, kitsWanted);
-    const earned = plant.shipped * WHOLESALE_PRICE;
+    const plant = runPlant(next, dt, kitsWanted, incidentSpeeds(next.incident));
+    const earned = plant.shipped * WHOLESALE_PRICE * priceFactor(next.incident);
     next = {
       ...next,
       ...plant.state,
@@ -443,6 +471,9 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
     };
     if (next.stocks.frozen > 0 || plant.shipped > 0) next = reach(next, "firstFactoryPizza");
     if (frozenRate(next) >= 10_000) next = reach(next, "factory10k");
+    const incidents = stepIncidents(next, dt, random, isLive);
+    next = incidents.state;
+    if (incidents.started) next = say(next, { key: "incident", incident: incidents.started.kind, building: incidents.started.building });
   }
 
   const sold = Math.min(demandRate(next) * dt, next.pizzas);
@@ -454,13 +485,14 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
   return next;
 };
 
-/** Time spent away (or a long stretch to simulate): up to the offline cap, second by second. */
+/** Time spent away (or a long stretch to simulate): up to the offline cap, second by second. The incident going on runs
+ * out, and no new one comes. */
 export const advance = (state: FactoryState, seconds: number, random: () => number = Math.random): FactoryState => {
   let next = state;
   let left = Math.min(Math.max(0, seconds), RULES.offlineCap);
   while (left > 0) {
     const dt = Math.min(1, left);
-    next = tick(next, dt, random);
+    next = tick(next, dt, random, false);
     left -= dt;
   }
   return next;
@@ -508,7 +540,9 @@ export const readFactory = (value: unknown): FactoryState | null => {
     (entry): entry is LogEntry =>
       typeof entry === "object" && entry !== null && isNumber(entry.id) && (MESSAGE_KEYS as readonly string[]).includes(entry.key) &&
       (entry.upgrade === undefined || (UPGRADE_IDS as readonly string[]).includes(entry.upgrade)) &&
-      (entry.research === undefined || (RESEARCH_IDS as readonly string[]).includes(entry.research)),
+      (entry.research === undefined || (RESEARCH_IDS as readonly string[]).includes(entry.research)) &&
+      (entry.incident === undefined || (INCIDENT_KINDS as readonly string[]).includes(entry.incident)) &&
+      (entry.building === undefined || (BUILDING_IDS as readonly string[]).includes(entry.building)),
   );
   // What is no longer part of the game (era 3's former distribution deals) is dropped.
   const { deals: _deals, ...current } = saved as FactoryState & { deals?: unknown };
@@ -534,5 +568,8 @@ export const readFactory = (value: unknown): FactoryState | null => {
     autoBuild: saved.autoBuild === true,
     autoKits: saved.autoKits === true,
     kitsFromPlant: isNumber(saved.kitsFromPlant) && saved.kitsFromPlant >= 0 ? saved.kitsFromPlant : 0,
+    incident: readIncident(saved.incident),
+    incidentClock: isNumber(saved.incidentClock) && saved.incidentClock >= 0 ? saved.incidentClock : FIRST_INCIDENT,
+    incidentsOn: saved.incidentsOn !== false,
   };
 };

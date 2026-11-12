@@ -129,7 +129,11 @@ export const storeCap = (state: PlantState, good: Good): number =>
 export const powerDemand = (state: PlantState): number =>
   BUILDING_IDS.reduce((sum, id) => sum + (BUILDINGS[id].power > 0 ? state.buildings[id] * BUILDINGS[id].power * powerFactor(state) : 0), 0);
 
-const windPower = (state: PlantState): number => state.buildings.windTurbine * -BUILDINGS.windTurbine.power * speedOf(state, "windTurbine");
+/** How fast some buildings work for a while (an incident: a strike, a breakdown, the weather), against their usual speed. */
+export type Speeds = Partial<Record<BuildingId, number>>;
+
+const windPower = (state: PlantState, speeds: Speeds): number =>
+  state.buildings.windTurbine * -BUILDINGS.windTurbine.power * speedOf(state, "windTurbine") * (speeds.windTurbine ?? 1);
 
 // --- A step of time --------------------------------------------------------------------------------------------------
 
@@ -146,12 +150,12 @@ export interface PlantStep {
 const smooth = (current: number, value: number, dt: number): number => current + (value - current) * Math.min(1, dt / SMOOTHING_SECONDS);
 
 /** One step of the plant. `kitsWanted`: kits the restaurants would take, served before the pizza factories. */
-export const runPlant = (state: PlantState, dt: number, kitsWanted = 0): PlantStep => {
+export const runPlant = (state: PlantState, dt: number, kitsWanted = 0, speeds: Speeds = {}): PlantStep => {
   const stocks = { ...state.stocks };
   const done = noBuildings();
   // Power first: the wind, and the biogas plants burning what by-products there are.
   const burnable = FUELS.reduce((sum, good) => sum + stocks[good], 0);
-  const biogasSpeed = speedOf(state, "biogasPlant");
+  const biogasSpeed = speedOf(state, "biogasPlant") * (speeds.biogasPlant ?? 1);
   const burnt = Math.min(state.buildings.biogasPlant * biogasSpeed * BIOGAS_FUEL * dt, burnable);
   let toBurn = burnt;
   for (const good of FUELS) {
@@ -160,8 +164,8 @@ export const runPlant = (state: PlantState, dt: number, kitsWanted = 0): PlantSt
     toBurn -= used;
   }
   done.biogasPlant = burnt / (BIOGAS_FUEL * dt);
-  const supply = windPower(state) + done.biogasPlant * -BUILDINGS.biogasPlant.power;
-  done.windTurbine = state.buildings.windTurbine * speedOf(state, "windTurbine");
+  const supply = windPower(state, speeds) + done.biogasPlant * -BUILDINGS.biogasPlant.power;
+  done.windTurbine = state.buildings.windTurbine * speedOf(state, "windTurbine") * (speeds.windTurbine ?? 1);
   const demand = powerDemand(state);
   const powered = demand > 0 ? Math.min(1, supply / demand) : 1;
 
@@ -178,7 +182,7 @@ export const runPlant = (state: PlantState, dt: number, kitsWanted = 0): PlantSt
       stocks.cheese -= kits;
     }
     const spec = BUILDINGS[id];
-    let activity = state.buildings[id] * speedOf(state, id) * powered * dt;
+    let activity = state.buildings[id] * speedOf(state, id) * (speeds[id] ?? 1) * powered * dt;
     for (const [good, amount] of Object.entries(spec.uses) as [Good, number][]) activity = Math.min(activity, stocks[good] / amount);
     for (const [good, amount] of Object.entries(spec.makes) as [Good, number][]) activity = Math.min(activity, (storeCap(state, good) - stocks[good]) / amount);
     activity = Math.max(0, activity);
@@ -212,12 +216,12 @@ export const usageOf = (state: PlantState, id: BuildingId): number => {
 };
 
 /** What the power plants make now, against what the plant needs (MW). */
-export const powerBalance = (state: PlantState): { supply: number; demand: number } => ({
-  supply: windPower(state) + state.factoryRates.biogasPlant * -BUILDINGS.biogasPlant.power,
+export const powerBalance = (state: PlantState, speeds: Speeds = {}): { supply: number; demand: number } => ({
+  supply: windPower(state, speeds) + state.factoryRates.biogasPlant * -BUILDINGS.biogasPlant.power,
   demand: powerDemand(state),
 });
 
-export const buildingStatus = (state: PlantState, id: BuildingId): BuildingStatus => {
+export const buildingStatus = (state: PlantState, id: BuildingId, speeds: Speeds = {}): BuildingStatus => {
   if (state.buildings[id] <= 0) return { kind: "none" };
   if (usageOf(state, id) >= 0.97) return { kind: "running" };
   if (id === "biogasPlant") return { kind: "starved", good: "whey" };
@@ -230,7 +234,7 @@ export const buildingStatus = (state: PlantState, id: BuildingId): BuildingStatu
   // Short of an input only if its store is low and not filling up: a store that rises means the input is there, and
   // something else (the power) holds the building back.
   if (scarcest && scarcest.cover < 1 && state.stockTrends[scarcest.good] <= 0.5) return { kind: "starved", good: scarcest.good };
-  const { supply, demand } = powerBalance(state);
+  const { supply, demand } = powerBalance(state, speeds);
   if (spec.power > 0 && supply < demand) return { kind: "unpowered" };
   return scarcest ? { kind: "starved", good: scarcest.good } : { kind: "running" };
 };

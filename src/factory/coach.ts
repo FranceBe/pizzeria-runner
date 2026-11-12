@@ -1,6 +1,7 @@
 // Guidance for Forno Infinito: a short tour of the first actions, tips that come once when something new happens, and
 // the goal of the moment (with its progress), so the player always knows what to do next and why.
 import { cookCapacity, frozenRate, isForSale, UPGRADE_IDS, UPGRADES, type FactoryState } from "./engine";
+import { incidentSpeeds } from "./incidents";
 import { powerBalance, type BuildingId } from "./plant";
 
 /** The parts of the page guidance can point at. */
@@ -9,7 +10,7 @@ export type Section = "counter" | "stats" | "sales" | "supplies" | "kitchen" | "
 export const STEP_IDS = ["makePizza", "selling", "buyCrate", "hireCook", "price", "firstUpgrade", "tourDone"] as const;
 export type StepId = (typeof STEP_IDS)[number];
 
-export const TIP_IDS = ["outOfKits", "kitchenFull", "automation", "franchiseForSale", "chainOpen", "chainGrowth", "power", "research"] as const;
+export const TIP_IDS = ["outOfKits", "kitchenFull", "automation", "franchiseForSale", "chainOpen", "chainGrowth", "power", "research", "incident"] as const;
 export type TipId = (typeof TIP_IDS)[number];
 
 interface Guide {
@@ -39,8 +40,15 @@ export const TIPS: Record<TipId, Guide & { when: (state: FactoryState) => boolea
   franchiseForSale: { target: "upgrades", when: (s) => isForSale(s, "franchise") },
   chainOpen: { target: "chain", when: (s) => s.era >= 2 },
   chainGrowth: { target: "chain", when: (s) => s.era >= 2 && s.upgrades.includes("manager") },
-  power: { target: "factories", when: (s) => s.era >= 3 && powerBalance(s).demand > 0 && powerBalance(s).supply < powerBalance(s).demand },
+  power: {
+    target: "factories",
+    when: (s) => {
+      const { supply, demand } = powerBalance(s, incidentSpeeds(s.incident));
+      return s.era >= 3 && demand > 0 && supply < demand;
+    },
+  },
   research: { target: "research", when: (s) => s.era >= 3 && s.buildings.researchLab > 0 },
+  incident: { target: "factories", when: (s) => s.incident !== null },
 };
 
 // Era 3's own tour: the plant set up one building at a time, from the power to the trucks, each lighting up in the

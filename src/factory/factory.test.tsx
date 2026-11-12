@@ -109,7 +109,7 @@ describe("Forno Infinito's page", () => {
 
   it("draws the plant as a diagram or as chains, every building in both, each with a button to sell one back", () => {
     const plant = { buildings: { ...noBuildings(), wheatFarm: 2, mill: 1 }, stocks: { ...noStocks(), wheat: 500 }, factoryRates: noBuildings(), stockTrends: noStocks(), researched: [] };
-    const props = { state: plant, texts: TEXTS.fr, money: 1e9, formatCount: String, formatMoney: String, needed: null, highlight: ["mill" as const], onBuild: () => {}, onSell: () => {}, isNarrow: false };
+    const props = { state: plant, texts: TEXTS.fr, money: 1e9, formatCount: String, formatMoney: String, needed: null, highlight: ["mill" as const], onBuild: () => {}, onSell: () => {}, isNarrow: false, incident: null };
     const wide = renderToString(<PlantDiagram {...props} view="graph" />);
     const narrow = renderToString(<PlantDiagram {...props} view="chains" />).replaceAll("&#x27;", "'").replaceAll("<!-- -->", "");
     for (const html of [wide, narrow]) {
@@ -120,5 +120,9 @@ describe("Forno Infinito's page", () => {
     expect(narrow).toContain(TEXTS.fr.chains.dough);
     expect(narrow).toContain(`${TEXTS.fr.goods.wheat} · 500`);
     expect(narrow).toContain(`→ ${TEXTS.fr.buildings.mill.name}`);
+    // A strike at the mill: its card says so.
+    const strike = renderToString(<PlantDiagram {...props} view="graph" incident={{ kind: "strike", building: "mill", left: 60 }} />);
+    expect(strike).toContain(TEXTS.fr.incidents.strike.status);
+    expect(strike).toMatch(/data-building="mill" class="fi-node-card [a-z]+ hit/);
   });
 });

@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import {
   BUILDING_IDS, buildingCost, buildingStatus, sellValue, storeCap, usageOf, type BuildingId, type BuildingStatus, type Good, type PlantState,
 } from "./plant";
+import { hitBuildings, incidentSpeeds, INCIDENTS, type Incident } from "./incidents";
 import type { FactoryTexts } from "./texts";
 
 /** Each building's place: its column (left to right, as goods flow) and row. */
@@ -119,6 +120,8 @@ interface PlantDiagramProps {
   /** The diagram, or the chains. */
   view: PlantView;
   isNarrow: boolean;
+  /** The incident of the moment: the buildings it hits are marked, and say so. */
+  incident: Incident | null;
 }
 
 export type PlantView = "graph" | "chains";
@@ -133,7 +136,7 @@ const CHAINS: readonly { id: "power" | "dough" | "sauce" | "cheese" | "pizza"; b
 ];
 export type ChainId = (typeof CHAINS)[number]["id"];
 
-export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, needed, highlight, onBuild, onSell, view, isNarrow }: PlantDiagramProps) => {
+export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, needed, highlight, onBuild, onSell, view, isNarrow, incident }: PlantDiagramProps) => {
   const scroller = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -157,7 +160,12 @@ export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, ne
       window.removeEventListener("resize", fit);
     };
   }, [view, isNarrow]);
-  const statuses = Object.fromEntries(BUILDING_IDS.map((id) => [id, buildingStatus(state, id)])) as Record<BuildingId, BuildingStatus>;
+  const speeds = incidentSpeeds(incident);
+  const statuses = Object.fromEntries(BUILDING_IDS.map((id) => [id, buildingStatus(state, id, speeds)])) as Record<BuildingId, BuildingStatus>;
+  const hit = hitBuildings(incident);
+  // A card's classes: how it runs, whether an incident hits it, whether the tour points at it.
+  const cardClass = (id: BuildingId) =>
+    `${statuses[id].kind}${hit.includes(id) && incident ? (INCIDENTS[incident.kind].isLucky ? " lucky" : " hit") : ""}${highlight.includes(id) ? " coach-target" : ""}`;
 
   // The building the tour points at comes into view (the diagram may scroll sideways).
   const highlightKey = highlight.join(",");
@@ -171,6 +179,7 @@ export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, ne
   }, [highlightKey, view]);
 
   const statusText = (id: BuildingId) => {
+    if (incident && hit.includes(id) && state.buildings[id] > 0) return `${texts.incidents[incident.kind].icon} ${texts.incidents[incident.kind].status}`;
     const status = statuses[id];
     if (status.kind === "none") return texts.statusNone;
     if (status.kind === "running") return texts.statusRunning;
@@ -236,7 +245,7 @@ export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, ne
                 const incoming = ARROWS.filter((arrow) => arrow.to === id);
                 const outgoing = ARROWS.filter((arrow) => arrow.from === id);
                 return (
-                  <div key={id} data-building={id} className={`fi-chain-card ${statuses[id].kind}${highlight.includes(id) ? " coach-target" : ""}`}>
+                  <div key={id} data-building={id} className={`fi-chain-card ${cardClass(id)}`}>
                     {nodeBody(id)}
                     {incoming.length > 0 && (
                       <div className="fi-good-tags">
@@ -296,7 +305,7 @@ export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, ne
           const { x, y } = at(id);
           return (
             <div key={id} data-building={id}
-              className={`fi-node-card ${statuses[id].kind}${highlight.includes(id) ? " coach-target" : ""}`}
+              className={`fi-node-card ${cardClass(id)}`}
               style={{ left: x, top: y, width: NODE_WIDTH, height: NODE_HEIGHT }}>
               {nodeBody(id)}
             </div>

@@ -6,6 +6,7 @@ import {
 } from "./engine";
 import { botSecond } from "./bot";
 import { build, buildModule, doResearch, frozenRate, hasAutomation, isForSale, sell } from "./engine";
+import { FIRST_INCIDENT } from "./incidents";
 import { BUILDING_IDS, BUILDINGS, buildingCost, nextModule, noBuildings, planFor, WHOLESALE_PRICE, type BuildingId } from "./plant";
 
 const rich = (overrides: Partial<FactoryState> = {}): FactoryState => ({ ...newFactory(), money: 1e9, ...overrides });
@@ -251,8 +252,9 @@ describe("saves", () => {
     expect(readFactory({ ...state, restaurants: 0 })).toBeNull();
     expect(readFactory({ ...state, upgrades: ["woodOven", "timeMachine"] })?.upgrades).toEqual(["woodOven"]);
     // A save from before the factories: none of them yet.
-    const { buildings, stocks, factoryRates, stockTrends, research, researched, autoBuild, autoKits, kitsFromPlant, ...older } = state;
+    const { buildings, stocks, factoryRates, stockTrends, research, researched, autoBuild, autoKits, kitsFromPlant, incident, incidentClock, incidentsOn, ...older } = state;
     expect(buildings && stocks && factoryRates && stockTrends && research === 0 && researched && !autoBuild && !autoKits && kitsFromPlant === 0).toBeTruthy();
+    expect(incident === null && incidentClock === FIRST_INCIDENT && incidentsOn).toBeTruthy();
     expect(readFactory(JSON.parse(JSON.stringify(older)))).toEqual(state);
     expect(readFactory({ ...state, buildings: { mill: -3, pizzaFactory: "many" } })?.buildings).toEqual(noBuildings());
     // A save from the first factories: their distribution deals and old buildings are dropped, the rest stays.
@@ -275,6 +277,7 @@ describe("a whole game, played by a robot", () => {
     const random = seededRandom(1);
     let state = newFactory();
     const reached: Record<string, number> = {};
+    let incidents = 0;
     for (let second = 0; second < 110 * 60; second++) {
       const before = state;
       state = botSecond(state, { clicksPerSecond: 4, random });
@@ -290,6 +293,7 @@ describe("a whole game, played by a robot", () => {
       if (frozenRate(state) >= 10_000) reached.factory10k ??= second / 60;
       if (state.researched.length >= 5) reached.fiveResearches ??= second / 60;
       if (state.totalSold >= 1e8) reached.hundredMillion ??= second / 60;
+      if (state.incident && !before.incident) incidents++;
     }
     // A robot plays faster than a person (perfect prices, instant hires): five minutes at the counter for it is about
     // ten for a player; the chain soon after; a million pizzas within half an hour (about an hour for a player).
@@ -305,6 +309,8 @@ describe("a whole game, played by a robot", () => {
     expect(reached.factory10k - reached.factories).toBeLessThan(15);
     expect(reached.fiveResearches - reached.factories).toBeLessThan(30);
     expect(reached.hundredMillion - reached.factories).toBeLessThan(45);
+    // Incidents along the way (one every five to ten minutes once the plant runs), and the pace above all the same.
+    expect(incidents).toBeGreaterThan(3);
     expect(state.log.length).toBeLessThanOrEqual(RULES.logKept);
     // The crate grows with the central kitchen.
     expect(crateSize(state)).toBe(RULES.crateSize * 10);

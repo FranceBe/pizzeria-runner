@@ -413,6 +413,16 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   choice. Each building shows its recipe, how fast it runs and why not flat out ("short of salt", "dough store full:
   stopped", "not enough power"), with a button to build one more and one to sell one back for half its price, to slow
   down a step that runs too far ahead and free the power it draws.
+  - **Incidents** (`src/factory/incidents.ts`): now and then, something happens to the plant for two to four minutes,
+    one at a time, every five to ten minutes once the pizza factories run. A strike slows a workshop to half speed, a
+    breakdown stops one (the creamery, the pizza factories, the trucks, the biogas…), a drought slows the fields, a calm
+    the wind turbines; and sometimes luck smiles: a bumper harvest, or a trade fair where the trucks sell 50% dearer. A
+    banner above the plant says what, where and for how long; the buildings it hits are marked in the diagram, the
+    Factories tab shows a "!", and the journal keeps it. A strike ends at once with a bonus paid, a breakdown with a
+    repair (forty seconds of what the trucks bring in); the weather just passes. The Maintenance research makes
+    breakdowns half as frequent and half as long. Nothing happens while the player is away (the catch-up lets the
+    incident going on run out and starts none), and a switch turns incidents off. The robot that balances the game meets
+    them too, and settles strikes and breakdowns when it can afford to.
   - **Sources**: wheat fields, water pumps, salt works, greenhouses, olive groves, dairy farms.
   - **Processing**: a flour mill (wheat → flour), an industrial kneader (flour + water + salt → dough), an oil press
     (olives → oil), a cannery (tomatoes + oil → sauce), a creamery (milk + salt → mozzarella, leaving whey). The salt goes
@@ -460,8 +470,9 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   the page goes away. Start over erases it (after a confirmation). `npm run dev:factory` serves it alone.
 - **Dev tab** (🛠, development builds only, `src/factory/dev/`): load a game at any point without playing through,
   from presets (the start of era 2, the start of era 3, era 3 under way, the end of era 3) or by setting every figure by
-  hand (era, money, pizzas sold, restaurants, crew, advertising, deals, kits, each building, the upgrades); shortcuts add
-  money or move time ten minutes on. Loading a game switches the tour off. The built page holds none of it.
+  hand (era, money, pizzas sold, restaurants, crew, advertising, kits, research points, each building, the upgrades,
+  the research); shortcuts add money, move time ten minutes on, start any incident at once or bring the next one five
+  seconds away. Loading a game switches the tour off. The built page holds none of it.
 
 ## Pages next to the game
 

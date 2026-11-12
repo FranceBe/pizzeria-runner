@@ -3,11 +3,12 @@
 // tabs at the bottom keep each part to one screen.
 import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  advance, AUTOMATION_OWNERS, AUTOMATIONS, build, buildModule, sell, clickPower, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
+  advance, AUTOMATION_OWNERS, AUTOMATIONS, build, buildModule, fixIncident, incidentFixCost, sell, toggleIncidents, clickPower, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
   fairPrice, hireCooks, hiringPlan, isForSale, makePizza, marketingCost, newFactory, openRestaurant, readFactory, restaurantCost, tick, toggleAutomation,
   UPGRADE_IDS, UPGRADES, type FactoryState,
 } from "./engine";
 import { factoryCapacity, LAB_RESEARCH, nextModule, planFor, powerBalance } from "./plant";
+import { incidentSpeeds, INCIDENTS } from "./incidents";
 import { PlantDiagram, type PlantView } from "./PlantDiagram";
 import { isResearched, isResearchOpen, RESEARCH, RESEARCH_IDS } from "./research";
 import { acknowledge, bubbleFor, goalFor, newCoach, readCoach, settle, STEP_IDS, type Bubble, type Coach, type Section } from "./coach";
@@ -94,6 +95,12 @@ export const formatters = (locale: string) => {
       return h ? `${h} h ${String(m).padStart(2, "0")}` : `${Math.max(1, m)} min`;
     },
   };
+};
+
+/** Minutes and seconds, for what is left of an incident. */
+const clock = (seconds: number) => {
+  const whole = Math.ceil(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 };
 
 // --- Layout ---------------------------------------------------------------------------------------------------------
@@ -488,7 +495,34 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const plan = state.era >= 3 && isResearched(state.researched, "calculator") ? planFor(state, factoryCapacity(state)) : null;
   const percent = (share: number) => `${Math.round(share * 100)} %`;
 
-  const power = powerBalance(state);
+  const power = powerBalance(state, incidentSpeeds(state.incident));
+  const incident = state.incident;
+  const isBadNews = incident !== null && !INCIDENTS[incident.kind].isLucky;
+  const fixCost = incidentFixCost(state);
+  const incidentWords = incident && texts.incidents[incident.kind];
+  // What happens at the plant: the incident of the moment, what it does and for how long, how to end it, and the switch.
+  const incidentBar = (
+    <div className={`fi-incident${incident ? (isBadNews ? " bad" : " lucky") : ""}`}>
+      <span className="fi-incident-text">
+        {incidentWords ? (
+          <>
+            <span aria-hidden="true">{incidentWords.icon}</span>{" "}
+            <strong>{incidentWords.name}{incident.building ? ` · ${texts.buildings[incident.building].name}` : ""}</strong>
+            {" — "}{incidentWords.effect} · {texts.incidentLeft(clock(incident.left))}
+          </>
+        ) : state.incidentsOn ? texts.incidentNone : texts.incidentsOff}
+      </span>
+      {incident && fixCost !== null && (incident.kind === "strike" || incident.kind === "breakdown") && (
+        <button className="fi-btn small primary" onClick={() => act(fixIncident)} disabled={state.money < fixCost}>
+          {texts.incidentFix[incident.kind](f.money(fixCost))}
+        </button>
+      )}
+      <label className="fi-switch small">
+        <input type="checkbox" checked={state.incidentsOn} onChange={() => act(toggleIncidents)} />
+        <span>{texts.incidentsSwitch}</span>
+      </label>
+    </div>
+  );
   const module = state.era >= 3 && isResearched(state.researched, "modules") ? nextModule(state) : null;
   const moduleSize = module ? Object.values(module.builds).reduce((sum, count) => sum + (count ?? 0), 0) : 0;
 
@@ -613,10 +647,13 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
                 {texts.buildModule(moduleSize, f.money(module.cost))}
               </button>
             )}
-            <div className="fi-view-switch" role="group" aria-label={texts.plantView}>
-              {(["graph", "chains"] as const).map((view) => (
-                <button key={view} aria-pressed={plantView === view} onClick={() => chooseView(view)}>{texts.plantViews[view]}</button>
-              ))}
+            <div className="fi-plant-bar">
+              {incidentBar}
+              <div className="fi-view-switch" role="group" aria-label={texts.plantView}>
+                {(["graph", "chains"] as const).map((view) => (
+                  <button key={view} aria-pressed={plantView === view} onClick={() => chooseView(view)}>{texts.plantViews[view]}</button>
+                ))}
+              </div>
             </div>
             <PlantDiagram
               state={state}
@@ -629,6 +666,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
               onBuild={(id) => act((s) => build(s, id))}
               onSell={(id) => act((s) => sell(s, id))}
               view={plantView}
+              incident={incident}
               isNarrow={isNarrow}
             />
             <p className="fi-hint">{texts.shipping(f.rate(shippedRate(state)))}</p>
@@ -713,7 +751,11 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
         <ol className="fi-log">
           {[...state.log].reverse().map((entry) => (
             <li key={entry.id}>
-              {entry.key === "upgradeBought" && entry.upgrade ? `${texts.message.upgradeBought}${texts.upgrade[entry.upgrade].name}.` : texts.message[entry.key]}
+              {entry.key === "upgradeBought" && entry.upgrade
+                ? `${texts.message.upgradeBought}${texts.upgrade[entry.upgrade].name}.`
+                : entry.key === "incident" && entry.incident
+                  ? `${texts.incidents[entry.incident].icon} ${texts.incidents[entry.incident].name}${entry.building ? ` · ${texts.buildings[entry.building].name}` : ""} — ${texts.incidents[entry.incident].effect}.`
+                  : texts.message[entry.key]}
             </li>
           ))}
         </ol>
@@ -726,12 +768,13 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
     <nav className={`fi-tabs ${isNarrow ? "bottom" : "top"}`} aria-label={texts.title} style={{ "--tab-count": TABS.length } as CSSProperties}>
       {TABS.map((id) => {
         const label = { counter: texts.tabCounter, kitchen: texts.tabKitchen, factories: texts.tabFactories, upgrades: texts.tabUpgrades, journal: texts.tabJournal, dev: "Dev" }[id];
-        const badge = id === "upgrades" && affordableUpgrades > 0 ? affordableUpgrades : 0;
+        // A count of the upgrades to buy; a "!" while something goes wrong at the plant.
+        const badge = id === "upgrades" && affordableUpgrades > 0 ? String(affordableUpgrades) : id === "factories" && isBadNews ? "!" : "";
         return (
           <button key={id} className={`fi-tab${tab === id ? " on" : ""}${target && TAB_OF[target] === id && tab !== id ? " coach-target" : ""}`} aria-current={tab === id} onClick={() => setTab(id)}>
             <span className="fi-tab-icon" aria-hidden="true">{TAB_ICONS[id]}</span>
             <span className="fi-tab-label">{label}</span>
-            {badge > 0 && <span className="fi-tab-badge">{badge}</span>}
+            {badge && <span className="fi-tab-badge">{badge}</span>}
           </button>
         );
       })}
