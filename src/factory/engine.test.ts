@@ -2,10 +2,11 @@ import { describe, it, expect } from "vitest";
 import { seededRandom } from "../utils/random";
 import {
   advance, buyCrate, buyUpgrade, changePrice, cookCapacity, cookCost, crateSize, demandRate, fairPrice, hireCook, hireCooks, hiringPlan, makePizza,
-  newFactory, openRestaurant, productionRate, readFactory, RULES, tick, toggleAutomation, UPGRADES, type FactoryState, type UpgradeId,
+  newFactory, openRestaurant, productionRate, readFactory, RULES, SPACE_PLANS_SALES, tick, toggleAutomation, UPGRADES, type FactoryState, type UpgradeId,
 } from "./engine";
 import { botSecond } from "./bot";
 import { build, buildModule, doResearch, frozenRate, hasAutomation, isForSale, sell } from "./engine";
+import { newCosmos } from "./cosmos";
 import { FIRST_INCIDENT } from "./incidents";
 import { BUILDING_IDS, BUILDINGS, buildingCost, nextModule, noBuildings, planFor, WHOLESALE_PRICE, type BuildingId } from "./plant";
 
@@ -222,11 +223,14 @@ describe("the factories", () => {
     expect(runFor(foreman, 2).buildings.pizzaFactory).toBeGreaterThan(0);
   });
 
-  it("keep the rocket plans for later: shown once a billion pizzas are sold, not for sale yet", () => {
-    const state = plantState({}, { totalSold: 2e9 });
+  it("sell the rocket plans once enough pizzas are sold: they open era 4, the universe", () => {
+    expect(isForSale(plantState({}, { totalSold: SPACE_PLANS_SALES - 1 }), "spacePlans")).toBe(false);
+    const state = plantState({}, { totalSold: SPACE_PLANS_SALES });
     expect(isForSale(state, "spacePlans")).toBe(true);
-    expect(UPGRADES.spacePlans.comingSoon).toBe(true);
-    expect(buyUpgrade(state, "spacePlans")).toBeNull();
+    const universe = buyUpgrade(state, "spacePlans")!;
+    expect(universe.era).toBe(4);
+    expect(universe.money).toBe(state.money - UPGRADES.spacePlans.cost);
+    expect(universe.log.at(-1)?.key).toBe("universeOpen");
   });
 });
 
@@ -252,7 +256,8 @@ describe("saves", () => {
     expect(readFactory({ ...state, restaurants: 0 })).toBeNull();
     expect(readFactory({ ...state, upgrades: ["woodOven", "timeMachine"] })?.upgrades).toEqual(["woodOven"]);
     // A save from before the factories: none of them yet.
-    const { buildings, stocks, factoryRates, stockTrends, research, researched, autoBuild, autoKits, kitsFromPlant, incident, incidentClock, incidentsOn, ...older } = state;
+    const { buildings, stocks, factoryRates, stockTrends, research, researched, autoBuild, autoKits, kitsFromPlant, incident, incidentClock, incidentsOn, cosmos, ...older } = state;
+    expect(cosmos).toEqual(newCosmos());
     expect(buildings && stocks && factoryRates && stockTrends && research === 0 && researched && !autoBuild && !autoKits && kitsFromPlant === 0).toBeTruthy();
     expect(incident === null && incidentClock === FIRST_INCIDENT && incidentsOn).toBeTruthy();
     expect(readFactory(JSON.parse(JSON.stringify(older)))).toEqual(state);

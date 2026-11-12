@@ -342,9 +342,51 @@ button { font: inherit; color: inherit; }
   .fi-tab-label { font-size: 10.5px; }
 }
 
+/* Era 4: the galaxy. The terroirs on the left, Earth in the middle, the civilisations on the right; a route for each
+   planet, as the plant's arrows (planned routes, to planets not yet colonised or met, are faint) */
+.fi-panel.tab-universe { grid-template-columns: minmax(0, 1fr); }
+.fi-arrow.planned { stroke-dasharray: 3 7; opacity: .45; animation: none; }
+.fi-planet .fi-node-head strong { min-width: 0; }
+.fi-planet .fi-node-recipe { min-height: 0; -webkit-line-clamp: 1; }
+.fi-planet-ships { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fi-planet-text { font-size: 11px; line-height: 1.3; color: var(--muted); }
+.fi-node-card.fi-planet, .fi-node-card.fi-earth { gap: 4px; }
+.fi-node-card.unknown, .fi-chain-card.unknown { opacity: .55; border-style: dashed; box-shadow: none; }
+.fi-node-actions.wrap { flex-wrap: wrap; }
+.fi-node-actions.wrap .fi-btn.small:not(.sell) { flex: 1 1 auto; }
+.fi-node-card .fi-node-actions.wrap { margin-top: auto; }
+.fi-earth { border-color: var(--basil); }
+.fi-earth .fi-node-bar { position: static; height: 4px; border-radius: 99px; }
+.fi-earth-stores { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.fi-earth-stores li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; font-size: 11.5px; }
+.fi-earth-stores li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-earth-stores li strong { font-variant-numeric: tabular-nums; }
+.fi-earth-stores li .fi-node-bar { grid-column: 1 / -1; }
+.fi-earth .fi-node-status.ok { color: var(--basil); }
+.fi-earth .fi-node-status.warn { color: #a26f00; }
+.fi-earth .fi-node-status { white-space: normal; }
+.fi-earth-explore { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.fi-node-card.fi-earth .fi-planet-text { margin-top: auto; }
+.fi-stages { counter-reset: none; }
+
+/* The ending */
+.fi-ending-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 14, 30, .72); }
+.fi-ending { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 24px 20px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
+.fi-ending-sun { font-size: 56px; line-height: 1; filter: drop-shadow(0 0 18px rgba(255, 190, 60, .9)); animation: fi-sun-glow 2.4s ease-in-out infinite alternate; }
+@keyframes fi-sun-glow { to { filter: drop-shadow(0 0 32px rgba(255, 150, 40, 1)); transform: scale(1.06); } }
+.fi-ending-title { margin: 0; font-size: 24px; }
+.fi-ending-text { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted); }
+.fi-ending-facts { width: 100%; margin: 4px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.fi-ending-facts div { padding: 8px; border-radius: 10px; background: var(--surface2); }
+.fi-ending-facts dt { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.fi-ending-facts dd { margin: 2px 0 0; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fi-ending-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+
 @media (prefers-reduced-motion: reduce) {
   .coach-target, .fi-bubble { animation: none; }
   .fi-pop { animation: none; opacity: 0; }
+  .fi-ending-sun { animation: none; }
   .fi-pizza { transition: none; }
 }
 

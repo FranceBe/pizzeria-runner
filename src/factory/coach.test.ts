@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { acknowledge, bubbleFor, goalFor, newCoach, PLANT_STEP_IDS, readCoach, settle, STEP_IDS, STEPS, TIP_IDS, TIPS, type Coach } from "./coach";
+import { acknowledge, bubbleFor, goalFor, newCoach, PLANT_STEP_IDS, readCoach, settle, SPACE_STEP_IDS, STEP_IDS, STEPS, TIP_IDS, TIPS, type Coach } from "./coach";
 import type { BuildingId } from "./plant";
+import { buildOven, openPlanet } from "./cosmos";
 import { buyCrate, hireCook, isForSale, makePizza, newFactory, type FactoryState } from "./engine";
 import { TAB_OF } from "./Factory";
 import { TEXTS } from "./texts";
@@ -42,7 +43,7 @@ describe("the guided tour", () => {
   });
 
   it("waits to point at hiring until there is money for it", () => {
-    const coach: Coach = { step: STEP_IDS.indexOf("hireCook"), plantStep: 0, seen: [], off: false };
+    const coach: Coach = { step: STEP_IDS.indexOf("hireCook"), plantStep: 0, spaceStep: 0, seen: [], off: false };
     expect(bubbleFor(coach, { ...newFactory(), money: 5 })).toBeNull();
     expect(bubbleFor(coach, { ...newFactory(), money: 15 })).toMatchObject({ id: "hireCook" });
   });
@@ -50,7 +51,7 @@ describe("the guided tour", () => {
   it("skips what the player already did on their own", () => {
     const state = { ...newFactory(), totalMade: 50, cratesBought: 2 };
     expect(settle(newCoach(), state).step).toBe(STEP_IDS.indexOf("selling"));
-    const later = settle({ step: STEP_IDS.indexOf("buyCrate"), plantStep: 0, seen: [], off: false }, { ...state, cooks: 1 });
+    const later = settle({ step: STEP_IDS.indexOf("buyCrate"), plantStep: 0, spaceStep: 0, seen: [], off: false }, { ...state, cooks: 1 });
     expect(STEP_IDS[later.step]).toBe("price");
   });
 
@@ -60,7 +61,7 @@ describe("the guided tour", () => {
 });
 
 describe("tips", () => {
-  const afterTour: Coach = { step: STEP_IDS.length, plantStep: 0, seen: [], off: false };
+  const afterTour: Coach = { step: STEP_IDS.length, plantStep: 0, spaceStep: 0, seen: [], off: false };
 
   it("come once each, when what they are about happens", () => {
     const state = { ...newFactory(), totalSold: 3000 };
@@ -79,7 +80,7 @@ describe("tips", () => {
 });
 
 describe("the plant's tour", () => {
-  const afterTours: Coach = { step: STEP_IDS.length, plantStep: 0, seen: [], off: false };
+  const afterTours: Coach = { step: STEP_IDS.length, plantStep: 0, spaceStep: 0, seen: [], off: false };
   const era3 = (buildings: Partial<FactoryState["buildings"]> = {}): FactoryState => ({ ...newFactory(), era: 3, buildings: { ...newFactory().buildings, ...buildings } });
 
   it("sets the plant up one building at a time, lighting each one up, from the power to the trucks", () => {
@@ -125,8 +126,14 @@ describe("the goal", () => {
     const running = { ...factories, factoryRates: { ...factories.factoryRates, pizzaFactory: 4 } };
     expect(goalFor(running)).toEqual({ id: "research", current: 0, target: 5 });
     const researched = { ...running, researched: ["calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines"] as ResearchId[] };
-    expect(goalFor(researched).id).toBe("sold1b");
-    expect(goalFor({ ...researched, totalSold: 2e9 }).id).toBe("space");
+    expect(goalFor(researched).id).toBe("spaceSales");
+    expect(goalFor({ ...researched, totalSold: 3e8, money: 2e8 })).toEqual({ id: "buyRocket", current: 2e8, target: 1e9 });
+    // Era 4: a hundred cosmic pizzas, the stellar oven stage by stage, then free play.
+    const universe = { ...researched, era: 4 as const };
+    expect(goalFor(universe)).toEqual({ id: "firstCosmic", current: 0, target: 100 });
+    const delivering = { ...universe, cosmos: { ...universe.cosmos, sold: 500, stage: 2 } };
+    expect(goalFor(delivering)).toEqual({ id: "stellar", current: 2, target: 5 });
+    expect(goalFor({ ...delivering, cosmos: { ...delivering.cosmos, stage: 5, endedAt: 3600 } }).id).toBe("free");
   });
 });
 
@@ -145,10 +152,36 @@ describe("guidance, everywhere", () => {
   });
 
   it("reads a saved tour with care", () => {
-    expect(readCoach({ step: 3, seen: ["automation", "nope"], off: false })).toEqual({ step: 3, plantStep: 0, seen: ["automation"], off: false });
-    expect(readCoach({ step: 3, plantStep: 4, seen: [] }).plantStep).toBe(4);
+    expect(readCoach({ step: 3, seen: ["automation", "nope"], off: false })).toEqual({ step: 3, plantStep: 0, spaceStep: 0, seen: ["automation"], off: false });
+    expect(readCoach({ step: 3, spaceStep: 2 }).spaceStep).toBe(2);
+    expect(readCoach({ step: 3, spaceStep: 99 }).spaceStep).toBe(SPACE_STEP_IDS.length);
+    expect(readCoach({ step: 3, plantStep: 4, spaceStep: 0, seen: [] }).plantStep).toBe(4);
     expect(readCoach({ step: -2 })).toEqual(newCoach());
     expect(readCoach({ step: 999 }).step).toBe(STEP_IDS.length);
     expect(readCoach("garbage")).toEqual(newCoach());
   });
 });
+
+describe("the universe's tour", () => {
+  const afterTours: Coach = { step: STEP_IDS.length, plantStep: PLANT_STEP_IDS.length, spaceStep: 0, seen: [...TIP_IDS], off: false };
+
+  it("waits for era 4, then opens the first terroirs, the oven and the first civilisation, then explains the rest", () => {
+    expect(bubbleFor(afterTours, { ...newFactory(), era: 3 })).toBeNull();
+    let state: FactoryState = { ...newFactory(), era: 4, money: 1e12 };
+    let { coach, bubble } = follow(afterTours, state);
+    expect(bubble).toMatchObject({ kind: "spaceStep", id: "terroirs", target: "universe", nodes: ["helia", "rubra", "selena"] });
+    for (const id of ["helia", "rubra", "selena"] as const) state = openPlanet(state, id)!;
+    ({ coach, bubble } = follow(coach, state));
+    expect(bubble).toMatchObject({ kind: "spaceStep", id: "oven", nodes: ["earth"] });
+    state = buildOven(openPlanet(state, "orbitans")!)!;
+    ({ coach, bubble } = follow(coach, state));
+    expect(bubble).toMatchObject({ kind: "spaceStep", id: "routes", needsAck: true });
+    ({ coach, bubble } = follow(acknowledge(coach, bubble!), state));
+    expect(bubble).toMatchObject({ kind: "spaceStep", id: "explore" });
+    ({ coach, bubble } = follow(acknowledge(coach, bubble!), state));
+    expect(coach.spaceStep).toBe(SPACE_STEP_IDS.length);
+    expect(bubble).toBeNull();
+    expect(TAB_OF.universe).toBe("universe");
+  });
+});
+

@@ -1,8 +1,9 @@
 // Dev only: a factory set up at any point of the game (an era, money, buildings, upgrades), to test the later eras
 // without playing through. Used by the dev tab, which only exists in development builds.
+import { newCosmos, PLANET_IDS, PLANETS, STAGES, type CosmosState } from "../cosmos";
 import { cookCapacity, newFactory, UPGRADE_IDS, UPGRADES, type Era, type FactoryState, type UpgradeId } from "../engine";
 import { BUILDING_IDS, BUILDINGS, noBuildings, planFor, type BuildingId } from "../plant";
-import { RESEARCH_IDS, type ResearchId } from "../research";
+import { RESEARCH, RESEARCH_IDS, type ResearchId } from "../research";
 
 export interface DevSetup {
   era: Era;
@@ -16,9 +17,11 @@ export interface DevSetup {
   buildings: Record<BuildingId, number>;
   upgrades: UpgradeId[];
   researched: ResearchId[];
+  /** Era 4: the universe, as it is (set by the presets, kept from the game in progress). */
+  cosmos: CosmosState;
 }
 
-export const DEV_PRESET_IDS = ["era2Start", "era3Start", "era3Running", "era3Late"] as const;
+export const DEV_PRESET_IDS = ["era2Start", "era3Start", "era3Running", "era3Late", "era4Start", "era4Late"] as const;
 export type DevPresetId = (typeof DEV_PRESET_IDS)[number];
 
 /** Every upgrade of these eras that can be bought (not those still to come). */
@@ -33,24 +36,53 @@ const plantFor = (factories: number, researched: ResearchId[] = []): Record<Buil
   return { ...buildings, researchLab: Math.max(1, Math.floor(factories / 4)) };
 };
 
+const ERA3_RESEARCH: ResearchId[] = RESEARCH_IDS.filter((id) => !RESEARCH[id].era);
+
+/** A universe well under way: the first two rings colonised and met, the routes equipped, the stellar oven one stage
+ * from lit and enough pizzas delivered for it. */
+const lateCosmos = (): CosmosState => {
+  const cosmos = newCosmos();
+  const open = PLANET_IDS.filter((id) => PLANETS[id].ring < 3);
+  return {
+    ...cosmos,
+    known: PLANET_IDS.filter((id) => PLANETS[id].ring < 3),
+    planets: Object.fromEntries(PLANET_IDS.map((id) => [id, open.includes(id)
+      ? { open: true, level: PLANETS[id].kind === "terroir" ? 12 : 0, ships: Math.ceil(PLANETS[id].distance * 8) }
+      : cosmos.planets[id]])) as CosmosState["planets"],
+    ovens: 14,
+    stage: STAGES.length - 1,
+    sold: STAGES[STAGES.length - 1].sold,
+  };
+};
+
 export const DEV_PRESETS: Record<DevPresetId, DevSetup> = {
   era2Start: {
     era: 2, money: 20_000, totalSold: 5_000, restaurants: 1, cooks: 10, marketing: 4, kits: 2_000, research: 0,
-    buildings: noBuildings(), upgrades: eraOneUpgrades(), researched: [],
+    buildings: noBuildings(), upgrades: eraOneUpgrades(), researched: [], cosmos: newCosmos(),
   },
   era3Start: {
     era: 3, money: 5_000_000, totalSold: 2_000_000, restaurants: 80, cooks: 1_500, marketing: 10, kits: 100_000, research: 0,
-    buildings: noBuildings(), upgrades: [...upgradesUpTo(2)], researched: [],
+    buildings: noBuildings(), upgrades: [...upgradesUpTo(2)], researched: [], cosmos: newCosmos(),
   },
   era3Running: {
     era: 3, money: 50_000_000, totalSold: 10_000_000, restaurants: 100, cooks: 2_000, marketing: 12, kits: 100_000, research: 500,
-    buildings: plantFor(2), upgrades: [...upgradesUpTo(2)], researched: [],
+    buildings: plantFor(2), upgrades: [...upgradesUpTo(2)], researched: [], cosmos: newCosmos(),
   },
   era3Late: {
     era: 3, money: 1_000_000_000, totalSold: 500_000_000, restaurants: 130, cooks: 2_600, marketing: 14, kits: 100_000, research: 5_000,
     buildings: plantFor(20, ["calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks"]),
     upgrades: upgradesUpTo(3),
     researched: ["calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks"],
+    cosmos: newCosmos(),
+  },
+  era4Start: {
+    era: 4, money: 500_000_000, totalSold: 300_000_000, restaurants: 140, cooks: 2_800, marketing: 15, kits: 100_000, research: 3_000,
+    buildings: plantFor(24, ERA3_RESEARCH), upgrades: upgradesUpTo(4), researched: ERA3_RESEARCH, cosmos: newCosmos(),
+  },
+  era4Late: {
+    era: 4, money: 2_000_000_000_000, totalSold: 900_000_000, restaurants: 160, cooks: 3_200, marketing: 16, kits: 100_000, research: 20_000,
+    buildings: plantFor(24, ERA3_RESEARCH), upgrades: upgradesUpTo(4), researched: [...ERA3_RESEARCH, "cargoHolds", "orbitalChefs", "terraforming"],
+    cosmos: lateCosmos(),
   },
 };
 
@@ -65,6 +97,8 @@ export const buildDevFactory = (setup: DevSetup): FactoryState => {
   else upgrades.delete("franchise");
   if (setup.era >= 3) upgrades.add("factoryPlans");
   else upgrades.delete("factoryPlans");
+  if (setup.era >= 4) upgrades.add("spacePlans");
+  else upgrades.delete("spacePlans");
   const base: FactoryState = {
     ...newFactory(),
     era: setup.era,
@@ -81,6 +115,7 @@ export const buildDevFactory = (setup: DevSetup): FactoryState => {
     buildings: setup.era >= 3
       ? (Object.fromEntries(BUILDING_IDS.map((id) => [id, count(setup.buildings[id])])) as Record<BuildingId, number>)
       : noBuildings(),
+    cosmos: setup.era >= 4 ? setup.cosmos : newCosmos(),
   };
   const state = { ...base, cooks: Math.min(count(setup.cooks), cookCapacity(base)) };
   return {
@@ -105,4 +140,5 @@ export const devSetupOf = (state: FactoryState): DevSetup => ({
   buildings: { ...state.buildings },
   upgrades: [...state.upgrades],
   researched: [...state.researched],
+  cosmos: state.cosmos,
 });

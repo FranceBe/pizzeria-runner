@@ -21,7 +21,12 @@ describe("the dev tab's games", () => {
     expect(frozenRate(advance(start, 30, seededRandom(1)))).toBe(0);
     // A balanced plant: two factories flat out within a minute.
     expect(frozenRate(advance(buildDevFactory(DEV_PRESETS.era3Running), 60, seededRandom(1)))).toBeGreaterThan(5500);
-    expect(isForSale(buildDevFactory(DEV_PRESETS.era3Late), "spacePlans")).toBe(false);
+    expect(isForSale(buildDevFactory(DEV_PRESETS.era3Late), "spacePlans")).toBe(true);
+    // Era 4: the rocket plans owned, the universe to start, or nearly over.
+    const universe = buildDevFactory(DEV_PRESETS.era4Start);
+    expect(universe.upgrades).toContain("spacePlans");
+    expect(universe.cosmos.known).toEqual(["helia", "rubra", "selena", "orbitans", "tellures"]);
+    expect(buildDevFactory(DEV_PRESETS.era4Late).cosmos.stage).toBe(4);
   });
 
   it("keep things consistent whatever is typed: cooks fit, no buildings or research before era 3, no negatives", () => {

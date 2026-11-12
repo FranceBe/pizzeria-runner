@@ -14,6 +14,8 @@ const PRESET_NAMES: Record<DevPresetId, string> = {
   era3Start: "Début époque 3",
   era3Running: "Époque 3 en route",
   era3Late: "Fin époque 3",
+  era4Start: "Début époque 4",
+  era4Late: "Juste avant la fin",
 };
 
 type NumberField = "money" | "totalSold" | "restaurants" | "cooks" | "marketing" | "kits" | "research";
@@ -73,6 +75,7 @@ export const DevTab = ({ state, texts, onLoad }: DevTabProps) => {
       <div className="fi-dev-row">
         <button className="fi-btn" onClick={() => onLoad({ ...state, money: state.money + 1e6 })}>+1 M€</button>
         <button className="fi-btn" onClick={() => onLoad({ ...state, money: state.money + 1e8 })}>+100 M€</button>
+        <button className="fi-btn" onClick={() => onLoad({ ...state, money: state.money + 1e11 })}>+100 Md€</button>
         <button className="fi-btn" onClick={() => onLoad({ ...state, money: state.money * 10 })}>Argent ×10</button>
         <button className="fi-btn" onClick={() => onLoad(advance(state, 600))}>Avancer 10 min</button>
         <button className="fi-btn" onClick={() => setSetup(devSetupOf(state))}>Reprendre la partie en cours</button>
@@ -93,7 +96,7 @@ export const DevTab = ({ state, texts, onLoad }: DevTabProps) => {
         <label className="fi-dev-field">
           <span>Époque</span>
           <select value={setup.era} onChange={(event) => set("era", Number(event.target.value) as Era)}>
-            {([1, 2, 3] as const).map((era) => <option key={era} value={era}>{era}</option>)}
+            {([1, 2, 3, 4] as const).map((era) => <option key={era} value={era}>{era}</option>)}
           </select>
         </label>
         {NUMBER_FIELDS.map(([key, label]) => (
@@ -124,7 +127,7 @@ export const DevTab = ({ state, texts, onLoad }: DevTabProps) => {
         ))}
       </div>
 
-      <h3 className="fi-dev-title">Recherches (époque 3)</h3>
+      <h3 className="fi-dev-title">Recherches (époques 3 et 4)</h3>
       <div className="fi-dev-upgrades">
         {RESEARCH_IDS.map((id) => (
           <label key={id} className="fi-switch">

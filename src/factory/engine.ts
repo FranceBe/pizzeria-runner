@@ -3,27 +3,28 @@
 // Pizzas are made from ingredient kits (one kit a pizza), by hand at first, then by cooks. Customers buy them as fast
 // as the price lets them: the lower the price, the more they want. The player's job is to keep production, demand and
 // supplies in balance, then to automate it all and grow, from one counter to a chain of restaurants across a continent,
-// then to factories: production lines from the fields to the pizza, whose ratios have to be balanced. The universe comes
-// next.
+// then to factories: production lines from the fields to the pizza, whose ratios have to be balanced; then to the
+// universe (see cosmos.ts), and the stellar oven that ends the game.
 //
 // Every action returns a new state and leaves the one it is given untouched.
 
 import {
   BUILDING_IDS, BUILDINGS, buildingCost, GOODS, nextModule, noBuildings, noStocks, runPlant, sellValue, storeCap, WHOLESALE_PRICE, type BuildingId, type Good,
 } from "./plant";
+import { buildStage, newCosmos, PLANET_IDS, readCosmos, runCosmos, STAGES, type CosmosState, type PlanetId } from "./cosmos";
 import {
   endIncident, FIRST_INCIDENT, fixCost, incidentSpeeds, INCIDENT_KINDS, priceFactor, readIncident, stepIncidents, type Incident, type IncidentKind,
 } from "./incidents";
-import { isResearchOpen, RESEARCH, RESEARCH_IDS, type ResearchId } from "./research";
+import { isResearchOpen, isResearchShown, RESEARCH, RESEARCH_IDS, type ResearchId } from "./research";
 
-export type Era = 1 | 2 | 3;
+export type Era = 1 | 2 | 3 | 4;
 
 export const UPGRADE_IDS = [
   // Era 1: the counter
   "doubleHands", "woodOven", "supplier", "nonnaRecipe", "bigMixer", "secondShift", "franchise",
   // Era 2: the chain
   "manager", "centralKitchen", "pricingAnalyst", "conveyorOven", "tvAd", "pizzaAcademy", "deliveryFleet", "factoryPlans",
-  // Era 3: the factories (their own upgrades come from research, see research.ts)
+  // Era 3: the factories (their own upgrades come from research, see research.ts); the rocket plans open era 4
   "spacePlans",
 ] as const;
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
@@ -31,7 +32,7 @@ export type UpgradeId = (typeof UPGRADE_IDS)[number];
 export const MESSAGE_KEYS = [
   "welcome", "firstSale", "sold100", "outOfKits", "firstCook", "kitchenFull", "sold1000", "franchiseOpen",
   "city", "country", "continent", "sold1m", "upgradeBought", "factoriesOpen", "firstFactoryPizza", "factory10k", "sold100m",
-  "researchDone", "sold1b", "incident",
+  "researchDone", "sold1b", "incident", "universeOpen", "planetFound", "firstCosmicSale", "stellarStage", "ending",
 ] as const;
 export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
@@ -43,6 +44,9 @@ export interface LogEntry {
   /** An incident that started (see incidents.ts), and the kind of building it hit. */
   incident?: IncidentKind;
   building?: BuildingId;
+  /** A planet found, a stage of the stellar oven built. */
+  planet?: PlanetId;
+  stage?: number;
 }
 
 export interface FactoryState {
@@ -82,6 +86,8 @@ export interface FactoryState {
   incident: Incident | null;
   incidentClock: number;
   incidentsOn: boolean;
+  /** Era 4: the universe (see cosmos.ts). */
+  cosmos: CosmosState;
   totalMade: number;
   totalSold: number;
   totalEarned: number;
@@ -149,8 +155,15 @@ export const UPGRADES: Record<UpgradeId, UpgradeSpec> = {
   pizzaAcademy: { era: 2, cost: 500_000, shows: (s) => s.era >= 2 && s.restaurants >= 12 },
   deliveryFleet: { era: 2, cost: 1_500_000, shows: (s) => s.era >= 2 && s.restaurants >= 18 },
   factoryPlans: { era: 2, cost: 10_000_000, shows: (s) => s.era >= 2 && s.totalSold >= 500_000 },
-  spacePlans: { era: 3, cost: 1e12, shows: (s) => s.era >= 3 && s.totalSold >= 1e9, comingSoon: true },
+  spacePlans: { era: 3, cost: 1e9, shows: (s) => s.era >= 3 && s.totalSold >= SPACE_PLANS_SALES },
 };
+
+/** The foreman builds a module once the till holds this many times its cost (more in the universe). */
+const FOREMAN_SPARE = 1.5;
+const FOREMAN_SPARE_UNIVERSE = 10;
+
+/** Pizzas sold before the rocket plans show up. */
+export const SPACE_PLANS_SALES = 2.5e8;
 
 const has = (state: FactoryState, id: UpgradeId): boolean => state.upgrades.includes(id);
 
@@ -224,6 +237,7 @@ export const newFactory = (): FactoryState => {
     incident: null,
     incidentClock: FIRST_INCIDENT,
     incidentsOn: true,
+    cosmos: newCosmos(),
     totalMade: 0,
     totalSold: 0,
     totalEarned: 0,
@@ -310,6 +324,7 @@ export const buyUpgrade = (state: FactoryState, id: UpgradeId): FactoryState | n
   next = say(next, { key: "upgradeBought", upgrade: id });
   if (id === "franchise") next = reach({ ...next, era: 2 }, "franchiseOpen");
   if (id === "factoryPlans") next = reach({ ...next, era: 3 }, "factoriesOpen");
+  if (id === "spacePlans") next = reach({ ...next, era: 4 }, "universeOpen");
   return next;
 };
 
@@ -364,6 +379,14 @@ export const fixIncident = (state: FactoryState): FactoryState | null => {
 export const toggleIncidents = (state: FactoryState): FactoryState =>
   state.incidentsOn ? { ...state, incidentsOn: false, incident: null } : { ...state, incidentsOn: true };
 
+/** The next stage of the stellar oven (see cosmos.ts), said in the journal; the last one ends the game. */
+export const buildStellarStage = (state: FactoryState): FactoryState | null => {
+  const built = buildStage(state);
+  if (!built) return null;
+  const said = say(built, { key: "stellarStage", stage: built.cosmos.stage });
+  return built.cosmos.stage === STAGES.length ? reach(said, "ending") : said;
+};
+
 /** A whole module at once (see plant.ts): once researched, or by the foreman. */
 export const buildModule = (state: FactoryState): FactoryState | null => {
   const { builds, cost } = nextModule(state);
@@ -374,7 +397,7 @@ export const buildModule = (state: FactoryState): FactoryState | null => {
 };
 
 export const doResearch = (state: FactoryState, id: ResearchId): FactoryState | null => {
-  if (state.era < 3 || !isResearchOpen(state.researched, id) || state.research < RESEARCH[id].cost) return null;
+  if (state.era < 3 || !isResearchShown(state.era, id) || !isResearchOpen(state.researched, id) || state.research < RESEARCH[id].cost) return null;
   const next = { ...state, research: state.research - RESEARCH[id].cost, researched: [...state.researched, id] };
   return say({ ...next, autoBuild: id === "foreman" ? true : next.autoBuild }, { key: "researchDone", research: id });
 };
@@ -440,9 +463,11 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
     for (let hires = 0; hires < 1000 && next.cooks < cookCapacity(next) && next.money >= cookCost(next) * 1.5; hires++) next = hireCook(next) ?? next;
   }
 
-  // The foreman builds whole modules, as long as there is money to spare.
+  // The foreman builds whole modules, as long as there is money to spare (in the universe, only out of a tenth of the
+  // till: the money is for the stars).
   if (next.autoBuild && hasAutomation(next, "autoBuild")) {
-    for (let builds = 0; builds < 20 && next.money >= nextModule(next).cost * 1.5; builds++) next = buildModule(next) ?? next;
+    const spare = next.era >= 4 ? FOREMAN_SPARE_UNIVERSE : FOREMAN_SPARE;
+    for (let builds = 0; builds < 20 && next.money >= nextModule(next).cost * spare; builds++) next = buildModule(next) ?? next;
   }
 
   // The analyst sets the price to what customers will take, counting the pizzas waiting to be sold.
@@ -474,6 +499,21 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
     const incidents = stepIncidents(next, dt, random, isLive);
     next = incidents.state;
     if (incidents.started) next = say(next, { key: "incident", incident: incidents.started.kind, building: incidents.started.building });
+  }
+
+  // Era 4: the universe turns; cosmic pizzas count among the pizzas sold.
+  if (next.era >= 4) {
+    const cosmos = runCosmos(next, dt);
+    next = {
+      ...next,
+      cosmos: cosmos.cosmos,
+      money: next.money + cosmos.earned,
+      totalMade: next.totalMade + cosmos.delivered,
+      totalSold: next.totalSold + cosmos.delivered,
+      totalEarned: next.totalEarned + cosmos.earned,
+    };
+    if (cosmos.found) next = say(next, { key: "planetFound", planet: cosmos.found });
+    if (next.cosmos.sold > 0) next = reach(next, "firstCosmicSale");
   }
 
   const sold = Math.min(demandRate(next) * dt, next.pizzas);
@@ -531,7 +571,7 @@ export const readFactory = (value: unknown): FactoryState | null => {
     saved.money, saved.pizzas, saved.kits, saved.price, saved.cratePrice, saved.cooks, saved.restaurants, saved.marketing,
     saved.totalMade, saved.totalSold, saved.totalEarned, saved.cratesBought, saved.seconds, saved.marketClock, saved.nextLogId,
   ];
-  if (saved.version !== 1 || (saved.era !== 1 && saved.era !== 2 && saved.era !== 3) || !numbers.every((n) => isNumber(n) && n >= 0)) return null;
+  if (saved.version !== 1 || (saved.era !== 1 && saved.era !== 2 && saved.era !== 3 && saved.era !== 4) || !numbers.every((n) => isNumber(n) && n >= 0)) return null;
   if (!Array.isArray(saved.upgrades) || !Array.isArray(saved.milestones) || !Array.isArray(saved.log)) return null;
   if ((saved.restaurants ?? 0) < 1 || (saved.price ?? 0) < RULES.minPrice) return null;
   const upgrades = saved.upgrades.filter((id): id is UpgradeId => (UPGRADE_IDS as readonly string[]).includes(id));
@@ -542,7 +582,9 @@ export const readFactory = (value: unknown): FactoryState | null => {
       (entry.upgrade === undefined || (UPGRADE_IDS as readonly string[]).includes(entry.upgrade)) &&
       (entry.research === undefined || (RESEARCH_IDS as readonly string[]).includes(entry.research)) &&
       (entry.incident === undefined || (INCIDENT_KINDS as readonly string[]).includes(entry.incident)) &&
-      (entry.building === undefined || (BUILDING_IDS as readonly string[]).includes(entry.building)),
+      (entry.building === undefined || (BUILDING_IDS as readonly string[]).includes(entry.building)) &&
+      (entry.planet === undefined || (PLANET_IDS as readonly string[]).includes(entry.planet)) &&
+      (entry.stage === undefined || (isNumber(entry.stage) && entry.stage >= 1 && entry.stage <= STAGES.length)),
   );
   // What is no longer part of the game (era 3's former distribution deals) is dropped.
   const { deals: _deals, ...current } = saved as FactoryState & { deals?: unknown };
@@ -571,5 +613,6 @@ export const readFactory = (value: unknown): FactoryState | null => {
     incident: readIncident(saved.incident),
     incidentClock: isNumber(saved.incidentClock) && saved.incidentClock >= 0 ? saved.incidentClock : FIRST_INCIDENT,
     incidentsOn: saved.incidentsOn !== false,
+    cosmos: readCosmos(saved.cosmos),
   };
 };

@@ -1,4 +1,5 @@
-// Forno Infinito's page: the counter, the sales, the kitchen, the chain, the upgrades and the journal; the goal of the
+// Forno Infinito's page: the counter, the sales, the kitchen, the chain, the factories, the universe, the upgrades and the
+// journal; the goal of the
 // moment always in view, and a guided tour for the first steps. On a computer every part shows at once; on a phone,
 // tabs at the bottom keep each part to one screen.
 import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -10,7 +11,8 @@ import {
 import { factoryCapacity, LAB_RESEARCH, nextModule, planFor, powerBalance } from "./plant";
 import { incidentSpeeds, INCIDENTS } from "./incidents";
 import { PlantDiagram, type PlantView } from "./PlantDiagram";
-import { isResearched, isResearchOpen, RESEARCH, RESEARCH_IDS } from "./research";
+import { isResearched, isResearchOpen, isResearchShown, RESEARCH, RESEARCH_IDS } from "./research";
+import { Ending, Galaxy, StellarOven } from "./Universe";
 import { acknowledge, bubbleFor, goalFor, newCoach, readCoach, settle, STEP_IDS, type Bubble, type Coach, type Section } from "./coach";
 import type { FactoryTexts } from "./texts";
 
@@ -105,9 +107,9 @@ const clock = (seconds: number) => {
 
 // --- Layout ---------------------------------------------------------------------------------------------------------
 
-export type Tab = "counter" | "kitchen" | "factories" | "upgrades" | "journal" | "dev";
+export type Tab = "counter" | "kitchen" | "factories" | "universe" | "upgrades" | "journal" | "dev";
 /** The dev tab, to test any point of the game, only exists in development builds. */
-export const TABS: readonly Tab[] = ["counter", "kitchen", "factories", "upgrades", "journal", ...(import.meta.env.DEV ? (["dev"] as const) : [])];
+export const TABS: readonly Tab[] = ["counter", "kitchen", "factories", "universe", "upgrades", "journal", ...(import.meta.env.DEV ? (["dev"] as const) : [])];
 
 // Dev only: loaded on demand, so the built game holds none of it (import.meta.env.DEV is false there, and the import goes
 // with it).
@@ -123,12 +125,14 @@ export const TAB_OF: Record<Section | "journal", Tab> = {
   chain: "kitchen",
   factories: "factories",
   research: "factories",
+  universe: "universe",
+  stellar: "universe",
   automations: "upgrades",
   upgrades: "upgrades",
   journal: "journal",
 };
 
-const TAB_ICONS: Record<Tab, string> = { counter: "🍕", kitchen: "🔥", factories: "🏭", upgrades: "⭐", journal: "📜", dev: "🛠" };
+const TAB_ICONS: Record<Tab, string> = { counter: "🍕", kitchen: "🔥", factories: "🏭", universe: "🌌", upgrades: "⭐", journal: "📜", dev: "🛠" };
 
 /** The parts in each tab, side by side on a computer, one under the other on a phone. Every part is always there (the
  * chain and the automations locked until they open), so nothing moves when something new shows up. */
@@ -136,6 +140,7 @@ export const TAB_SECTIONS: Record<Tab, readonly (Section | "journal")[]> = {
   counter: ["counter", "sales", "supplies"],
   kitchen: ["kitchen", "chain"],
   factories: ["factories", "research"],
+  universe: ["universe", "stellar"],
   upgrades: ["upgrades", "automations"],
   journal: ["journal"],
   dev: [],
@@ -319,13 +324,21 @@ interface CoachBubbleProps {
 }
 
 const CoachBubble = ({ bubble, isNarrow, texts, onAck, onSkip }: CoachBubbleProps) => {
-  const words = bubble.kind === "step" ? texts.steps[bubble.id] : bubble.kind === "plantStep" ? texts.plantSteps[bubble.id] : texts.tips[bubble.id];
+  const words =
+    bubble.kind === "step" ? texts.steps[bubble.id]
+      : bubble.kind === "plantStep" ? texts.plantSteps[bubble.id]
+        : bubble.kind === "spaceStep" ? texts.spaceSteps[bubble.id]
+          : texts.tips[bubble.id];
   const canAck = bubble.kind === "tip" || bubble.needsAck;
   const { ref, isFlipped } = useBubbleSide(bubble.target, `${bubble.kind}-${bubble.id}`, isNarrow);
   return (
     <aside ref={ref} className={`fi-bubble${isFlipped ? " flipped" : ""}`} role="dialog" aria-live="polite" aria-label={words.title}>
       <span className="fi-bubble-kicker">
-        {bubble.kind === "step" ? texts.stepOf(bubble.index + 1, bubble.count) : bubble.kind === "plantStep" ? texts.plantStepOf(bubble.index + 1, bubble.count) : texts.tip}
+        {bubble.kind === "step"
+          ? texts.stepOf(bubble.index + 1, bubble.count)
+          : bubble.kind === "plantStep"
+            ? texts.plantStepOf(bubble.index + 1, bubble.count)
+            : bubble.kind === "spaceStep" ? texts.spaceStepOf(bubble.index + 1, bubble.count) : texts.tip}
       </span>
       <strong className="fi-bubble-title">{words.title}</strong>
       <p className="fi-bubble-text">{words.text}</p>
@@ -358,6 +371,9 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   });
   const [pops, setPops] = useState<{ id: number; amount: number; x: number }[]>([]);
   const [isConfirmingReset, setConfirmingReset] = useState(false);
+  // The ending shows once, the moment the stellar oven is lit (and again on demand).
+  const [isEndingShown, setEndingShown] = useState(false);
+  const wasEnded = useRef(saved?.state.cosmos.endedAt != null);
   const isNarrow = useIsNarrow();
   const [tab, setTab] = useState<Tab>(initialTab);
   // Until chosen, the diagram on a computer and the chains on a phone.
@@ -406,6 +422,12 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
     };
   }, []);
 
+  useEffect(() => {
+    if (state.cosmos.endedAt === null || wasEnded.current) return;
+    wasEnded.current = true;
+    setEndingShown(true);
+  }, [state.cosmos.endedAt]);
+
   // The tour moves on as soon as a step is done.
   useEffect(() => {
     setCoach((c) => settle(c, state));
@@ -452,6 +474,8 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
       return;
     }
     setConfirmingReset(false);
+    setEndingShown(false);
+    wasEnded.current = false;
     const fresh = newFactory();
     setState(fresh);
     setCoach(newCoach());
@@ -683,7 +707,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           <p className="fi-research-points">🔬 {texts.researchPoints(f.count(state.research), f.rate(state.factoryRates.researchLab * LAB_RESEARCH))}</p>
         )}
         <ul className="fi-list">
-          {RESEARCH_IDS.map((id) => {
+          {RESEARCH_IDS.filter((id) => isResearchShown(state.era, id)).map((id) => {
             const isDone = isResearched(state.researched, id);
             const isOpen = isResearchOpen(state.researched, id);
             const missing = RESEARCH[id].requires.filter((needed) => !isResearched(state.researched, needed));
@@ -704,6 +728,30 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
             );
           })}
         </ul>
+      </Card>
+    ),
+    universe: (
+      <Card {...card("universe")} title={texts.universe} help={texts.help.universe} className={state.era < 4 ? "locked" : ""}>
+        {state.era < 4 ? (
+          <p className="fi-hint">{texts.universeLocked}</p>
+        ) : (
+          <>
+            <div className="fi-plant-bar">
+              <div className="fi-view-switch" role="group" aria-label={texts.plantView}>
+                {(["graph", "chains"] as const).map((view) => (
+                  <button key={view} aria-pressed={plantView === view} onClick={() => chooseView(view)}>{texts.plantViews[view]}</button>
+                ))}
+              </div>
+            </div>
+            <Galaxy state={state} texts={texts} f={f} act={act} view={plantView} isNarrow={isNarrow}
+              highlight={bubble?.kind === "spaceStep" ? bubble.nodes : []} />
+          </>
+        )}
+      </Card>
+    ),
+    stellar: (
+      <Card {...card("stellar")} title={texts.stellar} help={texts.help.stellar} className={state.era < 4 ? "locked" : ""}>
+        {state.era < 4 ? <p className="fi-hint">{texts.universeLocked}</p> : <StellarOven state={state} texts={texts} f={f} act={act} onShowEnding={() => setEndingShown(true)} />}
       </Card>
     ),
     automations: (
@@ -753,7 +801,11 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
             <li key={entry.id}>
               {entry.key === "upgradeBought" && entry.upgrade
                 ? `${texts.message.upgradeBought}${texts.upgrade[entry.upgrade].name}.`
-                : entry.key === "incident" && entry.incident
+                : entry.key === "planetFound" && entry.planet
+                  ? `${texts.message.planetFound}${texts.planets[entry.planet].name}.`
+                  : entry.key === "stellarStage" && entry.stage
+                    ? `${texts.message.stellarStage}${texts.stages[entry.stage - 1].name.toLowerCase()}.`
+                    : entry.key === "incident" && entry.incident
                   ? `${texts.incidents[entry.incident].icon} ${texts.incidents[entry.incident].name}${entry.building ? ` · ${texts.buildings[entry.building].name}` : ""} — ${texts.incidents[entry.incident].effect}.`
                   : texts.message[entry.key]}
             </li>
@@ -767,7 +819,10 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const tabBar = (
     <nav className={`fi-tabs ${isNarrow ? "bottom" : "top"}`} aria-label={texts.title} style={{ "--tab-count": TABS.length } as CSSProperties}>
       {TABS.map((id) => {
-        const label = { counter: texts.tabCounter, kitchen: texts.tabKitchen, factories: texts.tabFactories, upgrades: texts.tabUpgrades, journal: texts.tabJournal, dev: "Dev" }[id];
+        const label = {
+          counter: texts.tabCounter, kitchen: texts.tabKitchen, factories: texts.tabFactories, universe: texts.tabUniverse, upgrades: texts.tabUpgrades,
+          journal: texts.tabJournal, dev: "Dev",
+        }[id];
         // A count of the upgrades to buy; a "!" while something goes wrong at the plant.
         const badge = id === "upgrades" && affordableUpgrades > 0 ? String(affordableUpgrades) : id === "factories" && isBadNews ? "!" : "";
         return (
@@ -789,7 +844,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           <h1 className="fi-title">{texts.title}</h1>
           <p className="fi-tagline">{texts.tagline}</p>
         </div>
-        <span className="fi-era">{state.era === 1 ? texts.era1 : state.era === 2 ? texts.era2 : texts.era3}</span>
+        <span className="fi-era">{[texts.era1, texts.era2, texts.era3, texts.era4][state.era - 1]}</span>
       </header>
 
       <div className={`fi-top${target === "stats" ? " coach-target" : ""}`} data-section="stats">
@@ -851,6 +906,10 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           onAck={() => setCoach((c) => acknowledge(c, bubble))}
           onSkip={() => setCoach((c) => ({ ...c, off: true }))}
         />
+      )}
+
+      {isEndingShown && state.cosmos.endedAt !== null && (
+        <Ending state={state} texts={texts} f={f} isConfirmingNewGame={isConfirmingReset} onKeepPlaying={() => setEndingShown(false)} onNewGame={reset} />
       )}
 
     </div>

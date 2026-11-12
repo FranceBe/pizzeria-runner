@@ -4,7 +4,8 @@
 // what waits on it and which way that moves, and how it is doing: green, it flows; orange, the next building runs short
 // of it; dotted, it overflows. Reading the arrows is how the plant is balanced: nothing says what to build. The same plant
 // also reads as chains, one building under the other, each saying what it takes in and sends on.
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
+import { useFitZoom } from "./fitZoom";
 import {
   BUILDING_IDS, buildingCost, buildingStatus, sellValue, storeCap, usageOf, type BuildingId, type BuildingStatus, type Good, type PlantState,
 } from "./plant";
@@ -67,12 +68,6 @@ const ROW_STEP = 108;
 const COLUMNS = 4;
 export const DIAGRAM_WIDTH = (COLUMNS - 1) * COL_STEP + NODE_WIDTH;
 const DIAGRAM_HEIGHT = Math.max(...BUILDING_IDS.map((id) => PLACES[id].row)) * ROW_STEP + NODE_HEIGHT;
-/** The diagram shrinks to fit the screen's height and the card's width, down to this. */
-const MIN_ZOOM = 0.7;
-/** On a phone it can't fit: it keeps readable and scrolls sideways. */
-const PHONE_ZOOM = 0.8;
-/** Room kept free when fitting the diagram to the screen: for the view switch above it, and a little air. */
-const FIT_MARGIN = 64;
 
 const at = (id: BuildingId) => ({ x: PLACES[id].col * COL_STEP, y: PLACES[id].row * ROW_STEP });
 
@@ -138,28 +133,9 @@ export type ChainId = (typeof CHAINS)[number]["id"];
 
 export const PlantDiagram = ({ state, texts, money, formatCount, formatMoney, needed, highlight, onBuild, onSell, view, isNarrow, incident }: PlantDiagramProps) => {
   const scroller = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1);
 
   // The diagram fits the screen: its whole height in view, its width in the card.
-  useLayoutEffect(() => {
-    const box = scroller.current;
-    if (view !== "graph" || !box) return;
-    const fit = () => {
-      const byWidth = box.clientWidth / DIAGRAM_WIDTH;
-      // The page's header stays stuck to the top of the screen: the diagram fits below it.
-      const header = document.querySelector<HTMLElement>(".fi-top")?.offsetHeight ?? 0;
-      const byHeight = (window.innerHeight - header - FIT_MARGIN) / DIAGRAM_HEIGHT;
-      setZoom(isNarrow ? PHONE_ZOOM : Math.max(MIN_ZOOM, Math.min(1, byWidth, byHeight)));
-    };
-    fit();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
-    observer?.observe(box);
-    window.addEventListener("resize", fit);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", fit);
-    };
-  }, [view, isNarrow]);
+  const zoom = useFitZoom(scroller, DIAGRAM_WIDTH, DIAGRAM_HEIGHT, view === "graph", isNarrow);
   const speeds = incidentSpeeds(incident);
   const statuses = Object.fromEntries(BUILDING_IDS.map((id) => [id, buildingStatus(state, id, speeds)])) as Record<BuildingId, BuildingStatus>;
   const hit = hitBuildings(incident);

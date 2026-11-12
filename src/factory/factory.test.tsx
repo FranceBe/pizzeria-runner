@@ -6,6 +6,8 @@ import { Factory, formatters, loadFactory, STORAGE_KEY, TAB_OF, TAB_SECTIONS, TA
 import { TEXTS } from "./texts";
 import { PlantDiagram } from "./PlantDiagram";
 import { noBuildings, noStocks } from "./plant";
+import { Ending, Galaxy } from "./Universe";
+import { PLANET_IDS, STAGES } from "./cosmos";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -43,7 +45,7 @@ describe("Forno Infinito's page", () => {
 
   it("reads back a save with when it was made, and nothing broken", () => {
     const state = newFactory();
-    const coach = { step: 2, plantStep: 0, seen: [], off: false };
+    const coach = { step: 2, plantStep: 0, spaceStep: 0, seen: [], off: false };
     expect(loadFactory(JSON.stringify({ state, savedAt: 1000, coach }))).toEqual({ state, savedAt: 1000, coach });
     // A save from before the tour: the tour starts from the beginning (and skips what is already done).
     expect(loadFactory(JSON.stringify({ state, savedAt: 1000 }))?.coach).toEqual(newCoach());
@@ -124,5 +126,21 @@ describe("Forno Infinito's page", () => {
     const strike = renderToString(<PlantDiagram {...props} view="graph" incident={{ kind: "strike", building: "mill", left: 60 }} />);
     expect(strike).toContain(TEXTS.fr.incidents.strike.status);
     expect(strike).toMatch(/data-building="mill" class="fi-node-card [a-z]+ hit/);
+  });
+
+  it("draws the galaxy as a map or as lists, every planet and Earth in both, and the ending with its figures", () => {
+    const state: FactoryState = { ...newFactory(), era: 4, money: 1e10 };
+    const props = { state, texts: TEXTS.fr, f: formatters("fr-FR"), act: () => {}, isNarrow: false, highlight: ["earth" as const] };
+    for (const view of ["graph", "chains"] as const) {
+      const html = renderToString(<Galaxy {...props} view={view} />).replaceAll("<!-- -->", "");
+      expect(html.split("data-node=").length - 1).toBe(PLANET_IDS.length + 1);
+      expect(html).toContain(TEXTS.fr.planets.helia.name);
+      expect(html).toContain(TEXTS.fr.planetStatus.unknown);
+    }
+    const ended = { ...state, totalSold: 1e9, cosmos: { ...state.cosmos, stage: STAGES.length, endedAt: 3 * 3600 } };
+    const ending = renderToString(<Ending state={ended} texts={TEXTS.fr} f={formatters("fr-FR")} isConfirmingNewGame={false} onKeepPlaying={() => {}} onNewGame={() => {}} />).replaceAll("&#x27;", "'");
+    expect(ending).toContain(TEXTS.fr.ending.title);
+    expect(ending).toContain("3 h 00");
+    expect(ending).toContain(TEXTS.fr.ending.keepPlaying);
   });
 });

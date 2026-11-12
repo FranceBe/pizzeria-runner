@@ -438,10 +438,29 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   would take), then modules (all a factory needs, built in one go), then a foreman who builds modules on their own; and
   better buildings: conveyor belts, fertiliser, robot arms, efficient turbines, fast trucks, then modernised workshops
   and workshops of the future. The restaurants can take their kits from the plant first (a choice, off at first: their
-  pizzas sell dearer, but the factories then get less). Goals: ten thousand pizzas a second, five researches, then a
-  billion pizzas sold.
-- **Coming next**: era 4, the universe turned into pizza, and an ending. The rocket plans already show, not for sale
-  yet.
+  pizzas sell dearer, but the factories then get less). Goals: ten thousand pizzas a second, five researches, two
+  hundred and fifty million pizzas sold, then the rocket plans (a billion euros), which open era 4.
+- **Era 4, the universe** (`src/factory/cosmos.ts`, drawn by `Universe.tsx`): a star map with Earth in the middle. On
+  the left, six terroir planets grow the cosmic ingredients (star wheat, red tomatoes, moon cheese); on the right, six
+  civilisations want cosmic pizzas, each with its appetite and the price it pays. The near column holds the near
+  planets, the far one the far planets. Colonising a terroir, or making contact with a civilisation, opens a cargo
+  route to Earth: the farther the planet, the longer each trip, so the more cargo ships a route takes for the same
+  flow. "🚀 +" adds as many ships as the route lacks (or one more), "−🚀" sells one back for half. On Earth, orbital
+  ovens make a cosmic pizza from one of each ingredient; the stores, the ovens and what holds them back show on Earth's
+  card. When pizzas run short, the civilisations share what there is, each in proportion to what it asks. The routes
+  read like the plant's arrows: green, it flows; orange, something is short (ships, or pizzas); dotted, goods wait (a
+  store full on Earth). Only the first ring is known at the start; exploring (a scout, 45 seconds) finds the others one
+  at a time, and the farthest take the hyperdrive. Era 4's research (the laboratories' points): giant holds, chefs in
+  orbit, terraforming, the hyperdrive. The same "diagram or chains" switch as the plant shows the galaxy as a map or
+  as lists (lists by default on a phone).
+  **Its own tour**: the three first terroirs, an oven, the first civilisation, then how routes and ships work, then
+  exploring and the stellar oven.
+  **The ending**: the stellar oven, built around the sun in five stages (the base, the dome, the mirrors, the hearth,
+  the lighting), each once enough cosmic pizzas are delivered and paid for. The last one lights it: a closing screen
+  (the pizza of the universe) with the game's figures: time played, pizzas sold, money earned, restaurants, pizza
+  factories, planets linked, cosmic pizzas. Then the game goes on as long as the player likes ("keep playing"), or
+  starts over; the stellar oven card can show the ending again. In the universe, the foreman only builds modules out of
+  a tenth of the till, so the money goes to the stars.
 - **Guidance** (`src/factory/coach.ts`): a short tour points at each first action in turn (make pizzas, see them sell,
   buy kits, hire, set the price, buy an upgrade), the part it is about glowing; it moves on as soon as the action is
   done, skips what the player already did, and can be skipped or replayed. Then tips come once each when something new
@@ -455,21 +474,24 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   buttons say how many and for how much (hire 1, hire 10, fill up). A suggested price, to sell everything made, can be
   applied in one tap.
 - **Tabs**, on a computer as on a phone: counter (the pizza, the price, the ingredients), kitchen (the crew, the chain),
-  factories (the production lines, distribution), upgrades (with the automations), journal. They sit under the circuit on a computer, the parts of a tab side by side;
+  factories (the plant, the research), universe (the galaxy, the stellar oven), upgrades (with the automations),
+  journal. They sit under the circuit on a computer, the parts of a tab side by side;
   at the bottom on a phone, one under the other. Every part is there from the start (the chain and the automations
   locked until they open), so nothing moves when something new shows up. The upgrades tab shows how many upgrades the
   till can pay for, and the tour opens the tab it points at.
 - **The pace**, checked by a robot that plays like a sensible player (`src/factory/bot.ts`, in the tests): about five
   minutes at the counter for the robot (about ten for a player: it sets perfect prices and hires at once), ten
   restaurants within a quarter of an hour, a million pizzas within half an hour, the factories within the hour, five
-  researches within half an hour of them, a billion pizzas about an hour and a half after. Customers come about as fast as a first
+  researches within half an hour of them, the universe about three quarters of an hour after, and the stellar oven lit
+  about three quarters of an hour later (about an hour for a player). Customers come about as fast as a first
   few cooks make pizzas at the starting price, and advertising brings 40% more each time.
 - **Time away counts**: the chain goes on while the page is closed, up to eight hours, and a line says what it made.
   No punishment for being away, no pressure to come back.
 - **Kept on the device**, under `forno-lento-factory-v1` in `localStorage` (a few kilobytes), every few seconds and as
   the page goes away. Start over erases it (after a confirmation). `npm run dev:factory` serves it alone.
 - **Dev tab** (🛠, development builds only, `src/factory/dev/`): load a game at any point without playing through,
-  from presets (the start of era 2, the start of era 3, era 3 under way, the end of era 3) or by setting every figure by
+  from presets (the start of era 2, the start of era 3, era 3 under way, the end of era 3, the start of era 4, just
+  before the ending) or by setting every figure by
   hand (era, money, pizzas sold, restaurants, crew, advertising, kits, research points, each building, the upgrades,
   the research); shortcuts add money, move time ten minutes on, start any incident at once or bring the next one five
   seconds away. Loading a game switches the tour off. The built page holds none of it.

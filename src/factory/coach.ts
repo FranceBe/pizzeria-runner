@@ -1,11 +1,13 @@
 // Guidance for Forno Infinito: a short tour of the first actions, tips that come once when something new happens, and
 // the goal of the moment (with its progress), so the player always knows what to do next and why.
-import { cookCapacity, frozenRate, isForSale, UPGRADE_IDS, UPGRADES, type FactoryState } from "./engine";
+import { STAGES, type PlanetId } from "./cosmos";
+import { cookCapacity, frozenRate, isForSale, SPACE_PLANS_SALES, UPGRADE_IDS, UPGRADES, type FactoryState } from "./engine";
 import { incidentSpeeds } from "./incidents";
 import { powerBalance, type BuildingId } from "./plant";
 
 /** The parts of the page guidance can point at. */
-export type Section = "counter" | "stats" | "sales" | "supplies" | "kitchen" | "chain" | "factories" | "research" | "automations" | "upgrades";
+export type Section =
+  | "counter" | "stats" | "sales" | "supplies" | "kitchen" | "chain" | "factories" | "research" | "universe" | "stellar" | "automations" | "upgrades";
 
 export const STEP_IDS = ["makePizza", "selling", "buyCrate", "hireCook", "price", "firstUpgrade", "tourDone"] as const;
 export type StepId = (typeof STEP_IDS)[number];
@@ -72,22 +74,41 @@ export const PLANT_STEPS: Record<PlantStepId, { nodes: readonly BuildingId[]; do
   balance: { nodes: [] },
 };
 
+// Era 4's own tour: the first terroirs, the oven, the first civilisation, then how routes and ships work, then exploring
+// and the stellar oven.
+export const SPACE_STEP_IDS = ["terroirs", "oven", "civ", "routes", "explore"] as const;
+export type SpaceStepId = (typeof SPACE_STEP_IDS)[number];
+/** What the space tour lights up: planets, or Earth. */
+export type SpaceNode = PlanetId | "earth";
+
+const opened = (state: FactoryState, ids: readonly PlanetId[]) => ids.every((id) => state.cosmos.planets[id].open);
+
+export const SPACE_STEPS: Record<SpaceStepId, { nodes: readonly SpaceNode[]; done?: (state: FactoryState) => boolean }> = {
+  terroirs: { nodes: ["helia", "rubra", "selena"], done: (s) => opened(s, ["helia", "rubra", "selena"]) },
+  oven: { nodes: ["earth"], done: (s) => s.cosmos.ovens >= 1 },
+  civ: { nodes: ["orbitans"], done: (s) => opened(s, ["orbitans"]) },
+  routes: { nodes: [] },
+  explore: { nodes: ["earth"] },
+};
+
 export interface Coach {
   /** Steps of the tour already done. */
   step: number;
-  /** Steps of the plant's tour already done (era 3). */
+  /** Steps of the plant's tour already done (era 3), and of the universe's (era 4). */
   plantStep: number;
+  spaceStep: number;
   /** Tips already shown. */
   seen: TipId[];
   /** The player turned guidance off. */
   off: boolean;
 }
 
-export const newCoach = (): Coach => ({ step: 0, plantStep: 0, seen: [], off: false });
+export const newCoach = (): Coach => ({ step: 0, plantStep: 0, spaceStep: 0, seen: [], off: false });
 
 export type Bubble =
   | { kind: "step"; id: StepId; index: number; count: number; target: Section | null; needsAck: boolean }
   | { kind: "plantStep"; id: PlantStepId; index: number; count: number; target: Section; nodes: readonly BuildingId[]; needsAck: boolean }
+  | { kind: "spaceStep"; id: SpaceStepId; index: number; count: number; target: Section; nodes: readonly SpaceNode[]; needsAck: boolean }
   | { kind: "tip"; id: TipId; target: Section | null };
 
 // Steps the player has already done on their own are skipped: a tour never asks for what is already there.
@@ -104,7 +125,13 @@ export const settle = (coach: Coach, state: FactoryState): Coach => {
     if (!done || !done(state)) break;
     plantStep++;
   }
-  return step === coach.step && plantStep === coach.plantStep ? coach : { ...coach, step, plantStep };
+  let spaceStep = coach.spaceStep;
+  while (state.era >= 4 && spaceStep < SPACE_STEP_IDS.length) {
+    const done = SPACE_STEPS[SPACE_STEP_IDS[spaceStep]].done;
+    if (!done || !done(state)) break;
+    spaceStep++;
+  }
+  return step === coach.step && plantStep === coach.plantStep && spaceStep === coach.spaceStep ? coach : { ...coach, step, plantStep, spaceStep };
 };
 
 /** What guidance shows now, if anything: the tour first, then the tips, each once. */
@@ -121,6 +148,11 @@ export const bubbleFor = (coach: Coach, state: FactoryState): Bubble | null => {
     const { nodes, done } = PLANT_STEPS[id];
     return { kind: "plantStep", id, index: coach.plantStep, count: PLANT_STEP_IDS.length, target: "factories", nodes, needsAck: !done };
   }
+  if (state.era >= 4 && coach.spaceStep < SPACE_STEP_IDS.length) {
+    const id = SPACE_STEP_IDS[coach.spaceStep];
+    const { nodes, done } = SPACE_STEPS[id];
+    return { kind: "spaceStep", id, index: coach.spaceStep, count: SPACE_STEP_IDS.length, target: "universe", nodes, needsAck: !done };
+  }
   const tip = TIP_IDS.find((id) => !coach.seen.includes(id) && TIPS[id].when(state));
   return tip ? { kind: "tip", id: tip, target: TIPS[tip].target } : null;
 };
@@ -129,6 +161,7 @@ export const bubbleFor = (coach: Coach, state: FactoryState): Bubble | null => {
 export const acknowledge = (coach: Coach, bubble: Bubble): Coach => {
   if (bubble.kind === "step") return { ...coach, step: Math.max(coach.step, bubble.index + 1) };
   if (bubble.kind === "plantStep") return { ...coach, plantStep: Math.max(coach.plantStep, bubble.index + 1) };
+  if (bubble.kind === "spaceStep") return { ...coach, spaceStep: Math.max(coach.spaceStep, bubble.index + 1) };
   return { ...coach, seen: [...coach.seen, bubble.id] };
 };
 
@@ -139,6 +172,8 @@ export const readCoach = (value: unknown): Coach => {
     step: typeof saved.step === "number" && Number.isInteger(saved.step) && saved.step >= 0 ? Math.min(saved.step, STEP_IDS.length) : 0,
     plantStep:
       typeof saved.plantStep === "number" && Number.isInteger(saved.plantStep) && saved.plantStep >= 0 ? Math.min(saved.plantStep, PLANT_STEP_IDS.length) : 0,
+    spaceStep:
+      typeof saved.spaceStep === "number" && Number.isInteger(saved.spaceStep) && saved.spaceStep >= 0 ? Math.min(saved.spaceStep, SPACE_STEP_IDS.length) : 0,
     seen: Array.isArray(saved.seen) ? saved.seen.filter((id): id is TipId => (TIP_IDS as readonly string[]).includes(id)) : [],
     off: saved.off === true,
   };
@@ -146,7 +181,9 @@ export const readCoach = (value: unknown): Coach => {
 
 // --- The goal of the moment ------------------------------------------------------------------------------------------
 
-export type GoalId = "sellForFranchise" | "buyFranchise" | "city" | "country" | "million" | "buyPlans" | "factoryOutput" | "research" | "sold1b" | "space";
+export type GoalId =
+  | "sellForFranchise" | "buyFranchise" | "city" | "country" | "million" | "buyPlans" | "factoryOutput" | "research" | "spaceSales" | "buyRocket"
+  | "firstCosmic" | "stellar" | "free";
 
 export interface Goal {
   id: GoalId;
@@ -158,6 +195,8 @@ const FRANCHISE_SALES = 3000;
 /** Era 3's goals: frozen pizzas a second out of the factories, then researches done. */
 const FACTORY_OUTPUT = 10_000;
 const RESEARCH_GOAL = 5;
+/** Era 4's first goal: cosmic pizzas delivered. */
+const FIRST_COSMIC = 100;
 
 /** What to aim for next, and how far along it is. */
 export const goalFor = (state: FactoryState): Goal => {
@@ -171,9 +210,15 @@ export const goalFor = (state: FactoryState): Goal => {
     if (state.totalSold < 1e6) return { id: "million", current: state.totalSold, target: 1e6 };
     return { id: "buyPlans", current: state.money, target: UPGRADES.factoryPlans.cost };
   }
-  const output = frozenRate(state);
-  if (output < FACTORY_OUTPUT) return { id: "factoryOutput", current: output, target: FACTORY_OUTPUT };
-  if (state.researched.length < RESEARCH_GOAL) return { id: "research", current: state.researched.length, target: RESEARCH_GOAL };
-  if (state.totalSold < 1e9) return { id: "sold1b", current: state.totalSold, target: 1e9 };
-  return { id: "space", current: 1, target: 1 };
+  if (state.era === 3) {
+    const output = frozenRate(state);
+    if (output < FACTORY_OUTPUT) return { id: "factoryOutput", current: output, target: FACTORY_OUTPUT };
+    if (state.researched.length < RESEARCH_GOAL) return { id: "research", current: state.researched.length, target: RESEARCH_GOAL };
+    if (state.totalSold < SPACE_PLANS_SALES) return { id: "spaceSales", current: state.totalSold, target: SPACE_PLANS_SALES };
+    return { id: "buyRocket", current: state.money, target: UPGRADES.spacePlans.cost };
+  }
+  const { cosmos } = state;
+  if (cosmos.sold < FIRST_COSMIC) return { id: "firstCosmic", current: cosmos.sold, target: FIRST_COSMIC };
+  if (cosmos.endedAt === null) return { id: "stellar", current: cosmos.stage, target: STAGES.length };
+  return { id: "free", current: 1, target: 1 };
 };
