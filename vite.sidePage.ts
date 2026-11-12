@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, type Plugin, type UserConfig } from "vite";
+import { defineConfig, type Plugin, type UserConfigFnObject } from "vite";
 import react from "@vitejs/plugin-react";
 
 const projectRoot = fileURLToPath(new URL(".", import.meta.url));
@@ -52,16 +52,25 @@ const contentSecurityPolicy: Plugin = {
   ],
 };
 
-/** The build of the page in the `page` folder (its index.html, and its manifest in public/), into dist/<page>/. */
-export const sidePageConfig = (page: string): UserConfig => {
-  const outDir = join(projectRoot, "dist", page);
-  return defineConfig({
-    root: page,
-    base: "./",
-    // <page>/public: its manifest. The icons are the game's, one folder up once published.
-    plugins: [react(), contentSecurityPolicy, serviceWorker(page, outDir)],
-    // The page's code lives in src/, outside this root.
-    server: { fs: { allow: [projectRoot] } },
-    build: { outDir, emptyOutDir: false },
+/** The page in the `page` folder (its index.html, and its manifest in public/): built into dist/<page>/; served, in
+ * development, at /<page>/ from the project's root, as it is published (its code lives in src/, which a server rooted
+ * in the page's folder could not reach). */
+export const sidePageConfig = (page: string): UserConfigFnObject =>
+  defineConfig(({ command }) => {
+    const outDir = join(projectRoot, "dist", page);
+    if (command === "serve") {
+      return {
+        root: projectRoot,
+        publicDir: join(projectRoot, page, "public"),
+        plugins: [react()],
+        server: { open: `/${page}/` },
+      };
+    }
+    return {
+      root: page,
+      base: "./",
+      // <page>/public: its manifest. The icons are the game's, one folder up once published.
+      plugins: [react(), contentSecurityPolicy, serviceWorker(page, outDir)],
+      build: { outDir, emptyOutDir: false },
+    };
   });
-};

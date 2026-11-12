@@ -1,16 +1,21 @@
 // Forno Infinito's page: the counter, the sales, the kitchen, the chain, the upgrades and the journal; the goal of the
 // moment always in view, and a guided tour for the first steps. On a computer every part shows at once; on a phone,
 // tabs at the bottom keep each part to one screen.
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  advance, AUTOMATION_OWNERS, clickPower, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
-  fairPrice, hireCooks, hiringPlan, isForSale, makePizza, marketingCost, newFactory, openRestaurant, productionRate, readFactory, restaurantCost, tick, toggleAutomation,
-  UPGRADE_IDS, UPGRADES, type Automation, type FactoryState,
+  advance, AUTOMATION_OWNERS, AUTOMATIONS, build, buildModule, sell, clickPower, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
+  fairPrice, hireCooks, hiringPlan, isForSale, makePizza, marketingCost, newFactory, openRestaurant, readFactory, restaurantCost, tick, toggleAutomation,
+  UPGRADE_IDS, UPGRADES, type FactoryState,
 } from "./engine";
+import { factoryCapacity, LAB_RESEARCH, nextModule, planFor, powerBalance } from "./plant";
+import { PlantDiagram, type PlantView } from "./PlantDiagram";
+import { isResearched, isResearchOpen, RESEARCH, RESEARCH_IDS } from "./research";
 import { acknowledge, bubbleFor, goalFor, newCoach, readCoach, settle, STEP_IDS, type Bubble, type Coach, type Section } from "./coach";
 import type { FactoryTexts } from "./texts";
 
 export const STORAGE_KEY = "forno-lento-factory-v1";
+/** How this player likes to see the plant: a choice of this browser's, not part of the game. */
+const VIEW_KEY = "forno-lento-factory-view";
 const TICK_MS = 200;
 const SAVE_EVERY_MS = 5000;
 /** Away for longer than this, the page says what happened meanwhile. */
@@ -53,6 +58,23 @@ const writeStorage = (state: FactoryState, coach: Coach) => {
   }
 };
 
+const readView = (): PlantView | null => {
+  try {
+    const view = localStorage.getItem(VIEW_KEY);
+    return view === "graph" || view === "chains" ? view : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeView = (view: PlantView) => {
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // The choice then lasts this visit only.
+  }
+};
+
 // --- Numbers --------------------------------------------------------------------------------------------------------
 
 export const formatters = (locale: string) => {
@@ -76,8 +98,13 @@ export const formatters = (locale: string) => {
 
 // --- Layout ---------------------------------------------------------------------------------------------------------
 
-export type Tab = "counter" | "kitchen" | "upgrades" | "journal";
-export const TABS: readonly Tab[] = ["counter", "kitchen", "upgrades", "journal"];
+export type Tab = "counter" | "kitchen" | "factories" | "upgrades" | "journal" | "dev";
+/** The dev tab, to test any point of the game, only exists in development builds. */
+export const TABS: readonly Tab[] = ["counter", "kitchen", "factories", "upgrades", "journal", ...(import.meta.env.DEV ? (["dev"] as const) : [])];
+
+// Dev only: loaded on demand, so the built game holds none of it (import.meta.env.DEV is false there, and the import goes
+// with it).
+const DevTab = import.meta.env.DEV ? lazy(() => import("./dev/DevTab").then((module) => ({ default: module.DevTab }))) : null;
 
 /** Which phone tab each part of the page sits in. */
 export const TAB_OF: Record<Section | "journal", Tab> = {
@@ -87,20 +114,24 @@ export const TAB_OF: Record<Section | "journal", Tab> = {
   supplies: "counter",
   kitchen: "kitchen",
   chain: "kitchen",
+  factories: "factories",
+  research: "factories",
   automations: "upgrades",
   upgrades: "upgrades",
   journal: "journal",
 };
 
-const TAB_ICONS: Record<Tab, string> = { counter: "🍕", kitchen: "🔥", upgrades: "⭐", journal: "📜" };
+const TAB_ICONS: Record<Tab, string> = { counter: "🍕", kitchen: "🔥", factories: "🏭", upgrades: "⭐", journal: "📜", dev: "🛠" };
 
 /** The parts in each tab, side by side on a computer, one under the other on a phone. Every part is always there (the
  * chain and the automations locked until they open), so nothing moves when something new shows up. */
 export const TAB_SECTIONS: Record<Tab, readonly (Section | "journal")[]> = {
   counter: ["counter", "sales", "supplies"],
   kitchen: ["kitchen", "chain"],
+  factories: ["factories", "research"],
   upgrades: ["upgrades", "automations"],
   journal: ["journal"],
+  dev: [],
 };
 
 const isNarrowScreen = () => typeof window !== "undefined" && window.matchMedia?.(NARROW).matches === true;
@@ -281,12 +312,14 @@ interface CoachBubbleProps {
 }
 
 const CoachBubble = ({ bubble, isNarrow, texts, onAck, onSkip }: CoachBubbleProps) => {
-  const words = bubble.kind === "step" ? texts.steps[bubble.id] : texts.tips[bubble.id];
+  const words = bubble.kind === "step" ? texts.steps[bubble.id] : bubble.kind === "plantStep" ? texts.plantSteps[bubble.id] : texts.tips[bubble.id];
   const canAck = bubble.kind === "tip" || bubble.needsAck;
   const { ref, isFlipped } = useBubbleSide(bubble.target, `${bubble.kind}-${bubble.id}`, isNarrow);
   return (
     <aside ref={ref} className={`fi-bubble${isFlipped ? " flipped" : ""}`} role="dialog" aria-live="polite" aria-label={words.title}>
-      <span className="fi-bubble-kicker">{bubble.kind === "step" ? texts.stepOf(bubble.index + 1, bubble.count) : texts.tip}</span>
+      <span className="fi-bubble-kicker">
+        {bubble.kind === "step" ? texts.stepOf(bubble.index + 1, bubble.count) : bubble.kind === "plantStep" ? texts.plantStepOf(bubble.index + 1, bubble.count) : texts.tip}
+      </span>
       <strong className="fi-bubble-title">{words.title}</strong>
       <p className="fi-bubble-text">{words.text}</p>
       <div className="fi-bubble-actions">
@@ -320,6 +353,13 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const [isConfirmingReset, setConfirmingReset] = useState(false);
   const isNarrow = useIsNarrow();
   const [tab, setTab] = useState<Tab>(initialTab);
+  // Until chosen, the diagram on a computer and the chains on a phone.
+  const [chosenView, setChosenView] = useState<PlantView | null>(readView);
+  const plantView = chosenView ?? (isNarrow ? "chains" : "graph");
+  const chooseView = (view: PlantView) => {
+    setChosenView(view);
+    writeView(view);
+  };
   const latest = useRef({ state, coach });
   latest.current = { state, coach };
 
@@ -392,6 +432,12 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
     window.setTimeout(() => setPops((list) => list.filter((pop) => pop.id !== id)), POP_MS);
   };
 
+  // Dev only: a game loaded from the dev tab, the tour off so its bubbles keep out of the way.
+  const loadDevGame = (next: FactoryState) => {
+    setState(next);
+    setCoach({ ...newCoach(), off: true });
+  };
+
   const reset = () => {
     if (!isConfirmingReset) {
       setConfirmingReset(true);
@@ -406,13 +452,14 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
     writeStorage(fresh, newCoach());
   };
 
-  const production = productionRate(state);
+  // Everything made a second: the kitchens' and, from era 3, the factories'.
+  const production = supplyRate(state);
   const demand = demandRate(state);
   const capacity = cookCapacity(state);
   const sold = Math.min(demand, production + state.pizzas);
   const forSale = UPGRADE_IDS.filter((id) => isForSale(state, id));
   const affordableUpgrades = forSale.filter((id) => !UPGRADES[id].comingSoon && state.money >= UPGRADES[id].cost).length;
-  const automations = Object.keys(AUTOMATION_OWNERS) as Automation[];
+  const automations = AUTOMATIONS;
   // What holds the circuit back, if anything: no kits, too few customers, or too few cooks.
   const block: "kits" | "customers" | "kitchen" | null =
     state.kits < 1 && (production > 0 || state.totalMade > 0)
@@ -436,6 +483,14 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const goalProgress = Math.min(1, goal.current / goal.target);
   // On a phone, only the open tab's parts show.
   const card = (section: Section | "journal") => ({ section, isTarget: target === section, helpLabel: texts.whatFor });
+
+  // With the calculator researched, how many of each building it would take for the factories to run flat out.
+  const plan = state.era >= 3 && isResearched(state.researched, "calculator") ? planFor(state, factoryCapacity(state)) : null;
+  const percent = (share: number) => `${Math.round(share * 100)} %`;
+
+  const power = powerBalance(state);
+  const module = state.era >= 3 && isResearched(state.researched, "modules") ? nextModule(state) : null;
+  const moduleSize = module ? Object.values(module.builds).reduce((sum, count) => sum + (count ?? 0), 0) : 0;
 
   const parts: Record<Section | "journal", ReactNode> = {
     stats: null,
@@ -533,16 +588,92 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
             <button className="fi-btn primary wide" onClick={() => act(openRestaurant)} disabled={state.money < restaurantCost(state)}>
               {texts.openRestaurant} · {f.money(restaurantCost(state))}
             </button>
-            <p className="fi-hint soon">{texts.era3Soon}</p>
+            <p className="fi-hint soon">{state.era >= 3 ? texts.era3 : texts.era3Soon}</p>
           </>
         )}
+      </Card>
+    ),
+    factories: (
+      <Card {...card("factories")} title={texts.factories} help={texts.help.factories} className={state.era < 3 ? "locked" : ""}>
+        {state.era < 3 ? (
+          <p className="fi-hint">🔒 {texts.factoriesLocked}</p>
+        ) : (
+          <>
+            <div className={`fi-power${power.supply < power.demand ? " short" : ""}`}>
+              <span className="fi-power-label">⚡ {texts.power}</span>
+              <div className="fi-power-bar" role="img" aria-label={texts.powerLine(f.rate(power.supply), f.rate(power.demand))}>
+                <i style={{ width: `${power.demand > 0 ? Math.min(1, power.supply / power.demand) * 100 : 100}%` }} />
+              </div>
+              <span className="fi-power-text">
+                {power.supply < power.demand ? texts.powerShort(percent(power.supply / power.demand)) : texts.powerLine(f.rate(power.supply), f.rate(power.demand))}
+              </span>
+            </div>
+            {module && (
+              <button className="fi-btn primary wide" onClick={() => act(buildModule)} disabled={state.money < module.cost || moduleSize === 0}>
+                {texts.buildModule(moduleSize, f.money(module.cost))}
+              </button>
+            )}
+            <div className="fi-view-switch" role="group" aria-label={texts.plantView}>
+              {(["graph", "chains"] as const).map((view) => (
+                <button key={view} aria-pressed={plantView === view} onClick={() => chooseView(view)}>{texts.plantViews[view]}</button>
+              ))}
+            </div>
+            <PlantDiagram
+              state={state}
+              texts={texts}
+              money={state.money}
+              formatCount={f.count}
+              formatMoney={f.money}
+              needed={plan}
+              highlight={bubble?.kind === "plantStep" ? bubble.nodes : []}
+              onBuild={(id) => act((s) => build(s, id))}
+              onSell={(id) => act((s) => sell(s, id))}
+              view={plantView}
+              isNarrow={isNarrow}
+            />
+            <p className="fi-hint">{texts.shipping(f.rate(shippedRate(state)))}</p>
+            <p className="fi-hint reserved-line">{state.autoKits ? `🍕 ${texts.restaurantsTake(f.rate(state.kitsFromPlant))}` : "\u00a0"}</p>
+          </>
+        )}
+      </Card>
+    ),
+    research: (
+      <Card {...card("research")} title={texts.research} help={texts.help.research} className={state.era < 3 ? "locked" : ""}>
+        {state.buildings.researchLab < 1 ? (
+          <p className="fi-hint">🔬 {texts.researchNoLab}</p>
+        ) : (
+          <p className="fi-research-points">🔬 {texts.researchPoints(f.count(state.research), f.rate(state.factoryRates.researchLab * LAB_RESEARCH))}</p>
+        )}
+        <ul className="fi-list">
+          {RESEARCH_IDS.map((id) => {
+            const isDone = isResearched(state.researched, id);
+            const isOpen = isResearchOpen(state.researched, id);
+            const missing = RESEARCH[id].requires.filter((needed) => !isResearched(state.researched, needed));
+            return (
+              <li key={id} className={`fi-upgrade${isDone ? " done" : isOpen ? "" : " locked"}`}>
+                <div className="grow">
+                  <strong>{texts.researches[id].name}</strong>
+                  <span>{isOpen || isDone ? texts.researches[id].text : texts.researchNeeds(missing.map((needed) => texts.researches[needed].name).join(", "))}</span>
+                </div>
+                {isDone ? (
+                  <span className="fi-done">{texts.researchDone}</span>
+                ) : (
+                  <button className="fi-btn primary" onClick={() => act((s) => doResearch(s, id))} disabled={!isOpen || state.research < RESEARCH[id].cost}>
+                    {texts.researchStart(f.count(RESEARCH[id].cost))}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </Card>
     ),
     automations: (
       <Card {...card("automations")} title={texts.automations} help={texts.help.automations}>
         {automations.map((which) => {
           const owner = AUTOMATION_OWNERS[which];
-          return state.upgrades.includes(owner) ? (
+          const ownerName = "upgrade" in owner ? texts.upgrade[owner.upgrade].name : "research" in owner ? texts.researches[owner.research].name : texts.era3;
+          return hasAutomation(state, which) ? (
             <label key={which} className="fi-switch">
               <input type="checkbox" checked={state[which]} onChange={() => act((s) => toggleAutomation(s, which))} />
               <span>{texts[which]}</span>
@@ -550,7 +681,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           ) : (
             <div key={which} className="fi-switch off">
               <span aria-hidden="true">🔒</span>
-              <span>{texts[which]} · <em>{texts.upgrade[owner].name}</em></span>
+              <span>{texts[which]} · <em>{ownerName}</em></span>
             </div>
           );
         })}
@@ -592,9 +723,9 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
 
   // The tabs: along the top on a computer, at the bottom on a phone.
   const tabBar = (
-    <nav className={`fi-tabs ${isNarrow ? "bottom" : "top"}`} aria-label={texts.title}>
+    <nav className={`fi-tabs ${isNarrow ? "bottom" : "top"}`} aria-label={texts.title} style={{ "--tab-count": TABS.length } as CSSProperties}>
       {TABS.map((id) => {
-        const label = { counter: texts.tabCounter, kitchen: texts.tabKitchen, upgrades: texts.tabUpgrades, journal: texts.tabJournal }[id];
+        const label = { counter: texts.tabCounter, kitchen: texts.tabKitchen, factories: texts.tabFactories, upgrades: texts.tabUpgrades, journal: texts.tabJournal, dev: "Dev" }[id];
         const badge = id === "upgrades" && affordableUpgrades > 0 ? affordableUpgrades : 0;
         return (
           <button key={id} className={`fi-tab${tab === id ? " on" : ""}${target && TAB_OF[target] === id && tab !== id ? " coach-target" : ""}`} aria-current={tab === id} onClick={() => setTab(id)}>
@@ -615,7 +746,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           <h1 className="fi-title">{texts.title}</h1>
           <p className="fi-tagline">{texts.tagline}</p>
         </div>
-        <span className="fi-era">{state.era === 1 ? texts.era1 : texts.era2}</span>
+        <span className="fi-era">{state.era === 1 ? texts.era1 : state.era === 2 ? texts.era2 : texts.era3}</span>
       </header>
 
       <div className={`fi-top${target === "stats" ? " coach-target" : ""}`} data-section="stats">
@@ -646,10 +777,15 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
 
       {tabBar}
 
-      <main className={`fi-panel count-${TAB_SECTIONS[tab].length}`}>
+      <main className={`fi-panel count-${TAB_SECTIONS[tab].length || 1} tab-${tab}`}>
         {TAB_SECTIONS[tab].map((section) => (
           <Fragment key={section}>{parts[section]}</Fragment>
         ))}
+        {tab === "dev" && DevTab && (
+          <Suspense fallback={null}>
+            <DevTab state={state} texts={texts} onLoad={loadDevGame} />
+          </Suspense>
+        )}
       </main>
 
       {tab === "journal" && (

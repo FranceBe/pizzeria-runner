@@ -2,24 +2,33 @@
 //
 // Pizzas are made from ingredient kits (one kit a pizza), by hand at first, then by cooks. Customers buy them as fast
 // as the price lets them: the lower the price, the more they want. The player's job is to keep production, demand and
-// supplies in balance, then to automate it all and grow, from one counter to a chain of restaurants across a continent.
-// Later eras (factories, then the universe) build on this.
+// supplies in balance, then to automate it all and grow, from one counter to a chain of restaurants across a continent,
+// then to factories: production lines from the fields to the pizza, whose ratios have to be balanced. The universe comes
+// next.
 //
 // Every action returns a new state and leaves the one it is given untouched.
 
-export type Era = 1 | 2;
+import {
+  BUILDING_IDS, BUILDINGS, buildingCost, GOODS, nextModule, noBuildings, noStocks, runPlant, sellValue, storeCap, WHOLESALE_PRICE, type BuildingId, type Good,
+} from "./plant";
+import { isResearchOpen, RESEARCH, RESEARCH_IDS, type ResearchId } from "./research";
+
+export type Era = 1 | 2 | 3;
 
 export const UPGRADE_IDS = [
   // Era 1: the counter
   "doubleHands", "woodOven", "supplier", "nonnaRecipe", "bigMixer", "secondShift", "franchise",
   // Era 2: the chain
   "manager", "centralKitchen", "pricingAnalyst", "conveyorOven", "tvAd", "pizzaAcademy", "deliveryFleet", "factoryPlans",
+  // Era 3: the factories (their own upgrades come from research, see research.ts)
+  "spacePlans",
 ] as const;
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
 
 export const MESSAGE_KEYS = [
   "welcome", "firstSale", "sold100", "outOfKits", "firstCook", "kitchenFull", "sold1000", "franchiseOpen",
-  "city", "country", "continent", "sold1m", "upgradeBought",
+  "city", "country", "continent", "sold1m", "upgradeBought", "factoriesOpen", "firstFactoryPizza", "factory10k", "sold100m",
+  "researchDone", "sold1b",
 ] as const;
 export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
@@ -27,6 +36,7 @@ export interface LogEntry {
   id: number;
   key: MessageKey;
   upgrade?: UpgradeId;
+  research?: ResearchId;
 }
 
 export interface FactoryState {
@@ -48,6 +58,20 @@ export interface FactoryState {
   autoBuy: boolean;
   autoHire: boolean;
   autoPrice: boolean;
+  /** Era 3 (see plant.ts): how many of each building, what the stores between them hold, what each kind really did a
+   * second and how each store moves (smoothed), the research points and what they paid for. */
+  buildings: Record<BuildingId, number>;
+  stocks: Record<Good, number>;
+  factoryRates: Record<BuildingId, number>;
+  stockTrends: Record<Good, number>;
+  research: number;
+  researched: ResearchId[];
+  /** The foreman builds modules on their own; the restaurants take their kits from the factories' stores first (the
+   * player's choice: off at first). */
+  autoBuild: boolean;
+  autoKits: boolean;
+  /** Kits a second the restaurants take from the factories' stores, smoothed. */
+  kitsFromPlant: number;
   totalMade: number;
   totalSold: number;
   totalEarned: number;
@@ -114,7 +138,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeSpec> = {
   tvAd: { era: 2, cost: 200_000, shows: (s) => s.era >= 2 && s.restaurants >= 8 },
   pizzaAcademy: { era: 2, cost: 500_000, shows: (s) => s.era >= 2 && s.restaurants >= 12 },
   deliveryFleet: { era: 2, cost: 1_500_000, shows: (s) => s.era >= 2 && s.restaurants >= 18 },
-  factoryPlans: { era: 2, cost: 10_000_000, shows: (s) => s.era >= 2 && s.totalSold >= 500_000, comingSoon: true },
+  factoryPlans: { era: 2, cost: 10_000_000, shows: (s) => s.era >= 2 && s.totalSold >= 500_000 },
+  spacePlans: { era: 3, cost: 1e12, shows: (s) => s.era >= 3 && s.totalSold >= 1e9, comingSoon: true },
 };
 
 const has = (state: FactoryState, id: UpgradeId): boolean => state.upgrades.includes(id);
@@ -131,6 +156,13 @@ export const cookCapacity = (state: FactoryState): number =>
 
 /** Pizzas the cooks would make in a second, with kits enough. */
 export const productionRate = (state: FactoryState): number => state.cooks * RULES.cookRate * cookMultiplier(state);
+
+/** Pizzas the restaurants make a second (the factories' are frozen, and shipped). */
+export const supplyRate = (state: FactoryState): number => productionRate(state);
+
+/** Era 3, smoothed: frozen pizzas a second out of the factories, and shipped from the docks. */
+export const frozenRate = (state: FactoryState): number => state.factoryRates.pizzaFactory * (BUILDINGS.pizzaFactory.makes.frozen ?? 0);
+export const shippedRate = (state: FactoryState): number => state.factoryRates.shippingDock * (BUILDINGS.shippingDock.uses.frozen ?? 0);
 
 const demandMultiplier = (state: FactoryState): number =>
   RULES.marketingBoost ** state.marketing *
@@ -170,6 +202,15 @@ export const newFactory = (): FactoryState => {
     autoBuy: false,
     autoHire: false,
     autoPrice: false,
+    buildings: noBuildings(),
+    stocks: noStocks(),
+    factoryRates: noBuildings(),
+    stockTrends: noStocks(),
+    research: 0,
+    researched: [],
+    autoBuild: false,
+    autoKits: false,
+    kitsFromPlant: 0,
     totalMade: 0,
     totalSold: 0,
     totalEarned: 0,
@@ -255,14 +296,61 @@ export const buyUpgrade = (state: FactoryState, id: UpgradeId): FactoryState | n
   if (id === "pricingAnalyst") next.autoPrice = true;
   next = say(next, { key: "upgradeBought", upgrade: id });
   if (id === "franchise") next = reach({ ...next, era: 2 }, "franchiseOpen");
+  if (id === "factoryPlans") next = reach({ ...next, era: 3 }, "factoriesOpen");
   return next;
 };
 
-export type Automation = "autoBuy" | "autoHire" | "autoPrice";
-export const AUTOMATION_OWNERS: Record<Automation, UpgradeId> = { autoBuy: "supplier", autoHire: "manager", autoPrice: "pricingAnalyst" };
+export type Automation = "autoBuy" | "autoHire" | "autoPrice" | "autoBuild" | "autoKits";
+export const AUTOMATIONS: readonly Automation[] = ["autoBuy", "autoHire", "autoPrice", "autoKits", "autoBuild"];
+
+/** What makes an automation available: an upgrade, a research, or era 3 itself (the kits from the factories). */
+export type AutomationOwner = { upgrade: UpgradeId } | { research: ResearchId } | { era: Era };
+export const AUTOMATION_OWNERS: Record<Automation, AutomationOwner> = {
+  autoBuy: { upgrade: "supplier" },
+  autoHire: { upgrade: "manager" },
+  autoPrice: { upgrade: "pricingAnalyst" },
+  autoKits: { era: 3 },
+  autoBuild: { research: "foreman" },
+};
+
+export const hasAutomation = (state: FactoryState, which: Automation): boolean => {
+  const owner = AUTOMATION_OWNERS[which];
+  if ("upgrade" in owner) return has(state, owner.upgrade);
+  if ("research" in owner) return state.researched.includes(owner.research);
+  return state.era >= owner.era;
+};
 
 export const toggleAutomation = (state: FactoryState, which: Automation): FactoryState =>
-  has(state, AUTOMATION_OWNERS[which]) ? { ...state, [which]: !state[which] } : state;
+  hasAutomation(state, which) ? { ...state, [which]: !state[which] } : state;
+
+// --- Era 3: building, and research --------------------------------------------------------------------------------------
+
+export const build = (state: FactoryState, id: BuildingId): FactoryState | null => {
+  const cost = buildingCost(state, id);
+  if (state.era < 3 || state.money < cost) return null;
+  return { ...state, money: state.money - cost, buildings: { ...state.buildings, [id]: state.buildings[id] + 1 } };
+};
+
+/** One building sold back, for part of its price: to slow a step down, and free the power it drew. */
+export const sell = (state: FactoryState, id: BuildingId): FactoryState | null => {
+  if (state.era < 3 || state.buildings[id] < 1) return null;
+  return { ...state, money: state.money + sellValue(state, id), buildings: { ...state.buildings, [id]: state.buildings[id] - 1 } };
+};
+
+/** A whole module at once (see plant.ts): once researched, or by the foreman. */
+export const buildModule = (state: FactoryState): FactoryState | null => {
+  const { builds, cost } = nextModule(state);
+  if (state.era < 3 || state.money < cost || !Object.keys(builds).length) return null;
+  const buildings = { ...state.buildings };
+  for (const [id, count] of Object.entries(builds) as [BuildingId, number][]) buildings[id] += count;
+  return { ...state, money: state.money - cost, buildings };
+};
+
+export const doResearch = (state: FactoryState, id: ResearchId): FactoryState | null => {
+  if (state.era < 3 || !isResearchOpen(state.researched, id) || state.research < RESEARCH[id].cost) return null;
+  const next = { ...state, research: state.research - RESEARCH[id].cost, researched: [...state.researched, id] };
+  return say({ ...next, autoBuild: id === "foreman" ? true : next.autoBuild }, { key: "researchDone", research: id });
+};
 
 /** How many cooks the till and the kitchens allow, up to `wanted`, and what they cost together. */
 export const hiringPlan = (state: FactoryState, wanted: number): { count: number; cost: number } => {
@@ -289,7 +377,7 @@ export const hireCooks = (state: FactoryState, count: number): FactoryState => {
 };
 
 /** The price at which customers take about what is made (a little less, so pizzas never pile up for nothing). */
-export const fairPrice = (state: FactoryState, supply = productionRate(state)): number => {
+export const fairPrice = (state: FactoryState, supply = supplyRate(state)): number => {
   const atReference = demandRate(state, RULES.refPrice);
   const price = RULES.refPrice * Math.sqrt(atReference / Math.max(supply * 0.95, 0.01));
   return Math.min(RULES.maxPrice, Math.max(RULES.minPrice, Math.round(price * 10) / 10));
@@ -297,7 +385,9 @@ export const fairPrice = (state: FactoryState, supply = productionRate(state)): 
 
 // --- Time -----------------------------------------------------------------------------------------------------------
 
-const SOLD_MILESTONES: readonly [number, MessageKey][] = [[1, "firstSale"], [100, "sold100"], [1000, "sold1000"], [1_000_000, "sold1m"]];
+const smoothKits = (current: number, value: number, dt: number): number => current + (value - current) * Math.min(1, dt / 3);
+
+const SOLD_MILESTONES: readonly [number, MessageKey][] = [[1, "firstSale"], [100, "sold100"], [1000, "sold1000"], [1_000_000, "sold1m"], [1e8, "sold100m"], [1e9, "sold1b"]];
 
 /** One step of time (a fraction of a second up to a second): cooks cook, customers buy, the automations do their job. */
 export const tick = (state: FactoryState, dt: number, random: () => number = Math.random): FactoryState => {
@@ -322,19 +412,45 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
     for (let hires = 0; hires < 1000 && next.cooks < cookCapacity(next) && next.money >= cookCost(next) * 1.5; hires++) next = hireCook(next) ?? next;
   }
 
+  // The foreman builds whole modules, as long as there is money to spare.
+  if (next.autoBuild && hasAutomation(next, "autoBuild")) {
+    for (let builds = 0; builds < 20 && next.money >= nextModule(next).cost * 1.5; builds++) next = buildModule(next) ?? next;
+  }
+
   // The analyst sets the price to what customers will take, counting the pizzas waiting to be sold.
-  if (next.autoPrice && has(next, "pricingAnalyst")) next = { ...next, price: fairPrice(next, productionRate(next) + next.pizzas / 30) };
+  if (next.autoPrice && has(next, "pricingAnalyst")) next = { ...next, price: fairPrice(next, supplyRate(next) + next.pizzas / 30) };
 
   const made = Math.min(productionRate(next) * dt, next.kits);
   if (made > 0) next = { ...next, kits: next.kits - made, pizzas: next.pizzas + made, totalMade: next.totalMade + made };
   if (next.kits < 1 && productionRate(next) > 0) next = reach(next, "outOfKits");
 
+  // Era 3: the plant runs; the docks ship frozen pizzas at the wholesale price, the laboratories make research.
+  if (next.era >= 3) {
+    // The restaurants take their kits from the factories' stores first (a dough, a sauce and a mozzarella each).
+    const kitsWanted = next.autoKits ? Math.max(0, productionRate(next) * 20 - next.kits) : 0;
+    const plant = runPlant(next, dt, kitsWanted);
+    const earned = plant.shipped * WHOLESALE_PRICE;
+    next = {
+      ...next,
+      ...plant.state,
+      research: next.research + plant.research,
+      kits: next.kits + plant.kits,
+      kitsFromPlant: smoothKits(next.kitsFromPlant, plant.kits / dt, dt),
+      money: next.money + earned,
+      totalMade: next.totalMade + plant.shipped,
+      totalSold: next.totalSold + plant.shipped,
+      totalEarned: next.totalEarned + earned,
+    };
+    if (next.stocks.frozen > 0 || plant.shipped > 0) next = reach(next, "firstFactoryPizza");
+    if (frozenRate(next) >= 10_000) next = reach(next, "factory10k");
+  }
+
   const sold = Math.min(demandRate(next) * dt, next.pizzas);
   if (sold > 0) {
     const earned = sold * next.price;
     next = { ...next, pizzas: next.pizzas - sold, money: next.money + earned, totalSold: next.totalSold + sold, totalEarned: next.totalEarned + earned };
-    for (const [count, key] of SOLD_MILESTONES) if (next.totalSold >= count) next = reach(next, key);
   }
+  for (const [count, key] of SOLD_MILESTONES) if (next.totalSold >= count) next = reach(next, key);
   return next;
 };
 
@@ -354,6 +470,27 @@ export const advance = (state: FactoryState, seconds: number, random: () => numb
 
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
+const readBuildings = (value: unknown, isCount = true): Record<BuildingId, number> => {
+  const saved = (typeof value === "object" && value !== null ? value : {}) as Partial<Record<BuildingId, unknown>>;
+  return Object.fromEntries(
+    BUILDING_IDS.map((id) => {
+      const count = saved[id];
+      return [id, isNumber(count) && count >= 0 ? (isCount ? Math.floor(count) : count) : 0];
+    }),
+  ) as Record<BuildingId, number>;
+};
+
+// Stores (or, with `signed`, how they move: up or down).
+const readGoods = (value: unknown, signed = false): Record<Good, number> => {
+  const saved = (typeof value === "object" && value !== null ? value : {}) as Partial<Record<Good, unknown>>;
+  return Object.fromEntries(
+    GOODS.map((good) => {
+      const amount = saved[good];
+      return [good, isNumber(amount) && (signed || amount >= 0) ? amount : 0];
+    }),
+  ) as Record<Good, number>;
+};
+
 // A saved factory, read with care: anything odd starts a new one rather than a broken game.
 export const readFactory = (value: unknown): FactoryState | null => {
   if (typeof value !== "object" || value === null) return null;
@@ -362,7 +499,7 @@ export const readFactory = (value: unknown): FactoryState | null => {
     saved.money, saved.pizzas, saved.kits, saved.price, saved.cratePrice, saved.cooks, saved.restaurants, saved.marketing,
     saved.totalMade, saved.totalSold, saved.totalEarned, saved.cratesBought, saved.seconds, saved.marketClock, saved.nextLogId,
   ];
-  if (saved.version !== 1 || (saved.era !== 1 && saved.era !== 2) || !numbers.every((n) => isNumber(n) && n >= 0)) return null;
+  if (saved.version !== 1 || (saved.era !== 1 && saved.era !== 2 && saved.era !== 3) || !numbers.every((n) => isNumber(n) && n >= 0)) return null;
   if (!Array.isArray(saved.upgrades) || !Array.isArray(saved.milestones) || !Array.isArray(saved.log)) return null;
   if ((saved.restaurants ?? 0) < 1 || (saved.price ?? 0) < RULES.minPrice) return null;
   const upgrades = saved.upgrades.filter((id): id is UpgradeId => (UPGRADE_IDS as readonly string[]).includes(id));
@@ -370,15 +507,32 @@ export const readFactory = (value: unknown): FactoryState | null => {
   const log = saved.log.filter(
     (entry): entry is LogEntry =>
       typeof entry === "object" && entry !== null && isNumber(entry.id) && (MESSAGE_KEYS as readonly string[]).includes(entry.key) &&
-      (entry.upgrade === undefined || (UPGRADE_IDS as readonly string[]).includes(entry.upgrade)),
+      (entry.upgrade === undefined || (UPGRADE_IDS as readonly string[]).includes(entry.upgrade)) &&
+      (entry.research === undefined || (RESEARCH_IDS as readonly string[]).includes(entry.research)),
   );
+  // What is no longer part of the game (era 3's former distribution deals) is dropped.
+  const { deals: _deals, ...current } = saved as FactoryState & { deals?: unknown };
+  const stocks = readGoods(saved.stocks);
+  const buildings = readBuildings(saved.buildings);
+  // A store never holds more than it can: its cap follows the buildings that fill it.
+  for (const good of GOODS) stocks[good] = Math.min(stocks[good], storeCap({ buildings, stocks, factoryRates: noBuildings(), stockTrends: noStocks(), researched: [] }, good));
   return {
-    ...(saved as FactoryState),
+    ...current,
     upgrades,
     milestones,
     log,
     autoBuy: saved.autoBuy === true,
     autoHire: saved.autoHire === true,
     autoPrice: saved.autoPrice === true,
+    // Saves from before the factories have none of these.
+    buildings,
+    stocks,
+    factoryRates: readBuildings(saved.factoryRates, false),
+    stockTrends: readGoods(saved.stockTrends, true),
+    research: isNumber(saved.research) && saved.research >= 0 ? saved.research : 0,
+    researched: Array.isArray(saved.researched) ? saved.researched.filter((id): id is ResearchId => (RESEARCH_IDS as readonly string[]).includes(id)) : [],
+    autoBuild: saved.autoBuild === true,
+    autoKits: saved.autoKits === true,
+    kitsFromPlant: isNumber(saved.kitsFromPlant) && saved.kitsFromPlant >= 0 ? saved.kitsFromPlant : 0,
   };
 };

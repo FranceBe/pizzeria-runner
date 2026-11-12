@@ -72,7 +72,7 @@ button { font: inherit; color: inherit; }
 /* On a computer, the parts of a tab stand side by side at the same height */
 .fi-panel { display: grid; gap: 12px; align-items: stretch; grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)); }
 .fi.narrow .fi-panel { align-items: start; }
-.fi-panel > .fi-card:not(.locked) > :last-child { margin-top: auto; }
+.fi-panel > .fi-card:not(.locked) > :is(.fi-btn, .fi-suggest):last-child { margin-top: auto; }
 .fi-counter .fi-pizza { margin-block: auto; }
 .fi-panel.count-3 { --cols: 3; }
 .fi-panel.count-2 { --cols: 2; }
@@ -121,6 +121,92 @@ button { font: inherit; color: inherit; }
 .fi-hire .fi-btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fi-hint.reserved { min-height: 2.8em; }
 .fi-switch.off { color: var(--muted); font-weight: 600; cursor: default; }
+
+/* Era 3: the factories, three production lines feeding the pizza factories */
+.fi-panel.tab-factories { grid-template-columns: minmax(0, 1fr); }
+.fi.narrow .fi-panel.tab-factories { grid-template-columns: minmax(0, 1fr); }
+/* Era 3: the plant. Power on top, then the warehouse (every good between the buildings), then the buildings by kind */
+.fi-power { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; padding: 8px 10px; border-radius: 12px;
+  background: var(--surface2); }
+.fi-power-label { font-weight: 800; font-size: 13px; }
+.fi-power-bar { height: 8px; border-radius: 99px; background: var(--surface); overflow: hidden; }
+.fi-power-bar > i { display: block; height: 100%; background: var(--basil); transition: width .3s; }
+.fi-power.short .fi-power-bar > i { background: #e0b452; }
+.fi-power-text { grid-column: 1 / -1; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.fi-power.short .fi-power-text { color: #a26f00; }
+/* The plant's diagram: buildings placed as goods flow (sources on the left, trucks on the right, power below), an
+   arrow for each good. Green: it flows; orange: the next building runs short of it; dotted: it overflows; grey: idle */
+.fi-diagram-scroll { overflow-x: auto; overscroll-behavior-x: contain; margin: 0 -4px; padding: 4px; }
+.fi-diagram { position: relative; margin: 0 auto; }
+.fi-arrows { position: absolute; inset: 0; overflow: visible; }
+.fi-arrow { fill: none; stroke-width: 2.5; stroke: var(--line); }
+.fi-arrow.flowing { stroke: var(--basil); stroke-dasharray: 8 6; animation: fi-flow 1s linear infinite; }
+.fi-arrow.short { stroke: #e0913a; stroke-width: 3; }
+.fi-arrow.full { stroke: #e0b452; stroke-dasharray: 2 5; }
+@keyframes fi-flow { to { stroke-dashoffset: -14; } }
+.fi-head { fill: var(--line); }
+.fi-head.flowing { fill: var(--basil); }
+.fi-head.short { fill: #e0913a; }
+.fi-head.full { fill: #e0b452; }
+.fi-arrow-label { position: absolute; transform: translate(-50%, -50%); z-index: 1; display: flex; flex-direction: column; align-items: center;
+  white-space: nowrap; line-height: 1.2; padding: 2px 8px; border-radius: 10px; background: var(--surface); border: 1.5px solid var(--line);
+  color: var(--muted); font-variant-numeric: tabular-nums; }
+.fi-arrow-good { font-size: 10px; font-weight: 700; }
+.fi-arrow-amount { font-size: 11.5px; font-weight: 800; }
+.fi-arrow-label.flowing { border-color: var(--basil); color: var(--basil); }
+.fi-arrow-label.short { border-color: #e0913a; color: #b5651d; }
+.fi-arrow-label.full { border-color: #e0b452; color: #a26f00; }
+.fi-node-card { position: absolute; z-index: 2; display: flex; flex-direction: column; gap: 3px; padding: 6px 8px 5px; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--surface); box-shadow: var(--shadow); }
+.fi-node-card.starved, .fi-node-card.blocked, .fi-node-card.unpowered { border-color: #e0b452; }
+.fi-node-card.none { opacity: .75; }
+.fi-node-head { display: flex; align-items: center; gap: 5px; font-size: 12.5px; min-width: 0; }
+.fi-node-head strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-node-count { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fi-node-recipe { font-size: 10.5px; line-height: 1.25; color: var(--muted); min-height: 2.5em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; }
+.fi-node-bar { height: 5px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
+.fi-node-bar > i { display: block; height: 100%; background: var(--basil); transition: width .3s; }
+.fi-node-card.starved .fi-node-bar > i, .fi-node-card.blocked .fi-node-bar > i, .fi-node-card.unpowered .fi-node-bar > i { background: #e0b452; }
+.fi-node-status { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-node-card.running .fi-node-status { color: var(--basil); }
+.fi-node-card.starved .fi-node-status, .fi-node-card.blocked .fi-node-status, .fi-node-card.unpowered .fi-node-status { color: #a26f00; }
+/* In the diagram, the speed bar runs along the card's top edge, to keep the cards short */
+.fi-node-card .fi-node-bar { position: absolute; top: 0; left: 12px; right: 12px; height: 3px; border-radius: 0 0 3px 3px; }
+.fi-node-actions { display: flex; gap: 4px; min-width: 0; }
+.fi-node-card .fi-node-actions { margin-top: auto; }
+.fi-node-actions .fi-btn.small { padding: 3px 5px; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-node-actions .fi-btn:not(.sell) { flex: 1; min-width: 0; }
+.fi-node-actions .fi-btn.sell { flex: none; color: var(--muted); }
+.fi-hint.reserved-line { min-height: 1.4em; }
+/* The plant as chains, each building saying what it takes in and sends on */
+.fi-chains { display: flex; flex-direction: column; gap: 14px; }
+.fi-chain { display: flex; flex-direction: column; gap: 8px; }
+.fi-group-title { margin: 4px 0 0; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.fi-chain-card { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); }
+.fi-chain-card.starved, .fi-chain-card.blocked, .fi-chain-card.unpowered { border-color: #e0b452; }
+.fi-chain-card .fi-node-recipe { min-height: 0; }
+.fi-chain-card.running .fi-node-status { color: var(--basil); }
+.fi-chain-card.starved .fi-node-status, .fi-chain-card.blocked .fi-node-status, .fi-chain-card.unpowered .fi-node-status { color: #a26f00; }
+.fi-chain-card .fi-node-actions { align-self: flex-start; }
+.fi-chain-card .fi-node-actions .fi-btn.small { padding: 5px 12px; font-size: 12.5px; }
+.fi-chain-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+/* Diagram or chains */
+.fi-view-switch { display: flex; width: fit-content; margin-left: auto; gap: 2px; padding: 2px; border-radius: 99px; background: var(--surface2); }
+.fi-view-switch button { border: 0; background: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--muted); padding: 4px 12px;
+  border-radius: 99px; cursor: pointer; }
+.fi-view-switch button[aria-pressed="true"] { background: var(--surface); color: inherit; box-shadow: var(--shadow); }
+.fi-good-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.fi-good-tags-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: 2px; }
+.fi-good-tag { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; border: 1.5px solid var(--line); color: var(--muted);
+  font-variant-numeric: tabular-nums; }
+.fi-good-tag.flowing { border-color: var(--basil); color: var(--basil); }
+.fi-good-tag.short { border-color: #e0913a; color: #b5651d; }
+.fi-good-tag.full { border-color: #e0b452; color: #a26f00; border-style: dashed; }
+.fi-research-points { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fi-upgrade.done { opacity: .7; }
+.fi-upgrade.locked strong { color: var(--muted); }
+.fi-done { flex: none; font-weight: 800; color: var(--basil); font-size: 13px; }
 .fi-switch.off em { font-style: normal; font-weight: 700; }
 .fi-card { background: var(--surface); border-radius: 16px; padding: 14px 16px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
 .fi-card-title { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -195,7 +281,7 @@ button { font: inherit; color: inherit; }
 .fi-tabs.top .fi-tab-icon { font-size: 18px; }
 .fi-tabs.top .fi-tab-badge { position: static; margin-left: 2px; }
 .fi-tabs.top .fi-tab.on .fi-tab-badge { background: #fff; color: var(--tomato); }
-.fi-tabs.bottom { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr);
+.fi-tabs.bottom { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(var(--tab-count, 5), 1fr);
   background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(20, 40, 30, .08);
   padding: 4px 6px max(4px, env(safe-area-inset-bottom)); }
 .fi-tab { position: relative; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px;
@@ -236,6 +322,8 @@ button { font: inherit; color: inherit; }
   .fi-link-rate { font-size: 11px; }
   .fi-link-label { font-size: 9px; }
   .fi-flow-status { font-size: 12px; white-space: normal; min-height: 2.7em; display: flex; align-items: center; justify-content: center; }
+
+  .fi-tab-label { font-size: 10.5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -243,3 +331,14 @@ button { font: inherit; color: inherit; }
   .fi-pop { animation: none; opacity: 0; }
   .fi-pizza { transition: none; }
 }
+
+/* Dev only: the dev tab */
+.fi-dev { max-width: 900px; }
+.fi-dev-title { margin: 6px 0 0; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.fi-dev-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.fi-dev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.fi-dev-field { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.fi-dev-field input, .fi-dev-field select { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 8px; }
+.fi-dev-upgrades { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.fi-dev-upgrades em { font-style: normal; color: var(--muted); font-size: 12px; }

@@ -4,6 +4,8 @@ import { MESSAGE_KEYS, newFactory, UPGRADE_IDS, type FactoryState } from "./engi
 import { newCoach } from "./coach";
 import { Factory, formatters, loadFactory, STORAGE_KEY, TAB_OF, TAB_SECTIONS, TABS } from "./Factory";
 import { TEXTS } from "./texts";
+import { PlantDiagram } from "./PlantDiagram";
+import { noBuildings, noStocks } from "./plant";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -41,7 +43,7 @@ describe("Forno Infinito's page", () => {
 
   it("reads back a save with when it was made, and nothing broken", () => {
     const state = newFactory();
-    const coach = { step: 2, seen: [], off: false };
+    const coach = { step: 2, plantStep: 0, seen: [], off: false };
     expect(loadFactory(JSON.stringify({ state, savedAt: 1000, coach }))).toEqual({ state, savedAt: 1000, coach });
     // A save from before the tour: the tour starts from the beginning (and skips what is already done).
     expect(loadFactory(JSON.stringify({ state, savedAt: 1000 }))?.coach).toEqual(newCoach());
@@ -103,5 +105,20 @@ describe("Forno Infinito's page", () => {
     expect(shape(page(calm, "kitchen"))).toMatchObject({ buttons: 3, reserved: 1 });
     expect(shape(page(stuck, "kitchen"))).toMatchObject({ buttons: 3, reserved: 1 });
     expect(page(stuck, "counter")).toContain(TEXTS.fr.blockKits);
+  });
+
+  it("draws the plant as a diagram or as chains, every building in both, each with a button to sell one back", () => {
+    const plant = { buildings: { ...noBuildings(), wheatFarm: 2, mill: 1 }, stocks: { ...noStocks(), wheat: 500 }, factoryRates: noBuildings(), stockTrends: noStocks(), researched: [] };
+    const props = { state: plant, texts: TEXTS.fr, money: 1e9, formatCount: String, formatMoney: String, needed: null, highlight: ["mill" as const], onBuild: () => {}, onSell: () => {}, isNarrow: false };
+    const wide = renderToString(<PlantDiagram {...props} view="graph" />);
+    const narrow = renderToString(<PlantDiagram {...props} view="chains" />).replaceAll("&#x27;", "'").replaceAll("<!-- -->", "");
+    for (const html of [wide, narrow]) {
+      expect(html.split("data-building=").length - 1).toBe(16);
+      expect(html.split("fi-btn small sell").length - 1).toBe(16);
+    }
+    expect(wide).toContain("fi-arrow");
+    expect(narrow).toContain(TEXTS.fr.chains.dough);
+    expect(narrow).toContain(`${TEXTS.fr.goods.wheat} · 500`);
+    expect(narrow).toContain(`→ ${TEXTS.fr.buildings.mill.name}`);
   });
 });

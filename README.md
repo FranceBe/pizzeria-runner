@@ -402,8 +402,36 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   hires, a pricing analyst sets the price, a central kitchen sells bigger crates. A new restaurant makes hires cheap
   again, which is what keeps the chain growing: ten restaurants make a city, forty a country, a hundred and fifty a
   continent.
-- **Coming next**: era 3, the factories (production lines, ratios between dough, sauce and cheese), then the universe
-  turned into pizza, and an ending. The factory plans already show, not for sale yet.
+- **Era 3, the factories** (`src/factory/plant.ts`, `research.ts`, drawn by `PlantDiagram.tsx`): the factory plans (sold
+  once the chain has sold half a million pizzas) open a plant of its own tab, a network to work out rather than a line
+  to fill. It is drawn as a diagram: each building in its place, from the sources on the left to the trucks on the right
+  (the power plants in the same column), and an arrow for each good from a building to the next, showing its good, what
+  waits on it and which way that moves. Green, it flows; orange, the next building runs short of it; dotted, it
+  overflows. The diagram shrinks to fit below the page's header, so a laptop screen shows it whole. A switch shows the
+  same plant as chains instead (power, dough, sauce, mozzarella, pizzas), each building saying what it takes in and sends
+  on, with the same colours: the chains by default on a phone, the diagram on a computer, and the browser remembers the
+  choice. Each building shows its recipe, how fast it runs and why not flat out ("short of salt", "dough store full:
+  stopped", "not enough power"), with a button to build one more and one to sell one back for half its price, to slow
+  down a step that runs too far ahead and free the power it draws.
+  - **Sources**: wheat fields, water pumps, salt works, greenhouses, olive groves, dairy farms.
+  - **Processing**: a flour mill (wheat → flour), an industrial kneader (flour + water + salt → dough), an oil press
+    (olives → oil), a cannery (tomatoes + oil → sauce), a creamery (milk + salt → mozzarella, leaving whey). The salt goes
+    to both the dough and the mozzarella.
+  - **Factories and outlets**: pizza factories (dough + sauce + mozzarella → pizzas), delivery trucks that take them away
+    and sell them at a fixed price, laboratories that turn them into research points.
+  - **Power**: every building needs some. Wind turbines make a little from nothing; biogas plants make more by burning
+    the whey, but making it already takes power (a few turbines start it all). Short of power, everything slows down.
+  **Its own tour**, the first time: the plant set up one building at a time (power, wheat, flour, dough, sauce,
+  mozzarella, the pizza factory, the trucks, the biogas plant), each lighting up in the diagram, then how to read the
+  arrows to balance it. Nothing says what to build after that: the arrows do.
+  **Research** (laboratories) brings the automation step by step: a ratio calculator (each building says how many it
+  would take), then modules (all a factory needs, built in one go), then a foreman who builds modules on their own; and
+  better buildings: conveyor belts, fertiliser, robot arms, efficient turbines, fast trucks, then modernised workshops
+  and workshops of the future. The restaurants can take their kits from the plant first (a choice, off at first: their
+  pizzas sell dearer, but the factories then get less). Goals: ten thousand pizzas a second, five researches, then a
+  billion pizzas sold.
+- **Coming next**: era 4, the universe turned into pizza, and an ending. The rocket plans already show, not for sale
+  yet.
 - **Guidance** (`src/factory/coach.ts`): a short tour points at each first action in turn (make pizzas, see them sell,
   buy kits, hire, set the price, buy an upgrade), the part it is about glowing; it moves on as soon as the action is
   done, skips what the player already did, and can be skipped or replayed. Then tips come once each when something new
@@ -417,18 +445,23 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   buttons say how many and for how much (hire 1, hire 10, fill up). A suggested price, to sell everything made, can be
   applied in one tap.
 - **Tabs**, on a computer as on a phone: counter (the pizza, the price, the ingredients), kitchen (the crew, the chain),
-  upgrades (with the automations), journal. They sit under the circuit on a computer, the parts of a tab side by side;
+  factories (the production lines, distribution), upgrades (with the automations), journal. They sit under the circuit on a computer, the parts of a tab side by side;
   at the bottom on a phone, one under the other. Every part is there from the start (the chain and the automations
   locked until they open), so nothing moves when something new shows up. The upgrades tab shows how many upgrades the
   till can pay for, and the tour opens the tab it points at.
 - **The pace**, checked by a robot that plays like a sensible player (`src/factory/bot.ts`, in the tests): about five
   minutes at the counter for the robot (about ten for a player: it sets perfect prices and hires at once), ten
-  restaurants within a quarter of an hour, a million pizzas within half an hour. Customers come about as fast as a first
+  restaurants within a quarter of an hour, a million pizzas within half an hour, the factories within the hour, five
+  researches within half an hour of them, a billion pizzas about an hour and a half after. Customers come about as fast as a first
   few cooks make pizzas at the starting price, and advertising brings 40% more each time.
 - **Time away counts**: the chain goes on while the page is closed, up to eight hours, and a line says what it made.
   No punishment for being away, no pressure to come back.
 - **Kept on the device**, under `forno-lento-factory-v1` in `localStorage` (a few kilobytes), every few seconds and as
   the page goes away. Start over erases it (after a confirmation). `npm run dev:factory` serves it alone.
+- **Dev tab** (🛠, development builds only, `src/factory/dev/`): load a game at any point without playing through,
+  from presets (the start of era 2, the start of era 3, era 3 under way, the end of era 3) or by setting every figure by
+  hand (era, money, pizzas sold, restaurants, crew, advertising, deals, kits, each building, the upgrades); shortcuts add
+  money or move time ten minutes on. Loading a game switches the tour off. The built page holds none of it.
 
 ## Pages next to the game
 
@@ -450,7 +483,8 @@ npm run dev
 ```
 
 Then open the address shown in the terminal (http://localhost:5173). The solitaire and Forno Infinito are served alone
-by `npm run dev:solitaire` and `npm run dev:factory`.
+by `npm run dev:solitaire` and `npm run dev:factory`, at http://localhost:5173/solitaire/ and
+http://localhost:5173/factory/ (the page opens on its own), as they are published.
 
 To try it on your phone, run `npm run dev:phone` instead: Vite also prints a network address (http://192.168.x.x:5173)
 to open on the phone, on the same Wi-Fi. The development server is then reachable by everyone on that network,
