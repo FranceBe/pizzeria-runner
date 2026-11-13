@@ -57,9 +57,12 @@ button { font: inherit; color: inherit; }
 
 .fi-top { position: sticky; top: 0; z-index: 10; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 12px;
   padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
-.fi-goal { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.fi-goal { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; border-top: 1px solid var(--line); padding-top: 8px; }
 .fi-goal-label { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
 .fi-goal-text { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-goal-action { white-space: nowrap; }
+.fi-goal .fi-btn.small { padding: 4px 12px; font-size: 12.5px; }
+.fi-chapter .fi-goal-action { align-self: flex-start; }
 .fi-goal-bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
 .fi-goal-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--tomato)); border-radius: 99px; transition: width .3s; }
 .fi-stat-label { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
@@ -350,6 +353,7 @@ button { font: inherit; color: inherit; }
   .fi-top { padding: 7px 10px; gap: 6px; border-radius: 12px; }
   .fi-goal { padding-top: 6px; }
   .fi-goal-text { font-size: 12.5px; white-space: normal; line-height: 1.3; min-height: 2.6em; display: flex; align-items: center; }
+  .fi-goal .fi-goal-action.fi-hint { white-space: normal; font-size: 11px; max-width: 130px; text-align: right; }
   .fi-pizza { width: min(120px, 34vw); }
   .fi-icon { font-size: 16px; width: 20px; height: 20px; }
   .fi-icon svg { width: 18px; height: 18px; }

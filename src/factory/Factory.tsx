@@ -5,7 +5,7 @@
 import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   advance, AUTOMATION_OWNERS, AUTOMATIONS, build, buildModule, canRush, chapterReward, cityCapacity, clickPizzas, declineOrder, fixIncident, incidentFixCost,
-  nextCityCost, openCity, sell, startRush, toggleIncidents, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
+  nextCityCost, openCity, reservedMoney, sell, startRush, storyUpgrade, toggleIncidents, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
   fairPrice, hireCooks, hiringPlan, isForSale, makePizza, marketingCost, newFactory, openRestaurant, readFactory, restaurantCost, tick, toggleAutomation,
   UPGRADE_IDS, UPGRADES, type FactoryState,
 } from "./engine";
@@ -520,6 +520,15 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const isTourOver = coach.off || coach.step >= STEP_IDS.length;
   const goal = goalFor(state);
   const order = state.order;
+  // When the story asks to buy something: its price and a button where the goal shows, or what it still waits for.
+  const wanted = storyUpgrade(state);
+  const purchase = wanted && (isForSale(state, wanted) ? (
+    <button className="fi-btn primary small fi-goal-action" onClick={() => act((s) => buyUpgrade(s, wanted))} disabled={state.money < UPGRADES[wanted].cost}>
+      {texts.buyNow(f.money(UPGRADES[wanted].cost))}
+    </button>
+  ) : (
+    <span className="fi-goal-action fi-hint">{texts.upgradeLater[wanted]}</span>
+  ));
   const goalProgress = Math.min(1, goal.current / goal.target);
   // On a phone, only the open tab's parts show.
   const card = (section: Section | "journal") => ({ section, isTarget: target === section, helpLabel: texts.whatFor });
@@ -824,6 +833,8 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
             <p>{texts.chapters[goal.id].text}</p>
             <span className="fi-chapter-aim">🎯 {texts.goals[goal.id]}</span>
             <div className="fi-goal-bar"><i style={{ width: `${goalProgress * 100}%` }} /></div>
+            {purchase}
+            {reservedMoney(state) > 0 && <span className="fi-hint">{texts.savingUp}</span>}
             <span className="fi-hint">{texts.chapterReward(f.money(chapterReward(state)))}</span>
           </div>
         )}
@@ -944,6 +955,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
         <div className="fi-goal">
           <span className="fi-goal-label">{texts.goal}</span>
           <span className="fi-goal-text">{texts.goals[goal.id]}</span>
+          {purchase}
           <div className="fi-goal-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(goalProgress * 100)}>
             <i style={{ width: `${goalProgress * 100}%` }} />
           </div>

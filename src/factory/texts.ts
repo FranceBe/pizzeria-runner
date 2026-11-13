@@ -145,6 +145,14 @@ const FR = {
   chapterDone: "✓",
   chapterReward: (reward: string) => `Récompense : ${reward}`,
   storyOver: "L'histoire est racontée. La suite, c'est toi qui l'écris.",
+  buyNow: (cost: string) => `Acheter · ${cost}`,
+  upgradeLater: {
+    woodOven: "En vente dès 2 recrues",
+    franchise: "En vente après 5 000 pizzas",
+    factoryPlans: "En vente après 7 villes et 20 M de pizzas",
+    spacePlans: "En vente après 1,2 Md de pizzas",
+  } as Partial<Record<UpgradeId, string>>,
+  savingUp: "Les automatisations gardent ce prix de côté.",
   chapters: {
     firstService: { title: "Le premier service", text: "Un comptoir, un four, trente kits d'ingrédients. La recette vient de Nonna, le reste est à écrire. Pour commencer : servir tes trente premières pizzas." },
     brigade: { title: "Une brigade", text: "Seul·e aux fourneaux, ça ne tiendra pas longtemps. Il te faut du monde en cuisine." },
@@ -638,6 +646,14 @@ const EN: FactoryTexts = {
   chapterDone: "✓",
   chapterReward: (reward: string) => `Reward: ${reward}`,
   storyOver: "The story is told. What comes next is yours to write.",
+  buyNow: (cost: string) => `Buy · ${cost}`,
+  upgradeLater: {
+    woodOven: "For sale from 2 cooks",
+    franchise: "For sale after 5,000 pizzas",
+    factoryPlans: "For sale after 7 cities and 20M pizzas",
+    spacePlans: "For sale after 1.2bn pizzas",
+  },
+  savingUp: "The automations keep this price aside.",
   chapters: {
     firstService: { title: "The first service", text: "A counter, an oven, thirty ingredient kits. The recipe is Nonna's; the rest is still to write. To begin: serve your first thirty pizzas." },
     brigade: { title: "A kitchen crew", text: "Alone at the stove, it won't last. You need people in the kitchen." },
@@ -1129,6 +1145,14 @@ const ZH: FactoryTexts = {
   chapterDone: "✓",
   chapterReward: (reward: string) => `奖励：${reward}`,
   storyOver: "故事讲完了。接下来由你来写。",
+  buyNow: (cost: string) => `购买 · ${cost}`,
+  upgradeLater: {
+    woodOven: "有 2 名员工后开售",
+    franchise: "卖出 5000 张披萨后开售",
+    factoryPlans: "进驻 7 座城市并卖出 2000 万张披萨后开售",
+    spacePlans: "卖出 12 亿张披萨后开售",
+  },
+  savingUp: "自动化会把这笔钱留出来。",
   chapters: {
     firstService: { title: "第一次营业", text: "一个柜台，一座烤炉，三十份食材。配方来自奶奶，剩下的还要你来写。先从卖出头三十张披萨开始。" },
     brigade: { title: "厨房团队", text: "一个人守着炉子撑不了多久。厨房需要人手。" },

@@ -3,7 +3,7 @@
 // chapter, whose words the page tells (see texts.ts). Chapters follow the eras: the aims of an era can all be reached in
 // it.
 import { PLANET_IDS, PLANETS, STAGES } from "./cosmos";
-import { frozenRate, SPACE_PLANS_SALES, UPGRADES, type Era, type FactoryState } from "./engine";
+import { frozenRate, SPACE_PLANS_SALES, UPGRADES, type Era, type FactoryState, type UpgradeId } from "./engine";
 import { isResearched, RESEARCH_IDS, RESEARCH } from "./research";
 
 export const CHAPTER_IDS = [
@@ -68,6 +68,15 @@ export const CHAPTERS: Record<ChapterId, ChapterSpec> = {
   embassies: { era: 4, progress: (s) => count(Math.max(...PLANET_IDS.filter((id) => PLANETS[id].kind === "civ").map((id) => s.cosmos.planets[id].level)), 5) },
   ovenWalls: { era: 4, progress: (s) => count(s.cosmos.stage, 5) },
   lighting: { era: 4, progress: (s) => count(s.cosmos.stage, STAGES.length) },
+};
+
+/** The chapters whose aim is to buy an upgrade: the page shows its price and a button, and the automations keep its
+ * price aside. */
+export const CHAPTER_UPGRADES: Partial<Record<ChapterId, UpgradeId>> = {
+  woodFire: "woodOven",
+  franchise: "franchise",
+  factoryPlans: "factoryPlans",
+  rocket: "spacePlans",
 };
 
 /** The chapter going on (none once the story is told: the game goes on, free). */

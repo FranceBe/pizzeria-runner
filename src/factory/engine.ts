@@ -21,7 +21,7 @@ import {
 } from "./incidents";
 import { FIRST_ORDER, makeOrder, ORDER_GAP, ORDER_KINDS, ORDERS_FROM_SALES, readOrder, stepOrder, type Order, type OrderKind } from "./orders";
 import { isResearchOpen, isResearchShown, RESEARCH, RESEARCH_IDS, type ResearchId } from "./research";
-import { CHAPTER_IDS, firstChapterOf, isChapterDone, type ChapterId } from "./story";
+import { CHAPTER_IDS, CHAPTER_UPGRADES, chapterOf, firstChapterOf, isChapterDone, type ChapterId } from "./story";
 
 export type Era = 1 | 2 | 3 | 4;
 
@@ -606,7 +606,7 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
   // till: the money is for the stars).
   if (next.autoBuild && hasAutomation(next, "autoBuild")) {
     const spare = next.era >= 4 ? FOREMAN_SPARE_UNIVERSE : FOREMAN_SPARE;
-    for (let builds = 0; builds < 20 && next.money >= nextModule(next).cost * spare; builds++) next = buildModule(next) ?? next;
+    for (let builds = 0; builds < 20 && next.money - reservedMoney(next) >= nextModule(next).cost * spare; builds++) next = buildModule(next) ?? next;
   }
 
   next = runAutomations(next);
@@ -677,31 +677,46 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
 // --- Automations, orders, story and achievements, each step ---------------------------------------------------------
 
 /** The automations of the chain, the plant and the universe (each one switched on, and owned). */
+/** The upgrade the story asks for now, once it is for sale (the page shows its price and a button). */
+export const storyUpgrade = (state: FactoryState): UpgradeId | null => {
+  const chapter = chapterOf(state);
+  const upgrade = chapter ? CHAPTER_UPGRADES[chapter] : undefined;
+  return upgrade && !has(state, upgrade) ? upgrade : null;
+};
+
+/** Money the automations leave alone: the price of what the story asks to buy, once it is for sale. */
+export const reservedMoney = (state: FactoryState): number => {
+  const upgrade = storyUpgrade(state);
+  return upgrade && isForSale(state, upgrade) ? UPGRADES[upgrade].cost : 0;
+};
+
 const runAutomations = (state: FactoryState): FactoryState => {
   let next = state;
   const on = (which: Automation) => next[which] && hasAutomation(next, which);
+  // Every automation spends only what is left once the story's purchase is put aside.
+  const free = () => next.money - reservedMoney(next);
   // The expansion director: a new city once the cities are full, a restaurant while there is room, with money to spare.
   if (on("autoExpand")) {
     for (let opened = 0; opened < 5; opened++) {
       const city = nextCityCost(next);
       const isFull = next.restaurants >= cityCapacity(next);
       const after = isFull
-        ? city !== null && next.money >= city * 2 ? openCity(next) : null
-        : next.money >= restaurantCost(next) * 2 ? openRestaurant(next) : null;
+        ? city !== null && free() >= city * 2 ? openCity(next) : null
+        : free() >= restaurantCost(next) * 2 ? openRestaurant(next) : null;
       if (!after) break;
       next = after;
     }
   }
   // The ad agency: a campaign when the till holds several times its cost.
-  if (on("autoAds") && next.money >= marketingCost(next) * 5) next = buyMarketing(next) ?? next;
+  if (on("autoAds") && free() >= marketingCost(next) * 5) next = buyMarketing(next) ?? next;
   // The maintenance crew: strikes and breakdowns settled at once, when the till can spare it.
   const fix = incidentFixCost(next);
-  if (on("autoRepair") && fix !== null && next.money >= fix * 3) next = fixIncident(next) ?? next;
+  if (on("autoRepair") && fix !== null && free() >= fix * 3) next = fixIncident(next) ?? next;
   // The universe's: out of a share of the till each.
   if (next.era >= 4) {
-    if (on("autoShips")) next = equipRoutes(next, next.money * 0.5);
-    if (on("autoOvens")) next = buildOvensAsNeeded(next, next.money * 0.5);
-    if (on("autoFarms")) next = growShortFarms(next, next.money * 0.3);
+    if (on("autoShips")) next = equipRoutes(next, Math.max(0, free()) * 0.5);
+    if (on("autoOvens")) next = buildOvensAsNeeded(next, Math.max(0, free()) * 0.5);
+    if (on("autoFarms")) next = growShortFarms(next, Math.max(0, free()) * 0.3);
   }
   return next;
 };

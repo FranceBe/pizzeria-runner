@@ -4,10 +4,11 @@ import { ACHIEVEMENT_BONUS, ACHIEVEMENT_IDS, salesBonus } from "./achievements";
 import { appetite, demandOf, levelCost, openPlanet, PLANETS, raiseLevel, shipsNeeded } from "./cosmos";
 import {
   advance, canRush, chapterReward, cityCapacity, CITIES, clickPizzas, declineOrder, demandRate, incidentFixCost, makePizza, newFactory, openCity, openRestaurant,
-  productionRate, readFactory, RUSH, startRush, tick, type FactoryState,
+  productionRate, readFactory, reservedMoney, RUSH, startRush, storyUpgrade, tick, UPGRADES, type FactoryState,
 } from "./engine";
 import { makeOrder, ORDERS_FROM_SALES, readOrder, stepOrder, type Order } from "./orders";
 import { CHAPTER_IDS, firstChapterOf } from "./story";
+import { TEXTS } from "./texts";
 
 const rich = (overrides: Partial<FactoryState> = {}): FactoryState => ({ ...newFactory(), money: 1e12, ...overrides });
 const play = (state: FactoryState, seconds: number, random = seededRandom(3)): FactoryState => {
@@ -113,6 +114,18 @@ describe("the cities", () => {
     // A save from before the cities gets as many as its restaurants need.
     const { cities: _cities, ...older } = rich({ era: 2, restaurants: 40 });
     expect(readFactory(JSON.parse(JSON.stringify(older)))?.cities).toBe(4);
+  });
+
+  it("leave alone the price of what the story asks to buy, once it is for sale", () => {
+    const saving = rich({ era: 2, money: 1.5e8, restaurants: 132, cities: 7, totalSold: 3e7, chapter: CHAPTER_IDS.indexOf("factoryPlans"),
+      upgrades: ["franchise", "expansionDirector", "adAgency"], autoExpand: true, autoAds: true });
+    expect(storyUpgrade(saving)).toBe("factoryPlans");
+    expect(reservedMoney(saving)).toBe(UPGRADES.factoryPlans.cost);
+    const after = tick(saving, 1, seededRandom(1));
+    expect(after.money).toBeGreaterThanOrEqual(UPGRADES.factoryPlans.cost);
+    // Not for sale yet (too few pizzas sold): nothing is kept aside.
+    expect(reservedMoney({ ...saving, totalSold: 1e6 })).toBe(0);
+    Object.values(TEXTS).forEach((texts) => expect(texts.upgradeLater.factoryPlans).toBeTruthy());
   });
 
   it("grow on their own with the expansion office, and the ad agency runs the campaigns", () => {
