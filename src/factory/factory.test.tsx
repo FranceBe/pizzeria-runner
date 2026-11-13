@@ -45,7 +45,7 @@ describe("Forno Infinito's page", () => {
 
   it("reads back a save with when it was made, and nothing broken", () => {
     const state = newFactory();
-    const coach = { step: 2, plantStep: 0, spaceStep: 0, seen: [], off: false };
+    const coach = { step: 2, plantStep: 0, spaceStep: 0, seen: [], chapterSeen: 0, off: false };
     expect(loadFactory(JSON.stringify({ state, savedAt: 1000, coach }))).toEqual({ state, savedAt: 1000, coach });
     // A save from before the tour: the tour starts from the beginning (and skips what is already done).
     expect(loadFactory(JSON.stringify({ state, savedAt: 1000 }))?.coach).toEqual(newCoach());

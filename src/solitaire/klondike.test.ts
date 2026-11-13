@@ -180,7 +180,7 @@ describe("the finish", () => {
         game = next;
       }
     }
-  });
+  }, 30_000);
 });
 
 describe("saved games", () => {

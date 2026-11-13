@@ -3,27 +3,34 @@
 // Pizzas are made from ingredient kits (one kit a pizza), by hand at first, then by cooks. Customers buy them as fast
 // as the price lets them: the lower the price, the more they want. The player's job is to keep production, demand and
 // supplies in balance, then to automate it all and grow, from one counter to a chain of restaurants across a continent,
-// then to factories: production lines from the fields to the pizza, whose ratios have to be balanced; then to the
-// universe (see cosmos.ts), and the stellar oven that ends the game.
+// city by city, then to factories: production lines from the fields to the pizza, whose ratios have to be balanced;
+// then to the universe (see cosmos.ts), and the stellar oven that ends the game. All along, a story told in chapters
+// (story.ts), achievements (achievements.ts) and special orders (orders.ts).
 //
 // Every action returns a new state and leaves the one it is given untouched.
 
 import {
   BUILDING_IDS, BUILDINGS, buildingCost, GOODS, nextModule, noBuildings, noStocks, runPlant, sellValue, storeCap, WHOLESALE_PRICE, type BuildingId, type Good,
 } from "./plant";
-import { buildStage, newCosmos, PLANET_IDS, readCosmos, runCosmos, STAGES, type CosmosState, type PlanetId } from "./cosmos";
+import { ACHIEVEMENT_IDS, newAchievements, salesBonus, type AchievementId } from "./achievements";
+import {
+  buildOvensAsNeeded, buildStage, equipRoutes, growShortFarms, newCosmos, PLANET_IDS, PLANETS, readCosmos, runCosmos, STAGES, type CosmosState, type PlanetId,
+} from "./cosmos";
 import {
   endIncident, FIRST_INCIDENT, fixCost, incidentSpeeds, INCIDENT_KINDS, priceFactor, readIncident, stepIncidents, type Incident, type IncidentKind,
 } from "./incidents";
+import { FIRST_ORDER, makeOrder, ORDER_GAP, ORDER_KINDS, ORDERS_FROM_SALES, readOrder, stepOrder, type Order, type OrderKind } from "./orders";
 import { isResearchOpen, isResearchShown, RESEARCH, RESEARCH_IDS, type ResearchId } from "./research";
+import { CHAPTER_IDS, firstChapterOf, isChapterDone, type ChapterId } from "./story";
 
 export type Era = 1 | 2 | 3 | 4;
 
 export const UPGRADE_IDS = [
   // Era 1: the counter
-  "doubleHands", "woodOven", "supplier", "nonnaRecipe", "bigMixer", "secondShift", "franchise",
+  "doubleHands", "pizzaPeel", "woodOven", "supplier", "nonnaRecipe", "bikeDelivery", "bigMixer", "neonSign", "secondShift", "franchise",
   // Era 2: the chain
-  "manager", "centralKitchen", "pricingAnalyst", "conveyorOven", "tvAd", "pizzaAcademy", "deliveryFleet", "factoryPlans",
+  "manager", "centralKitchen", "pricingAnalyst", "expansionDirector", "conveyorOven", "tvAd", "adAgency", "pizzaAcademy", "deliveryFleet",
+  "factoryPlans",
   // Era 3: the factories (their own upgrades come from research, see research.ts); the rocket plans open era 4
   "spacePlans",
 ] as const;
@@ -33,6 +40,7 @@ export const MESSAGE_KEYS = [
   "welcome", "firstSale", "sold100", "outOfKits", "firstCook", "kitchenFull", "sold1000", "franchiseOpen",
   "city", "country", "continent", "sold1m", "upgradeBought", "factoriesOpen", "firstFactoryPizza", "factory10k", "sold100m",
   "researchDone", "sold1b", "incident", "universeOpen", "planetFound", "firstCosmicSale", "stellarStage", "ending",
+  "cityOpen", "chapter", "achievement", "orderDone",
 ] as const;
 export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
@@ -47,6 +55,11 @@ export interface LogEntry {
   /** A planet found, a stage of the stellar oven built. */
   planet?: PlanetId;
   stage?: number;
+  /** A city opened (its index in CITIES), a chapter of the story done, an achievement unlocked, an order delivered. */
+  city?: number;
+  chapter?: ChapterId;
+  achievement?: AchievementId;
+  order?: OrderKind;
 }
 
 export interface FactoryState {
@@ -62,12 +75,17 @@ export interface FactoryState {
   cratePrice: number;
   cooks: number;
   restaurants: number;
+  /** Cities the chain has settled in (see CITIES): each holds so many restaurants. */
+  cities: number;
   marketing: number;
   upgrades: UpgradeId[];
-  /** The supplier, the manager and the analyst, once hired, can be told to stop. */
+  /** The supplier, the manager and the analyst, once hired, can be told to stop; so can the expansion director (new
+   * restaurants and cities) and the ad agency. */
   autoBuy: boolean;
   autoHire: boolean;
   autoPrice: boolean;
+  autoExpand: boolean;
+  autoAds: boolean;
   /** Era 3 (see plant.ts): how many of each building, what the stores between them hold, what each kind really did a
    * second and how each store moves (smoothed), the research points and what they paid for. */
   buildings: Record<BuildingId, number>;
@@ -86,8 +104,27 @@ export interface FactoryState {
   incident: Incident | null;
   incidentClock: number;
   incidentsOn: boolean;
-  /** Era 4: the universe (see cosmos.ts). */
+  /** The maintenance crew settles strikes and breakdowns on its own (research). */
+  autoRepair: boolean;
+  /** Era 4: the universe (see cosmos.ts), and its automations (research): the logistician equips the routes, the
+   * stewards build ovens, the agronomist grows the farms. */
   cosmos: CosmosState;
+  autoShips: boolean;
+  autoOvens: boolean;
+  autoFarms: boolean;
+  /** The story (story.ts): the chapter going on. Achievements unlocked (achievements.ts). */
+  chapter: number;
+  achievements: AchievementId[];
+  /** Special orders (orders.ts): the one going on, the seconds until the next, how many were delivered. */
+  order: Order | null;
+  orderClock: number;
+  ordersDone: number;
+  /** Pizzas made by hand, and strikes and breakdowns settled: for the achievements. */
+  handMade: number;
+  incidentsFixed: number;
+  /** The rush: seconds it still lasts, and seconds before the next can start. */
+  rushLeft: number;
+  rushReady: number;
   totalMade: number;
   totalSold: number;
   totalEarned: number;
@@ -126,6 +163,8 @@ export const RULES = {
   marketingBoost: 1.4,
   restaurantBaseCost: 2500,
   restaurantGrowth: 1.07,
+  /** Each city settled beyond the first brings this many more customers. */
+  cityBoost: 0.05,
   logKept: 40,
   offlineCap: 8 * 3600,
 };
@@ -141,21 +180,26 @@ interface UpgradeSpec {
 
 export const UPGRADES: Record<UpgradeId, UpgradeSpec> = {
   doubleHands: { era: 1, cost: 40, shows: (s) => s.totalMade >= 15 },
+  pizzaPeel: { era: 1, cost: 600, shows: (s) => s.handMade >= 150 },
+  bikeDelivery: { era: 1, cost: 3_500, shows: (s) => s.totalSold >= 1_000 },
+  neonSign: { era: 1, cost: 6_000, shows: (s) => s.totalSold >= 1_800 },
   woodOven: { era: 1, cost: 250, shows: (s) => s.cooks >= 2 },
   supplier: { era: 1, cost: 300, shows: (s) => s.cratesBought >= 3 },
   nonnaRecipe: { era: 1, cost: 900, shows: (s) => s.totalSold >= 400 },
   bigMixer: { era: 1, cost: 1500, shows: (s) => s.cooks >= 5 },
   secondShift: { era: 1, cost: 2500, shows: (s) => s.cooks >= cookCapacity(s) - 1 },
-  franchise: { era: 1, cost: 8000, shows: (s) => s.totalSold >= 3000 },
+  franchise: { era: 1, cost: 20_000, shows: (s) => s.totalSold >= 5_000 },
   manager: { era: 2, cost: 5000, shows: (s) => s.era >= 2 },
   pricingAnalyst: { era: 2, cost: 40_000, shows: (s) => s.era >= 2 && s.restaurants >= 4 },
+  expansionDirector: { era: 2, cost: 250_000, shows: (s) => s.era >= 2 && s.cities >= 3 },
+  adAgency: { era: 2, cost: 1_500_000, shows: (s) => s.era >= 2 && s.marketing >= 8 },
   centralKitchen: { era: 2, cost: 25_000, shows: (s) => s.era >= 2 && s.restaurants >= 3 },
   conveyorOven: { era: 2, cost: 80_000, shows: (s) => s.era >= 2 && s.restaurants >= 5 },
   tvAd: { era: 2, cost: 200_000, shows: (s) => s.era >= 2 && s.restaurants >= 8 },
   pizzaAcademy: { era: 2, cost: 500_000, shows: (s) => s.era >= 2 && s.restaurants >= 12 },
   deliveryFleet: { era: 2, cost: 1_500_000, shows: (s) => s.era >= 2 && s.restaurants >= 18 },
-  factoryPlans: { era: 2, cost: 10_000_000, shows: (s) => s.era >= 2 && s.totalSold >= 500_000 },
-  spacePlans: { era: 3, cost: 1e9, shows: (s) => s.era >= 3 && s.totalSold >= SPACE_PLANS_SALES },
+  factoryPlans: { era: 2, cost: 100_000_000, shows: (s) => s.era >= 2 && s.cities >= 7 && s.totalSold >= 2e7 },
+  spacePlans: { era: 3, cost: 5e9, shows: (s) => s.era >= 3 && s.totalSold >= SPACE_PLANS_SALES },
 };
 
 /** The foreman builds a module once the till holds this many times its cost (more in the universe). */
@@ -163,13 +207,32 @@ const FOREMAN_SPARE = 1.5;
 const FOREMAN_SPARE_UNIVERSE = 10;
 
 /** Pizzas sold before the rocket plans show up. */
-export const SPACE_PLANS_SALES = 2.5e8;
+export const SPACE_PLANS_SALES = 1.2e9;
 
 const has = (state: FactoryState, id: UpgradeId): boolean => state.upgrades.includes(id);
 
 // --- What the state is worth, second by second ----------------------------------------------------------------------
 
 export const clickPower = (state: FactoryState): number => (has(state, "doubleHands") ? 2 : 1);
+
+/** A click also lends the kitchen a hand: this share of a second of its work (more with the peel). */
+export const clickShare = (state: FactoryState): number => (has(state, "pizzaPeel") ? 0.6 : 0.25);
+
+/** Pizzas a click makes (kits allowing). */
+export const clickPizzas = (state: FactoryState): number => clickPower(state) + clickShare(state) * productionRate(state);
+
+// --- The rush: for those who stay, everything runs twice as fast for a while, now and then ----------------------------
+
+export const RUSH = { seconds: 30, cooldown: 180, boost: 2 } as const;
+
+/** How much faster everything runs now. */
+export const rushBoost = (state: Pick<FactoryState, "rushLeft">): number => (state.rushLeft > 0 ? RUSH.boost : 1);
+
+/** Whether the rush can start: once there is a kitchen crew, and the last one is long enough ago. */
+export const canRush = (state: FactoryState): boolean => state.cooks >= 1 && state.rushLeft <= 0 && state.rushReady <= 0;
+
+export const startRush = (state: FactoryState): FactoryState | null =>
+  canRush(state) ? { ...state, rushLeft: RUSH.seconds, rushReady: RUSH.cooldown + RUSH.seconds } : null;
 
 const cookMultiplier = (state: FactoryState): number =>
   (has(state, "woodOven") ? 1.5 : 1) * (has(state, "bigMixer") ? 2 : 1) * (has(state, "conveyorOven") ? 3 : 1);
@@ -178,7 +241,7 @@ export const cookCapacity = (state: FactoryState): number =>
   state.restaurants * (RULES.cooksPerRestaurant + (has(state, "secondShift") ? 5 : 0) + (has(state, "pizzaAcademy") ? 10 : 0));
 
 /** Pizzas the cooks would make in a second, with kits enough. */
-export const productionRate = (state: FactoryState): number => state.cooks * RULES.cookRate * cookMultiplier(state);
+export const productionRate = (state: FactoryState): number => state.cooks * RULES.cookRate * cookMultiplier(state) * rushBoost(state);
 
 /** Pizzas the restaurants make a second (the factories' are frozen, and shipped). */
 export const supplyRate = (state: FactoryState): number => productionRate(state);
@@ -189,7 +252,11 @@ export const shippedRate = (state: FactoryState): number => state.factoryRates.s
 
 const demandMultiplier = (state: FactoryState): number =>
   RULES.marketingBoost ** state.marketing *
+  (1 + RULES.cityBoost * (state.cities - 1)) *
   (has(state, "nonnaRecipe") ? 1.5 : 1) *
+  (has(state, "bikeDelivery") ? 1.3 : 1) *
+  (has(state, "neonSign") ? 1.25 : 1) *
+  rushBoost(state) *
   (has(state, "tvAd") ? 2 : 1) *
   (has(state, "deliveryFleet") ? 2 : 1);
 
@@ -207,6 +274,34 @@ export const cookCost = (state: FactoryState): number =>
 export const marketingCost = (state: FactoryState): number => RULES.marketingBaseCost * RULES.marketingGrowth ** state.marketing;
 export const restaurantCost = (state: FactoryState): number => RULES.restaurantBaseCost * RULES.restaurantGrowth ** (state.restaurants - 1);
 
+// --- The cities: the chain grows city by city, each one holding so many restaurants --------------------------------
+
+export const CITIES: readonly { capacity: number; cost: number }[] = [
+  { capacity: 6, cost: 0 },
+  { capacity: 10, cost: 40_000 },
+  { capacity: 14, cost: 200_000 },
+  { capacity: 18, cost: 800_000 },
+  { capacity: 24, cost: 3_000_000 },
+  { capacity: 30, cost: 10_000_000 },
+  { capacity: 36, cost: 40_000_000 },
+  { capacity: 48, cost: 150_000_000 },
+  { capacity: 60, cost: 500_000_000 },
+];
+
+/** How many restaurants the cities settled hold. */
+export const cityCapacity = (state: Pick<FactoryState, "cities">): number =>
+  CITIES.slice(0, state.cities).reduce((sum, city) => sum + city.capacity, 0);
+
+/** The fewest cities that hold this many restaurants (for saves from before the cities). */
+export const citiesFor = (restaurants: number): number => {
+  let cities = 1;
+  while (cities < CITIES.length && cityCapacity({ cities }) < restaurants) cities++;
+  return cities;
+};
+
+/** The next city's cost, if one is left. */
+export const nextCityCost = (state: Pick<FactoryState, "cities">): number | null => CITIES[state.cities]?.cost ?? null;
+
 // --- Starting, and the log ------------------------------------------------------------------------------------------
 
 export const newFactory = (): FactoryState => {
@@ -222,9 +317,12 @@ export const newFactory = (): FactoryState => {
     restaurants: 1,
     marketing: 0,
     upgrades: [],
+    cities: 1,
     autoBuy: false,
     autoHire: false,
     autoPrice: false,
+    autoExpand: false,
+    autoAds: false,
     buildings: noBuildings(),
     stocks: noStocks(),
     factoryRates: noBuildings(),
@@ -237,7 +335,20 @@ export const newFactory = (): FactoryState => {
     incident: null,
     incidentClock: FIRST_INCIDENT,
     incidentsOn: true,
+    autoRepair: false,
     cosmos: newCosmos(),
+    autoShips: false,
+    autoOvens: false,
+    autoFarms: false,
+    chapter: 0,
+    achievements: [],
+    order: null,
+    orderClock: FIRST_ORDER,
+    ordersDone: 0,
+    handMade: 0,
+    incidentsFixed: 0,
+    rushLeft: 0,
+    rushReady: 0,
     totalMade: 0,
     totalSold: 0,
     totalEarned: 0,
@@ -265,9 +376,9 @@ const reach = (state: FactoryState, key: MessageKey): FactoryState =>
 // --- The player's actions -------------------------------------------------------------------------------------------
 
 export const makePizza = (state: FactoryState): FactoryState => {
-  const made = Math.min(clickPower(state), Math.floor(state.kits));
-  if (made <= 0) return reach(state, "outOfKits");
-  return { ...state, kits: state.kits - made, pizzas: state.pizzas + made, totalMade: state.totalMade + made };
+  const made = Math.min(clickPizzas(state), state.kits);
+  if (made < 1) return reach(state, "outOfKits");
+  return { ...state, kits: state.kits - made, pizzas: state.pizzas + made, totalMade: state.totalMade + made, handMade: state.handMade + made };
 };
 
 // The price goes up and down in steps that suit it: 10 cents under 2 €, then 50 cents, then whole euros, and so on.
@@ -303,10 +414,17 @@ const REGIONS: readonly [number, MessageKey][] = [[10, "city"], [40, "country"],
 
 export const openRestaurant = (state: FactoryState): FactoryState | null => {
   const cost = restaurantCost(state);
-  if (state.era < 2 || state.money < cost) return null;
+  if (state.era < 2 || state.money < cost || state.restaurants >= cityCapacity(state)) return null;
   let next: FactoryState = { ...state, money: state.money - cost, restaurants: state.restaurants + 1 };
   for (const [count, key] of REGIONS) if (next.restaurants >= count) next = reach(next, key);
   return next;
+};
+
+/** The chain settles in the next city: room for more restaurants, and more customers everywhere. */
+export const openCity = (state: FactoryState): FactoryState | null => {
+  const cost = nextCityCost(state);
+  if (state.era < 2 || cost === null || state.money < cost) return null;
+  return say({ ...state, money: state.money - cost, cities: state.cities + 1 }, { key: "cityOpen", city: state.cities });
 };
 
 export const isForSale = (state: FactoryState, id: UpgradeId): boolean =>
@@ -321,6 +439,8 @@ export const buyUpgrade = (state: FactoryState, id: UpgradeId): FactoryState | n
   if (id === "supplier") next.autoBuy = true;
   if (id === "manager") next.autoHire = true;
   if (id === "pricingAnalyst") next.autoPrice = true;
+  if (id === "expansionDirector") next.autoExpand = true;
+  if (id === "adAgency") next.autoAds = true;
   next = say(next, { key: "upgradeBought", upgrade: id });
   if (id === "franchise") next = reach({ ...next, era: 2 }, "franchiseOpen");
   if (id === "factoryPlans") next = reach({ ...next, era: 3 }, "factoriesOpen");
@@ -328,8 +448,11 @@ export const buyUpgrade = (state: FactoryState, id: UpgradeId): FactoryState | n
   return next;
 };
 
-export type Automation = "autoBuy" | "autoHire" | "autoPrice" | "autoBuild" | "autoKits";
-export const AUTOMATIONS: readonly Automation[] = ["autoBuy", "autoHire", "autoPrice", "autoKits", "autoBuild"];
+export type Automation =
+  | "autoBuy" | "autoHire" | "autoPrice" | "autoExpand" | "autoAds" | "autoBuild" | "autoKits" | "autoRepair" | "autoShips" | "autoOvens" | "autoFarms";
+export const AUTOMATIONS: readonly Automation[] = [
+  "autoBuy", "autoHire", "autoPrice", "autoExpand", "autoAds", "autoKits", "autoBuild", "autoRepair", "autoShips", "autoOvens", "autoFarms",
+];
 
 /** What makes an automation available: an upgrade, a research, or era 3 itself (the kits from the factories). */
 export type AutomationOwner = { upgrade: UpgradeId } | { research: ResearchId } | { era: Era };
@@ -337,8 +460,14 @@ export const AUTOMATION_OWNERS: Record<Automation, AutomationOwner> = {
   autoBuy: { upgrade: "supplier" },
   autoHire: { upgrade: "manager" },
   autoPrice: { upgrade: "pricingAnalyst" },
+  autoExpand: { upgrade: "expansionDirector" },
+  autoAds: { upgrade: "adAgency" },
   autoKits: { era: 3 },
   autoBuild: { research: "foreman" },
+  autoRepair: { research: "maintenanceCrew" },
+  autoShips: { research: "logistics" },
+  autoOvens: { research: "orbitalStewards" },
+  autoFarms: { research: "agronomy" },
 };
 
 export const hasAutomation = (state: FactoryState, which: Automation): boolean => {
@@ -372,7 +501,7 @@ export const incidentFixCost = (state: FactoryState): number | null => fixCost(s
 export const fixIncident = (state: FactoryState): FactoryState | null => {
   const cost = incidentFixCost(state);
   if (cost === null || state.money < cost) return null;
-  return endIncident({ ...state, money: state.money - cost });
+  return endIncident({ ...state, money: state.money - cost, incidentsFixed: state.incidentsFixed + 1 });
 };
 
 /** Incidents on or off: off, the one going on ends too. */
@@ -398,7 +527,11 @@ export const buildModule = (state: FactoryState): FactoryState | null => {
 
 export const doResearch = (state: FactoryState, id: ResearchId): FactoryState | null => {
   if (state.era < 3 || !isResearchShown(state.era, id) || !isResearchOpen(state.researched, id) || state.research < RESEARCH[id].cost) return null;
-  const next = { ...state, research: state.research - RESEARCH[id].cost, researched: [...state.researched, id] };
+  const owned = AUTOMATIONS.find((which) => {
+    const owner = AUTOMATION_OWNERS[which];
+    return "research" in owner && owner.research === id;
+  });
+  const next = { ...state, research: state.research - RESEARCH[id].cost, researched: [...state.researched, id], ...(owned ? { [owned]: true } : {}) };
   return say({ ...next, autoBuild: id === "foreman" ? true : next.autoBuild }, { key: "researchDone", research: id });
 };
 
@@ -442,7 +575,13 @@ const SOLD_MILESTONES: readonly [number, MessageKey][] = [[1, "firstSale"], [100
 /** One step of time (a fraction of a second up to a second): cooks cook, customers buy, the automations do their job.
  * `isLive`: the player is there (no new incident while away). */
 export const tick = (state: FactoryState, dt: number, random: () => number = Math.random, isLive = true): FactoryState => {
-  let next: FactoryState = { ...state, seconds: state.seconds + dt };
+  let next: FactoryState = {
+    ...state,
+    seconds: state.seconds + dt,
+    rushLeft: Math.max(0, state.rushLeft - dt),
+    rushReady: Math.max(0, state.rushReady - dt),
+  };
+  const bonus = salesBonus(next);
 
   // The crate price wanders between its bounds.
   next.marketClock -= dt;
@@ -470,6 +609,8 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
     for (let builds = 0; builds < 20 && next.money >= nextModule(next).cost * spare; builds++) next = buildModule(next) ?? next;
   }
 
+  next = runAutomations(next);
+
   // The analyst sets the price to what customers will take, counting the pizzas waiting to be sold.
   if (next.autoPrice && has(next, "pricingAnalyst")) next = { ...next, price: fairPrice(next, supplyRate(next) + next.pizzas / 30) };
 
@@ -477,12 +618,17 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
   if (made > 0) next = { ...next, kits: next.kits - made, pizzas: next.pizzas + made, totalMade: next.totalMade + made };
   if (next.kits < 1 && productionRate(next) > 0) next = reach(next, "outOfKits");
 
+  let shipped = 0;
+  let deliveredTo: Partial<Record<PlanetId, number>> = {};
   // Era 3: the plant runs; the docks ship frozen pizzas at the wholesale price, the laboratories make research.
   if (next.era >= 3) {
     // The restaurants take their kits from the factories' stores first (a dough, a sauce and a mozzarella each).
     const kitsWanted = next.autoKits ? Math.max(0, productionRate(next) * 20 - next.kits) : 0;
-    const plant = runPlant(next, dt, kitsWanted, incidentSpeeds(next.incident));
-    const earned = plant.shipped * WHOLESALE_PRICE * priceFactor(next.incident);
+    const incidentSpeed = incidentSpeeds(next.incident);
+    const speeds = Object.fromEntries(BUILDING_IDS.map((id) => [id, (incidentSpeed[id] ?? 1) * rushBoost(next)]));
+    const plant = runPlant(next, dt, kitsWanted, speeds);
+    shipped = plant.shipped;
+    const earned = plant.shipped * WHOLESALE_PRICE * priceFactor(next.incident) * bonus;
     next = {
       ...next,
       ...plant.state,
@@ -503,14 +649,15 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
 
   // Era 4: the universe turns; cosmic pizzas count among the pizzas sold.
   if (next.era >= 4) {
-    const cosmos = runCosmos(next, dt);
+    const cosmos = runCosmos(next, dt, rushBoost(next));
+    deliveredTo = cosmos.deliveredTo;
     next = {
       ...next,
       cosmos: cosmos.cosmos,
-      money: next.money + cosmos.earned,
+      money: next.money + cosmos.earned * bonus,
       totalMade: next.totalMade + cosmos.delivered,
       totalSold: next.totalSold + cosmos.delivered,
-      totalEarned: next.totalEarned + cosmos.earned,
+      totalEarned: next.totalEarned + cosmos.earned * bonus,
     };
     if (cosmos.found) next = say(next, { key: "planetFound", planet: cosmos.found });
     if (next.cosmos.sold > 0) next = reach(next, "firstCosmicSale");
@@ -518,10 +665,98 @@ export const tick = (state: FactoryState, dt: number, random: () => number = Mat
 
   const sold = Math.min(demandRate(next) * dt, next.pizzas);
   if (sold > 0) {
-    const earned = sold * next.price;
+    const earned = sold * next.price * bonus;
     next = { ...next, pizzas: next.pizzas - sold, money: next.money + earned, totalSold: next.totalSold + sold, totalEarned: next.totalEarned + earned };
   }
   for (const [count, key] of SOLD_MILESTONES) if (next.totalSold >= count) next = reach(next, key);
+
+  next = runOrders(next, dt, random, isLive, { restaurants: sold, trucks: shipped, civs: deliveredTo });
+  return runStory(next);
+};
+
+// --- Automations, orders, story and achievements, each step ---------------------------------------------------------
+
+/** The automations of the chain, the plant and the universe (each one switched on, and owned). */
+const runAutomations = (state: FactoryState): FactoryState => {
+  let next = state;
+  const on = (which: Automation) => next[which] && hasAutomation(next, which);
+  // The expansion director: a new city once the cities are full, a restaurant while there is room, with money to spare.
+  if (on("autoExpand")) {
+    for (let opened = 0; opened < 5; opened++) {
+      const city = nextCityCost(next);
+      const isFull = next.restaurants >= cityCapacity(next);
+      const after = isFull
+        ? city !== null && next.money >= city * 2 ? openCity(next) : null
+        : next.money >= restaurantCost(next) * 2 ? openRestaurant(next) : null;
+      if (!after) break;
+      next = after;
+    }
+  }
+  // The ad agency: a campaign when the till holds several times its cost.
+  if (on("autoAds") && next.money >= marketingCost(next) * 5) next = buyMarketing(next) ?? next;
+  // The maintenance crew: strikes and breakdowns settled at once, when the till can spare it.
+  const fix = incidentFixCost(next);
+  if (on("autoRepair") && fix !== null && next.money >= fix * 3) next = fixIncident(next) ?? next;
+  // The universe's: out of a share of the till each.
+  if (next.era >= 4) {
+    if (on("autoShips")) next = equipRoutes(next, next.money * 0.5);
+    if (on("autoOvens")) next = buildOvensAsNeeded(next, next.money * 0.5);
+    if (on("autoFarms")) next = growShortFarms(next, next.money * 0.3);
+  }
+  return next;
+};
+
+/** Money made a second at the pace of the moment: the restaurants, the trucks, the civilisations. */
+export const incomeRate = (state: FactoryState): number => {
+  const restaurants = Math.min(demandRate(state), supplyRate(state)) * state.price;
+  const cosmic = PLANET_IDS.reduce((sum, id) => {
+    const spec = PLANETS[id];
+    return spec.kind === "civ" ? sum + state.cosmos.flows[id] * spec.price : sum;
+  }, 0);
+  return (restaurants + shippedRate(state) * WHOLESALE_PRICE + cosmic) * salesBonus(state);
+};
+
+/** The pace of the moment, for the special orders. */
+const paceOf = (state: FactoryState) => ({
+  restaurants: { rate: Math.min(demandRate(state), supplyRate(state)), price: state.price * salesBonus(state) },
+  trucks: { rate: shippedRate(state), price: WHOLESALE_PRICE * salesBonus(state) },
+  civs: PLANET_IDS.filter((id) => PLANETS[id].kind === "civ" && state.cosmos.planets[id].open).map((id) => ({ id, rate: state.cosmos.flows[id] })),
+});
+
+const runOrders = (state: FactoryState, dt: number, random: () => number, isLive: boolean, made: Parameters<typeof stepOrder>[2]): FactoryState => {
+  if (state.order) {
+    const { order, done } = stepOrder(state.order, dt, made);
+    if (!done) return { ...state, order };
+    const reward = state.order.reward;
+    return say({ ...state, order: null, money: state.money + reward, totalEarned: state.totalEarned + reward, ordersDone: state.ordersDone + 1 },
+      { key: "orderDone", order: state.order.kind });
+  }
+  // None while away, nor before the first sales are behind.
+  if (!isLive || state.totalSold < ORDERS_FROM_SALES) return state;
+  const clock = state.orderClock - dt;
+  if (clock > 0) return { ...state, orderClock: clock };
+  return { ...state, order: makeOrder(state.era, paceOf(state), random), orderClock: ORDER_GAP.min + random() * (ORDER_GAP.max - ORDER_GAP.min) };
+};
+
+/** Turns the special order down. */
+export const declineOrder = (state: FactoryState): FactoryState => ({ ...state, order: null });
+
+/** The least a chapter pays, in each era (beyond that, a minute of what the game brings in). */
+const CHAPTER_REWARD: Record<Era, number> = { 1: 40, 2: 5_000, 3: 2_000_000, 4: 2e9 };
+const CHAPTER_REWARD_SECONDS = 30;
+
+export const chapterReward = (state: FactoryState): number =>
+  Math.max(CHAPTER_REWARD[state.era], incomeRate(state) * CHAPTER_REWARD_SECONDS);
+
+// A chapter reached pays its reward and opens the next; achievements reached are unlocked, said in the journal.
+const runStory = (state: FactoryState): FactoryState => {
+  let next = state;
+  const chapter = CHAPTER_IDS[next.chapter];
+  if (chapter && isChapterDone(next, chapter)) {
+    const reward = chapterReward(next);
+    next = say({ ...next, chapter: next.chapter + 1, money: next.money + reward, totalEarned: next.totalEarned + reward }, { key: "chapter", chapter });
+  }
+  for (const achievement of newAchievements(next)) next = say({ ...next, achievements: [...next.achievements, achievement] }, { key: "achievement", achievement });
   return next;
 };
 
@@ -584,7 +819,11 @@ export const readFactory = (value: unknown): FactoryState | null => {
       (entry.incident === undefined || (INCIDENT_KINDS as readonly string[]).includes(entry.incident)) &&
       (entry.building === undefined || (BUILDING_IDS as readonly string[]).includes(entry.building)) &&
       (entry.planet === undefined || (PLANET_IDS as readonly string[]).includes(entry.planet)) &&
-      (entry.stage === undefined || (isNumber(entry.stage) && entry.stage >= 1 && entry.stage <= STAGES.length)),
+      (entry.stage === undefined || (isNumber(entry.stage) && entry.stage >= 1 && entry.stage <= STAGES.length)) &&
+      (entry.city === undefined || (isNumber(entry.city) && entry.city >= 1 && entry.city < CITIES.length)) &&
+      (entry.chapter === undefined || (CHAPTER_IDS as readonly string[]).includes(entry.chapter)) &&
+      (entry.achievement === undefined || (ACHIEVEMENT_IDS as readonly string[]).includes(entry.achievement)) &&
+      (entry.order === undefined || (ORDER_KINDS as readonly string[]).includes(entry.order)),
   );
   // What is no longer part of the game (era 3's former distribution deals) is dropped.
   const { deals: _deals, ...current } = saved as FactoryState & { deals?: unknown };
@@ -614,5 +853,27 @@ export const readFactory = (value: unknown): FactoryState | null => {
     incidentClock: isNumber(saved.incidentClock) && saved.incidentClock >= 0 ? saved.incidentClock : FIRST_INCIDENT,
     incidentsOn: saved.incidentsOn !== false,
     cosmos: readCosmos(saved.cosmos),
+    // Saves from before the cities, the story, the achievements, the orders and the rush.
+    cities: isNumber(saved.cities) && saved.cities >= 1
+      ? Math.min(CITIES.length, Math.max(Math.floor(saved.cities), citiesFor(saved.restaurants ?? 1)))
+      : citiesFor(saved.restaurants ?? 1),
+    autoExpand: saved.autoExpand === true,
+    autoAds: saved.autoAds === true,
+    autoRepair: saved.autoRepair === true,
+    autoShips: saved.autoShips === true,
+    autoOvens: saved.autoOvens === true,
+    autoFarms: saved.autoFarms === true,
+    // A save from before the story starts at its era's first chapter (the earlier ones are not paid again).
+    chapter: isNumber(saved.chapter) && saved.chapter >= 0 ? Math.min(Math.floor(saved.chapter), CHAPTER_IDS.length) : firstChapterOf(saved.era as Era),
+    achievements: Array.isArray(saved.achievements)
+      ? ACHIEVEMENT_IDS.filter((id) => (saved.achievements as unknown[]).includes(id))
+      : [],
+    order: readOrder(saved.order),
+    orderClock: isNumber(saved.orderClock) && saved.orderClock >= 0 ? saved.orderClock : FIRST_ORDER,
+    ordersDone: isNumber(saved.ordersDone) && saved.ordersDone >= 0 ? Math.floor(saved.ordersDone) : 0,
+    handMade: isNumber(saved.handMade) && saved.handMade >= 0 ? saved.handMade : 0,
+    incidentsFixed: isNumber(saved.incidentsFixed) && saved.incidentsFixed >= 0 ? Math.floor(saved.incidentsFixed) : 0,
+    rushLeft: isNumber(saved.rushLeft) && saved.rushLeft >= 0 ? Math.min(saved.rushLeft, RUSH.seconds) : 0,
+    rushReady: isNumber(saved.rushReady) && saved.rushReady >= 0 ? Math.min(saved.rushReady, RUSH.cooldown + RUSH.seconds) : 0,
   };
 };

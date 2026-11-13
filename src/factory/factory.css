@@ -103,6 +103,32 @@ button { font: inherit; color: inherit; }
 .fi-flow-status { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.35;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fi-flow-status.blocked { color: var(--tomato); }
+/* Under the circuit: what happens (a blockage, a special order), and the rush button, on one line of fixed height */
+.fi-status-row { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.fi-status-row .fi-flow-status { flex: 1; min-width: 0; }
+.fi-flow-status.order { color: var(--ink); }
+.fi-order-decline { flex: none; padding: 2px 8px; }
+.fi-rush { flex: none; width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-rush.on { background: var(--tomato); border-color: var(--tomato); color: #fff; }
+.fi-rush.on:disabled { opacity: 1; }
+.fi-rush-short { display: none; }
+/* The chain's cities */
+.fi-city-line { margin: 0; font-size: 13px; font-weight: 700; }
+/* The story and the achievements */
+.fi-chapter { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface2); }
+.fi-chapter strong { font-size: 16px; }
+.fi-chapter p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.fi-chapter-aim { font-size: 13px; font-weight: 800; }
+.fi-chapter .fi-goal-bar { height: 6px; border-radius: 99px; background: var(--surface); overflow: hidden; }
+.fi-chapter .fi-goal-bar > i { display: block; height: 100%; background: var(--basil); }
+.fi-chapters { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.fi-achievements { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px;
+  max-height: 420px; overflow: auto; }
+.fi-achievements li { display: flex; gap: 8px; align-items: flex-start; padding: 6px 8px; border-radius: 10px; background: var(--surface2); opacity: .6; }
+.fi-achievements li.done { opacity: 1; box-shadow: inset 0 0 0 1.5px var(--gold); }
+.fi-achievements li div { display: flex; flex-direction: column; min-width: 0; }
+.fi-achievements strong { font-size: 12.5px; }
+.fi-achievements li span:last-child { font-size: 11.5px; color: var(--muted); }
 
 /* Drawings: the crew, the crates, the display, the restaurants */
 .fi-icons { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 26px; }
@@ -338,6 +364,10 @@ button { font: inherit; color: inherit; }
   .fi-link-rate { font-size: 11px; }
   .fi-link-label { font-size: 9px; }
   .fi-flow-status { font-size: 12px; white-space: normal; min-height: 2.7em; display: flex; align-items: center; justify-content: center; }
+  .fi-status-row { gap: 6px; }
+  .fi-rush { width: auto; max-width: 128px; padding: 6px 8px; font-size: 12.5px; }
+  .fi-rush-long { display: none; }
+  .fi-rush-short { display: inline; }
 
   .fi-tab-label { font-size: 10.5px; }
 }

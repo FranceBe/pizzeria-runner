@@ -1,7 +1,8 @@
 // Dev only: a factory set up at any point of the game (an era, money, buildings, upgrades), to test the later eras
 // without playing through. Used by the dev tab, which only exists in development builds.
 import { newCosmos, PLANET_IDS, PLANETS, STAGES, type CosmosState } from "../cosmos";
-import { cookCapacity, newFactory, UPGRADE_IDS, UPGRADES, type Era, type FactoryState, type UpgradeId } from "../engine";
+import { citiesFor, cookCapacity, newFactory, UPGRADE_IDS, UPGRADES, type Era, type FactoryState, type UpgradeId } from "../engine";
+import { firstChapterOf } from "../story";
 import { BUILDING_IDS, BUILDINGS, noBuildings, planFor, type BuildingId } from "../plant";
 import { RESEARCH, RESEARCH_IDS, type ResearchId } from "../research";
 
@@ -47,7 +48,7 @@ const lateCosmos = (): CosmosState => {
     ...cosmos,
     known: PLANET_IDS.filter((id) => PLANETS[id].ring < 3),
     planets: Object.fromEntries(PLANET_IDS.map((id) => [id, open.includes(id)
-      ? { open: true, level: PLANETS[id].kind === "terroir" ? 12 : 0, ships: Math.ceil(PLANETS[id].distance * 8) }
+      ? { open: true, level: PLANETS[id].kind === "terroir" ? 12 : 1, ships: Math.ceil(PLANETS[id].distance * 8) }
       : cosmos.planets[id]])) as CosmosState["planets"],
     ovens: 14,
     stage: STAGES.length - 1,
@@ -69,7 +70,7 @@ export const DEV_PRESETS: Record<DevPresetId, DevSetup> = {
     buildings: plantFor(2), upgrades: [...upgradesUpTo(2)], researched: [], cosmos: newCosmos(),
   },
   era3Late: {
-    era: 3, money: 1_000_000_000, totalSold: 500_000_000, restaurants: 130, cooks: 2_600, marketing: 14, kits: 100_000, research: 5_000,
+    era: 3, money: 1_000_000_000, totalSold: 1_500_000_000, restaurants: 130, cooks: 2_600, marketing: 14, kits: 100_000, research: 5_000,
     buildings: plantFor(20, ["calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks"]),
     upgrades: upgradesUpTo(3),
     researched: ["calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks"],
@@ -107,6 +108,9 @@ export const buildDevFactory = (setup: DevSetup): FactoryState => {
     totalMade: count(setup.totalSold),
     totalEarned: count(setup.totalSold) * 5,
     restaurants: setup.era >= 2 ? count(setup.restaurants, 1) : 1,
+    // As many cities as the restaurants need, and the story at the era's first chapter.
+    cities: setup.era >= 2 ? citiesFor(count(setup.restaurants, 1)) : 1,
+    chapter: firstChapterOf(setup.era),
     marketing: count(setup.marketing),
     kits: count(setup.kits),
     research: setup.era >= 3 ? count(setup.research) : 0,

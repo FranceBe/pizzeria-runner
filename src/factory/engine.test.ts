@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import { seededRandom } from "../utils/random";
 import {
   advance, buyCrate, buyUpgrade, changePrice, cookCapacity, cookCost, crateSize, demandRate, fairPrice, hireCook, hireCooks, hiringPlan, makePizza,
-  newFactory, openRestaurant, productionRate, readFactory, RULES, SPACE_PLANS_SALES, tick, toggleAutomation, UPGRADES, type FactoryState, type UpgradeId,
+  newFactory, openCity, openRestaurant, productionRate, readFactory, RULES, SPACE_PLANS_SALES, tick, toggleAutomation, UPGRADES, type FactoryState, type UpgradeId,
 } from "./engine";
 import { botSecond } from "./bot";
 import { build, buildModule, doResearch, frozenRate, hasAutomation, isForSale, sell } from "./engine";
+import { ACHIEVEMENT_IDS, salesBonus } from "./achievements";
 import { newCosmos } from "./cosmos";
+import { CHAPTER_IDS } from "./story";
 import { FIRST_INCIDENT } from "./incidents";
 import { BUILDING_IDS, BUILDINGS, buildingCost, nextModule, noBuildings, planFor, WHOLESALE_PRICE, type BuildingId } from "./plant";
 
@@ -136,15 +138,24 @@ describe("the chain", () => {
     let chain = buyUpgrade(counter, "franchise")!;
     expect(chain.era).toBe(2);
     expect(chain.log.map((entry) => entry.key)).toContain("franchiseOpen");
-    for (let i = 0; i < 39; i++) chain = openRestaurant(chain)!;
+    // Naples holds six restaurants; then the chain settles in the next city.
+    for (let i = 0; i < 5; i++) chain = openRestaurant(chain)!;
+    expect(openRestaurant(chain)).toBeNull();
+    chain = openCity(chain)!;
+    expect(chain).toMatchObject({ cities: 2, restaurants: 6 });
+    expect(chain.log.at(-1)).toMatchObject({ key: "cityOpen", city: 1 });
+    chain = openCity(openCity(chain)!)!;
+    for (let i = 0; i < 34; i++) chain = openRestaurant(chain)!;
     expect(chain.restaurants).toBe(40);
     expect(chain.milestones).toEqual(expect.arrayContaining(["city", "country"]));
-    expect(demandRate(chain)).toBeCloseTo(demandRate(counter) * 40);
+    // Each restaurant brings its customers, and each city beyond the first some more everywhere.
+    expect(demandRate(chain)).toBeCloseTo(demandRate(counter) * 40 * (1 + RULES.cityBoost * 3));
   });
 
-  it("sells the factory plans once a chain has sold half a million pizzas: they open era 3", () => {
-    expect(isForSale(rich({ era: 2, totalSold: 100_000 }), "factoryPlans")).toBe(false);
-    const factories = buyUpgrade(rich({ era: 2, totalSold: 600_000, upgrades: ["franchise"] }), "factoryPlans")!;
+  it("sells the factory plans once the chain is settled in seven cities and has sold twenty million pizzas: they open era 3", () => {
+    expect(isForSale(rich({ era: 2, totalSold: 3e7, cities: 6 }), "factoryPlans")).toBe(false);
+    expect(isForSale(rich({ era: 2, totalSold: 1e7, cities: 7 }), "factoryPlans")).toBe(false);
+    const factories = buyUpgrade(rich({ era: 2, totalSold: 3e7, cities: 7, upgrades: ["franchise"] }), "factoryPlans")!;
     expect(factories.era).toBe(3);
     expect(factories.log.map((entry) => entry.key)).toContain("factoriesOpen");
   });
@@ -169,11 +180,12 @@ describe("the factories", () => {
   const runFor = (state: FactoryState, seconds: number) => advance(state, seconds, seededRandom(1));
 
   it("ship frozen pizzas at the wholesale price, and count them sold", () => {
-    const start = oneFactory({ money: 0, price: 500 });
+    // The story told and every achievement unlocked: what is earned is the trucks' sales alone, with the achievements' bonus.
+    const start = oneFactory({ money: 0, price: 500, chapter: CHAPTER_IDS.length, achievements: [...ACHIEVEMENT_IDS] });
     const after = runFor(start, 60);
     expect(after.totalSold).toBeGreaterThan(start.totalSold);
     expect(after.money).toBeGreaterThan(0);
-    expect(after.totalEarned - start.totalEarned).toBeCloseTo((after.totalSold - start.totalSold) * WHOLESALE_PRICE, -3);
+    expect(after.totalEarned - start.totalEarned).toBeCloseTo((after.totalSold - start.totalSold) * WHOLESALE_PRICE * salesBonus(start), -3);
     expect(frozenRate(after)).toBeGreaterThan(2000);
     expect(after.milestones).toContain("firstFactoryPizza");
   });
@@ -225,7 +237,7 @@ describe("the factories", () => {
 
   it("sell the rocket plans once enough pizzas are sold: they open era 4, the universe", () => {
     expect(isForSale(plantState({}, { totalSold: SPACE_PLANS_SALES - 1 }), "spacePlans")).toBe(false);
-    const state = plantState({}, { totalSold: SPACE_PLANS_SALES });
+    const state = plantState({}, { totalSold: SPACE_PLANS_SALES, money: 1e10 });
     expect(isForSale(state, "spacePlans")).toBe(true);
     const universe = buyUpgrade(state, "spacePlans")!;
     expect(universe.era).toBe(4);
@@ -300,17 +312,18 @@ describe("a whole game, played by a robot", () => {
       if (state.totalSold >= 1e8) reached.hundredMillion ??= second / 60;
       if (state.incident && !before.incident) incidents++;
     }
-    // A robot plays faster than a person (perfect prices, instant hires): five minutes at the counter for it is about
-    // ten for a player; the chain soon after; a million pizzas within half an hour (about an hour for a player).
+    // A robot plays faster than a person (perfect prices, instant hires, every rush called): five minutes at the counter
+    // for it is about ten for a player; the chain soon after; a million pizzas within half an hour.
     expect(reached.franchise).toBeGreaterThan(4);
     expect(reached.franchise).toBeLessThan(10);
     expect(reached.manager - reached.franchise).toBeLessThan(8);
     expect(reached.city).toBeLessThan(15);
-    expect(reached.million).toBeGreaterThan(18);
-    expect(reached.million).toBeLessThan(40);
-    // The factories within the hour, running within minutes, five researches within half an hour, a hundred million
-    // pizzas soon after (and a billion, era 3's end, well past the 110 minutes played here).
-    expect(reached.factories).toBeLessThan(60);
+    expect(reached.million).toBeGreaterThan(8);
+    expect(reached.million).toBeLessThan(30);
+    // The factories after about fifty minutes of chain, running within minutes, five researches within half an hour, a
+    // hundred million pizzas soon after (and the rocket, era 3's end, well past the 110 minutes played here).
+    expect(reached.factories).toBeGreaterThan(40);
+    expect(reached.factories).toBeLessThan(75);
     expect(reached.factory10k - reached.factories).toBeLessThan(15);
     expect(reached.fiveResearches - reached.factories).toBeLessThan(30);
     expect(reached.hundredMillion - reached.factories).toBeLessThan(45);

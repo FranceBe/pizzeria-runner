@@ -3,8 +3,10 @@
 // Colonising a terroir, or meeting a civilisation, opens a cargo route to Earth: the farther the planet, the longer each
 // trip, so the more cargo ships a route takes for the same flow. On Earth, orbital ovens turn one of each ingredient
 // into a cosmic pizza. The player balances it all: what the terroirs grow, what the routes carry, what the ovens make,
-// what the civilisations eat. Exploring finds more planets (the farthest need the hyperdrive), and the stellar oven,
-// built in five stages around the sun, ends the game: the pizza of the universe.
+// what the civilisations eat. Embassies make a civilisation hungrier (and the plant has to keep up). Exploring finds
+// more planets (the farthest need the hyperdrive), and the stellar oven, built in eight stages around the sun, ends the
+// game: the pizza of the universe. Research brings automations: a logistician who equips the routes, stewards who build
+// the ovens, an agronomist who grows the farms.
 import { isResearched, type ResearchId } from "./research";
 
 export const INGREDIENTS = ["starWheat", "redTomato", "moonCheese"] as const;
@@ -40,7 +42,7 @@ export interface TerroirSpec extends PlanetBase {
 
 export interface CivSpec extends PlanetBase {
   kind: "civ";
-  /** Cosmic pizzas it would eat a second. */
+  /** Cosmic pizzas it would eat a second, per level of its embassy. */
   demand: number;
   /** What it pays for one. */
   price: number;
@@ -76,7 +78,10 @@ const SECONDS_PER_LIGHT_YEAR = 5;
 const SHIP_COST_PER_LIGHT_YEAR = 1e7;
 const SHIP_REFUND = 0.5;
 /** Each level of a terroir's farms costs this much more than the one before. */
-const LEVEL_GROWTH = 1.18;
+const LEVEL_GROWTH = 1.12;
+/** A civilisation's embassy: the next level costs this share of meeting it, more each level. */
+const EMBASSY_SHARE = 0.6;
+const EMBASSY_GROWTH = 1.6;
 /** An orbital oven makes this many cosmic pizzas a second; each one costs more than the one before. */
 const OVEN_RATE = 4;
 const OVEN_COST = 2e8;
@@ -92,14 +97,17 @@ export const STAGES: readonly { cost: number; sold: number }[] = [
   { cost: 5e9, sold: 1_000 },
   { cost: 3e10, sold: 6_000 },
   { cost: 1.5e11, sold: 25_000 },
-  { cost: 5e11, sold: 60_000 },
-  { cost: 1.5e12, sold: 150_000 },
+  { cost: 5e11, sold: 80_000 },
+  { cost: 2e12, sold: 250_000 },
+  { cost: 4e12, sold: 700_000 },
+  { cost: 6e12, sold: 1_500_000 },
+  { cost: 1.5e13, sold: 3_000_000 },
 ];
 
 export interface PlanetState {
   /** Colonised (a terroir) or met (a civilisation): its route is open. */
   open: boolean;
-  /** A terroir's farms (1 once colonised). */
+  /** A terroir's farms, or a civilisation's embassy (1 once colonised or met). */
   level: number;
   ships: number;
 }
@@ -176,7 +184,13 @@ export const ovenCapacity = (host: Pick<CosmosHost, "researched" | "cosmos">): n
 /** What a route should carry: all a terroir grows, all a civilisation would eat. */
 export const routeTarget = (host: Pick<CosmosHost, "researched" | "cosmos">, id: PlanetId): number => {
   const spec = PLANETS[id];
-  return spec.kind === "terroir" ? production(host, id) : spec.demand;
+  return spec.kind === "terroir" ? production(host, id) : demandOf(host, id);
+};
+
+/** What a civilisation would eat a second, with its embassy. */
+export const demandOf = (host: Pick<CosmosHost, "cosmos">, id: PlanetId): number => {
+  const spec = PLANETS[id];
+  return spec.kind === "civ" ? spec.demand * Math.max(1, host.cosmos.planets[id].level) : 0;
 };
 
 /** Ships it takes for a route to carry its target, and how many more than it has. */
@@ -197,9 +211,11 @@ export const isReachable = (host: Pick<CosmosHost, "researched">, id: PlanetId):
 
 // --- Prices ----------------------------------------------------------------------------------------------------------
 
+/** The next level of a terroir's farms, or of a civilisation's embassy. */
 export const levelCost = (host: Pick<CosmosHost, "cosmos">, id: PlanetId): number => {
   const spec = PLANETS[id];
-  return spec.kind === "terroir" ? spec.levelCost * LEVEL_GROWTH ** (host.cosmos.planets[id].level - 1) : Infinity;
+  const level = host.cosmos.planets[id].level;
+  return spec.kind === "terroir" ? spec.levelCost * LEVEL_GROWTH ** (level - 1) : spec.openCost * EMBASSY_SHARE * EMBASSY_GROWTH ** (level - 1);
 };
 export const shipCost = (id: PlanetId): number => SHIP_COST_PER_LIGHT_YEAR * PLANETS[id].distance;
 export const shipRefund = (id: PlanetId): number => shipCost(id) * SHIP_REFUND;
@@ -225,11 +241,11 @@ export const openPlanet = <S extends CosmosHost>(host: S, id: PlanetId): S | nul
   const planet = host.cosmos.planets[id];
   const cost = PLANETS[id].openCost;
   if (planet.open || !host.cosmos.known.includes(id) || !isReachable(host, id) || !canAct(host, cost)) return null;
-  return withPlanet(host, id, { open: true, level: PLANETS[id].kind === "terroir" ? 1 : 0, ships: Math.max(1, planet.ships) }, cost);
+  return withPlanet(host, id, { open: true, level: 1, ships: Math.max(1, planet.ships) }, cost);
 };
 
-/** One more level of farms on a terroir. */
-export const raiseFarms = <S extends CosmosHost>(host: S, id: PlanetId): S | null => {
+/** One more level of farms on a terroir, or of a civilisation's embassy. */
+export const raiseLevel = <S extends CosmosHost>(host: S, id: PlanetId): S | null => {
   const cost = levelCost(host, id);
   if (!host.cosmos.planets[id].open || !canAct(host, cost)) return null;
   return withPlanet(host, id, { level: host.cosmos.planets[id].level + 1 }, cost);
@@ -277,6 +293,61 @@ export const buildStage = <S extends CosmosHost>(host: S): S | null => {
   return { ...host, money: host.money - STAGES[host.cosmos.stage].cost, cosmos: { ...host.cosmos, stage, endedAt } };
 };
 
+// --- Automations (research): the same moves the player makes, out of a budget -------------------------------------
+
+/** The logistician: every route gets the ships it lacks, out of `budget`. */
+export const equipRoutes = <S extends CosmosHost>(host: S, budget: number): S => {
+  let next = host;
+  let left = budget;
+  for (const id of PLANET_IDS) {
+    const missing = next.cosmos.planets[id].open ? Math.min(shipsNeeded(next, id), Math.floor(left / shipCost(id))) : 0;
+    if (missing < 1) continue;
+    next = addShips(next, id, missing) ?? next;
+    left -= missing * shipCost(id);
+  }
+  return next;
+};
+
+/** What reaches Earth of an ingredient a second, at most, with the routes as they are. */
+export const inflowOf = (host: Pick<CosmosHost, "researched" | "cosmos">, good: Ingredient): number =>
+  PLANET_IDS.reduce((sum, id) => {
+    const spec = PLANETS[id];
+    return spec.kind === "terroir" && spec.good === good && host.cosmos.planets[id].open ? sum + Math.min(production(host, id), routeCapacity(host, id)) : sum;
+  }, 0);
+
+/** What the civilisations met would eat a second, all together. */
+export const appetite = (host: Pick<CosmosHost, "cosmos">): number => PLANET_IDS.reduce((sum, id) => sum + (host.cosmos.planets[id].open ? demandOf(host, id) : 0), 0);
+
+/** The stewards: ovens while they can't keep up with both the ingredients coming in and the appetite, out of `budget`. */
+export const buildOvensAsNeeded = <S extends CosmosHost>(host: S, budget: number): S => {
+  let next = host;
+  let left = budget;
+  const wanted = Math.min(...INGREDIENTS.map((good) => inflowOf(host, good)), appetite(host));
+  for (let i = 0; i < 20 && ovenCapacity(next) < wanted && ovenCost(next) <= left; i++) {
+    left -= ovenCost(next);
+    next = buildOven(next) ?? next;
+  }
+  return next;
+};
+
+/** The agronomist: a level for the farms of each ingredient that falls short of the appetite, out of `budget` (the
+ * cheapest farm for what it grows). Never more than what is eaten: late on, a level costs a fortune. */
+export const growShortFarms = <S extends CosmosHost>(host: S, budget: number): S => {
+  let next = host;
+  let left = budget;
+  for (const good of INGREDIENTS) {
+    if (inflowOf(next, good) >= appetite(next)) continue;
+    const farm = PLANET_IDS.filter((id) => {
+      const spec = PLANETS[id];
+      return spec.kind === "terroir" && spec.good === good && next.cosmos.planets[id].open;
+    }).sort((a, b) => levelCost(next, a) / PLANETS[a].distance - levelCost(next, b) / PLANETS[b].distance)[0];
+    if (!farm || levelCost(next, farm) > left) continue;
+    left -= levelCost(next, farm);
+    next = raiseLevel(next, farm) ?? next;
+  }
+  return next;
+};
+
 // --- A step of time --------------------------------------------------------------------------------------------------
 
 export interface CosmosStep {
@@ -284,15 +355,17 @@ export interface CosmosStep {
   /** Money made selling cosmic pizzas, and how many were delivered. */
   earned: number;
   delivered: number;
+  /** The cosmic pizzas each civilisation got. */
+  deliveredTo: Partial<Record<PlanetId, number>>;
   /** A planet just found, if one was. */
   found: PlanetId | null;
 }
 
 const smooth = (current: number, value: number, dt: number): number => current + (value - current) * Math.min(1, dt / SMOOTHING_SECONDS);
 
-/** One step of the universe: the scouts travel, the routes bring the ingredients home, the ovens bake, the routes take
+/** One step of the universe (`boost`: the rush, the terroirs and the ovens faster): the scouts travel, the routes bring the ingredients home, the ovens bake, the routes take
  * the pizzas out (shared among the civilisations by what each asks, when there are not enough). */
-export const runCosmos = (host: Pick<CosmosHost, "researched" | "cosmos">, dt: number): CosmosStep => {
+export const runCosmos = (host: Pick<CosmosHost, "researched" | "cosmos">, dt: number, boost = 1): CosmosStep => {
   const cosmos = host.cosmos;
   const stocks = { ...cosmos.stocks };
   const carried = zeros(PLANET_IDS);
@@ -316,7 +389,7 @@ export const runCosmos = (host: Pick<CosmosHost, "researched" | "cosmos">, dt: n
       const spec = PLANETS[id];
       return spec.kind === "terroir" && spec.good === good && cosmos.planets[id].open;
     });
-    const loads = routes.map((id) => Math.min(production(host, id), routeCapacity(host, id)) * dt);
+    const loads = routes.map((id) => Math.min(production(host, id) * boost, routeCapacity(host, id)) * dt);
     const total = loads.reduce((sum, load) => sum + load, 0);
     const share = total > 0 ? Math.min(1, Math.max(0, storeCap(host, good) - stocks[good]) / total) : 0;
     routes.forEach((id, i) => {
@@ -328,7 +401,7 @@ export const runCosmos = (host: Pick<CosmosHost, "researched" | "cosmos">, dt: n
   // The ovens: one of each ingredient makes a cosmic pizza.
   const baked = Math.max(
     0,
-    Math.min(ovenCapacity(host) * dt, stocks.starWheat, stocks.redTomato, stocks.moonCheese, storeCap(host, "cosmicPizza") - stocks.cosmicPizza),
+    Math.min(ovenCapacity(host) * boost * dt, stocks.starWheat, stocks.redTomato, stocks.moonCheese, storeCap(host, "cosmicPizza") - stocks.cosmicPizza),
   );
   for (const good of INGREDIENTS) stocks[good] = Math.max(0, stocks[good] - baked);
   stocks.cosmicPizza += baked;
@@ -340,9 +413,11 @@ export const runCosmos = (host: Pick<CosmosHost, "researched" | "cosmos">, dt: n
   const served = totalAsked > 0 ? Math.min(1, stocks.cosmicPizza / totalAsked) : 0;
   let earned = 0;
   let delivered = 0;
+  const deliveredTo: Partial<Record<PlanetId, number>> = {};
   civs.forEach((id, i) => {
     const spec = PLANETS[id] as CivSpec;
     carried[id] = asked[i] * served;
+    deliveredTo[id] = carried[id];
     delivered += carried[id];
     earned += carried[id] * spec.price;
   });
@@ -354,6 +429,7 @@ export const runCosmos = (host: Pick<CosmosHost, "researched" | "cosmos">, dt: n
     cosmos: { ...cosmos, known, exploring, stocks, flows, trends, ovenRate: smooth(cosmos.ovenRate, baked / dt, dt), sold: cosmos.sold + delivered },
     earned,
     delivered,
+    deliveredTo,
     found,
   };
 };
@@ -418,7 +494,7 @@ export const readCosmos = (value: unknown): CosmosState => {
       const open = planet?.open === true;
       return [id, {
         open,
-        level: open && PLANETS[id].kind === "terroir" ? Math.max(1, isCount(planet?.level) ? Math.floor(planet.level) : 1) : 0,
+        level: open ? Math.max(1, isCount(planet?.level) ? Math.floor(planet.level) : 1) : 0,
         ships: open ? Math.max(1, isCount(planet?.ships) ? Math.floor(planet.ships) : 1) : 0,
       }];
     }),

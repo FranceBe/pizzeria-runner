@@ -1,17 +1,17 @@
 // A robot that plays the factory mode the way a sensible player would, to balance it and to check it through. It
 // clicks a few times a second while that still matters, keeps the price where customers take what is made, keeps
-// kits in stock, and buys whatever pays for itself: cooks, upgrades, advertising, restaurants; with the factories, whole
+// kits in stock, calls a rush whenever one is ready, and buys whatever pays for itself: cooks, upgrades, advertising,
+// restaurants and cities; with the factories, whole
 // balanced modules, laboratories, and research, and it settles strikes and breakdowns when the till can spare it; in the
 // universe, it opens the planets it can afford, keeps every route's ships and the ovens up with what flows, grows the
 // farms the civilisations need, explores, and builds the stellar oven.
 import {
   buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, fairPrice, hireCook, isForSale, makePizza,
   marketingCost, openRestaurant, productionRate, restaurantCost, tick, UPGRADE_IDS, UPGRADES, type FactoryState,
-  build, buildStellarStage, doResearch, fixIncident, incidentFixCost,
+  build, buildStellarStage, cityCapacity, doResearch, fixIncident, incidentFixCost, nextCityCost, openCity, startRush,
 } from "./engine";
 import {
-  addShips, buildOven, explore, INGREDIENTS, isReachable, levelCost, openPlanet, ovenCapacity, ovenCost, PLANET_IDS, PLANETS, production, raiseFarms,
-  routeCapacity, shipsNeeded,
+  appetite, buildOvensAsNeeded, STAGES, equipRoutes, explore, growShortFarms, inflowOf, INGREDIENTS, isReachable, levelCost, openPlanet, PLANET_IDS, PLANETS, raiseLevel,
 } from "./cosmos";
 import { nextModule, type BuildingId } from "./plant";
 import { isResearchOpen, isResearchShown, RESEARCH, RESEARCH_IDS } from "./research";
@@ -34,32 +34,23 @@ const steerPrice = (state: FactoryState, supply: number): FactoryState => {
 };
 
 // The universe, in order of what matters: the stellar oven, new planets, ships where routes fall short, ovens to keep up
-// with the ingredients, farms to keep up with the civilisations' appetite, then exploring.
+// with the ingredients, farms to keep up with the civilisations' appetite, embassies once the farms keep up, then
+// exploring.
 const playUniverse = (state: FactoryState): FactoryState => {
   let next = buildStellarStage(state) ?? state;
   const closed = PLANET_IDS.filter((id) => next.cosmos.known.includes(id) && !next.cosmos.planets[id].open && isReachable(next, id))
     .sort((a, b) => PLANETS[a].openCost - PLANETS[b].openCost);
   for (const id of closed) next = openPlanet(next, id) ?? next;
-  for (const id of PLANET_IDS) if (next.cosmos.planets[id].open && shipsNeeded(next, id) > 0) next = addShips(next, id, shipsNeeded(next, id)) ?? next;
-  const open = PLANET_IDS.filter((id) => next.cosmos.planets[id].open);
-  const appetite = open.reduce((sum, id) => {
-    const spec = PLANETS[id];
-    return spec.kind === "civ" ? sum + spec.demand : sum;
-  }, 0);
-  const inflow = (good: string) => open.reduce((sum, id) => {
-    const spec = PLANETS[id];
-    return spec.kind === "terroir" && spec.good === good ? sum + Math.min(production(next, id), routeCapacity(next, id)) : sum;
-  }, 0);
-  const slowest = Math.min(...INGREDIENTS.map(inflow));
-  for (let i = 0; i < 20 && ovenCapacity(next) < Math.min(slowest, appetite) && next.money >= ovenCost(next); i++) next = buildOven(next) ?? next;
-  for (const good of INGREDIENTS) {
-    if (inflow(good) >= appetite * 1.1) continue;
-    const farm = open.filter((id) => {
-      const spec = PLANETS[id];
-      return spec.kind === "terroir" && spec.good === good;
-    }).sort((a, b) => levelCost(next, a) / PLANETS[a].distance - levelCost(next, b) / PLANETS[b].distance)[0];
-    if (farm) next = raiseFarms(next, farm) ?? next;
-  }
+  next = equipRoutes(next, next.money);
+  next = buildOvensAsNeeded(next, next.money);
+  next = growShortFarms(next, next.money);
+  // Saving up for the stellar oven's next stage, once enough pizzas are delivered for it: no new embassy meanwhile.
+  const stage = STAGES[next.cosmos.stage];
+  const isSaving = stage !== undefined && next.cosmos.sold >= stage.sold;
+  const fed = !isSaving && INGREDIENTS.every((good) => inflowOf(next, good) >= appetite(next));
+  const embassy = PLANET_IDS.filter((id) => PLANETS[id].kind === "civ" && next.cosmos.planets[id].open)
+    .sort((a, b) => levelCost(next, a) - levelCost(next, b))[0];
+  if (fed && embassy && next.money >= levelCost(next, embassy) * 10) next = raiseLevel(next, embassy) ?? next;
   return explore(next) ?? next;
 };
 
@@ -79,7 +70,14 @@ export const botSecond = (state: FactoryState, { clicksPerSecond, random }: BotO
   for (let i = 0; i < 200 && next.cooks < cookCapacity(next) && next.money >= cookCost(next); i++) next = hireCook(next) ?? next;
   // Saving up for the rocket plans, then in the universe, the restaurants only get what the till can easily spare.
   const spare = next.era >= 4 || isForSale(next, "spacePlans") ? 20 : 1;
-  if (next.era >= 2 && next.cooks >= cookCapacity(next) && next.money >= restaurantCost(next) * spare) next = openRestaurant(next) ?? next;
+  if (next.era >= 2 && next.cooks >= cookCapacity(next)) {
+    // A new city once the cities are full, otherwise a restaurant.
+    const city = nextCityCost(next);
+    if (next.restaurants >= cityCapacity(next)) next = city !== null && next.money >= city * spare ? openCity(next) ?? next : next;
+    else if (next.money >= restaurantCost(next) * spare) next = openRestaurant(next) ?? next;
+  }
+  // A rush whenever one is ready: the robot stays at the screen.
+  next = startRush(next) ?? next;
   if (next.money >= marketingCost(next) * 3 * spare) next = buyMarketing(next) ?? next;
   if (next.era >= 3) {
     const fix = incidentFixCost(next);

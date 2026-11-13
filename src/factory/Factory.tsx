@@ -4,7 +4,8 @@
 // tabs at the bottom keep each part to one screen.
 import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  advance, AUTOMATION_OWNERS, AUTOMATIONS, build, buildModule, fixIncident, incidentFixCost, sell, toggleIncidents, clickPower, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
+  advance, AUTOMATION_OWNERS, AUTOMATIONS, build, buildModule, canRush, chapterReward, cityCapacity, clickPizzas, declineOrder, fixIncident, incidentFixCost,
+  nextCityCost, openCity, sell, startRush, toggleIncidents, doResearch, hasAutomation, shippedRate, supplyRate, buyCrate, buyMarketing, buyUpgrade, changePrice, cookCapacity, cookCost, crateCost, crateSize, demandRate,
   fairPrice, hireCooks, hiringPlan, isForSale, makePizza, marketingCost, newFactory, openRestaurant, readFactory, restaurantCost, tick, toggleAutomation,
   UPGRADE_IDS, UPGRADES, type FactoryState,
 } from "./engine";
@@ -13,6 +14,8 @@ import { incidentSpeeds, INCIDENTS } from "./incidents";
 import { PlantDiagram, type PlantView } from "./PlantDiagram";
 import { isResearched, isResearchOpen, isResearchShown, RESEARCH, RESEARCH_IDS } from "./research";
 import { Ending, Galaxy, StellarOven } from "./Universe";
+import { ACHIEVEMENT_IDS, salesBonus } from "./achievements";
+import { CHAPTER_IDS, CHAPTERS } from "./story";
 import { acknowledge, bubbleFor, goalFor, newCoach, readCoach, settle, STEP_IDS, type Bubble, type Coach, type Section } from "./coach";
 import type { FactoryTexts } from "./texts";
 
@@ -130,6 +133,8 @@ export const TAB_OF: Record<Section | "journal", Tab> = {
   automations: "upgrades",
   upgrades: "upgrades",
   journal: "journal",
+  story: "journal",
+  achievements: "journal",
 };
 
 const TAB_ICONS: Record<Tab, string> = { counter: "🍕", kitchen: "🔥", factories: "🏭", universe: "🌌", upgrades: "⭐", journal: "📜", dev: "🛠" };
@@ -142,7 +147,7 @@ export const TAB_SECTIONS: Record<Tab, readonly (Section | "journal")[]> = {
   factories: ["factories", "research"],
   universe: ["universe", "stellar"],
   upgrades: ["upgrades", "automations"],
-  journal: ["journal"],
+  journal: ["story", "achievements", "journal"],
   dev: [],
 };
 
@@ -328,8 +333,9 @@ const CoachBubble = ({ bubble, isNarrow, texts, onAck, onSkip }: CoachBubbleProp
     bubble.kind === "step" ? texts.steps[bubble.id]
       : bubble.kind === "plantStep" ? texts.plantSteps[bubble.id]
         : bubble.kind === "spaceStep" ? texts.spaceSteps[bubble.id]
-          : texts.tips[bubble.id];
-  const canAck = bubble.kind === "tip" || bubble.needsAck;
+          : bubble.kind === "chapter" ? texts.chapters[bubble.id]
+            : texts.tips[bubble.id];
+  const canAck = bubble.kind === "tip" || bubble.kind === "chapter" || bubble.needsAck;
   const { ref, isFlipped } = useBubbleSide(bubble.target, `${bubble.kind}-${bubble.id}`, isNarrow);
   return (
     <aside ref={ref} className={`fi-bubble${isFlipped ? " flipped" : ""}`} role="dialog" aria-live="polite" aria-label={words.title}>
@@ -338,7 +344,9 @@ const CoachBubble = ({ bubble, isNarrow, texts, onAck, onSkip }: CoachBubbleProp
           ? texts.stepOf(bubble.index + 1, bubble.count)
           : bubble.kind === "plantStep"
             ? texts.plantStepOf(bubble.index + 1, bubble.count)
-            : bubble.kind === "spaceStep" ? texts.spaceStepOf(bubble.index + 1, bubble.count) : texts.tip}
+            : bubble.kind === "spaceStep"
+              ? texts.spaceStepOf(bubble.index + 1, bubble.count)
+              : bubble.kind === "chapter" ? texts.chapterOf(bubble.index + 1, CHAPTER_IDS.length) : texts.tip}
       </span>
       <strong className="fi-bubble-title">{words.title}</strong>
       <p className="fi-bubble-text">{words.text}</p>
@@ -454,7 +462,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const onMakePizza = () => {
     const before = latest.current.state;
     act(makePizza);
-    const made = Math.min(clickPower(before), Math.floor(before.kits));
+    const made = Math.floor(Math.min(clickPizzas(before), before.kits));
     if (made <= 0) return;
     const id = performance.now();
     setPops((list) => [...list.slice(-6), { id, amount: made, x: Math.round((Math.random() - 0.5) * 80) }]);
@@ -511,6 +519,7 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
   const hireAll = hiringPlan(unlimited, freePlaces);
   const isTourOver = coach.off || coach.step >= STEP_IDS.length;
   const goal = goalFor(state);
+  const order = state.order;
   const goalProgress = Math.min(1, goal.current / goal.target);
   // On a phone, only the open tab's parts show.
   const card = (section: Section | "journal") => ({ section, isTarget: target === section, helpLabel: texts.whatFor });
@@ -640,12 +649,22 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           <p className="fi-hint">🔒 {texts.chainLocked}</p>
         ) : (
           <>
-            <dl className="fi-rows">
-              <div><dt>{texts.restaurants}</dt><dd>{f.count(state.restaurants)}</dd></div>
-            </dl>
-            <button className="fi-btn primary wide" onClick={() => act(openRestaurant)} disabled={state.money < restaurantCost(state)}>
+            <p className="fi-city-line">
+              🏙️ {texts.cityLine(f.count(state.restaurants), f.count(cityCapacity(state)), texts.cityNames.slice(0, state.cities).join(", "))}
+            </p>
+            <button className="fi-btn primary wide" onClick={() => act(openRestaurant)}
+              disabled={state.money < restaurantCost(state) || state.restaurants >= cityCapacity(state)}>
               {texts.openRestaurant} · {f.money(restaurantCost(state))}
             </button>
+            {nextCityCost(state) !== null ? (
+              <button className={`fi-btn wide${state.restaurants >= cityCapacity(state) ? " primary" : ""}`} onClick={() => act(openCity)}
+                disabled={state.money < (nextCityCost(state) ?? Infinity)}>
+                {texts.openCity(texts.cityNames[state.cities], f.money(nextCityCost(state) ?? 0))}
+              </button>
+            ) : (
+              <p className="fi-hint">{texts.allCities}</p>
+            )}
+            <p className="fi-hint reserved-line">{state.restaurants >= cityCapacity(state) && nextCityCost(state) !== null ? texts.cityFull : "\u00a0"}</p>
             <p className="fi-hint soon">{state.era >= 3 ? texts.era3 : texts.era3Soon}</p>
           </>
         )}
@@ -794,6 +813,45 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
         </ul>
       </Card>
     ),
+    story: (
+      <Card {...card("story")} title={texts.story} help={texts.help.story}>
+        {goal.id === "free" ? (
+          <p className="fi-hint">{texts.storyOver}</p>
+        ) : (
+          <div className="fi-chapter">
+            <span className="fi-bubble-kicker">{texts.chapterOf(state.chapter + 1, CHAPTER_IDS.length)}</span>
+            <strong>{texts.chapters[goal.id].title}</strong>
+            <p>{texts.chapters[goal.id].text}</p>
+            <span className="fi-chapter-aim">🎯 {texts.goals[goal.id]}</span>
+            <div className="fi-goal-bar"><i style={{ width: `${goalProgress * 100}%` }} /></div>
+            <span className="fi-hint">{texts.chapterReward(f.money(chapterReward(state)))}</span>
+          </div>
+        )}
+        <ol className="fi-chapters">
+          {CHAPTER_IDS.slice(0, state.chapter).filter((id) => CHAPTERS[id].era === state.era).map((id) => (
+            <li key={id}>{texts.chapterDone} {texts.chapters[id].title}</li>
+          ))}
+        </ol>
+      </Card>
+    ),
+    achievements: (
+      <Card {...card("achievements")} title={texts.achievements} help={texts.help.achievements}>
+        <p className="fi-research-points">
+          🏅 {texts.achievementsCount(f.count(state.achievements.length), f.count(ACHIEVEMENT_IDS.length), percent(salesBonus(state) - 1))}
+        </p>
+        <ul className="fi-achievements">
+          {ACHIEVEMENT_IDS.map((id) => {
+            const isDone = state.achievements.includes(id);
+            return (
+              <li key={id} className={isDone ? "done" : ""} title={texts.achievementList[id].text}>
+                <span aria-hidden="true">{isDone ? "🏅" : "🔒"}</span>
+                <div><strong>{texts.achievementList[id].name}</strong><span>{texts.achievementList[id].text}</span></div>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+    ),
     journal: (
       <Card {...card("journal")} title={texts.journal} className="fi-journal">
         <ol className="fi-log">
@@ -801,6 +859,14 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
             <li key={entry.id}>
               {entry.key === "upgradeBought" && entry.upgrade
                 ? `${texts.message.upgradeBought}${texts.upgrade[entry.upgrade].name}.`
+                : entry.key === "cityOpen" && entry.city
+                  ? `${texts.message.cityOpen}${texts.cityNames[entry.city]}.`
+                : entry.key === "chapter" && entry.chapter
+                  ? `${texts.message.chapter}${texts.chapters[entry.chapter].title}.`
+                : entry.key === "achievement" && entry.achievement
+                  ? `🏅 ${texts.message.achievement}${texts.achievementList[entry.achievement].name}.`
+                : entry.key === "orderDone" && entry.order
+                  ? `${texts.orders[entry.order].icon} ${texts.message.orderDone}${texts.orders[entry.order].name}.`
                 : entry.key === "planetFound" && entry.planet
                   ? `${texts.message.planetFound}${texts.planets[entry.planet].name}.`
                   : entry.key === "stellarStage" && entry.stage
@@ -855,9 +921,26 @@ export const Factory = ({ texts, initialTab = "counter" }: { texts: FactoryTexts
           <FlowLink icon="🙋" label={texts.flowCustomers} rate={`${f.rate(sold)}${texts.perSecond}`} isBlocked={block === "customers"} />
           <FlowNode icon="💶" label={texts.flowTill} value={f.money(state.money)} sub={texts.soldSoFar(f.count(state.totalSold))} />
         </div>
-        <p className={`fi-flow-status${block ? " blocked" : ""}`}>
-          {block === "kits" ? texts.blockKits : block === "customers" ? texts.blockCustomers : block === "kitchen" ? texts.blockKitchen : texts.flowOk}
-        </p>
+        <div className="fi-status-row">
+          <p className={`fi-flow-status${block ? " blocked" : order ? " order" : ""}`}>
+            {block === "kits" ? texts.blockKits : block === "customers" ? texts.blockCustomers : block === "kitchen" ? texts.blockKitchen
+              : order ? `${texts.orders[order.kind].icon} ${texts.orders[order.kind].name}${order.civ ? texts.orderFor(texts.planets[order.civ].name) : ""} : ${texts.orderLine(f.count(order.progress), f.count(order.target), clock(order.left), f.money(order.reward))}`
+                : texts.flowOk}
+          </p>
+          {order && !block && (
+            <button className="fi-btn ghost small fi-order-decline" onClick={() => act(declineOrder)} aria-label={texts.declineOrder} title={texts.declineOrder}>✕</button>
+          )}
+          <button className={`fi-btn small fi-rush${state.rushLeft > 0 ? " on" : ""}`} onClick={() => act(startRush)} disabled={!canRush(state)}
+            title={texts.rushHint} style={{ visibility: state.cooks >= 1 ? "visible" : "hidden" }}>
+            {/* Said in full on a computer, as an icon and a time on a phone. */}
+            <span className="fi-rush-long">
+              {state.rushLeft > 0 ? texts.rushOn(clock(state.rushLeft)) : state.rushReady > 0 ? texts.rushWait(clock(state.rushReady)) : texts.rush}
+            </span>
+            <span className="fi-rush-short" aria-hidden="true">
+              {state.rushLeft > 0 ? `🔥 ${clock(state.rushLeft)}` : state.rushReady > 0 ? `⏳ ${clock(state.rushReady)}` : texts.rush}
+            </span>
+          </button>
+        </div>
         <div className="fi-goal">
           <span className="fi-goal-label">{texts.goal}</span>
           <span className="fi-goal-text">{texts.goals[goal.id]}</span>

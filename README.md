@@ -396,12 +396,15 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
 
 - **Era 1, the counter**: pizzas made by hand, a click each, from ingredient kits bought by the crate at a price that
   wanders. Customers buy as fast as the price lets them (fewer, the dearer it is): the price is set so that they take
-  what is made. Then cooks, who cook on their own, upgrades (a second pair of hands, the wood-fired oven, Nonna's
-  recipe…), advertising, and a regular supplier who orders the kits.
+  what is made. Then cooks, who cook on their own, upgrades (a second pair of hands, a pizza peel, the wood-fired oven,
+  Nonna's recipe, bike delivery, a neon sign…), advertising, and a regular supplier who orders the kits. A click keeps
+  mattering: it also lends the kitchen a hand (a quarter of a second of its work, more with the peel).
 - **Era 2, the chain**: with the franchise, restaurants open, each with its own customers and kitchen room; a manager
   hires, a pricing analyst sets the price, a central kitchen sells bigger crates. A new restaurant makes hires cheap
-  again, which is what keeps the chain growing: ten restaurants make a city, forty a country, a hundred and fifty a
-  continent.
+  again, which is what keeps the chain growing. The chain grows **city by city** (Naples, Rome, Milan, Lyon, Paris,
+  Berlin, London, New York, Tokyo): each city holds so many restaurants, and settling in the next one costs more but
+  brings 5% more customers everywhere. An expansion office opens restaurants and cities on its own, an ad agency runs
+  the campaigns. The factory plans come once the chain is settled in seven cities.
 - **Era 3, the factories** (`src/factory/plant.ts`, `research.ts`, drawn by `PlantDiagram.tsx`): the factory plans (sold
   once the chain has sold half a million pizzas) open a plant of its own tab, a network to work out rather than a line
   to fill. It is drawn as a diagram: each building in its place, from the sources on the left to the trucks on the right
@@ -439,7 +442,8 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   better buildings: conveyor belts, fertiliser, robot arms, efficient turbines, fast trucks, then modernised workshops
   and workshops of the future. The restaurants can take their kits from the plant first (a choice, off at first: their
   pizzas sell dearer, but the factories then get less). Goals: ten thousand pizzas a second, five researches, two
-  hundred and fifty million pizzas sold, then the rocket plans (a billion euros), which open era 4.
+  hundred and fifty million pizzas sold, then the rocket plans, which open era 4. The maintenance crew (research)
+  settles strikes and breakdowns on its own.
 - **Era 4, the universe** (`src/factory/cosmos.ts`, drawn by `Universe.tsx`): a star map with Earth in the middle. On
   the left, six terroir planets grow the cosmic ingredients (star wheat, red tomatoes, moon cheese); on the right, six
   civilisations want cosmic pizzas, each with its appetite and the price it pays. The near column holds the near
@@ -450,13 +454,16 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   card. When pizzas run short, the civilisations share what there is, each in proportion to what it asks. The routes
   read like the plant's arrows: green, it flows; orange, something is short (ships, or pizzas); dotted, goods wait (a
   store full on Earth). Only the first ring is known at the start; exploring (a scout, 45 seconds) finds the others one
-  at a time, and the farthest take the hyperdrive. Era 4's research (the laboratories' points): giant holds, chefs in
-  orbit, terraforming, the hyperdrive. The same "diagram or chains" switch as the plant shows the galaxy as a map or
+  at a time, and the farthest take the hyperdrive. **Embassies** make a civilisation hungrier (its appetite times the
+  embassy's level), so the farms, the routes and the ovens have to keep up. Era 4's research (the laboratories'
+  points): giant holds, chefs in orbit, terraforming, the hyperdrive, and three automations: logistics (equips the
+  routes), orbital stewards (build the ovens), agronomy (grows the farms, only as much as is eaten: late on, a level
+  costs a fortune). The same "diagram or chains" switch as the plant shows the galaxy as a map or
   as lists (lists by default on a phone).
   **Its own tour**: the three first terroirs, an oven, the first civilisation, then how routes and ships work, then
   exploring and the stellar oven.
-  **The ending**: the stellar oven, built around the sun in five stages (the base, the dome, the mirrors, the hearth,
-  the lighting), each once enough cosmic pizzas are delivered and paid for. The last one lights it: a closing screen
+  **The ending**: the stellar oven, built around the sun in eight stages (the base, the dome, the mirrors, the hearth,
+  the flues, the peel, the crown, the lighting), each once enough cosmic pizzas are delivered and paid for. The last one lights it: a closing screen
   (the pizza of the universe) with the game's figures: time played, pizzas sold, money earned, restaurants, pizza
   factories, planets linked, cosmic pizzas. Then the game goes on as long as the player likes ("keep playing"), or
   starts over; the stellar oven card can show the ending again. In the universe, the foreman only builds modules out of
@@ -479,11 +486,27 @@ page in `src/factory/Factory.tsx`, texts in French, English and Chinese in `src/
   at the bottom on a phone, one under the other. Every part is there from the start (the chain and the automations
   locked until they open), so nothing moves when something new shows up. The upgrades tab shows how many upgrades the
   till can pay for, and the tour opens the tab it points at.
-- **The pace**, checked by a robot that plays like a sensible player (`src/factory/bot.ts`, in the tests): about five
-  minutes at the counter for the robot (about ten for a player: it sets perfect prices and hires at once), ten
-  restaurants within a quarter of an hour, a million pizzas within half an hour, the factories within the hour, five
-  researches within half an hour of them, the universe about three quarters of an hour after, and the stellar oven lit
-  about three quarters of an hour later (about an hour for a player). Customers come about as fast as a first
+- **The story** (`src/factory/story.ts`): the goal of the moment is a chapter of a story, thirty-two in all across the
+  four eras (Nonna's recipe, the Friday rush, Rome, a feared food critic, a cheap rival chain, the first strike, the
+  rocket, first contact, the embassies, the lighting…). Each opens with a few words in a bubble (wherever the player
+  is), shows its aim and progress under the figures, and pays half a minute of what the game brings in when reached.
+  The Journal tab tells the chapter going on and those of the era behind.
+- **Achievements** (`src/factory/achievements.ts`): twenty-five lasting challenges (500 pizzas by hand, every city, 50
+  pizza factories, ten incidents settled, every planet linked, a million cosmic pizzas…). Each one unlocked makes every
+  sale 2% dearer, for good. Listed in the Journal tab.
+- **Special orders** (`src/factory/orders.ts`): every four to seven minutes, someone asks for a lot of pizzas in two to
+  four minutes: a wedding, a festival, a football team, a school canteen, a company retreat (the restaurants' pizzas),
+  a supermarket contract (the trucks', from era 3), a galactic banquet at one of the civilisations (from era 4). The
+  aim is a third above the pace of the moment, so it takes a push (a lower price, a rush, clicks); done in time, it
+  pays two and a half times the pizzas' price. It shows under the figures (unless something is blocked), with a button
+  to turn it down. None while away.
+- **For those who stay**: the rush (🔥, under the figures, once there is a kitchen crew) makes customers, kitchens,
+  factories, terroirs and ovens all twice as fast for thirty seconds, every three and a half minutes. Clicks, orders
+  and the rush give something to do at the screen; leaving and coming back works just as well (time away counts).
+- **The pace**, checked by a robot that plays like a sensible player and stays at the screen (`src/factory/bot.ts`, in
+  the tests): about five minutes at the counter, the factories after about fifty minutes of chain, the universe after
+  about two and a half hours, and the stellar oven lit about three hours later: five and a half hours for the robot,
+  about eight for a player. Customers come about as fast as a first
   few cooks make pizzas at the starting price, and advertising brings 40% more each time.
 - **Time away counts**: the chain goes on while the page is closed, up to eight hours, and a line says what it made.
   No punishment for being away, no pressure to come back.

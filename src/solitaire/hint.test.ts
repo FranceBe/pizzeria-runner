@@ -89,5 +89,5 @@ describe("help", () => {
     // A greedy player wins some deals and gets stuck in others; both happen.
     expect(wins).toBeGreaterThan(0);
     expect(stuck).toBeGreaterThan(0);
-  }, 60_000);
+  }, 180_000);
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { advance, cookCapacity, frozenRate, isForSale, newFactory, readFactory, tick } from "../engine";
+import { STAGES } from "../cosmos";
 import { buildDevFactory, DEV_PRESET_IDS, DEV_PRESETS, devSetupOf } from "./devFactory";
 import { seededRandom } from "../../utils/random";
 
@@ -26,7 +27,7 @@ describe("the dev tab's games", () => {
     const universe = buildDevFactory(DEV_PRESETS.era4Start);
     expect(universe.upgrades).toContain("spacePlans");
     expect(universe.cosmos.known).toEqual(["helia", "rubra", "selena", "orbitans", "tellures"]);
-    expect(buildDevFactory(DEV_PRESETS.era4Late).cosmos.stage).toBe(4);
+    expect(buildDevFactory(DEV_PRESETS.era4Late).cosmos.stage).toBe(STAGES.length - 1);
   });
 
   it("keep things consistent whatever is typed: cooks fit, no buildings or research before era 3, no negatives", () => {

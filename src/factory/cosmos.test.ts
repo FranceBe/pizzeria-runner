@@ -3,7 +3,7 @@ import { seededRandom } from "../utils/random";
 import { botSecond } from "./bot";
 import {
   addShips, buildOven, explore, EXPLORE_SECONDS, newCosmos, nextToExplore, openPlanet, ovenCapacity, perShip, planetStatus, PLANET_IDS, PLANETS, production,
-  raiseFarms, readCosmos, removeShip, routeCapacity, runCosmos, shipCost, shipsNeeded, STAGES, type PlanetId,
+  raiseLevel, readCosmos, removeShip, routeCapacity, runCosmos, shipCost, shipsNeeded, STAGES, type PlanetId,
 } from "./cosmos";
 import { advance, buildStellarStage, newFactory, readFactory, tick, type FactoryState } from "./engine";
 
@@ -14,7 +14,7 @@ const universe = (overrides: Partial<FactoryState> = {}): FactoryState => ({ ...
 const running = (ids: readonly PlanetId[], ovens = 3): FactoryState => {
   let state = universe();
   for (const id of ids) state = openPlanet(state, id)!;
-  for (const id of ids) state = PLANETS[id].kind === "terroir" ? raiseFarms(state, id)! : state;
+  for (const id of ids) state = PLANETS[id].kind === "terroir" ? raiseLevel(state, id)! : state;
   for (const id of ids) state = shipsNeeded(state, id) > 0 ? addShips(state, id, shipsNeeded(state, id))! : state;
   for (let i = 0; i < ovens; i++) state = buildOven(state)!;
   return state;
@@ -43,7 +43,7 @@ describe("the universe", () => {
   it("needs ships for the distance: a far route carries less per ship, and says so when short", () => {
     expect(perShip(universe(), "selena")).toBeGreaterThan(perShip(universe(), "grana"));
     const thin = openPlanet(universe(), "helia")!;
-    const raised = raiseFarms(raiseFarms(raiseFarms(thin, "helia")!, "helia")!, "helia")!;
+    const raised = raiseLevel(raiseLevel(raiseLevel(thin, "helia")!, "helia")!, "helia")!;
     expect(production(raised, "helia")).toBeCloseTo(4 * (PLANETS.helia.kind === "terroir" ? PLANETS.helia.yield : 0));
     expect(planetStatus(raised, "helia").kind).toBe("needsShips");
     const equipped = addShips(raised, "helia", shipsNeeded(raised, "helia"))!;
@@ -103,21 +103,22 @@ describe("the universe", () => {
 });
 
 describe("a whole game to the end, played by a robot", () => {
-  it("opens the universe after the factories, and lights the stellar oven within the hour", () => {
+  it("opens the universe after the factories, and lights the stellar oven a few hours later", () => {
     const random = seededRandom(1);
     let state = newFactory();
     let universeAt = 0;
-    for (let second = 0; second < 200 * 60 && state.cosmos.endedAt === null; second++) {
+    for (let second = 0; second < 450 * 60 && state.cosmos.endedAt === null; second++) {
       state = botSecond(state, { clicksPerSecond: 4, random });
       expect(state.money).toBeGreaterThanOrEqual(0);
       if (state.era >= 4) universeAt ||= second / 60;
     }
-    // About an hour of era 3 for the robot, then about three quarters of an hour of universe (a player takes longer).
-    expect(universeAt).toBeGreaterThan(80);
-    expect(universeAt).toBeLessThan(130);
+    // The universe after about two and a half hours for the robot, the stellar oven lit about three hours later: some
+    // five and a half hours in all (about eight for a player, who neither plays perfectly nor stays all the time).
+    expect(universeAt).toBeGreaterThan(120);
+    expect(universeAt).toBeLessThan(190);
     const ended = (state.cosmos.endedAt ?? Infinity) / 60;
-    expect(ended - universeAt).toBeGreaterThan(25);
-    expect(ended - universeAt).toBeLessThan(70);
+    expect(ended - universeAt).toBeGreaterThan(120);
+    expect(ended - universeAt).toBeLessThan(220);
     expect(PLANET_IDS.every((id) => state.cosmos.planets[id].open)).toBe(true);
   }, 300_000);
 });

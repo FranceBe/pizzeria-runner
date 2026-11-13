@@ -5,8 +5,8 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import type { SpaceNode } from "./coach";
 import {
-  addShips, buildOven, COSMIC_GOODS, explore, exploreCost, EXPLORE_SECONDS, isReachable, levelCost, nextToExplore, openPlanet, ovenCapacity, ovenCost,
-  ovenStatus, PLANET_IDS, planetStatus, PLANETS, production, raiseFarms, removeShip, routeCapacity, routeTarget, shipCost, shipRefund, shipsNeeded,
+  addShips, buildOven, demandOf, COSMIC_GOODS, explore, exploreCost, EXPLORE_SECONDS, isReachable, levelCost, nextToExplore, openPlanet, ovenCapacity, ovenCost,
+  ovenStatus, PLANET_IDS, planetStatus, PLANETS, production, raiseLevel, removeShip, routeCapacity, routeTarget, shipCost, shipRefund, shipsNeeded,
   STAGES, storeCap, type CosmicGood, type PlanetId, type PlanetStatus,
 } from "./cosmos";
 import { buildStellarStage, type FactoryState } from "./engine";
@@ -133,12 +133,12 @@ export const Galaxy = ({ state, texts, f, act, view, isNarrow, highlight }: Gala
         <div className="fi-node-head">
           <span aria-hidden="true">{PLANET_ICONS[id]}</span>
           <strong>{words.name}</strong>
-          <span className="fi-node-count">{planet.open ? (spec.kind === "terroir" ? texts.farms(planet.level) : "") : texts.lightYears(f.rate(spec.distance))}</span>
+          <span className="fi-node-count">{planet.open ? (spec.kind === "terroir" ? texts.farms : texts.embassy)(planet.level) : texts.lightYears(f.rate(spec.distance))}</span>
         </div>
         <span className="fi-node-recipe">
           {spec.kind === "terroir"
             ? `${COSMIC_ICONS[spec.good]} ${texts.grows(f.rate(planet.open ? production(state, id) : spec.yield), texts.cosmicGoods[spec.good])}`
-            : `🍕 ${texts.wants(f.rate(spec.demand), f.money(spec.price))}`}
+            : `🍕 ${texts.wants(f.rate(planet.open ? demandOf(state, id) : spec.demand), f.money(spec.price))}`}
         </span>
         {planet.open ? (
           <span className="fi-planet-ships">{texts.ships(planet.ships, f.count(planet.ships), carries)}</span>
@@ -154,11 +154,9 @@ export const Galaxy = ({ state, texts, f, act, view, isNarrow, highlight }: Gala
               title={texts.fillShips(f.count(shipCount), f.money(shipCount * shipCost(id)))}>
               🚀 +{f.count(shipCount)} · {f.money(shipCount * shipCost(id))}
             </button>
-            {spec.kind === "terroir" && (
-              <button className="fi-btn small" onClick={() => act((s) => raiseFarms(s, id))} disabled={state.money < levelCost(state, id)}>
-                {texts.raiseFarms(f.money(levelCost(state, id)))}
-              </button>
-            )}
+            <button className="fi-btn small" onClick={() => act((s) => raiseLevel(s, id))} disabled={state.money < levelCost(state, id)}>
+              {(spec.kind === "terroir" ? texts.raiseFarms : texts.raiseEmbassy)(f.money(levelCost(state, id)))}
+            </button>
           </div>
         ) : status.kind === "closed" && (
           <div className="fi-node-actions">

@@ -1,18 +1,23 @@
 // Guidance for Forno Infinito: a short tour of the first actions, tips that come once when something new happens, and
 // the goal of the moment (with its progress), so the player always knows what to do next and why.
-import { STAGES, type PlanetId } from "./cosmos";
-import { cookCapacity, frozenRate, isForSale, SPACE_PLANS_SALES, UPGRADE_IDS, UPGRADES, type FactoryState } from "./engine";
+import type { PlanetId } from "./cosmos";
+import { canRush, cityCapacity, cookCapacity, isForSale, UPGRADE_IDS, UPGRADES, type FactoryState } from "./engine";
+import { CHAPTERS, chapterOf, type ChapterId, type Progress } from "./story";
 import { incidentSpeeds } from "./incidents";
 import { powerBalance, type BuildingId } from "./plant";
 
 /** The parts of the page guidance can point at. */
 export type Section =
-  | "counter" | "stats" | "sales" | "supplies" | "kitchen" | "chain" | "factories" | "research" | "universe" | "stellar" | "automations" | "upgrades";
+  | "counter" | "stats" | "sales" | "supplies" | "kitchen" | "chain" | "factories" | "research" | "universe" | "stellar" | "automations" | "upgrades"
+  | "story" | "achievements";
 
 export const STEP_IDS = ["makePizza", "selling", "buyCrate", "hireCook", "price", "firstUpgrade", "tourDone"] as const;
 export type StepId = (typeof STEP_IDS)[number];
 
-export const TIP_IDS = ["outOfKits", "kitchenFull", "automation", "franchiseForSale", "chainOpen", "chainGrowth", "power", "research", "incident"] as const;
+export const TIP_IDS = [
+  "outOfKits", "kitchenFull", "automation", "rush", "order", "franchiseForSale", "chainOpen", "cityFull", "chainGrowth", "achievement", "power", "research",
+  "incident",
+] as const;
 export type TipId = (typeof TIP_IDS)[number];
 
 interface Guide {
@@ -39,6 +44,10 @@ export const TIPS: Record<TipId, Guide & { when: (state: FactoryState) => boolea
   outOfKits: { target: "supplies", when: (s) => s.kits < 1 && s.totalMade > 10 && !s.upgrades.includes("supplier") },
   kitchenFull: { target: "upgrades", when: (s) => s.cooks >= cookCapacity(s) && s.cooks > 0 },
   automation: { target: "automations", when: (s) => s.upgrades.includes("supplier") },
+  rush: { target: "stats", when: (s) => canRush(s) && s.totalSold >= 60 },
+  order: { target: "stats", when: (s) => s.order !== null },
+  cityFull: { target: "chain", when: (s) => s.era >= 2 && s.restaurants >= cityCapacity(s) },
+  achievement: { target: "achievements", when: (s) => s.achievements.length >= 2 },
   franchiseForSale: { target: "upgrades", when: (s) => isForSale(s, "franchise") },
   chainOpen: { target: "chain", when: (s) => s.era >= 2 },
   chainGrowth: { target: "chain", when: (s) => s.era >= 2 && s.upgrades.includes("manager") },
@@ -99,16 +108,19 @@ export interface Coach {
   spaceStep: number;
   /** Tips already shown. */
   seen: TipId[];
+  /** Chapters of the story whose opening words were read (the next one to tell). */
+  chapterSeen: number;
   /** The player turned guidance off. */
   off: boolean;
 }
 
-export const newCoach = (): Coach => ({ step: 0, plantStep: 0, spaceStep: 0, seen: [], off: false });
+export const newCoach = (): Coach => ({ step: 0, plantStep: 0, spaceStep: 0, seen: [], chapterSeen: 0, off: false });
 
 export type Bubble =
   | { kind: "step"; id: StepId; index: number; count: number; target: Section | null; needsAck: boolean }
   | { kind: "plantStep"; id: PlantStepId; index: number; count: number; target: Section; nodes: readonly BuildingId[]; needsAck: boolean }
   | { kind: "spaceStep"; id: SpaceStepId; index: number; count: number; target: Section; nodes: readonly SpaceNode[]; needsAck: boolean }
+  | { kind: "chapter"; id: ChapterId; index: number; target: Section | null }
   | { kind: "tip"; id: TipId; target: Section | null };
 
 // Steps the player has already done on their own are skipped: a tour never asks for what is already there.
@@ -153,6 +165,9 @@ export const bubbleFor = (coach: Coach, state: FactoryState): Bubble | null => {
     const { nodes, done } = SPACE_STEPS[id];
     return { kind: "spaceStep", id, index: coach.spaceStep, count: SPACE_STEP_IDS.length, target: "universe", nodes, needsAck: !done };
   }
+  // A new chapter of the story opens with a few words (once the tours are over), wherever the player is.
+  const chapter = chapterOf(state);
+  if (chapter && coach.chapterSeen <= state.chapter) return { kind: "chapter", id: chapter, index: state.chapter, target: null };
   const tip = TIP_IDS.find((id) => !coach.seen.includes(id) && TIPS[id].when(state));
   return tip ? { kind: "tip", id: tip, target: TIPS[tip].target } : null;
 };
@@ -162,6 +177,7 @@ export const acknowledge = (coach: Coach, bubble: Bubble): Coach => {
   if (bubble.kind === "step") return { ...coach, step: Math.max(coach.step, bubble.index + 1) };
   if (bubble.kind === "plantStep") return { ...coach, plantStep: Math.max(coach.plantStep, bubble.index + 1) };
   if (bubble.kind === "spaceStep") return { ...coach, spaceStep: Math.max(coach.spaceStep, bubble.index + 1) };
+  if (bubble.kind === "chapter") return { ...coach, chapterSeen: Math.max(coach.chapterSeen, bubble.index + 1) };
   return { ...coach, seen: [...coach.seen, bubble.id] };
 };
 
@@ -175,50 +191,22 @@ export const readCoach = (value: unknown): Coach => {
     spaceStep:
       typeof saved.spaceStep === "number" && Number.isInteger(saved.spaceStep) && saved.spaceStep >= 0 ? Math.min(saved.spaceStep, SPACE_STEP_IDS.length) : 0,
     seen: Array.isArray(saved.seen) ? saved.seen.filter((id): id is TipId => (TIP_IDS as readonly string[]).includes(id)) : [],
+    chapterSeen: typeof saved.chapterSeen === "number" && Number.isInteger(saved.chapterSeen) && saved.chapterSeen >= 0 ? saved.chapterSeen : 0,
     off: saved.off === true,
   };
 };
 
-// --- The goal of the moment ------------------------------------------------------------------------------------------
+// --- The goal of the moment: the story's chapter going on ------------------------------------------------------------
 
-export type GoalId =
-  | "sellForFranchise" | "buyFranchise" | "city" | "country" | "million" | "buyPlans" | "factoryOutput" | "research" | "spaceSales" | "buyRocket"
-  | "firstCosmic" | "stellar" | "free";
+/** The chapter going on, or "free" once the story is told. */
+export type GoalId = ChapterId | "free";
 
-export interface Goal {
+export interface Goal extends Progress {
   id: GoalId;
-  current: number;
-  target: number;
 }
-
-const FRANCHISE_SALES = 3000;
-/** Era 3's goals: frozen pizzas a second out of the factories, then researches done. */
-const FACTORY_OUTPUT = 10_000;
-const RESEARCH_GOAL = 5;
-/** Era 4's first goal: cosmic pizzas delivered. */
-const FIRST_COSMIC = 100;
 
 /** What to aim for next, and how far along it is. */
 export const goalFor = (state: FactoryState): Goal => {
-  if (state.era === 1) {
-    if (state.totalSold < FRANCHISE_SALES) return { id: "sellForFranchise", current: state.totalSold, target: FRANCHISE_SALES };
-    return { id: "buyFranchise", current: state.money, target: UPGRADES.franchise.cost };
-  }
-  if (state.era === 2) {
-    if (state.restaurants < 10) return { id: "city", current: state.restaurants, target: 10 };
-    if (state.restaurants < 40) return { id: "country", current: state.restaurants, target: 40 };
-    if (state.totalSold < 1e6) return { id: "million", current: state.totalSold, target: 1e6 };
-    return { id: "buyPlans", current: state.money, target: UPGRADES.factoryPlans.cost };
-  }
-  if (state.era === 3) {
-    const output = frozenRate(state);
-    if (output < FACTORY_OUTPUT) return { id: "factoryOutput", current: output, target: FACTORY_OUTPUT };
-    if (state.researched.length < RESEARCH_GOAL) return { id: "research", current: state.researched.length, target: RESEARCH_GOAL };
-    if (state.totalSold < SPACE_PLANS_SALES) return { id: "spaceSales", current: state.totalSold, target: SPACE_PLANS_SALES };
-    return { id: "buyRocket", current: state.money, target: UPGRADES.spacePlans.cost };
-  }
-  const { cosmos } = state;
-  if (cosmos.sold < FIRST_COSMIC) return { id: "firstCosmic", current: cosmos.sold, target: FIRST_COSMIC };
-  if (cosmos.endedAt === null) return { id: "stellar", current: cosmos.stage, target: STAGES.length };
-  return { id: "free", current: 1, target: 1 };
+  const chapter = chapterOf(state);
+  return chapter ? { id: chapter, ...CHAPTERS[chapter].progress(state) } : { id: "free", current: 1, target: 1 };
 };

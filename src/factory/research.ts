@@ -2,11 +2,14 @@
 // automation step by step (a ratio calculator, then modules built in one go, then a foreman who builds on their own) and
 // makes the buildings better (belts, fertiliser, robot arms, turbines, docks, then modernised workshops, then workshops
 // of the future). Maintenance makes breakdowns rarer and shorter (see incidents.ts). Era 4 brings its own (see cosmos.ts):
-// bigger cargo holds, orbital chefs, terraforming, and the hyperdrive that reaches the farthest planets.
+// bigger cargo holds, orbital chefs, terraforming, the hyperdrive that reaches the farthest planets, and the
+// automations of the universe (a logistician, stewards, an agronomist). The maintenance crew settles strikes and
+// breakdowns on its own.
 
 export const RESEARCH_IDS = [
   "calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines", "automatedDocks", "maintenance", "robotArms", "foreman", "modernised", "futuristic",
-  "cargoHolds", "orbitalChefs", "terraforming", "hyperdrive",
+  "maintenanceCrew",
+  "cargoHolds", "orbitalChefs", "terraforming", "hyperdrive", "logistics", "orbitalStewards", "agronomy",
 ] as const;
 export type ResearchId = (typeof RESEARCH_IDS)[number];
 
@@ -31,10 +34,14 @@ export const RESEARCH: Record<ResearchId, ResearchSpec> = {
   foreman: { cost: 3_000, requires: ["modules"] },
   modernised: { cost: 5_000, requires: ["robotArms", "efficientTurbines"] },
   futuristic: { cost: 15_000, requires: ["modernised", "foreman"] },
+  maintenanceCrew: { cost: 4_000, requires: ["maintenance"] },
   cargoHolds: { cost: 5_000, requires: [], era: 4 },
   orbitalChefs: { cost: 8_000, requires: [], era: 4 },
   terraforming: { cost: 12_000, requires: ["cargoHolds"], era: 4 },
   hyperdrive: { cost: 15_000, requires: ["cargoHolds"], era: 4 },
+  logistics: { cost: 6_000, requires: ["cargoHolds"], era: 4 },
+  orbitalStewards: { cost: 10_000, requires: ["orbitalChefs"], era: 4 },
+  agronomy: { cost: 15_000, requires: ["terraforming"], era: 4 },
 };
 
 export const isResearched = (researched: readonly ResearchId[], id: ResearchId): boolean => researched.includes(id);

@@ -5,7 +5,7 @@ import { buildOven, openPlanet } from "./cosmos";
 import { buyCrate, hireCook, isForSale, makePizza, newFactory, type FactoryState } from "./engine";
 import { TAB_OF } from "./Factory";
 import { TEXTS } from "./texts";
-import type { ResearchId } from "./research";
+import { CHAPTER_IDS } from "./story";
 
 // The tour as a player goes through it: each bubble, then what they do about it.
 const follow = (coach: Coach, state: FactoryState) => {
@@ -43,7 +43,7 @@ describe("the guided tour", () => {
   });
 
   it("waits to point at hiring until there is money for it", () => {
-    const coach: Coach = { step: STEP_IDS.indexOf("hireCook"), plantStep: 0, spaceStep: 0, seen: [], off: false };
+    const coach: Coach = { step: STEP_IDS.indexOf("hireCook"), plantStep: 0, spaceStep: 0, seen: [], chapterSeen: 0, off: false };
     expect(bubbleFor(coach, { ...newFactory(), money: 5 })).toBeNull();
     expect(bubbleFor(coach, { ...newFactory(), money: 15 })).toMatchObject({ id: "hireCook" });
   });
@@ -51,7 +51,7 @@ describe("the guided tour", () => {
   it("skips what the player already did on their own", () => {
     const state = { ...newFactory(), totalMade: 50, cratesBought: 2 };
     expect(settle(newCoach(), state).step).toBe(STEP_IDS.indexOf("selling"));
-    const later = settle({ step: STEP_IDS.indexOf("buyCrate"), plantStep: 0, spaceStep: 0, seen: [], off: false }, { ...state, cooks: 1 });
+    const later = settle({ step: STEP_IDS.indexOf("buyCrate"), plantStep: 0, spaceStep: 0, seen: [], chapterSeen: 0, off: false }, { ...state, cooks: 1 });
     expect(STEP_IDS[later.step]).toBe("price");
   });
 
@@ -61,10 +61,11 @@ describe("the guided tour", () => {
 });
 
 describe("tips", () => {
-  const afterTour: Coach = { step: STEP_IDS.length, plantStep: 0, spaceStep: 0, seen: [], off: false };
+  // The tour over, and the story's chapters told (their bubbles come before the tips).
+  const afterTour: Coach = { step: STEP_IDS.length, plantStep: 0, spaceStep: 0, seen: [], chapterSeen: CHAPTER_IDS.length, off: false };
 
   it("come once each, when what they are about happens", () => {
-    const state = { ...newFactory(), totalSold: 3000 };
+    const state = { ...newFactory(), totalSold: 5000 };
     expect(isForSale(state, "franchise")).toBe(true);
     const bubble = bubbleFor(afterTour, state);
     expect(bubble).toEqual({ kind: "tip", id: "franchiseForSale", target: "upgrades" });
@@ -75,12 +76,12 @@ describe("tips", () => {
   });
 
   it("wait for the tour to end", () => {
-    expect(bubbleFor(newCoach(), { ...newFactory(), totalSold: 3000 })).toMatchObject({ kind: "step" });
+    expect(bubbleFor(newCoach(), { ...newFactory(), totalSold: 5000 })).toMatchObject({ kind: "step" });
   });
 });
 
 describe("the plant's tour", () => {
-  const afterTours: Coach = { step: STEP_IDS.length, plantStep: 0, spaceStep: 0, seen: [], off: false };
+  const afterTours: Coach = { step: STEP_IDS.length, plantStep: 0, spaceStep: 0, seen: [], chapterSeen: 0, off: false };
   const era3 = (buildings: Partial<FactoryState["buildings"]> = {}): FactoryState => ({ ...newFactory(), era: 3, buildings: { ...newFactory().buildings, ...buildings } });
 
   it("sets the plant up one building at a time, lighting each one up, from the power to the trucks", () => {
@@ -112,30 +113,34 @@ describe("the plant's tour", () => {
   });
 });
 
-describe("the goal", () => {
-  it("goes from the franchise to the city, the country, a million pizzas, the factory plans, then the factories' goals", () => {
-    expect(goalFor(newFactory())).toEqual({ id: "sellForFranchise", current: 0, target: 3000 });
-    expect(goalFor({ ...newFactory(), totalSold: 3500, money: 2000 })).toEqual({ id: "buyFranchise", current: 2000, target: 8000 });
-    const chain = { ...newFactory(), era: 2 as const };
-    expect(goalFor({ ...chain, restaurants: 4 }).id).toBe("city");
-    expect(goalFor({ ...chain, restaurants: 12 }).id).toBe("country");
-    expect(goalFor({ ...chain, restaurants: 45, totalSold: 500 }).id).toBe("million");
-    expect(goalFor({ ...chain, restaurants: 45, totalSold: 2e6, money: 4e6 })).toEqual({ id: "buyPlans", current: 4e6, target: 1e7 });
-    const factories = { ...chain, era: 3 as const, totalSold: 2e6 };
-    expect(goalFor(factories)).toEqual({ id: "factoryOutput", current: 0, target: 10_000 });
-    const running = { ...factories, factoryRates: { ...factories.factoryRates, pizzaFactory: 4 } };
-    expect(goalFor(running)).toEqual({ id: "research", current: 0, target: 5 });
-    const researched = { ...running, researched: ["calculator", "conveyorBelts", "modules", "fertilizer", "efficientTurbines"] as ResearchId[] };
-    expect(goalFor(researched).id).toBe("spaceSales");
-    expect(goalFor({ ...researched, totalSold: 3e8, money: 2e8 })).toEqual({ id: "buyRocket", current: 2e8, target: 1e9 });
-    // Era 4: a hundred cosmic pizzas, the stellar oven stage by stage, then free play.
-    const universe = { ...researched, era: 4 as const };
+describe("the goal: the story, chapter by chapter", () => {
+  it("shows the chapter going on with its progress, era after era, then free play", () => {
+    expect(goalFor(newFactory())).toEqual({ id: "firstService", current: 0, target: 30 });
+    expect(goalFor({ ...newFactory(), chapter: CHAPTER_IDS.indexOf("franchise"), money: 2000 })).toEqual({ id: "franchise", current: 0.1, target: 1 });
+    const chain = { ...newFactory(), era: 2 as const, chapter: CHAPTER_IDS.indexOf("rome") };
+    expect(goalFor(chain)).toEqual({ id: "rome", current: 1, target: 2 });
+    expect(goalFor({ ...chain, chapter: CHAPTER_IDS.indexOf("worldTour"), cities: 5 })).toEqual({ id: "worldTour", current: 5, target: 7 });
+    const universe = { ...newFactory(), era: 4 as const, chapter: CHAPTER_IDS.indexOf("firstCosmic") };
     expect(goalFor(universe)).toEqual({ id: "firstCosmic", current: 0, target: 100 });
-    const delivering = { ...universe, cosmos: { ...universe.cosmos, sold: 500, stage: 2 } };
-    expect(goalFor(delivering)).toEqual({ id: "stellar", current: 2, target: 5 });
-    expect(goalFor({ ...delivering, cosmos: { ...delivering.cosmos, stage: 5, endedAt: 3600 } }).id).toBe("free");
+    expect(goalFor({ ...universe, chapter: CHAPTER_IDS.length })).toEqual({ id: "free", current: 1, target: 1 });
+  });
+
+  it("opens each new chapter with a bubble, once the tours are over", () => {
+    const toured: Coach = { ...newCoach(), step: STEP_IDS.length, seen: [...TIP_IDS] };
+    const state = { ...newFactory(), chapter: 2 };
+    const bubble = bubbleFor(toured, state);
+    expect(bubble).toMatchObject({ kind: "chapter", id: CHAPTER_IDS[2], target: null });
+    expect(bubbleFor(acknowledge(toured, bubble!), state)).toBeNull();
+  });
+
+  it("has every chapter's words in every language", () => {
+    Object.values(TEXTS).forEach((texts) => {
+      expect(Object.keys(texts.chapters).sort()).toEqual([...CHAPTER_IDS].sort());
+      expect(Object.keys(texts.goals).sort()).toEqual([...CHAPTER_IDS, "free"].sort());
+    });
   });
 });
+
 
 describe("guidance, everywhere", () => {
   it("points only at parts the page has, each in a phone tab", () => {
@@ -152,7 +157,7 @@ describe("guidance, everywhere", () => {
   });
 
   it("reads a saved tour with care", () => {
-    expect(readCoach({ step: 3, seen: ["automation", "nope"], off: false })).toEqual({ step: 3, plantStep: 0, spaceStep: 0, seen: ["automation"], off: false });
+    expect(readCoach({ step: 3, seen: ["automation", "nope"], off: false })).toEqual({ step: 3, plantStep: 0, spaceStep: 0, seen: ["automation"], chapterSeen: 0, off: false });
     expect(readCoach({ step: 3, spaceStep: 2 }).spaceStep).toBe(2);
     expect(readCoach({ step: 3, spaceStep: 99 }).spaceStep).toBe(SPACE_STEP_IDS.length);
     expect(readCoach({ step: 3, plantStep: 4, spaceStep: 0, seen: [] }).plantStep).toBe(4);
@@ -163,7 +168,7 @@ describe("guidance, everywhere", () => {
 });
 
 describe("the universe's tour", () => {
-  const afterTours: Coach = { step: STEP_IDS.length, plantStep: PLANT_STEP_IDS.length, spaceStep: 0, seen: [...TIP_IDS], off: false };
+  const afterTours: Coach = { step: STEP_IDS.length, plantStep: PLANT_STEP_IDS.length, spaceStep: 0, seen: [...TIP_IDS], chapterSeen: 99, off: false };
 
   it("waits for era 4, then opens the first terroirs, the oven and the first civilisation, then explains the rest", () => {
     expect(bubbleFor(afterTours, { ...newFactory(), era: 3 })).toBeNull();
